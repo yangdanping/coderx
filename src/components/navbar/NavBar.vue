@@ -7,6 +7,7 @@
       <!-- <el-button @click="handleItemClick(item)" v-for="item in menus" :key="item.path">{{ item.name }}</el-button> -->
     </div>
   </header>
+  <UserDialog />
 </template>
 
 <script lang="ts" setup>
@@ -15,6 +16,7 @@ import { useRouter } from 'vue-router';
 import NavBarLeft from './cpns/NavBarLeft.vue';
 import NavBarRight from './cpns/NavBarRight.vue';
 import NavBarCenter from './cpns/NavBarCenter.vue';
+import UserDialog from '../user/UserDialog.vue';
 
 const router = useRouter();
 

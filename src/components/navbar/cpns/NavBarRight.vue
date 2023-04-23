@@ -6,9 +6,11 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-
+import useUserStore from '@/stores/user';
+const userStore = useUserStore();
 const changeDialog = () => {
   console.log('changeDialog');
+  userStore.changeLoginDialog();
 };
 </script>
 

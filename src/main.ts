@@ -4,6 +4,7 @@ import App from './App.vue';
 import router from './router';
 import 'normalize.css';
 import './assets/css/index.scss';
+import 'element-plus/dist/index.css';
 
 const app = createApp(App);
 
