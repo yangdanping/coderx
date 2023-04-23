@@ -1,0 +1,44 @@
+:root {
+  --bg: url('../img/bg.svg') center/cover no-repeat fixed;
+  --logo: url('../img/logo.png') no-repeat 0 13px;
+  // --logo: url('../img/logo.png');
+  --logo-dark: url('../img/logo-fff.png') no-repeat 0 13px;
+  --fc: #707881;
+  --red: #ea3329;
+  --orange: #eb6a2c;
+  --yellow: #f29c38;
+  --lightyellow: #ffd321;
+  --green: #75fb4c;
+  --cyan: #00f0ff;
+  --blue: #0c8cfe;
+  --darkblue: #003b6e;
+  --purple: #e532ad;
+  --deeppurple: #970056;
+  --darkpurple: #2b0c5c;
+  --lightpurple: #3d147f;
+  --brightpurple: #8400ff;
+  --pink: #ff034a;
+}
+
+hr {
+  margin: 40px auto;
+  border: 0;
+  height: 6px;
+  background-image: linear-gradient(90deg, transparent, var(--yellow), var(--red), var(--pink), var(--purple), var(--blue), transparent);
+}
+
+::-webkit-scrollbar {
+  /*width: 0;宽度为0隐藏*/
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  height: 50px;
+  background: #42b983; //滚动条颜色
+}
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  background: #eee; //滚动条背景色
+}

@@ -9,7 +9,13 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    open: true
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true, //支持跨域
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   },
   plugins: [
     vue(),
@@ -23,6 +29,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  define: {
+    'process.env': {
+      VUE_APP_BASE_URL: '/api'
     }
   }
 });

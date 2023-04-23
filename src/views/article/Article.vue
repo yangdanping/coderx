@@ -9,4 +9,9 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.article {
+  background: var(--bg);
+  transition: background-color 1s;
+}
+</style>

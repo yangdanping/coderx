@@ -7,9 +7,13 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
+    Editor: typeof import('./src/components/wang-editor/Editor.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     NavBar: typeof import('./src/components/navbar/NavBar.vue')['default']
+    NavBarCenter: typeof import('./src/components/navbar/cpns/NavBarCenter.vue')['default']
+    NavBarLeft: typeof import('./src/components/navbar/cpns/NavBarLeft.vue')['default']
     NavBarMoblie: typeof import('./src/components/navbar/cpns/NavBarMoblie.vue')['default']
+    NavBarRight: typeof import('./src/components/navbar/cpns/NavBarRight.vue')['default']
     NavBarUser: typeof import('./src/components/navbar/cpns/NavBarUser.vue')['default']
     NavMenu: typeof import('./src/components/navbar/cpns/NavMenu.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

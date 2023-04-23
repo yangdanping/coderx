@@ -11,3 +11,5 @@ app.use(createPinia());
 app.use(router);
 
 app.mount('#app');
+
+console.log('当前环境', process.env.NODE_ENV, '接口', process.env.VUE_APP_BASE_URL);
