@@ -1,5 +1,5 @@
 // service统一的出口
-import { LocalCache } from '@/utils';
+import { LocalCache, Msg } from '@/utils';
 import MyRequest from '@/global/request';
 import { BASE_URL, TIME_OUT } from '@/global/request/config';
 //new--->执行构造器--->创建一个唯一的实例(已在构造器里用axios.create()的前提下)
@@ -11,9 +11,7 @@ const myRequest = new MyRequest({
     reqSuccess: (config) => {
       console.log('请求成功拦截', config);
       // 1.拦截器作用一 --> 携带token的拦截
-      const token =
-        LocalCache.getCache('token') ??
-        'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6InlkcCIsImlhdCI6MTY4MjI0MTc3NywiZXhwIjoxNjgyMzI4MTc3fQ.MWZ8NJF9UDT-jnbyffQb2_IExVjht1S_jO0zv4jiyWCRcodQlDZCCy-HlqNfBoLYwMX4cVe-hN6YbA3U5hwH_7QVKNlNHvzNpN-Bsp7Ho3yLhcL5N1cxuRMhzbAHJy24zVgBCMC-9jryeQcVs8fC2Em946ZQbPE0l-c2eddYkoA';
+      const token = LocalCache.getCache('token') ?? '';
       if (token) {
         // 最新axios要加非空类型断言写成对象格式
         // eslint-disable-next-line
@@ -22,16 +20,18 @@ const myRequest = new MyRequest({
       return config;
     },
     reqFail: (err) => {
-      // console.log('请求失败拦截');
+      console.log('请求失败拦截', err);
       return err;
     },
     // ----------------------------
     resSuccess: (res) => {
-      // console.log('响应成功拦截');
+      console.log('响应成功拦截', res);
       return res;
     },
     resFail: (err) => {
-      // console.log('响应失败拦截');
+      console.log('响应失败拦截');
+      const { msg, code } = err.response.data;
+      Msg.showFail(`server error:${msg} code:${code}`);
       return err;
     }
   }

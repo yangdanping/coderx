@@ -7,8 +7,8 @@
 <script lang="ts" setup></script>
 
 <style lang="scss" scoped>
-/* .app {
+.app {
   background: var(--bg);
   transition: background-color 1s;
-} */
+}
 </style>

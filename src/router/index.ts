@@ -47,9 +47,14 @@ const router = createRouter({
   routes
 });
 
+// 路由前置守卫
 router.beforeEach((to, from) => {
   console.log(`<路由守卫>检测到路由 ${from.path} --> ${to.path}`);
+  to.matched.forEach((record) => (document.title = record.meta.title ? `${record.meta.title} - CoderX` : 'CoderX'));
 });
+
+// 路由后置守卫
+router.afterEach(() => window.scrollTo(0, 0));
 
 export { routes };
 

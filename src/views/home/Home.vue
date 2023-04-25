@@ -4,7 +4,6 @@
     <div class="content">
       <div class="title">
         <div class="title-line-1">Welcome to</div>
-        <!-- <div class="title-line-2">Coder<i class="text-pop-up-top">X</i></div> -->
         <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
       </div>
       <hr />
@@ -19,7 +18,7 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 const counter = ref(1);
 const line2 = ref('Coder');
 const line2Str = ref('');
@@ -29,7 +28,7 @@ let timer = ref();
 onMounted(() => {
   timer.value = setInterval(() => {
     let str = line2.value.slice(0, counter.value);
-    console.log(`打印${counter.value}个字母`, str);
+    // console.log(`打印${counter.value}个字母`, str);
     counter.value++;
     // 还有最后一个字符X,所以+1
     if (counter.value <= line2.value.length + 1) {
@@ -48,8 +47,6 @@ onMounted(() => {
 $TitleSize: 2em;
 
 .home {
-  background: var(--bg);
-  transition: background-color 1s;
   > .content {
     max-width: 1432px;
     margin: 0 auto;
@@ -57,12 +54,10 @@ $TitleSize: 2em;
     .title {
       display: flex;
       flex-direction: column;
-      margin: 200px 0;
+      padding: 200px 0;
       font-size: 79px;
       user-select: none;
-      /* color: #000; */
-      color: #484848;
-
+      color: var(--fontColor);
       transition: all 0.5s;
 
       .title-line-1 {

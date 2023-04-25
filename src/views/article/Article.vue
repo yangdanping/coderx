@@ -11,7 +11,7 @@ import NavBar from '@/components/navbar/NavBar.vue';
 
 <style lang="scss" scoped>
 .article {
-  background: var(--bg);
-  transition: background-color 1s;
+  padding-top: var(--navbarHeight);
+  height: 3000px;
 }
 </style>

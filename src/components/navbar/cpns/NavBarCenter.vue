@@ -1,5 +1,7 @@
 <template>
-  <div class="center"></div>
+  <div class="center">
+    <slot name="center"></slot>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -9,6 +11,8 @@ import { ref } from 'vue';
 <style lang="scss" scoped>
 .center {
   flex: 1;
-  background: pink;
+  display: flex;
+  /* justify-content: space-around; */
+  /* background: pink; */
 }
 </style>

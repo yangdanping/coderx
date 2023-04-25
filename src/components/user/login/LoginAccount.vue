@@ -1,8 +1,8 @@
 <template>
-  <div class="account">
+  <div class="login-account">
     <el-form :rules="rules" :model="loginForm" status-icon ref="loginFormRef" label-width="90px">
       <el-form-item label="用户名" prop="name">
-        <el-input v-model.trim="loginForm.name" @keyup.enter="focusNext" clearable></el-input>
+        <el-input v-model.trim="loginForm.name" ref="getFocus" @keyup.enter="focusNext" clearable></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input v-model.trim="loginForm.password" ref="nextRef" type="password" @keyup.enter="login" clearable show-password></el-input>
@@ -21,13 +21,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue';
-import { ElForm, ElInput } from 'element-plus';
+import { ref, reactive, onMounted, nextTick } from 'vue';
+import type { ElForm, ElInput } from 'element-plus';
 // import ValidCode from '@/components/ValidCode.vue';
 import useUserStore from '@/stores/user';
+import { Msg } from '@/utils';
 const userStore = useUserStore();
-
 const loginFormRef = ref<InstanceType<typeof ElForm>>();
+const getFocus = ref<InstanceType<typeof ElInput>>();
 const nextRef = ref<InstanceType<typeof ElInput>>();
 
 const loginForm = reactive({
@@ -40,39 +41,52 @@ const rules = {
 };
 // 用户登录
 const login = () => {
-  const account = {
-    name: loginForm.name,
-    password: loginForm.password
-  };
-  console.log(account);
-  userStore.loginAction(account);
+  const { name, password } = loginForm;
+  console.log('login', { name, password });
+  loginFormRef.value?.validate((valid) => {
+    if (valid) {
+      userStore.loginAction({ name, password });
+    } else {
+      Msg.showFail('请输入正确的用户名和密码');
+    }
+  });
 };
+// 回车聚焦
 const focusNext = () => nextRef.value?.focus();
+
+onMounted(() => {
+  nextTick(() => {
+    getFocus.value?.focus();
+  });
+});
 </script>
 
 <style lang="scss" scoped>
 .login-account {
   margin-top: 40px;
-  .el-form {
-    .el-input {
-      width: 100%;
-    }
+  :deep(.el-form) {
     .el-form-item {
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
-    ::v-deep .el-form-item__label {
+    .el-form-item__label {
       font-size: 17px;
     }
+    .btn-box {
+      position: relative;
+      .el-button {
+        position: absolute;
+        width: 60%;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+
     .valid-code {
       display: flex;
       justify-content: space-around;
       .el-input {
         width: 50%;
       }
-    }
-    .btn-box {
-      display: flex;
-      justify-content: center;
     }
   }
 }

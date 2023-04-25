@@ -1,15 +1,24 @@
 <template>
   <div class="right">
-    <el-button @click="changeDialog" class="register-btn">Hello CoderX</el-button>
+    <template v-if="!token">
+      <el-button @click="changeDialog" class="register-btn">Hello CoderX</el-button>
+    </template>
+    <template v-else>
+      <NavBarUser />
+    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import NavBarUser from './NavBarUser.vue';
 import useUserStore from '@/stores/user';
 const userStore = useUserStore();
+const { token } = storeToRefs(userStore);
+
 const changeDialog = () => {
-  console.log('changeDialog');
+  console.log('open Dialog');
   userStore.changeLoginDialog();
 };
 </script>

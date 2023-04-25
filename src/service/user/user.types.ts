@@ -21,7 +21,7 @@ id,name,token,其实我们拿到用户数据的话,里面的东西会更多的,�
  * @param token 用户token
  */
 export interface ILoginResult {
-  id: number;
+  id: number | string;
   name: string;
   token: string;
 }
