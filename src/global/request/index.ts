@@ -50,7 +50,7 @@ class MyRequest {
         // console.log('全局请求拦截器请求成功');
         // 将返回的loading组件实例赋值给loading属性,与showLoading配合控制loading开关
         if (this.showLoading) {
-          console.log('showLoading', this.showLoading);
+          // console.log('showLoading', this.showLoading);
           // this.loading = ElLoading.service({
           //   lock: true,
           //   text: '正在请求...',

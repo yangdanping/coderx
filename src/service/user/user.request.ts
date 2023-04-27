@@ -29,3 +29,9 @@ export function getUserInfoById(id: number | string) {
     url: `${urlHead}/${id}/profile`
   });
 }
+
+export function getLiked(id) {
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/${id}/like`
+  });
+}

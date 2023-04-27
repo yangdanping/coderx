@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <RouterView />
+    <RouterView class="router-view" />
   </div>
 </template>
 
@@ -10,5 +10,11 @@
 .app {
   background: var(--bg);
   transition: background-color 1s;
+  .router-view {
+    min-height: 100vh;
+    &:not(.edit) {
+      padding-top: var(--navbarHeight);
+    }
+  }
 }
 </style>

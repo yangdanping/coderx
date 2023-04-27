@@ -2,6 +2,8 @@
 import { LocalCache, Msg } from '@/utils';
 import MyRequest from '@/global/request';
 import { BASE_URL, TIME_OUT } from '@/global/request/config';
+import useUserStore from '@/stores/user';
+
 //new--->执行构造器--->创建一个唯一的实例(已在构造器里用axios.create()的前提下)
 // 一般情况下只有一个实例,以后项目就用这一个实例去用它的request/get/post/...(除非你有不同baseURL,那就要创建第二个实例)
 const myRequest = new MyRequest({
@@ -32,6 +34,11 @@ const myRequest = new MyRequest({
       console.log('响应失败拦截');
       const { msg, code } = err.response.data;
       Msg.showFail(`server error:${msg} code:${code}`);
+      if (code === 401) {
+        Msg.showFail(`已过期,请重新登登录`);
+        const userStore = useUserStore();
+        userStore.logOut();
+      }
       return err;
     }
   }

@@ -52,8 +52,8 @@ const props = defineProps({
 const defaultAvatar = new URL('@/assets/img/user/avatar.png', import.meta.url).href;
 // const { userInfo } = storeToRefs(userStore);
 const avatarUrl = computed(() => {
-  const { avatarUrl } = props.info;
-  console.log(avatarUrl);
+  // const { avatarUrl } = props.info;
+  // console.log(avatarUrl);
   return defaultAvatar;
 });
 </script>
@@ -61,8 +61,5 @@ const avatarUrl = computed(() => {
 <style lang="scss" scoped>
 .avatar {
   cursor: pointer;
-  .el-avatar {
-    overflow: hidden;
-  }
 }
 </style>

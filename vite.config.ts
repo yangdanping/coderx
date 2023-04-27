@@ -11,11 +11,19 @@ const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    outDir: 'build' // 打包文件的输出目录
+  },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:9000',
+      '/dev-api': {
+        target: 'http://localhost:9000', //接口的前缀
         changeOrigin: true, //支持跨域
+        rewrite: (path) => path.replace(/^\/dev-api/, '') //重写路径
+      },
+      '/api': {
+        target: 'http://119.91.150.141:9000',
+        changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
@@ -62,7 +70,7 @@ export default defineConfig({
   },
   define: {
     'process.env': {
-      VUE_APP_BASE_URL: '/api'
+      VUE_APP_BASE_URL: ''
     }
   }
 });

@@ -2,11 +2,11 @@
   <header class="nav-bar">
     <div class="list">
       <NavBarLeft> </NavBarLeft>
-      <NavBarCenter>
-        <template #center>
+      <div class="center">
+        <slot name="center">
           <NavMenu />
-        </template>
-      </NavBarCenter>
+        </slot>
+      </div>
       <NavBarRight> </NavBarRight>
     </div>
   </header>
@@ -16,7 +16,6 @@
 <script lang="ts" setup>
 import NavBarLeft from './cpns/NavBarLeft.vue';
 import NavBarRight from './cpns/NavBarRight.vue';
-import NavBarCenter from './cpns/NavBarCenter.vue';
 import NavMenu from './cpns/NavMenu.vue';
 import UserDialog from '../user/UserDialog.vue';
 </script>
@@ -39,6 +38,10 @@ import UserDialog from '../user/UserDialog.vue';
     justify-content: center;
     margin: 0 auto;
     max-width: 1432px;
+    .center {
+      flex: 1;
+      display: flex;
+    }
   }
 }
 </style>

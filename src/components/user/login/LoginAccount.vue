@@ -30,11 +30,7 @@ const userStore = useUserStore();
 const loginFormRef = ref<InstanceType<typeof ElForm>>();
 const getFocus = ref<InstanceType<typeof ElInput>>();
 const nextRef = ref<InstanceType<typeof ElInput>>();
-
-const loginForm = reactive({
-  name: '',
-  password: ''
-});
+const loginForm = reactive({ name: '', password: '' });
 const rules = {
   name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
@@ -53,7 +49,6 @@ const login = () => {
 };
 // 回车聚焦
 const focusNext = () => nextRef.value?.focus();
-
 onMounted(() => {
   nextTick(() => {
     getFocus.value?.focus();

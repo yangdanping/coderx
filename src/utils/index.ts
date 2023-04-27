@@ -1,6 +1,6 @@
 import LocalCache from './LocalCache';
-import formatUtcString from './dateFormat';
+import timeFormat from './dateFormat';
 import emitter from './eventBus';
 import Msg from './Msg';
 
-export { LocalCache, Msg, formatUtcString, emitter };
+export { LocalCache, Msg, timeFormat, emitter };

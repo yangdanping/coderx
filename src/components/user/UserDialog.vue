@@ -1,6 +1,6 @@
 <template>
   <div class="user-dialog">
-    <el-dialog v-model="showLoginDialog" @close="hindDialog" :before-close="beforeClose" :append-to-body="false" center>
+    <el-dialog v-model="showDialog" @close="hindDialog" :before-close="beforeClose" :append-to-body="false" :destroy-on-close="true" center>
       <LoginPanel v-if="!showProfile" />
       <!-- <CompleteProfile v-else :editForm="editForm" /> -->
     </el-dialog>
@@ -10,13 +10,12 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import useUserStore from '@/stores/user';
-
+import useRootStore from '@/stores';
 import LoginPanel from './login/LoginPanel.vue';
 // import CompleteProfile from './profile/CompleteProfile.vue';
-const userStore = useUserStore();
+const rootStore = useRootStore();
 
-const { showLoginDialog } = storeToRefs(userStore);
+const { showDialog } = storeToRefs(rootStore);
 const showProfile = ref(false);
 const beforeClose = (done: () => void) => {
   console.log('beforeClose');
@@ -24,13 +23,12 @@ const beforeClose = (done: () => void) => {
 };
 const hindDialog = () => {
   console.log('close Dialog');
-  userStore.changeLoginDialog();
+  rootStore.changeLoginDialog();
 };
 </script>
 
 <style lang="scss" scoped>
 :deep(.el-dialog) {
-  /* ::v-deep .el-dialog--center { */
   max-width: 900px;
   min-width: 800px;
   animation: fadeShow 1s forwards;

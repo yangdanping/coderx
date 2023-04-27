@@ -54,7 +54,7 @@ $TitleSize: 2em;
     .title {
       display: flex;
       flex-direction: column;
-      padding: 200px 0;
+      padding: 150px 0;
       font-size: 79px;
       user-select: none;
       color: var(--fontColor);

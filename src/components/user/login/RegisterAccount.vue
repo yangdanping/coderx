@@ -30,11 +30,7 @@ const registerForm = ref<InstanceType<typeof ElForm>>();
 const nextRef1 = ref<InstanceType<typeof ElInput>>();
 const nextRef2 = ref<InstanceType<typeof ElInput>>();
 
-const form = reactive({
-  name: '',
-  password: '',
-  confirm: ''
-});
+const form = reactive({ name: '', password: '', confirm: '' });
 const rules = ref({
   name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
@@ -67,7 +63,7 @@ const focusNext2 = () => nextRef2.value?.focus();
     .el-form-item {
       margin-bottom: 30px;
     }
-    ::v-deep .el-form-item__label {
+    :deep(.el-form-item__label) {
       font-size: 17px;
     }
     .btn-box {

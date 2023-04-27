@@ -1,15 +1,27 @@
 import myRequest from '@/service';
 import type { IDataType } from '@/service/types';
-
-// 为了防止以后url改掉,用枚举定义url
-enum UploadAPI {
-  pictureUrl = '/upload/picture',
-  avatarUrl = '/upload/avatar'
-}
+const urlHead = '/upload';
 
 export function uploadPicture(data: FormData) {
   return myRequest.post<IDataType>({
-    url: UploadAPI.pictureUrl,
+    url: `${urlHead}/picture`,
     data
+  });
+}
+
+export function uploadAvatar(payload) {
+  const { action, file } = payload;
+  const fd = new FormData();
+  fd.append('avatar', file);
+  return myRequest.post({
+    url: `${urlHead}/${action}`,
+    data: fd
+  });
+}
+
+export function addPictureForArticle(articleId, uploaded) {
+  return myRequest.post({
+    url: `${urlHead}/picture/${articleId}`,
+    data: { uploaded }
   });
 }

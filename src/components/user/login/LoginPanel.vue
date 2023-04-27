@@ -33,7 +33,7 @@ const handleClick = (tab, event) => {
   .el-tabs {
     flex: 1;
     margin-left: 70px;
-    ::v-deep .el-tabs__item {
+    :deep(.el-tabs__item) {
       font-size: 20px;
     }
   }

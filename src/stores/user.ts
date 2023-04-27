@@ -1,22 +1,20 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
-import { checkAuth, userLogin, userRegister, getUserInfoById } from '@/service/user/user.request.js';
+import { userLogin, userRegister, getUserInfoById } from '@/service/user/user.request.js';
 import { LocalCache, Msg } from '@/utils';
 import type { IAccount } from '@/service/user/user.types';
+import type { IUserInfo } from '@/stores/types/user.result';
 
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
   state: () => ({
-    token: '',
-    userInfo: {},
-    showLoginDialog: false
+    token: '' as string,
+    userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
+    profile: {} as any //其他用户信息,只有读权限
   }),
   actions: {
-    changeLoginDialog() {
-      this.showLoginDialog = !this.showLoginDialog;
-    },
-    changeUserInfo(userInfo: any) {
+    changeUserInfo(userInfo: IUserInfo) {
       this.userInfo = userInfo;
     },
     changeToken(token: string) {
@@ -29,6 +27,10 @@ const useUserStore = defineStore('user', {
       LocalCache.removeCache('userInfo');
       refresh && router.go(0);
     },
+    initProfile() {
+      this.profile = {};
+    },
+    // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
       console.log('registerAction', account);
       const res = await userRegister(account);
@@ -36,7 +38,6 @@ const useUserStore = defineStore('user', {
       if (res.code === 0) {
         console.log('registerAction!!!!!!!!!!', res.data);
         this.loginAction(account); //注册成功后自动登陆
-        // eventBus.$emit('registerSuccess');
       } else {
         Msg.showFail(res.msg);
       }
@@ -63,17 +64,6 @@ const useUserStore = defineStore('user', {
       } else {
         Msg.showFail(res1.msg); //若是登录用户信息则不用再请求了
       }
-    },
-    async checkAuthAction() {
-      const res = await checkAuth();
-      console.log('checkAuthAction res', res);
-      res.code && this.logOut(false);
-    },
-    async loadLoginAction() {
-      const token = LocalCache.getCache('token');
-      token && this.changeToken(token);
-      const userInfo = LocalCache.getCache('userInfo');
-      userInfo && this.changeUserInfo(userInfo);
     }
   }
 });

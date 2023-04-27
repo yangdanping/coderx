@@ -14,12 +14,14 @@ import { ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import NavBarUser from './NavBarUser.vue';
 import useUserStore from '@/stores/user';
-const userStore = useUserStore();
-const { token } = storeToRefs(userStore);
+import useRootStore from '@/stores';
+const rootStore = useRootStore();
+
+const { token } = storeToRefs(useUserStore());
 
 const changeDialog = () => {
   console.log('open Dialog');
-  userStore.changeLoginDialog();
+  rootStore.changeLoginDialog();
 };
 </script>
 
