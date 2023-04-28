@@ -1,38 +1,48 @@
 <template>
   <div class="detail-content">
-    <el-container>
-      <el-main>
-        <div class="author-info-block">
-          <Avatar :size="90" :info="article.author ?? {}" />
-          <div class="author-info-box">
-            <h2>{{ article.author?.name ?? '佚名' }}</h2>
-            <span>{{ article.createAt }}创建</span>
+    <template v-if="Object.keys(article).length">
+      <el-container>
+        <el-main>
+          <div class="author-info-block">
+            <Avatar :size="90" :info="article.author ?? {}" />
+            <div class="author-info-box">
+              <h2>{{ article.author?.name ?? '佚名' }}</h2>
+              <span>{{ article.createAt }}创建</span>
+            </div>
           </div>
-        </div>
-        <hr />
-        <h1 class="article-title">{{ article.title }}</h1>
-        <div class="editor-content-view" v-html="article.content"></div>
-        <hr />
-      </el-main>
-    </el-container>
-    <!-- <DetailPanel :article="article" /> -->
+          <hr />
+          <h1 class="article-title">{{ article.title }}</h1>
+          <div class="editor-content-view" v-html="article.content"></div>
+          <hr />
+        </el-main>
+      </el-container>
+    </template>
+    <template v-else>
+      <el-skeleton animated />
+    </template>
+    <DetailPanel :article="article" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import type { PropType } from 'vue';
+
 import Avatar from '@/components/avatar/Avatar.vue';
+import DetailPanel from './DetailPanel.vue';
+import type { IArticle } from '@/stores/types/article.result';
+
 import { ElContainer, ElMain } from 'element-plus';
 defineProps({
   article: {
-    type: Object,
+    type: Object as PropType<IArticle>,
     default: () => {}
   }
 });
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/css/editor.scss';
+@import '../../../../assets/css/editor.scss';
 .detail-content {
   margin-top: 80px;
   width: 80%;

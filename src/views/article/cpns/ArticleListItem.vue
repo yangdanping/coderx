@@ -27,7 +27,8 @@ import type { PropType } from 'vue';
 import type { IArticle } from '@/stores/types/article.result';
 import Avatar from '@/components/avatar/Avatar.vue';
 import { emitter } from '@/utils';
-
+import { useRouter } from 'vue-router';
+const router = useRouter();
 defineProps({
   item: {
     type: Object as PropType<IArticle>,
@@ -36,11 +37,9 @@ defineProps({
 });
 const goDetail = ({ id }: IArticle) => {
   console.log('goDetail', id);
+  router.push({ path: `/article/${id}` });
 };
-const goTag = (tag) => {
-  console.log('goTag');
-  emitter.emit('changeTag', tag);
-};
+const goTag = (tag) => emitter.emit('changeTag', tag);
 </script>
 
 <style lang="scss" scoped>

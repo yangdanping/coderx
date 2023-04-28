@@ -21,7 +21,7 @@ onMounted(() => {
   articleStore.getTagsAction();
   emitter.on('changeTag', (tag: any) => {
     const { id, name } = tag;
-    console.log('tagId!!!!!!!!!!!!!!!', id);
+    console.log('changeTag tagId!!!!!!!!!!!!!!!', id);
     activeName.value = name;
     rootStore.changeTag(id);
     articleStore.getListAction();

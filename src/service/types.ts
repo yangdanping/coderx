@@ -1,3 +1,5 @@
+import type { RouteParamValue } from 'vue-router';
+
 /**
  * 定义获取到返回数据的类型,属性取决于你获取到什么数据
  * @param code 状态码
@@ -9,3 +11,5 @@ export interface IDataType<T = any> {
   data: T;
   msg?: string;
 }
+
+export type RouteParam = RouteParamValue | RouteParamValue[];

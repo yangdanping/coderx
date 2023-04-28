@@ -11,7 +11,7 @@ const myRequest = new MyRequest({
   timeout: TIME_OUT,
   interceptors: {
     reqSuccess: (config) => {
-      console.log('请求成功拦截', config);
+      // console.log('请求成功拦截', config);
       // 1.拦截器作用一 --> 携带token的拦截
       const token = LocalCache.getCache('token') ?? '';
       if (token) {
@@ -22,16 +22,16 @@ const myRequest = new MyRequest({
       return config;
     },
     reqFail: (err) => {
-      console.log('请求失败拦截', err);
+      // console.log('请求失败拦截', err);
       return err;
     },
     // ----------------------------
     resSuccess: (res) => {
-      console.log('响应成功拦截', res);
+      // console.log('响应成功拦截', res);
       return res;
     },
     resFail: (err) => {
-      console.log('响应失败拦截');
+      // console.log('响应失败拦截');
       const { msg, code } = err.response.data;
       Msg.showFail(`server error:${msg} code:${code}`);
       if (code === 401) {

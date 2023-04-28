@@ -3,15 +3,15 @@ import router from '@/router'; //拿到router对象,进行路由跳转(.push)
 import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, addView, getTags, changeTags, search } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request.js';
 import { addPictureForArticle } from '@/service/file/file.request.js';
-import { Msg, timeFormat } from '@/utils';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
+import { Msg, timeFormat } from '@/utils';
+
+import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
 
 export const useArticleStore = defineStore('article', {
   state: () => ({
-    rootStore: useRootStore(),
-    userStore: useUserStore(),
     articles: {} as IArticles,
     article: {} as IArticle,
     articleLikedId: [] as any[], //该用户点赞过的文章id,通过computed计算是否有点赞
@@ -20,8 +20,13 @@ export const useArticleStore = defineStore('article', {
     uploaded: [] as any[]
   }),
   getters: {
-    isAuthor(state) {
-      return (userId: number) => (state.article.author ? state.article.author.id === userId : false);
+    isAuthor() {
+      return (userId?: number) => (this.article.author ? this.article.author.id === userId : false);
+    },
+    isArticleUserLiked() {
+      return (articleId) => {
+        return { liked: this.articleLikedId.some((id) => id === articleId) };
+      };
     }
   },
   actions: {
@@ -57,19 +62,22 @@ export const useArticleStore = defineStore('article', {
     },
     // 异步请求action---------------------------------------------------
     async getListAction() {
-      const data = { pageNum: this.rootStore.pageNum, pageSize: this.rootStore.pageSize, tagId: this.rootStore.tagId };
+      const { pageNum, pageSize, tagId } = useRootStore();
+      const { userInfo } = useUserStore();
+      const data = { pageNum, pageSize, tagId };
       console.log('getListAction', data);
       const res = await getList(data); //获取文章列表信息以及文章数
       console.log('getListAction res', res);
       if (res.code === 0) {
         this.getListMutation(res.data);
-        this.userStore.userInfo.id && this.refreshLikeAction(); //若用户登录获取登录用户点赞过哪些文章
+        userInfo.id && this.refreshLikeAction(); //若用户登录获取登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
       }
     },
     async refreshLikeAction() {
-      const res = await getLiked(this.userStore.userInfo.id);
+      const { userInfo } = useUserStore();
+      const res = await getLiked(userInfo.id);
       console.log('refreshLikeAction', res);
       res.code === 0 && this.getArticleLikedId(res.data.articleLiked);
     },
@@ -93,15 +101,16 @@ export const useArticleStore = defineStore('article', {
           res.code === 0 && Msg.showSuccess('添加标签成功');
         }
         router.replace(`/article/${articleId}`);
-        this.getDetailAction(articleId);
+        // this.getDetailAction(articleId);
         Msg.showSuccess('发布文章成功');
       } else {
         Msg.showFail('发布文章失败');
       }
     },
-    async getDetailAction(articleId: number) {
+    async getDetailAction(articleId?: RouteParam) {
       const res1 = await addView(articleId);
       if (res1.code === 0) {
+        console.log('已增加浏览量,准备获取文章详情信息', articleId);
         const res2 = await getDetail(articleId);
         if (res2.code === 0) {
           this.getDetail(res2.data);

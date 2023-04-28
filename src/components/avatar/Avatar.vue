@@ -51,11 +51,7 @@ const props = defineProps({
 });
 const defaultAvatar = new URL('@/assets/img/user/avatar.png', import.meta.url).href;
 // const { userInfo } = storeToRefs(userStore);
-const avatarUrl = computed(() => {
-  // const { avatarUrl } = props.info;
-  // console.log(avatarUrl);
-  return defaultAvatar;
-});
+const avatarUrl = computed(() => props.info.avatarUrl ?? defaultAvatar);
 </script>
 
 <style lang="scss" scoped>

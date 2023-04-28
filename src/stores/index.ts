@@ -4,7 +4,6 @@ import { LocalCache } from '@/utils';
 import useUserStore from '@/stores/user';
 const useRootStore = defineStore('root', {
   state: () => ({
-    userStore: useUserStore(),
     showDialog: false,
     pageNum: 1,
     pageSize: 5,
@@ -31,14 +30,16 @@ const useRootStore = defineStore('root', {
     // 异步请求action---------------------------------------------------
     async checkAuthAction() {
       const res = await checkAuth();
+      const { logOut } = useUserStore();
       console.log('checkAuthAction res', res);
-      res.code && this.userStore.logOut(false);
+      res.code && logOut(false);
     },
     async loadLoginAction() {
+      const { changeToken, changeUserInfo } = useUserStore();
       const token = LocalCache.getCache('token');
-      token && this.userStore.changeToken(token);
+      token && changeToken(token);
       const userInfo = LocalCache.getCache('userInfo');
-      userInfo && this.userStore.changeUserInfo(userInfo);
+      userInfo && changeUserInfo(userInfo);
     }
   }
 });

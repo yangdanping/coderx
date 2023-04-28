@@ -24,7 +24,10 @@ const props = defineProps({
     type: Number
   }
 });
-watch(props.refresh, () => createdCode()); //监听分页数据变化
+watch(
+  () => props.refresh,
+  () => createdCode()
+); //监听分页数据变化
 onMounted(() => {
   createdCode();
 });

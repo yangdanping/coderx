@@ -39,7 +39,6 @@ const upDateContent = (content: string) => {
   preview.value = content;
 };
 const formSubmit = (payload: any) => {
-  console.log('formSubmit payload', payload, preview.value);
   const { title } = payload;
   if (!title || !preview.value) {
     Msg.showFail('内容不能为空!');

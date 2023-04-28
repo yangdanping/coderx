@@ -1,6 +1,6 @@
 import myRequest from '@/service';
 import type { IArticle, IArticleList } from './article.types';
-import type { IDataType } from '@/service/types';
+import type { IDataType, RouteParam } from '@/service/types';
 const urlHead = '/article';
 
 export function createArticle(data: IArticle) {
@@ -19,13 +19,13 @@ export function getList(data: IArticleList) {
   });
 }
 
-export function getDetail(articleId: number) {
+export function getDetail(articleId?: RouteParam) {
   return myRequest.get<IDataType>({
     url: `${urlHead}/${articleId}`
   });
 }
 
-export function likeArticle(articleId: number) {
+export function likeArticle(articleId?: RouteParam) {
   return myRequest.post<IDataType>({
     url: `${urlHead}/${articleId}/like`
   });
@@ -39,14 +39,15 @@ export function updateArticle(data: IArticle) {
   });
 }
 
-export function removeArticle(articleId: number) {
+export function removeArticle(articleId: RouteParam) {
   console.log('removeArticle', articleId);
   return myRequest.delete<IDataType>({
     url: `${urlHead}/${articleId}`
   });
 }
 
-export function addView(articleId: number) {
+export function addView(articleId?: RouteParam) {
+  console.log('addView 增加浏览量', articleId);
   return myRequest.put<IDataType>({
     url: `${urlHead}/${articleId}/view`
   });
@@ -57,7 +58,7 @@ export function getTags(offset = 0, limit = 10) {
     url: `/tag?offset=${offset}&limit=${limit}`
   });
 }
-export function changeTags(articleId, tags, hasOldTags = '') {
+export function changeTags(articleId: RouteParam, tags, hasOldTags = '') {
   console.log('changeTags!!!!!!!!!!!!!!!!!!!!!', articleId, tags);
   return myRequest.post<IDataType>({
     url: `${urlHead}/${articleId}/tag?hasOldTags=${hasOldTags}`,

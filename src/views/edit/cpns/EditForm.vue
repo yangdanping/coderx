@@ -7,7 +7,7 @@
       <el-form-item label="标签" prop="tags">
         <el-select v-model="form.tags" multiple filterable default-first-option clearable :multiple-limit="5" placeholder="添加文章标签(最多5个)">
           <span class="tip">你还能添加{{ 5 - form.tags.length }}个标签</span>
-          <el-option v-for="item in tags" :key="item.id" :label="item.name" :value="item.name"> </el-option>
+          <el-option v-for="item in tags" :key="item.id" :label="item.name" :value="item.name ?? ''"> </el-option>
         </el-select>
       </el-form-item>
       <!-- ---------------------------------------------------------------------------------- -->

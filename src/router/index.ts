@@ -20,6 +20,7 @@ const routes: RouteRecordRaw[] = [
   {
     name: 'detail',
     path: '/article/:articleId',
+    props: true,
     meta: { title: '文章详情' },
     component: () => import('@/views/detail/Detail.vue')
   },

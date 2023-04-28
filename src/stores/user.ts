@@ -64,6 +64,9 @@ const useUserStore = defineStore('user', {
       } else {
         Msg.showFail(res1.msg); //若是登录用户信息则不用再请求了
       }
+    },
+    async getCollectAcion(id) {
+      console.log('getCollectAcion', id);
     }
   }
 });
