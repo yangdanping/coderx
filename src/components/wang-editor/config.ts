@@ -1,11 +1,12 @@
-import type { IToolbarConfig, IEditorConfig } from '@wangeditor/editor';
 import { uploadPicture } from '@/service/file/file.request';
 import useArticleStore from '@/stores/article';
 import '@wangeditor/editor/dist/css/style.css'; // 引入 css
 import { Msg } from '@/utils';
-type InsertFnType = (url: string, alt: string, href: string) => void;
-const articleStore = useArticleStore();
 
+import type { IToolbarConfig, IEditorConfig } from '@wangeditor/editor';
+type InsertFnType = (url: string, alt: string, href: string) => void;
+
+const articleStore = useArticleStore();
 export const useEditorConfig = () => {
   // 配置
   const toolbarConfig: Partial<IToolbarConfig & any> = {};

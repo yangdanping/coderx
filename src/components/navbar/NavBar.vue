@@ -30,8 +30,8 @@ import UserDialog from '../user/UserDialog.vue';
   height: var(--navbarHeight);
   z-index: 999;
   background-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
   .list {
     display: flex;
     align-items: center;

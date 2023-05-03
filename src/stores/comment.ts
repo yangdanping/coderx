@@ -11,6 +11,9 @@ export const useCommentStore = defineStore('comment', {
     initComment() {
       this.commentInfo = [];
       this.replyInfo = [];
+    },
+    async commentAction(payload) {
+      console.log('commentAction', payload);
     }
   }
 });

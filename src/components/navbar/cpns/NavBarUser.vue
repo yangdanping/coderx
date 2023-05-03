@@ -5,7 +5,7 @@
     </el-tooltip>
     <el-button class="editbtn" @click="goEdit" type="primary">写文章</el-button>
     <el-dropdown>
-      <Avatar :disabled="true" :info="userInfo"></Avatar>
+      <Avatar :info="userInfo" disabled></Avatar>
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item @click="goProfile">我的空间</el-dropdown-item>
@@ -17,15 +17,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { storeToRefs } from 'pinia';
-import useUserStore from '@/stores/user';
 import Avatar from '@/components/avatar/Avatar.vue';
-import { useRouter } from 'vue-router';
+
+import useUserStore from '@/stores/user';
 const router = useRouter();
-const showFeedBack = ref(false);
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
+
+const showFeedBack = ref(false);
+
 const goEdit = () => {
   console.log('goEdit');
   router.push('/edit');
@@ -33,6 +33,7 @@ const goEdit = () => {
 
 const goProfile = () => {
   console.log('goProfile');
+  router.push(`/user/${userInfo.value.id}`);
 };
 const logOut = () => {
   userStore.logOut();

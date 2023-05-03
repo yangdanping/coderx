@@ -9,11 +9,11 @@
           <div class="title">
             <el-icon><Platform /></el-icon>预览
           </div>
-          <div class="content editor-content-view" v-html="preview"></div>
+          <div class="content editor-content-view" v-dompurify-html="preview"></div>
         </div>
       </el-col>
     </el-row>
-    <el-drawer title="管理您的文章" :draggable="true" v-model="drawer" direction="ltr">
+    <el-drawer title="管理您的文章" draggable v-model="drawer" direction="ltr">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" />
     </el-drawer>
     <el-button class="btn" @click="drawer = true" :icon="Menu">提交</el-button>
@@ -21,9 +21,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useRoute } from 'vue-router';
 import { Menu, Platform } from '@element-plus/icons-vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';

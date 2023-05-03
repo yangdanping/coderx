@@ -1,6 +1,7 @@
 <template>
   <div class="app">
     <RouterView class="router-view" />
+    <el-backtop :right="100" :bottom="100" :style="{ color: '#81c995' }" />
   </div>
 </template>
 

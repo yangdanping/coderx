@@ -10,13 +10,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { storeToRefs } from 'pinia';
 import NavBarUser from './NavBarUser.vue';
-import useUserStore from '@/stores/user';
-import useRootStore from '@/stores';
-const rootStore = useRootStore();
 
+import useRootStore from '@/stores';
+import useUserStore from '@/stores/user';
+const rootStore = useRootStore();
 const { token } = storeToRefs(useUserStore());
 
 const changeDialog = () => {

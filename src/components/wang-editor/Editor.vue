@@ -15,9 +15,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, shallowRef, onMounted, nextTick, onBeforeUnmount, watch } from 'vue';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { LocalCache, emitter } from '@/utils';
+import { LocalCache } from '@/utils';
 import { useEditorConfig } from './config';
 
 const editorRef = shallowRef();

@@ -21,12 +21,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted, nextTick } from 'vue';
-import type { ElForm, ElInput } from 'element-plus';
 // import ValidCode from '@/components/ValidCode.vue';
-import useUserStore from '@/stores/user';
 import { Msg } from '@/utils';
+
+import type { ElForm, ElInput } from 'element-plus';
+
+import useUserStore from '@/stores/user';
 const userStore = useUserStore();
+
 const loginFormRef = ref<InstanceType<typeof ElForm>>();
 const getFocus = ref<InstanceType<typeof ElInput>>();
 const nextRef = ref<InstanceType<typeof ElInput>>();

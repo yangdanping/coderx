@@ -11,6 +11,7 @@ export function uploadPicture(data: FormData) {
 
 export function uploadAvatar(payload) {
   const { action, file } = payload;
+  console.log('uploadAvatar action, file', action, file);
   const fd = new FormData();
   fd.append('avatar', file);
   return myRequest.post({

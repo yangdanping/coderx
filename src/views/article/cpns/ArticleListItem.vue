@@ -14,7 +14,7 @@
           <a class="title">{{ item.title }}</a>
           <p class="abstract">{{ item.content }}</p>
         </div>
-        <!-- <ArticleAction :article="item" /> -->
+        <ArticleAction :article="item" />
       </div>
       <img v-if="item.cover" @click="goDetail(item)" :src="item.cover[0]" />
       <div v-else style="width: 170px; height: 120px"></div>
@@ -23,12 +23,14 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue';
-import type { IArticle } from '@/stores/types/article.result';
 import Avatar from '@/components/avatar/Avatar.vue';
+import ArticleAction from './ArticleAction.vue';
 import { emitter } from '@/utils';
-import { useRouter } from 'vue-router';
+
+import type { IArticle } from '@/stores/types/article.result';
+
 const router = useRouter();
+
 defineProps({
   item: {
     type: Object as PropType<IArticle>,
@@ -47,12 +49,18 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
   display: flex;
   flex-direction: column;
   transition: all 0.3s;
-  padding: 20px 15px 0;
-  margin: 15px 0;
+  padding: 20px 10px 0;
+  margin-bottom: 10px;
   border-radius: 10px;
   .article-author {
     display: flex;
     align-items: center;
+    span {
+      margin-right: 10px;
+    }
+    .el-tag {
+      cursor: pointer;
+    }
     .author-info-box {
       display: flex;
       align-items: center;
@@ -61,42 +69,37 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
         color: var(--fc);
       }
     }
-    span {
-      margin-right: 15px;
-    }
-    .el-tag {
-      cursor: pointer;
-    }
   }
 
   .content-wrapper {
     display: flex;
     border-bottom: 1px solid #e5e6eb;
-    padding-bottom: 15px;
+    padding-bottom: 10px;
     .content-main {
-      margin: 10px 0;
+      margin-top: 10px;
+      cursor: pointer;
       .content {
-        cursor: pointer;
-      }
-      .title {
-        font-weight: 700;
-        font-size: 24px;
-      }
-      .abstract {
-        height: 20px;
-        width: 800px;
-        padding: 15px 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        .title {
+          font-weight: 700;
+          font-size: 24px;
+        }
+        .abstract {
+          height: 30px;
+          width: 800px;
+          padding: 15px 0;
+          white-space: nowrap;
+          color: #777;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
     }
     img {
       width: 170px;
-      height: 120px;
-      border-radius: 10px;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 5px;
       overflow: hidden;
-      margin-left: 20px;
       cursor: pointer;
     }
   }

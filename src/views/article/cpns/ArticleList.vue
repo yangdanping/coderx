@@ -8,11 +8,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue';
-import type { IArticles } from '@/stores/types/article.result';
+import Page from '@/components/Page.vue';
 import ArticleListItem from './ArticleListItem.vue';
 import useArticleStore from '@/stores/article';
-import Page from '@/components/Page.vue';
+
+import type { IArticles } from '@/stores/types/article.result';
 
 const articleStore = useArticleStore();
 defineProps({

@@ -18,7 +18,6 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
-import { ref, onMounted } from 'vue';
 const counter = ref(1);
 const line2 = ref('Coder');
 const line2Str = ref('');

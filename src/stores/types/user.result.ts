@@ -10,3 +10,7 @@ export interface IUserInfo {
   articleCount?: number;
   commentCount?: number;
 }
+export interface IFollowInfo {
+  follower?: any[];
+  following?: any[];
+}

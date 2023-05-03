@@ -1,44 +1,49 @@
 <template>
   <div class="avatar">
-    <el-avatar :src="avatarUrl" :size="60" />
-    <!-- <el-popover :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
+    <el-popover popper-class="user-popover" width="200px" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
-        <el-avatar src="../../assets/img/user/avatar.png" :size="60" />
-        <div>
-          <div class="user-info">
+        <el-avatar :src="avatarUrl" @click="goProfile" :size="60" />
+        <div class="user-info">
+          <div class="info1">
             <h2>{{ info.name }}</h2>
             <img :src="userSex" alt="" />
           </div>
-          <span class="follow">关注:{{ followCount('following') }}</span>
-          <span>粉丝:{{ followCount('follower') }}</span>
+          <div>{{ info.career ?? 'Coder' }}</div>
+          <div class="info2">
+            <span>关注:{{ followCount('following') }}</span>
+            <span>粉丝:{{ followCount('follower') }}</span>
+          </div>
         </div>
       </div>
-      <div class="user-profile">
-        <span>{{ info.career ?? 'Coder' }}</span>
-        <template v-if="!isUser(info.id)">
-          <el-button @click="follow" :type="!isFollowed ? 'primary' : ''" :icon="!isFollowed ? 'el-icon-plus' : ''" size="mini">
-            {{ !isFollowed ? '关注' : '已关注' }}
-          </el-button>
-        </template>
+      <div class="follow">
+        <FollowButton :isFollowed="isFollowed" :profile="info" />
       </div>
-      <el-avatar @mouseenter="mouseenter" @click="goProfile" :src="avatarUrl" :size="size" slot="reference" />
+      <template #reference>
+        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile" :size="size" />
+      </template>
     </el-popover>
-    <div class="avatar-set" v-if="showSet && isUser(info.id)"><i class="el-icon-edit"></i></div> -->
+    <div class="avatar-icon" v-if="showSet && isUser(info.id)"><slot name="icon"></slot></div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import { storeToRefs } from 'pinia';
+import FollowButton from '@/components/FollowButton.vue';
+import { debounce } from '@/utils';
+
+import type { IUserInfo } from '@/stores/types/user.result';
+
 import useUserStore from '@/stores/user';
+const router = useRouter();
 const userStore = useUserStore();
+const { followInfo, isFollowed, isUser } = storeToRefs(userStore);
+
 const props = defineProps({
   info: {
-    type: Object,
+    type: Object as PropType<IUserInfo>,
     default: () => {}
   },
   size: {
-    type: [Number, String]
+    type: Number
   },
   showSet: {
     type: Boolean,
@@ -49,13 +54,88 @@ const props = defineProps({
     default: false
   }
 });
-const defaultAvatar = new URL('@/assets/img/user/avatar.png', import.meta.url).href;
-// const { userInfo } = storeToRefs(userStore);
-const avatarUrl = computed(() => props.info.avatarUrl ?? defaultAvatar);
+const avatarUrl = computed(() => props.info.avatarUrl ?? new URL('@/assets/img/user/avatar.png', import.meta.url).href);
+const userSex = computed(() => new URL(`../../assets/img/user/${props.info.sex === '女' ? 'female' : 'male'}-icon.webp`, import.meta.url).href);
+const mouseenter = debounce(
+  function () {
+    !props.disabled && userStore.getFollowAction(props.info.id);
+  },
+  400,
+  true
+);
+
+const followCount = computed(() => {
+  return (type: string) => followInfo.value[type]?.length ?? 0;
+});
+
+const goProfile = () => {
+  !props.disabled && router.push({ path: `/user/${props.info.id}` });
+};
 </script>
 
 <style lang="scss" scoped>
 .avatar {
+  position: relative;
+  outline: none;
+  border-radius: 50%;
+  .avatar-icon {
+    position: absolute;
+    top: 0;
+    text-align: center;
+    line-height: 200px;
+    font-size: 50px;
+    width: 200px;
+    height: 200px;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: all 0.3s;
+    opacity: 0;
+    user-select: none;
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+:deep(.el-avatar) {
   cursor: pointer;
+}
+.user-popover {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+
+  .user {
+    display: flex;
+    align-items: center;
+
+    .user-info {
+      margin-left: 10px;
+      .info1 {
+        display: flex;
+        align-items: center;
+        img {
+          margin: 5px 0 0 5px;
+          width: 20px;
+        }
+      }
+      .info2 {
+        display: flex;
+        align-items: center;
+
+        span:first-of-type {
+          margin-right: 5px;
+        }
+      }
+    }
+  }
+
+  .follow {
+    margin-top: 15px;
+    .el-button {
+      width: 100%;
+      border: 1px solid #70b6ff;
+    }
+  }
 }
 </style>

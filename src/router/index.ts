@@ -1,6 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
-import useRootStore from '@/stores';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -32,8 +31,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     name: 'user',
-    // path: '/user/:userId',
-    path: '/user',
+    path: '/user/:userId',
     meta: { title: '个人空间' },
     component: () => import('@/views/user/User.vue')
   },
@@ -45,17 +43,9 @@ const routes: RouteRecordRaw[] = [
 ];
 // hash的好处是不会因为服务器部署而找不到文件
 const router = createRouter({
+  // history: createWebHashHistory(),
   history: createWebHistory(),
   routes
 });
-
-// const rootStore = useRootStore();
-
-// 路由前置守卫
-
-// 路由后置守卫
-router.afterEach(() => window.scrollTo(0, 0));
-
-export { routes };
 
 export default router;

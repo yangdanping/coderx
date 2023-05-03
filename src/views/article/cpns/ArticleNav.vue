@@ -6,8 +6,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
-import { storeToRefs } from 'pinia';
 import { emitter } from '@/utils';
 import useArticleStore from '@/stores/article';
 import useRootStore from '@/stores';

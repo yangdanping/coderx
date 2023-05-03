@@ -1,22 +1,28 @@
 <template>
   <div class="user-dialog">
-    <el-dialog v-model="showDialog" @close="hindDialog" :before-close="beforeClose" :append-to-body="false" :destroy-on-close="true" center>
+    <el-dialog v-model="showDialog" @close="hindDialog" :before-close="beforeClose" :append-to-body="false" destroy-on-close center>
       <LoginPanel v-if="!showProfile" />
-      <!-- <CompleteProfile v-else :editForm="editForm" /> -->
+      <ProfilePanel v-else :editForm="editForm" />
     </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { storeToRefs } from 'pinia';
 import useRootStore from '@/stores';
 import LoginPanel from './login/LoginPanel.vue';
-// import CompleteProfile from './profile/CompleteProfile.vue';
+import ProfilePanel from './profile/ProfilePanel.vue';
+import { emitter } from '@/utils';
 const rootStore = useRootStore();
 
 const { showDialog } = storeToRefs(rootStore);
 const showProfile = ref(false);
+const editForm = ref({});
+onMounted(() => {
+  emitter.on('updateProfile', (payload: any) => {
+    showProfile.value = true;
+    editForm.value = payload;
+  });
+});
 const beforeClose = (done: () => void) => {
   console.log('beforeClose');
   done();

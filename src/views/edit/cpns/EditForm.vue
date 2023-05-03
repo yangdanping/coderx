@@ -20,15 +20,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessageBox } from 'element-plus';
-import { useRouter } from 'vue-router';
-import { LocalCache, Msg } from '@/utils';
-import { storeToRefs } from 'pinia';
 import useArticleStore from '@/stores/article';
+import { ElMessageBox } from 'element-plus';
+import { LocalCache, Msg } from '@/utils';
+
 const router = useRouter();
 const articleStore = useArticleStore();
 const { tags } = storeToRefs(articleStore);
+
 const props = defineProps({
   editData: {
     type: Object,

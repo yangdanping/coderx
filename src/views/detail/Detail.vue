@@ -4,24 +4,28 @@
       <template #center> <DetailTools :article="article" :isAuthor="isAuthor(userInfo.id)" /></template>
     </NavBar>
     <DetailContent :article="article" />
+    <Comment :commentInfo="commentInfo" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from 'vue';
-import type { PropType } from 'vue';
-import { storeToRefs } from 'pinia';
 import NavBar from '@/components/navbar/NavBar.vue';
 import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
+import Comment from './cpns/comment/Comment.vue';
+
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
+import useCommentStore from '@/stores/comment';
+
 import type { IArticle } from '@/stores/types/article.result';
-import { useRoute } from 'vue-router';
-const articleStore = useArticleStore();
-const { article, isAuthor } = storeToRefs(articleStore);
-const { userInfo } = storeToRefs(useUserStore());
+
 const route = useRoute();
+const articleStore = useArticleStore();
+const commentStore = useCommentStore();
+const { article, isAuthor } = storeToRefs(articleStore);
+const { commentInfo } = storeToRefs(commentStore);
+const { userInfo } = storeToRefs(useUserStore());
 defineProps({
   article: {
     type: Object as PropType<IArticle>,

@@ -12,7 +12,7 @@
           </div>
           <hr />
           <h1 class="article-title">{{ article.title }}</h1>
-          <div class="editor-content-view" v-html="article.content"></div>
+          <div class="editor-content-view" v-dompurify-html="article.content"></div>
           <hr />
         </el-main>
       </el-container>
@@ -25,14 +25,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { PropType } from 'vue';
-
 import Avatar from '@/components/avatar/Avatar.vue';
 import DetailPanel from './DetailPanel.vue';
+import { ElContainer, ElMain } from 'element-plus';
+
 import type { IArticle } from '@/stores/types/article.result';
 
-import { ElContainer, ElMain } from 'element-plus';
 defineProps({
   article: {
     type: Object as PropType<IArticle>,

@@ -101,7 +101,6 @@ export const useArticleStore = defineStore('article', {
           res.code === 0 && Msg.showSuccess('添加标签成功');
         }
         router.replace(`/article/${articleId}`);
-        // this.getDetailAction(articleId);
         Msg.showSuccess('发布文章成功');
       } else {
         Msg.showFail('发布文章失败');
@@ -127,8 +126,30 @@ export const useArticleStore = defineStore('article', {
       res.code === 0 && this.initTag(res.data);
       console.log('getTagsAction');
     },
+    async likeAction(articleId) {
+      const res = await likeArticle(articleId);
+      console.log('likeAction!!!!', res);
+      if (res.code === -1) {
+        Msg.showFail(`点赞失败 ${res.msg}`);
+      } else if (res.code === 0) {
+        this.getListAction();
+        Msg.showSuccess('已点赞文章');
+      } else {
+        this.getListAction();
+        Msg.showInfo('已取消点赞文章');
+      }
+    },
     async updateAction(payload) {
       console.log('updateAction', payload);
+    },
+    async removeAction(articleId) {
+      const res = await removeArticle(articleId);
+      if (res.code === 0) {
+        Msg.showSuccess('删除文章成功');
+        this.articles.result?.length ? router.push({ path: `/article` }) : router.go(0);
+      } else {
+        Msg.showFail('删除文章失败');
+      }
     }
   }
 });

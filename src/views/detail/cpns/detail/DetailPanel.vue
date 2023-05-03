@@ -16,18 +16,21 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { PropType } from 'vue';
-import { storeToRefs } from 'pinia';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
 import { Msg, emitter } from '@/utils';
-import useRootStore from '@/stores';
-import type { IArticle } from '@/stores/types/article.result';
 
 import { Star } from '@element-plus/icons-vue';
 
-defineProps({
+import type { IArticle } from '@/stores/types/article.result';
+
+import useRootStore from '@/stores';
+import useUserStore from '@/stores/user';
+import useArticleStore from '@/stores/article';
+const userStore = useUserStore();
+const rootStore = useRootStore();
+const { token, userInfo } = storeToRefs(userStore);
+const { isArticleUserLiked } = storeToRefs(useArticleStore());
+
+const props = defineProps({
   article: {
     type: Object as PropType<IArticle>,
     default: () => {}
@@ -35,16 +38,12 @@ defineProps({
 });
 
 const disabled = ref(true);
-const userStore = useUserStore();
-const rootStore = useRootStore();
-const { token, userInfo } = storeToRefs(userStore);
-const { isArticleUserLiked } = storeToRefs(useArticleStore());
 
 const likeClick = (articleId) => {
   console.log('likeClick', articleId);
 };
 const gotoComment = () => emitter.emit('gotoCom');
-const handleShow = () => userStore.getCollectAcion(userInfo.value.id);
+const handleShow = () => userStore.getCollectAction(userInfo.value.id);
 const handleHide = () => emitter.emit('hideCollect');
 const showLogin = () => {
   if (disabled.value && !token.value) {

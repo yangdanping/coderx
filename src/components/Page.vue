@@ -15,7 +15,6 @@
 
 <script lang="ts" setup>
 import useRootStore from '@/stores';
-import { storeToRefs } from 'pinia';
 
 defineProps({
   total: {
@@ -41,4 +40,8 @@ const handleSizeChange = (pageSize) => {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.page {
+  margin-bottom: 10px;
+}
+</style>

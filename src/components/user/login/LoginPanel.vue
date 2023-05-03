@@ -16,7 +16,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
 import LoginAccount from './LoginAccount.vue';
 import RegisterAccount from './RegisterAccount.vue';
 const activeName = ref('login');

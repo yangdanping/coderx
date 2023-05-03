@@ -1,14 +1,12 @@
 <template>
   <div class="article">
     <NavBar />
+    <nav class="article-nav">
+      <ArticleNav />
+    </nav>
     <div class="list-wrapper">
-      <nav class="article-nav">
-        <ArticleNav />
-      </nav>
       <ArticleList v-if="articles.result?.length" :articles="articles" />
-      <div v-else-if="!noList" class="skeleton">
-        <el-skeleton animated />
-      </div>
+      <div v-else-if="!noList" class="skeleton"><el-skeleton animated /></div>
       <div v-else class="skeleton">
         <h1>该专栏暂无文章,快来发表第一篇吧~</h1>
         <el-button @click="goEdit" type="primary">发表第一篇</el-button>
@@ -18,23 +16,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
 import NavBar from '@/components/navbar/NavBar.vue';
 import ArticleList from './cpns/ArticleList.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
-import useArticleStore from '@/stores/article';
-import useUserStore from '@/stores/user';
-import useRootStore from '@/stores';
 
-const articleStore = useArticleStore();
-const userStore = useUserStore();
-const rootStore = useRootStore();
+import useRootStore from '@/stores';
+import useUserStore from '@/stores/user';
+import useArticleStore from '@/stores/article';
 const router = useRouter();
+const rootStore = useRootStore();
+const userStore = useUserStore();
+const articleStore = useArticleStore();
 const { articles } = storeToRefs(articleStore);
-// const articles = ref([]);
 const { token } = storeToRefs(userStore);
+
 const noList = ref(false);
 
 onMounted(() => {
@@ -46,17 +41,20 @@ const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeL
 </script>
 
 <style lang="scss" scoped>
+$paddingTop: 60px;
 .article {
+  display: flex;
+  justify-content: center;
+
+  .article-nav {
+    position: sticky;
+    top: 30px;
+    height: 100%;
+    padding-top: $paddingTop;
+  }
   .list-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 60px;
-    .article-nav {
-      position: fixed;
-      left: 8vw;
-      top: 150px;
-    }
+    padding-top: $paddingTop;
+    margin: 0 60px;
     .skeleton {
       width: 50%;
     }
