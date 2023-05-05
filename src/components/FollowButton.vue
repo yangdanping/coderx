@@ -22,7 +22,7 @@ import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 const rootStore = useRootStore();
 const userStore = useUserStore();
-const { userInfo, isUser, token } = storeToRefs(userStore);
+const { isUser, token } = storeToRefs(userStore);
 
 const props = defineProps({
   profile: {

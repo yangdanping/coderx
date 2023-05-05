@@ -3,7 +3,7 @@ import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile } from '@/service/user/user.request.js';
 import { uploadAvatar } from '@/service/file/file.request.js';
 import useRootStore from '@/stores';
-import { LocalCache, Msg, timeFormat } from '@/utils';
+import { LocalCache, Msg, emitter, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
@@ -21,14 +21,19 @@ const useUserStore = defineStore('user', {
     articles: [] as IArticle[],
     comments: [],
     collects: [],
-    isFollowed: false
+    isFollowed: false //仅用于单个对单个用户的判断
   }),
   getters: {
     isUser() {
       return (userId) => this.token && userId === this.userInfo.id; //判断是否是当前已登陆用户
     },
     isUserFollowed() {
-      return (userId, type: string) => this.followInfo[type]?.some((item) => item.id === userId);
+      return (userId, type: string) => {
+        // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
+        // 若type是关注者,则直接查看用户的关注者中是否有该id
+        const followType = type === 'follower' ? 'following' : type;
+        return this.followInfo[followType]?.some((item) => item.id === userId);
+      };
     }
   },
   actions: {
@@ -55,10 +60,10 @@ const useUserStore = defineStore('user', {
     initProfile() {
       this.profile = {};
     },
-    changeFollowInfo(payload) {
-      this.followInfo = payload;
-      const { follower } = payload;
-      // 若follower为null说明该用户无关注者,isFollowed设为false
+    changeFollowInfo(followInfo) {
+      this.followInfo = followInfo;
+      const { follower } = followInfo;
+      // 若follower为null说明该用户无关注者(无粉丝),isFollowed设为false
       this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
       // bug问题可能出现在this.isFollowed不适用于列表中
     },
@@ -101,10 +106,10 @@ const useUserStore = defineStore('user', {
       console.log('followAction follow', userId);
       const res = await follow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       if (res.code === 0) {
-        this.getFollowAction(userId); //更新关注信息
+        this.getFollowAction(this.userInfo.id); //更新关注信息,默认更新的是被更新者的userId
         Msg.showSuccess('关注成功');
       } else {
-        this.getFollowAction(userId); //更新关注信息
+        this.getFollowAction(this.userInfo.id); //更新关注信息
         Msg.showWarn('取关成功');
       }
     },

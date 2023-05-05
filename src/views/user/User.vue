@@ -8,7 +8,7 @@
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
 import UserProfile from './cpns/UserProfile.vue';
-import { Msg } from '@/utils';
+import { Msg, emitter } from '@/utils';
 
 import useUserStore from '@/stores/user';
 const route = useRoute();

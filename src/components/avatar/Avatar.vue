@@ -34,6 +34,7 @@ import type { IUserInfo } from '@/stores/types/user.result';
 
 import useUserStore from '@/stores/user';
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const { followInfo, isFollowed, isUser } = storeToRefs(userStore);
 
@@ -69,7 +70,13 @@ const followCount = computed(() => {
 });
 
 const goProfile = () => {
-  !props.disabled && router.push({ path: `/user/${props.info.id}` });
+  console.log('goProfile route.path', route.path);
+  const path = `/user/${props.info.id}`;
+  if (path === route.path) {
+    router.go(0);
+  } else {
+    !props.disabled && router.push(path);
+  }
 };
 </script>
 

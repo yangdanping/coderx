@@ -6,10 +6,11 @@
         <div class="profile-1">
           <span class="name">{{ profile.name }}</span>
           <img :src="userSex" alt="" />
-          <!-- <el-tag v-if="isUser(profile.id)" @click="updateProfile" type="info" size="small"> 修改个人信息 </el-tag> -->
-          <el-tooltip effect="dark" content="修改个人信息" placement="bottom">
-            <el-icon v-if="isUser(profile.id)" class="edit" size="30" color="#909399" @click="updateProfile"> <Edit /> </el-icon>
-          </el-tooltip>
+          <template v-if="isUser(profile.id)">
+            <el-tooltip effect="dark" content="修改个人信息" placement="bottom">
+              <el-icon @click="updateProfile" class="edit" size="30" color="#909399"> <Edit /> </el-icon>
+            </el-tooltip>
+          </template>
         </div>
         <div class="profile-2">
           <el-icon><Coin /></el-icon>
@@ -81,9 +82,10 @@ const updateProfile = () => {
   rootStore.changeLoginDialog();
   emitter.emit('updateProfile', JSON.parse(JSON.stringify(props.profile))); //深拷贝
 };
+
 const tabClick = (index) => {
   const userId = props.profile.id;
-  console.log('tabClick', index, userId);
+  console.log('tabClick', userId, index);
   switch (index) {
     case '0':
       userStore.getProfileAction(route.params.userId);
@@ -95,6 +97,7 @@ const tabClick = (index) => {
       userStore.getCollectAction(userId);
       break;
     case '3':
+      emitter.emit('updateFollowList');
       userStore.getFollowAction(userId);
       break;
     default:

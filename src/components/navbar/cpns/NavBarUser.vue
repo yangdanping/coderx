@@ -21,6 +21,7 @@ import Avatar from '@/components/avatar/Avatar.vue';
 
 import useUserStore from '@/stores/user';
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
 
@@ -32,8 +33,13 @@ const goEdit = () => {
 };
 
 const goProfile = () => {
-  console.log('goProfile');
-  router.push(`/user/${userInfo.value.id}`);
+  console.log('goProfile route.path', route.path);
+  const path = `/user/${userInfo.value.id}`;
+  if (path === route.path) {
+    router.go(0);
+  } else {
+    router.push(`/user/${userInfo.value.id}`);
+  }
 };
 const logOut = () => {
   userStore.logOut();

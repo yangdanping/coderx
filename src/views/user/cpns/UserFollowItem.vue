@@ -1,6 +1,6 @@
 <template>
   <div class="">
-    <div v-for="item in userFollow" :key="item.id">
+    <div v-for="item in userFollowList" :key="item.id">
       <div class="content-wrapper" @click="goDetail(item.id)">
         <div class="content">
           <Avatar :info="item" disabled />
@@ -21,9 +21,11 @@ import FollowButton from '@/components/FollowButton.vue';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 import useUserStore from '@/stores/user';
+import { emitter } from '@/utils';
+
 const router = useRouter();
 const userStore = useUserStore();
-const { isUserFollowed } = storeToRefs(userStore);
+const { isUserFollowed, token } = storeToRefs(userStore);
 
 const props = defineProps({
   followType: {
@@ -35,10 +37,27 @@ const props = defineProps({
     default: () => []
   }
 });
+//定义非响应式常量
+let userFollowList: any[] = props.userFollow;
+const route = useRoute();
+onMounted(() => {
+  emitter.on('updateFollowList', () => {
+    userFollowList = props.userFollow;
+  });
+});
+watch(
+  () => props.followType,
+  (newV) => {
+    console.log('watch切换tab 手动更新userFollowList', newV);
+    userFollowList = props.userFollow;
+  }
+);
 
 const goDetail = (userId) => {
   console.log('UserFollowItem goDetail', userId);
-  // router.push(`/user/${userId}`)
+  router.push(`/user/${userId}`).then(() => {
+    userFollowList = []; //离开前手动情况关注列表
+  });
 };
 </script>
 
