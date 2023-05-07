@@ -6,12 +6,12 @@
     <span>{{ article.commentCount }}</span>
     <i class="views"></i>
     <span>{{ article.views }}</span>
-    <!-- <el-popover @show="handleShow" @after-leave="handleHide" placement="right" width="400" trigger="click" :disabled="disabled"> -->
-    <!-- <ArticleCollect /> -->
-    <!-- <i class="el-icon-star collect" slot="reference" @click="showLogin">
-        <el-icon><Star /></el-icon>
-      </i> -->
-    <!-- </el-popover> -->
+    <i class="el-icon-star collect" ref="buttonRef" v-click-outside="onClickOutside">
+      <el-icon><Star /></el-icon>
+    </i>
+    <el-popover ref="popoverRef" @show="handleShow" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
+      <DetailCollect />
+    </el-popover>
   </div>
 </template>
 
@@ -19,14 +19,18 @@
 import { Msg, emitter } from '@/utils';
 
 import { Star } from '@element-plus/icons-vue';
-
+import DetailCollect from './DetailCollect.vue';
+import { ClickOutside as vClickOutside } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
+import type { ElPopover } from 'element-plus';
 
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 const userStore = useUserStore();
 const rootStore = useRootStore();
+const buttonRef = ref();
+const popoverRef = ref();
 const { token, userInfo } = storeToRefs(userStore);
 const { isArticleUserLiked } = storeToRefs(useArticleStore());
 
@@ -43,12 +47,17 @@ const likeClick = (articleId) => {
   console.log('likeClick', articleId);
 };
 const gotoComment = () => emitter.emit('gotoCom');
-const handleShow = () => userStore.getCollectAction(userInfo.value.id);
+const handleShow = () => {
+  console.log('handleShowhandleShowhandleShowhandleShowhandleShow');
+  userStore.getCollectAction(userInfo.value.id);
+};
 const handleHide = () => emitter.emit('hideCollect');
-const showLogin = () => {
+const onClickOutside = () => {
   if (disabled.value && !token.value) {
     Msg.showInfo('请先登录');
     rootStore.changeLoginDialog();
+  } else {
+    unref(popoverRef)?.popperRef?.delayHide?.();
   }
 };
 </script>

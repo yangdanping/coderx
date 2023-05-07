@@ -37,14 +37,16 @@ const props = defineProps({
     default: () => []
   }
 });
-//定义非响应式常量
-let userFollowList: any[] = props.userFollow;
-const route = useRoute();
+//定义非响应式常量(涉及以下三次手动更新 1.UserFollow中tab列表切换 2.UserProfile中tab列表切换 3.路由更新后手动清空)
+let userFollowList: IUserInfo[] = props.userFollow;
+
 onMounted(() => {
   emitter.on('updateFollowList', () => {
+    console.log('updateFollowList 手动更新userFollowList');
     userFollowList = props.userFollow;
   });
 });
+
 watch(
   () => props.followType,
   (newV) => {

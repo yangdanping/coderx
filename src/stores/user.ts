@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
-import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile } from '@/service/user/user.request.js';
-import { uploadAvatar } from '@/service/file/file.request.js';
+import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile } from '@/service/user/user.request';
+import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
+import { uploadAvatar } from '@/service/file/file.request';
 import useRootStore from '@/stores';
 import { LocalCache, Msg, emitter, timeFormat } from '@/utils';
 
@@ -20,7 +21,7 @@ const useUserStore = defineStore('user', {
     followInfo: {} as IFollowInfo,
     articles: [] as IArticle[],
     comments: [],
-    collects: [],
+    collects: [] as any,
     isFollowed: false //仅用于单个对单个用户的判断
   }),
   getters: {
@@ -66,6 +67,11 @@ const useUserStore = defineStore('user', {
       // 若follower为null说明该用户无关注者(无粉丝),isFollowed设为false
       this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
       // bug问题可能出现在this.isFollowed不适用于列表中
+    },
+    changeCollect(payload) {
+      payload.forEach((collect) => (collect.createAt = timeFormat(collect.createAt)));
+      this.collects = payload;
+      console.log('changeCollect 收藏夹', this.collects);
     },
     // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
@@ -131,7 +137,35 @@ const useUserStore = defineStore('user', {
       console.log('getCommentAction', userId);
     },
     async getCollectAction(userId) {
-      console.log('getCollectAcion', userId);
+      console.log('getCollectAction userId', userId);
+      const res = await getCollect(userId);
+      if (res.code === 0) {
+        this.changeCollect(res.data);
+      } else {
+        Msg.showFail('获取用户收藏夹失败');
+      }
+    },
+    async addCollectAction(collectName) {
+      const userId = this.userInfo.id;
+      const res = await addCollect(collectName);
+      if (res.code === 0) {
+        Msg.showSuccess('添加收藏夹成功');
+        this.getCollectAction(userId);
+      } else {
+        Msg.showFail(res.msg);
+      }
+    },
+    async collectAction(payload) {
+      const userId = this.userInfo.id;
+      const res = await addToCollect(payload);
+      console.log('collectAction res', res);
+      if (res.code === 0) {
+        Msg.showSuccess('新增收藏成功');
+        this.getCollectAction(userId);
+      } else {
+        Msg.showWarn('取消收藏成功');
+        this.getCollectAction(userId);
+      }
     },
     async reportAction(payload) {
       console.log('reportAction', payload);

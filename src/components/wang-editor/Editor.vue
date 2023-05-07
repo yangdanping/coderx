@@ -43,7 +43,7 @@ const props = defineProps({
 const valueHtml = ref('');
 onMounted(() => {
   nextTick(() => {
-    console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
+    // console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
     if (LocalCache.getCache('draft') && !props.editData && !props.isComment) {
       const { draft } = LocalCache.getCache('draft');
       valueHtml.value = draft;
@@ -69,8 +69,9 @@ watch(
 const handleChanged = (editor: any) => {
   if (editor.isEmpty()) {
     valueHtml.value = '';
+  } else {
+    console.log('handleChanged', valueHtml.value);
   }
-  console.log('handleChanged', editor);
 };
 
 // 组件销毁时，也及时销毁编辑器

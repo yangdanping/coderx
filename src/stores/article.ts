@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转(.push)
 import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, addView, getTags, changeTags, search } from '@/service/article/article.request';
-import { getLiked } from '@/service/user/user.request.js';
-import { addPictureForArticle } from '@/service/file/file.request.js';
+import { getLiked } from '@/service/user/user.request';
+import { addPictureForArticle } from '@/service/file/file.request';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
+import useCommentStore from './comment';
 import { Msg, timeFormat } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
@@ -113,7 +114,8 @@ export const useArticleStore = defineStore('article', {
         const res2 = await getDetail(articleId);
         if (res2.code === 0) {
           this.getDetail(res2.data);
-          // dispatch('c/getCommentAction', articleId, { root: true });
+          // 获取内容后再获取文章评论
+          useCommentStore().getCommentAction(articleId);
         } else {
           Msg.showFail('获取文章详情失败');
         }

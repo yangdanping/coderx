@@ -8,7 +8,7 @@
       </div>
     </template>
     <!-- -------------------------------------------------------------------- -->
-    <template v-if="commentInfo.length"><comment-list :commentInfo="commentInfo" /></template>
+    <template v-if="commentInfo.length"><CommentList :commentInfo="commentInfo" /></template>
     <template v-else-if="!noComment"><el-skeleton animated /></template>
     <template v-else><h1 class="skeleton">评论区暂时为空~发表你的第一条评论吧~</h1></template>
   </div>
@@ -30,12 +30,13 @@ const { commentInfo } = storeToRefs(commentStore);
 onMounted(() => {
   setTimeout(() => (noComment.value = !noComment.value), 2000);
 });
+
 const noComment = ref(false);
 </script>
 
 <style lang="scss" scoped>
 .comment {
-  width: 81%;
+  width: 80%;
 }
 .showLogin {
   display: flex;
@@ -46,9 +47,13 @@ const noComment = ref(false);
     padding-bottom: 20px;
   }
 }
+
 .skeleton {
+  width: 50%;
+}
+/* .skeleton {
   display: flex;
   justify-content: center;
   height: calc(50vh);
-}
+} */
 </style>

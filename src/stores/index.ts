@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { checkAuth } from '@/service/user/user.request.js';
+import { checkAuth } from '@/service/user/user.request';
 import { LocalCache } from '@/utils';
 import useUserStore from '@/stores/user';
 const useRootStore = defineStore('root', {

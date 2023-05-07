@@ -2,7 +2,7 @@
   <div class="comment-form">
     <Avatar :info="userInfo" />
     <div class="input">
-      <Editor @update:content="upDateContent" :isComment="true" height="100%" />
+      <Editor @update:content="upDateContent" :isComment="true" height="300px" />
       <div class="input-action">
         <el-button :disabled="disabled" @click="addComment" type="primary">{{ disabled ? '提交中' : '发表评论' }}</el-button>
       </div>
@@ -18,8 +18,8 @@ import { Msg } from '@/utils';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 import useCommentStore from '@/stores/comment';
-const articleStore = useArticleStore();
 const userStore = useUserStore();
+const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const { userInfo } = storeToRefs(userStore);
 const { article } = storeToRefs(articleStore);
@@ -54,8 +54,8 @@ const addComment = () => {
       setTimeout(() => {
         // 这里的isReplyComment用作判断是否是对回复用户的回复,真正传入数据库的是当前真实回复的用户
         commentStore.commentAction({
-          content: content.value,
           articleId: article.value.id,
+          content: content.value,
           isReplyToComment: props.isReply ?? false,
           commentId: props.commentId ?? null,
           replyId: props.replyId ?? null
