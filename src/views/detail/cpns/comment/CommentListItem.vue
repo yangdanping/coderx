@@ -4,16 +4,16 @@
     <div class="comment-box">
       <div class="user-info-box">
         <div class="user-info">
-          <span class="name">{{ item.user.name }}</span>
+          <div class="name">{{ item.user.name }}</div>
           <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
         </div>
         <div class="floor">
-          <span>{{ floor }}楼</span>
+          <span style="margin-right: 15px">{{ floor }}楼</span>
           <span>{{ item.createAt }}</span>
         </div>
       </div>
       <div class="comment-content">
-        <div class="editor-content-view content" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
+        <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" :isReply="true" />
@@ -79,13 +79,37 @@ const replythis = computed(() => {
 
 <style lang="scss" scoped>
 .comment-list-item {
-  position: relative;
   display: flex;
-  margin-top: 30px;
   border-bottom: 1px solid #e5e6eb;
+  margin-top: 20px;
   &:hover {
     .comment-tools {
       display: block;
+    }
+  }
+
+  .comment-box {
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
+    width: 100%;
+    .user-info-box {
+      display: flex;
+      flex-direction: column;
+      .user-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        .name {
+          font-weight: 700;
+          font-size: 20px;
+          margin-right: 5px;
+        }
+      }
+    }
+
+    .comment-content {
+      padding: 20px 0;
     }
   }
 }
@@ -93,38 +117,6 @@ const replythis = computed(() => {
 @media screen and (max-width: 760px) {
   .comment-tools {
     display: block;
-  }
-}
-
-.comment-box {
-  display: flex;
-  flex-direction: column;
-  margin-left: 10px;
-  width: 100%;
-  .user-info-box {
-    display: flex;
-    flex-direction: column;
-    .user-info {
-      display: flex;
-      align-items: center;
-      margin-bottom: 5px;
-      .name {
-        font-weight: 700;
-        font-size: 20px;
-        margin-right: 8px;
-      }
-    }
-
-    .floor span {
-      margin-right: 12px;
-    }
-  }
-
-  .comment-content {
-    margin: 10px 0;
-    .content {
-      padding: 20px 0;
-    }
   }
 }
 </style>

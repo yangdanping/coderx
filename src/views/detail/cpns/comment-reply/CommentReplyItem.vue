@@ -1,15 +1,18 @@
 <template>
-  <div class="reply">
+  <div class="reply-list-item">
     <Avatar :info="item.user" :size="35" />
     <div class="reply-box">
       <div class="user-info-box">
-        <span class="name">{{ item.user.name }}</span>
-        <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
-        <span>回复:</span><span class="name">{{ fatherComment.user.name }}</span>
-        <span class="created">{{ item.createAt }}</span>
+        <div class="user-info">
+          <div class="name">{{ item.user.name }} 回复: {{ fatherComment.user.name }}</div>
+          <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
+        </div>
+        <div class="floor">
+          <span>{{ item.createAt }}</span>
+        </div>
       </div>
       <div class="reply-content">
-        <div class="editor-content-view content" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
+        <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" />
@@ -50,10 +53,8 @@ onMounted(() => {
     console.log('回复列表 collapse', comment);
     const { id } = comment; //id是回复本身的id
     commentId.value = id; //每次点击回复传来的commentId,而watch监控了这个commentId,当该form为打开状态时点击其他回复(旧值有,新旧值不同且!this.isReply为true),则折叠其他form,并打开这个form
-    if (id) {
-      // emitter.emit('collapseReply', null); //把其他所有打开的子评论折叠
-      isReply.value = !isReply.value; //一点击isReply就取反,isReply控制form的显示
-    }
+    isReply.value = !isReply.value; //一点击isReply就取反,isReply控制form的显示
+    //id && emitter.emit('collapseReply', null); //把其他所有打开的子评论折叠
   });
 });
 
@@ -72,44 +73,41 @@ const replythis = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.reply {
+.reply-list-item {
   display: flex;
-  background-color: rgba(247, 248, 250, 0.7);
-  padding: 15px 15px;
+  background-color: rgba(247, 248, 250, 0.7); //与文章评论颜色做区分
+  padding: 10px;
+  &:hover {
+    .comment-tools {
+      display: block;
+    }
+  }
+
   .reply-box {
     display: flex;
     flex-direction: column;
-    margin-left: 15px;
+    margin-left: 10px;
     width: 100%;
     .user-info-box {
       display: flex;
       align-items: center;
-      margin-bottom: 10px;
-      span {
-        margin-right: 8px;
-      }
-      .name {
-        font-weight: 700;
-        font-size: 15px;
-      }
-      .created {
-        font-size: 13px;
+      padding-top: 5px;
+      .user-info {
+        display: flex;
+        align-items: center;
+        .name {
+          font-weight: 700;
+          font-size: 15px;
+          margin-right: 5px;
+        }
       }
     }
     .reply-content {
-      margin: 10px 0;
-
-      .content {
-        padding: 20px 0;
-      }
+      padding: 20px 0;
     }
   }
 }
-.reply:hover {
-  .comment-tools {
-    display: block;
-  }
-}
+
 @media screen and (max-width: 760px) {
   .comment-tools {
     display: block;

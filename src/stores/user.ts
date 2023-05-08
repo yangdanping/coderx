@@ -172,7 +172,7 @@ const useUserStore = defineStore('user', {
     },
     async getFollowAction(userId) {
       const res = await getFollow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
-      console.log('getFollowAction', res.data);
+      // console.log('getFollowAction', res.data);
       // 若改用户中的follower的id中有当前登录用户的id,则isFollowed为true
       res.code === 0 ? this.changeFollowInfo(res.data) : Msg.showFail('请求用户关注信息失败');
     },

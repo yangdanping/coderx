@@ -86,7 +86,7 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
         .abstract {
           height: 30px;
           width: 800px;
-          padding: 15px 0;
+          margin-top: 10px;
           white-space: nowrap;
           color: #777;
           overflow: hidden;

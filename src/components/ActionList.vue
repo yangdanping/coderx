@@ -27,6 +27,7 @@ defineProps({
     display: flex;
     align-items: center;
     user-select: none;
+    margin-top: 5px;
     i {
       width: 20px;
       height: 20px;
