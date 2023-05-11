@@ -45,6 +45,7 @@ const goDetail = (articleId) => router.push({ path: `/article/${articleId}` });
   /* align-items: center; */
   .list-header {
     border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
   }
   .content-wrapper {
     display: flex;

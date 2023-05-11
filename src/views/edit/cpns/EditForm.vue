@@ -81,7 +81,7 @@ const goBack = () => {
     cancelButtonText: `${isEdit.value ? '再想想' : '不保存退出'}`
   })
     .then(() => {
-      if (!isEdit) {
+      if (!isEdit.value) {
         router.push('/article');
         const draftObj = { ...form, draft: props.draft };
         console.log('保存并退出文章编辑!!!!!!!!', draftObj);

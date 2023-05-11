@@ -51,14 +51,28 @@ export function getFollow(id) {
 export function getArticle(userId, pageNum, pageSize) {
   const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
   const limit = pageSize;
-  return myRequest.get({
+  return myRequest.get<IDataType>({
     url: `${urlHead}/${userId}/article?offset=${offset}&limit=${limit}`
   });
 }
 
 export function updateProfile(profile) {
-  return myRequest.put({
+  return myRequest.put<IDataType>({
     url: `${urlHead}/profile`,
     data: profile
+  });
+}
+
+export function getCommentById(userId, pageNum, pageSize) {
+  const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
+  const limit = pageSize;
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/${userId}/comment?offset=${offset}&limit=${limit}`
+  });
+}
+
+export function getArtcileByCollectId(userId, collectId, offset = 0, limit = 10) {
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/${userId}/collect?collectId=${collectId}&offset=${offset}&limit=${limit}`
   });
 }

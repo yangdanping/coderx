@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
-import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile } from '@/service/user/user.request';
+import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile, getCommentById } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
 import { uploadAvatar } from '@/service/file/file.request';
 import useRootStore from '@/stores';
@@ -73,6 +73,11 @@ const useUserStore = defineStore('user', {
       this.collects = payload;
       console.log('changeCollect 收藏夹', this.collects);
     },
+    changeComment(payload) {
+      payload.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
+      this.comments = payload;
+      console.log('changeComment', this.comments);
+    },
     // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
       console.log('registerAction', account);
@@ -136,7 +141,13 @@ const useUserStore = defineStore('user', {
       res.code === 0 ? this.changeArticle(res.data) : Msg.showFail('获取用户发表文章失败');
     },
     async getCommentAction(userId) {
-      console.log('getCommentAction', userId);
+      const { pageNum, pageSize } = useRootStore();
+      const res = await getCommentById(userId, pageNum, pageSize);
+      if (res.code === 0) {
+        this.changeComment(res.data);
+      } else {
+        Msg.showFail('获取用户发表评论失败');
+      }
     },
     async getCollectAction(userId) {
       console.log('getCollectAction userId', userId);

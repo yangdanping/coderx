@@ -42,6 +42,8 @@ const handleSizeChange = (pageSize) => {
 
 <style lang="scss" scoped>
 .page {
+  display: flex;
+  justify-content: center;
   margin-bottom: 10px;
 }
 </style>
