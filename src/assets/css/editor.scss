@@ -1,10 +1,17 @@
 :deep(.editor-content-view) {
+  p,
+  li {
+    white-space: pre-wrap; /* 保留空格 */
+  }
   blockquote {
     border-left: 8px solid #d0e5f2;
     padding: 10px 10px;
     margin: 10px 0;
     background-color: #f1f1f1;
   }
+
+  // 代码块-----------------------------------------------------------
+
   code {
     font-family: monospace;
     background-color: #eee;
@@ -15,9 +22,12 @@
     display: block;
     padding: 10px;
   }
+
+  // 表格---------------------------------------------------
   table {
     border-collapse: collapse;
   }
+
   td,
   th {
     border: 1px solid #ccc;
@@ -27,11 +37,33 @@
   th {
     background-color: #f1f1f1;
   }
+
+  // 列表---------------------------------------------------
+
   ul,
   ol {
     padding-left: 20px;
   }
+
   input[type='checkbox'] {
     margin-right: 5px;
+  }
+
+  // 自定义样式-----------------------------------------
+
+  p {
+    line-height: 1.5;
+    margin: 15px 0;
+  }
+
+  img {
+    max-width: 100%;
+    overflow: clip;
+    overflow-clip-margin: content-box;
+  }
+
+  img.medium-zoom-image {
+    cursor: zoom-in;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1) !important;
   }
 }

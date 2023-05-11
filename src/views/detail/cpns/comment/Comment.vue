@@ -49,11 +49,6 @@ const noComment = ref(false);
 }
 
 .skeleton {
-  width: 50%;
+  text-align: center;
 }
-/* .skeleton {
-  display: flex;
-  justify-content: center;
-  height: calc(50vh);
-} */
 </style>

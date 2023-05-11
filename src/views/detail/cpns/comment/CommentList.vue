@@ -1,6 +1,6 @@
 <template>
   <div ref="listRef" class="comment-list">
-    <span class="comment-title">最近评论({{ commentInfo.length }})</span>
+    <span class="comment-title">最近评论({{ commentCount }})</span>
     <template v-for="(item, index) in commentInfo" :key="item.id">
       <CommentListItem :item="item" :floor="commentInfo.length - index" />
     </template>
@@ -12,14 +12,15 @@ import { emitter } from '@/utils';
 import CommentListItem from './CommentListItem.vue';
 
 import type { IComment } from '@/stores/types/comment.result';
-
+import useCommentStore from '@/stores/comment';
+const { commentCount } = storeToRefs(useCommentStore());
 const props = defineProps({
   commentInfo: {
     type: Array as PropType<IComment[]>,
     default: () => []
   }
 });
-const listRef = ref();
+const listRef = ref<Element>();
 
 onMounted(() => {
   emitter.on('gotoCom', () => {

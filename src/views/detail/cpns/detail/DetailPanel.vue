@@ -6,10 +6,20 @@
     <span>{{ article.commentCount }}</span>
     <i class="views"></i>
     <span>{{ article.views }}</span>
-    <i class="el-icon-star collect" ref="buttonRef" v-click-outside="onClickOutside">
-      <el-icon><Star /></el-icon>
+    <i class="el-icon-star collect" ref="buttonRef" @click="onClickOutside">
+      <el-icon><IStar /></el-icon>
     </i>
-    <el-popover ref="popoverRef" @show="handleShow" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
+    <el-popover
+      :disabled="disabled"
+      ref="popoverRef"
+      @show="handleShow"
+      @after-leave="handleHide"
+      :virtual-ref="buttonRef"
+      trigger="click"
+      width="400"
+      virtual-triggering
+      placement="right"
+    >
       <DetailCollect />
     </el-popover>
   </div>
@@ -18,9 +28,7 @@
 <script lang="ts" setup>
 import { Msg, emitter } from '@/utils';
 
-import { Star } from '@element-plus/icons-vue';
 import DetailCollect from './DetailCollect.vue';
-import { ClickOutside as vClickOutside } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
 import type { ElPopover } from 'element-plus';
 
@@ -43,13 +51,19 @@ const props = defineProps({
 
 const disabled = ref(true);
 
+onMounted(() => {
+  disabled.value = token.value ? false : true;
+});
+
 const likeClick = (articleId) => {
   console.log('likeClick', articleId);
 };
 const gotoComment = () => emitter.emit('gotoCom');
-const handleShow = () => {
-  console.log('handleShowhandleShowhandleShowhandleShowhandleShow');
-  userStore.getCollectAction(userInfo.value.id);
+const handleShow = (e) => {
+  console.log('handleShowhandleShowhandleShowhandleShowhandleShow', e);
+  if (!disabled.value) {
+    userStore.getCollectAction(userInfo.value.id);
+  }
 };
 const handleHide = () => emitter.emit('hideCollect');
 const onClickOutside = () => {

@@ -4,8 +4,17 @@
     <div class="reply-box">
       <div class="user-info-box">
         <div class="user-info">
-          <div class="name">{{ item.user.name }} 回复: {{ fatherComment.user.name }}</div>
-          <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
+          <div class="name">
+            <span>
+              {{ item.user.name }}
+              <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
+            </span>
+            <span>
+              回复:
+              {{ fatherComment.user?.name }}
+              <el-tag v-if="isAuthor(fatherComment.user?.id)" size="small">作者</el-tag>
+            </span>
+          </div>
         </div>
         <div class="floor">
           <span>{{ item.createAt }}</span>
@@ -15,8 +24,10 @@
         <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
-      <CommentForm v-if="replythis(item.id)" :commentId="commentId" />
-      <!-- <CommentChildReply v-if="childReply(item)" :replyInfo="childReply(item)" /> -->
+      <CommentForm v-if="replythis(item.id)" :commentId="commentId" :replyId="replyId" />
+      <!-- <CommentChildReply :comment="item" /> -->
+      <!-- 使用递归组件-------------------------------- -->
+      <CommentReply :comment="item" :isReply="true" />
     </div>
     <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user.id" />
   </div>
@@ -29,10 +40,14 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import CommentForm from '../comment/CommentForm.vue';
 import CommentTools from '../comment/CommentTools.vue';
 import CommentAction from '../comment/CommentAction.vue';
+// import CommentChildReply from '../comment-child-reply/CommentChildReply.vue';
+import CommentReply from './CommentReply.vue';
 
 import useArticleStore from '@/stores/article';
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
+
+import type { IComment } from '@/stores/types/comment.result';
 
 const props = defineProps({
   item: {
@@ -40,19 +55,25 @@ const props = defineProps({
     default: () => {}
   },
   fatherComment: {
-    type: Object,
+    type: Object as PropType<IComment>,
     default: () => {}
   }
 });
 
 const isReply = ref(false); //组件内部变量
 const commentId = ref<any>('');
+const replyId = ref<any>('');
 
 onMounted(() => {
   emitter.on('collapse', (comment: any) => {
-    console.log('回复列表 collapse', comment);
-    const { id } = comment; //id是回复本身的id
-    commentId.value = id; //每次点击回复传来的commentId,而watch监控了这个commentId,当该form为打开状态时点击其他回复(旧值有,新旧值不同且!this.isReply为true),则折叠其他form,并打开这个form
+    if (comment) {
+      const { id, cid } = comment; //id是回复本身的id
+      console.log('回复列表 collapse', comment, cid);
+      commentId.value = id; //每次点击回复传来的commentId,而watch监控了这个commentId,当该form为打开状态时点击其他回复(旧值有,新旧值不同且!this.isReply为true),则折叠其他form,并打开这个form
+      if (cid) {
+        replyId.value = cid;
+      }
+    }
     isReply.value = !isReply.value; //一点击isReply就取反,isReply控制form的显示
     //id && emitter.emit('collapseReply', null); //把其他所有打开的子评论折叠
   });
@@ -75,13 +96,9 @@ const replythis = computed(() => {
 <style lang="scss" scoped>
 .reply-list-item {
   display: flex;
-  background-color: rgba(247, 248, 250, 0.7); //与文章评论颜色做区分
+  /* background-color: rgba(220, 230, 220, 0.7); //与文章评论颜色做区分 */
+  background-image: linear-gradient(90deg, #e0f3e0b3, #f4fef4b3); //与文章评论颜色做区分
   padding: 10px;
-  &:hover {
-    .comment-tools {
-      display: block;
-    }
-  }
 
   .reply-box {
     display: flex;
@@ -95,22 +112,19 @@ const replythis = computed(() => {
       .user-info {
         display: flex;
         align-items: center;
-        .name {
+        .name span:not(.el-tag) {
           font-weight: 700;
           font-size: 15px;
-          margin-right: 5px;
         }
+      }
+      .floor span {
+        margin-left: 10px;
+        font-size: 10px;
       }
     }
     .reply-content {
       padding: 20px 0;
     }
-  }
-}
-
-@media screen and (max-width: 760px) {
-  .comment-tools {
-    display: block;
   }
 }
 </style>

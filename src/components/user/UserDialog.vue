@@ -1,6 +1,6 @@
 <template>
   <div class="user-dialog">
-    <el-dialog v-model="showDialog" @close="hindDialog" :before-close="beforeClose" :append-to-body="false" destroy-on-close center>
+    <el-dialog v-model="showDialog" @close="hindDialog" :append-to-body="false" destroy-on-close center>
       <LoginPanel v-if="!showProfile" />
       <ProfilePanel v-else :editForm="editForm" />
     </el-dialog>
@@ -23,12 +23,8 @@ onMounted(() => {
     editForm.value = payload;
   });
 });
-const beforeClose = (done: () => void) => {
-  console.log('beforeClose');
-  done();
-};
+
 const hindDialog = () => {
-  console.log('close Dialog');
   rootStore.changeLoginDialog();
 };
 </script>

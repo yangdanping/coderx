@@ -32,7 +32,7 @@ export function likeArticle(articleId?: RouteParam) {
 }
 
 export function updateArticle(data: IArticle) {
-  const { title, content, articleId } = data;
+  const { articleId, title, content } = data;
   return myRequest.put<IDataType>({
     url: `${urlHead}/${articleId}`,
     data: { title, content }
@@ -58,7 +58,7 @@ export function getTags(offset = 0, limit = 10) {
     url: `/tag?offset=${offset}&limit=${limit}`
   });
 }
-export function changeTags(articleId: RouteParam, tags, hasOldTags = '') {
+export function changeTags(articleId: RouteParam, tags, hasOldTags: any = '') {
   console.log('changeTags!!!!!!!!!!!!!!!!!!!!!', articleId, tags);
   return myRequest.post<IDataType>({
     url: `${urlHead}/${articleId}/tag?hasOldTags=${hasOldTags}`,

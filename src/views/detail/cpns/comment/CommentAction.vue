@@ -6,7 +6,7 @@
           <i></i><span>{{ comment.likes ?? '点赞' }}</span>
         </li>
         <li @click="wantReply(comment)" class="item comment">
-          <i></i><span>{{ commentReplyCount(comment) }}</span>
+          <i></i><span>{{ '回复' }}</span>
         </li>
       </ul>
     </template>
@@ -27,11 +27,13 @@ const articleStore = useArticleStore();
 const userStore = useUserStore();
 const { token } = storeToRefs(userStore);
 const { article } = storeToRefs(articleStore);
-const { isCommentUserLiked, commentReplyCount } = storeToRefs(commentStore);
+const { isCommentUserLiked } = storeToRefs(commentStore);
+
+import type { IComment } from '@/stores/types/comment.result';
 
 const props = defineProps({
   comment: {
-    type: Object,
+    type: Object as PropType<IComment>,
     default: () => {}
   }
 });

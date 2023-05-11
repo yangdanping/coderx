@@ -2,7 +2,7 @@
   <div class="comment-form">
     <Avatar :info="userInfo" />
     <div class="input">
-      <Editor @update:content="upDateContent" :isComment="true" height="300px" />
+      <Editor @update:content="(valueHtml) => (content = valueHtml)" :isComment="true" mode="simple" height="150px" />
       <div class="input-action">
         <el-button :disabled="disabled" @click="addComment" type="primary">{{ disabled ? '提交中' : '发表评论' }}</el-button>
       </div>
@@ -39,10 +39,6 @@ const props = defineProps({
 const content = ref('');
 const disabled = ref(false);
 
-const upDateContent = (valueHtml: string) => {
-  content.value = valueHtml;
-};
-
 const addComment = () => {
   if (article.value.status === '1') {
     Msg.showFail('文章已被封禁,不可评论');
@@ -56,9 +52,11 @@ const addComment = () => {
         commentStore.commentAction({
           articleId: article.value.id,
           content: content.value,
-          isReplyToComment: props.isReply ?? false,
-          commentId: props.commentId ?? null,
-          replyId: props.replyId ?? null
+          // isReplyToComment: props.isReply ?? false,
+          // commentId: props.commentId ?? null,
+          // replyId: props.replyId ?? null,
+          cid: props.commentId ?? null,
+          rid: props.replyId ?? null
         });
         disabled.value = !disabled.value;
       }, 500);

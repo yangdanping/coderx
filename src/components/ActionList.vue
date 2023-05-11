@@ -2,7 +2,6 @@
   <div class="action-list" :class="{ comment: isComment }">
     <slot name="article"></slot>
     <slot name="comment"></slot>
-    <slot name="reply"></slot>
   </div>
 </template>
 

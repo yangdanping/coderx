@@ -32,7 +32,7 @@ export default function init(app: App) {
     }
     if (to.path === '/article') {
       articleStore.initArticle();
-      commentStore.initComment();
+      commentStore.$reset();
     }
   });
 

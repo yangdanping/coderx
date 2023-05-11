@@ -8,24 +8,24 @@
           <img :src="userSex" alt="" />
           <template v-if="isUser(profile.id)">
             <el-tooltip effect="dark" content="修改个人信息" placement="bottom">
-              <el-icon @click="updateProfile" class="edit" size="30" color="#909399"> <Edit /> </el-icon>
+              <el-icon @click="updateProfile" class="edit" size="30" color="#909399"> <IEdit /> </el-icon>
             </el-tooltip>
           </template>
         </div>
         <div class="profile-2">
-          <el-icon><Coin /></el-icon>
+          <el-icon><ICoin /></el-icon>
           <span>年龄:{{ profile.age ?? '无' }}</span>
         </div>
         <div class="profile-3">
-          <el-icon><Suitcase /></el-icon>
+          <el-icon><ISuitcase /></el-icon>
           <span>职业:{{ profile.career ?? 'Coder' }}</span>
         </div>
         <div class="profile-4">
-          <el-icon><Coordinate /></el-icon>
+          <el-icon><ICoordinate /></el-icon>
           <span>居住地:{{ profile.address ?? 'CoderX星球' }}</span>
         </div>
         <div class="profile-5">
-          <el-icon><TakeawayBox /></el-icon>
+          <el-icon><ITakeawayBox /></el-icon>
           <span>邮箱:{{ profile.email ?? '无' }}</span>
         </div>
       </div>
@@ -54,7 +54,6 @@ import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
 import { emitter } from '@/utils';
-import { Edit, Coin, Suitcase, Coordinate, TakeawayBox } from '@element-plus/icons-vue';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 

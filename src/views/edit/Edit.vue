@@ -1,18 +1,6 @@
 <template>
   <div class="edit">
-    <el-row>
-      <el-col :span="12">
-        <Editor :editData="editData" @update:content="upDateContent" />
-      </el-col>
-      <el-col :span="12">
-        <div class="preview">
-          <div class="title">
-            <el-icon><Platform /></el-icon>预览
-          </div>
-          <div class="content editor-content-view" v-dompurify-html="preview"></div>
-        </div>
-      </el-col>
-    </el-row>
+    <Editor :editData="editData" @update:content="(content) => (preview = content)" />
     <el-drawer title="管理您的文章" draggable v-model="drawer" direction="ltr">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" />
     </el-drawer>
@@ -21,35 +9,35 @@
 </template>
 
 <script lang="ts" setup>
-import { Menu, Platform } from '@element-plus/icons-vue';
+import { Menu } from '@element-plus/icons-vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';
-import useArticleStore from '@/stores/article';
 import { Msg } from '@/utils';
+
+import useArticleStore from '@/stores/article';
 const route = useRoute();
 const articleStore = useArticleStore();
+const { article } = storeToRefs(articleStore);
+const isEdit = computed(() => !!route.query.editArticleId);
+const editData = computed(() => (isEdit.value ? article.value : {}));
+// 通过路由是否传入待修改文章的id来判断是创建还是修改
+onMounted(() => {
+  console.log(`是${!isEdit.value ? '创建' : '修改'}文章------------------------`, route.query.editArticleId);
+});
 const drawer = ref(false);
 const preview = ref('');
-
-const editData = computed<any>(() => route.query.editData);
-const upDateContent = (content: string) => {
-  preview.value = content;
-};
-const formSubmit = (payload: any) => {
-  const { title } = payload;
-  if (!title || !preview.value) {
+const formSubmit = (editData: any) => {
+  if (!editData.title || !preview.value) {
     Msg.showFail('内容不能为空!');
   } else {
-    if (!editData.value) {
+    if (!isEdit.value) {
       //创建文章------------------------------------------
-      const sumbitPayload = { content: preview.value, ...payload };
+      const sumbitPayload = { content: preview.value, ...editData };
       console.log('创建文章', sumbitPayload);
       articleStore.editAction(sumbitPayload);
     } else {
       //修改文章------------------------------------------
-      console.log('修改文章');
-      const { id } = editData.value;
-      const updatedPayload = { articleId: id, content: preview.value, ...payload };
+      const updatedPayload = { articleId: article.value.id, content: preview.value, ...editData };
       console.log('修改文章', updatedPayload);
       articleStore.updateAction(updatedPayload);
     }
@@ -60,28 +48,6 @@ const formSubmit = (payload: any) => {
 <style lang="scss" scoped>
 @import '../../assets/css/editor.scss';
 .edit {
-  .preview {
-    .title {
-      position: fixed;
-      top: 0;
-      right: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-image: linear-gradient(90deg, #222f3e, #42b983, transparent);
-      color: #fff;
-      font-size: 30px;
-      height: 100px;
-      width: 50vw;
-    }
-    .content {
-      padding: 99px 0 0 0;
-      height: 100vh;
-      background: #fff;
-      white-space: pre-wrap;
-    }
-  }
-
   .btn {
     position: fixed;
     bottom: 0;

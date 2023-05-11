@@ -33,6 +33,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // false:传入用户id,true:传入登录用户id
+  isFollowListItem: {
+    type: Boolean,
+    default: false
+  },
   width: {
     type: String,
     default: '100%'
@@ -47,7 +52,7 @@ const ToggleUnFollow = (toggle: boolean) => {
 
 const follow = () => {
   if (token) {
-    userStore.followAction(props.profile.id);
+    userStore.followAction(props.profile.id, props.isFollowListItem);
   } else {
     Msg.showFail('请先登录');
     rootStore.changeLoginDialog();

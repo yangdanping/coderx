@@ -57,13 +57,16 @@ const props = defineProps({
 });
 const avatarUrl = computed(() => props.info.avatarUrl ?? new URL('@/assets/img/user/avatar.png', import.meta.url).href);
 const userSex = computed(() => new URL(`../../assets/img/user/${props.info.sex === '女' ? 'female' : 'male'}-icon.webp`, import.meta.url).href);
-const mouseenter = debounce(
-  function () {
-    !props.disabled && userStore.getFollowAction(props.info.id);
-  },
-  400,
-  true
-);
+const mouseenter =
+  !props.disabled &&
+  debounce(
+    function () {
+      console.log('mouseentermouseentermouseentermouseentermouseentermouseentermouseenter');
+      userStore.getFollowAction(props.info.id);
+    },
+    500,
+    true
+  );
 
 const followCount = computed(() => {
   return (type: string) => followInfo.value[type]?.length ?? 0;

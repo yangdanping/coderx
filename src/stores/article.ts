@@ -6,7 +6,7 @@ import { addPictureForArticle } from '@/service/file/file.request';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from './comment';
-import { Msg, timeFormat } from '@/utils';
+import { Msg, timeFormat, isArrEqual } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
@@ -142,7 +142,30 @@ export const useArticleStore = defineStore('article', {
       }
     },
     async updateAction(payload) {
-      console.log('updateAction', payload);
+      console.log('我要修改文章!!!!!!!!!!!!!', payload);
+      const { articleId, title, content, oldTags, tags } = payload;
+      if (!isArrEqual(oldTags, tags)) {
+        console.log('新旧tags不相同,要修改');
+        const res = await changeTags(articleId, tags, true);
+        res.code === 0 && Msg.showSuccess('修改标签成功');
+      } else {
+        console.log('新旧tags相同,不修改');
+      }
+      const res = await updateArticle({ articleId, title, content });
+      if (res.code === 0) {
+        //若新增了图片
+        if (this.uploaded.length) {
+          console.log(`articleId为${articleId}的文章已创建,要为该文章添加以下图片id`, this.uploaded);
+          const res = await addPictureForArticle(articleId, this.uploaded);
+          res.code === 0 && console.log(`id为${articleId}的文章成功添加${res.data.affectedRows}张图片`);
+          this.changeUploaded(0);
+        }
+        Msg.showSuccess('修改文章成功');
+        router.push({ path: `/article/${articleId}` });
+      } else {
+        Msg.showFail('修改文章失败');
+        console.log(res);
+      }
     },
     async removeAction(articleId) {
       const res = await removeArticle(articleId);

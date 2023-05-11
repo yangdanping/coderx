@@ -7,7 +7,7 @@
           <a class="name">{{ item.name }}</a>
         </div>
         <div class="btn">
-          <FollowButton :isFollowed="isUserFollowed(item.id, followType)" :profile="item" />
+          <FollowButton :isFollowed="isUserFollowed(item.id, followType)" :profile="item" isFollowListItem />
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@ watch(
 const goDetail = (userId) => {
   console.log('UserFollowItem goDetail', userId);
   router.push(`/user/${userId}`).then(() => {
-    userFollowList = []; //离开前手动情况关注列表
+    userFollowList = []; //路由跳转手动清空当前组件的关注列表
   });
 };
 </script>

@@ -16,8 +16,8 @@
         </div>
         <ArticleAction :article="item" />
       </div>
-      <img v-if="item.cover" @click="goDetail(item)" :src="item.cover[0]" />
-      <div v-else style="width: 170px; height: 120px"></div>
+      <img v-if="item.cover" class="cover" @click="goDetail(item)" :src="item.cover[0]" />
+      <div v-else class="cover"></div>
     </div>
   </div>
 </template>
@@ -94,7 +94,7 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
         }
       }
     }
-    img {
+    .cover {
       width: 170px;
       height: 100%;
       object-fit: cover;

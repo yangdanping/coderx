@@ -8,7 +8,7 @@
           <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
         </div>
         <div class="floor">
-          <span style="margin-right: 15px">{{ floor }}楼</span>
+          <span style="margin-right: 10px">{{ floor }}楼</span>
           <span>{{ item.createAt }}</span>
         </div>
       </div>
@@ -32,7 +32,6 @@ import CommentAction from './CommentAction.vue';
 import CommentReply from '../comment-reply/CommentReply.vue';
 
 import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
 
 import { emitter } from '@/utils';
 
@@ -51,14 +50,15 @@ const commentId = ref<any>('');
 
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
-// const commentStore = useCommentStore();
-// const { commentInfo } = storeToRefs(commentStore);
 
 onMounted(() => {
   emitter.on('collapse', (comment: any) => {
-    console.log('评论列表 collapse', comment);
-    const { id } = comment;
-    commentId.value = id;
+    if (comment) {
+      console.log('评论列表 collapse', comment);
+      const { id } = comment;
+      commentId.value = id;
+    }
+
     isReply.value = !isReply.value; //一点击isReply就取反
   });
 });
@@ -82,11 +82,6 @@ const replythis = computed(() => {
   display: flex;
   border-bottom: 1px solid #e5e6eb;
   margin-top: 20px;
-  &:hover {
-    .comment-tools {
-      display: block;
-    }
-  }
 
   .comment-box {
     display: flex;
@@ -106,17 +101,14 @@ const replythis = computed(() => {
           margin-right: 5px;
         }
       }
+      .floor {
+        font-size: 13px;
+      }
     }
 
     .comment-content {
       padding: 20px 0;
     }
-  }
-}
-
-@media screen and (max-width: 760px) {
-  .comment-tools {
-    display: block;
   }
 }
 </style>

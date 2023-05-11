@@ -2,25 +2,25 @@
   <div class="detail-tool">
     <el-tooltip class="item" effect="dark" content="返回文章列表" placement="bottom">
       <i class="el-icon-back" @click="goBack">
-        <el-icon><Back /></el-icon>
+        <el-icon><IBack /></el-icon>
       </i>
     </el-tooltip>
     <template v-if="token && isAuthor">
       <el-tooltip class="item" effect="dark" content="修改我的文章" placement="bottom">
         <i class="el-icon-edit" @click="goEdit">
-          <el-icon><Edit /></el-icon>
+          <el-icon><IEdit /></el-icon>
         </i>
       </el-tooltip>
       <el-tooltip class="item" effect="dark" content="删除我的文章" placement="bottom">
         <i class="el-icon-delete" @click="goDelete">
-          <el-icon><Delete /></el-icon>
+          <el-icon><IDelete /></el-icon>
         </i>
       </el-tooltip>
     </template>
     <template v-else-if="token">
       <el-tooltip class="item" effect="dark" content="举报文章" placement="bottom">
         <i class="el-icon-warning" @click="showReport = true">
-          <el-icon><Warning /></el-icon>
+          <el-icon><IWarning /></el-icon>
         </i>
       </el-tooltip>
     </template>
@@ -30,7 +30,6 @@
 
 <script lang="ts" setup>
 import { ElMessageBox } from 'element-plus';
-import { Back, Edit, Delete, Warning } from '@element-plus/icons-vue';
 import { Msg } from '@/utils';
 
 import type { IArticle } from '@/stores/types/article.result';
@@ -55,13 +54,7 @@ const showReport = ref(false);
 const { token } = storeToRefs(userStore);
 const goBack = () => router.push('/article');
 const goEdit = () => {
-  const { id, title, content, tags } = props.article;
-  router.push({
-    path: '/edit',
-    query: {
-      editData: { id, title, content, tags } as any
-    }
-  });
+  router.push({ path: `/edit`, query: { editArticleId: props.article.id } });
 };
 const goDelete = () => {
   ElMessageBox.confirm(`是否删除文章`, '提示', {

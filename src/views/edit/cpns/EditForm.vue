@@ -12,8 +12,8 @@
       </el-form-item>
       <!-- ---------------------------------------------------------------------------------- -->
       <el-form-item class="btn">
-        <el-button type="primary" @click="onSubmit">{{ editData ? '修改' : '创建' }}</el-button>
-        <el-button @click="goBack">退出{{ editData ? '修改' : '编辑' }}</el-button>
+        <el-button type="primary" @click="onSubmit">{{ isEdit ? '修改' : '创建' }}</el-button>
+        <el-button @click="goBack">退出{{ isEdit ? '修改' : '编辑' }}</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -22,15 +22,17 @@
 <script lang="ts" setup>
 import useArticleStore from '@/stores/article';
 import { ElMessageBox } from 'element-plus';
-import { LocalCache, Msg } from '@/utils';
+import { LocalCache, Msg, isEmptyObj } from '@/utils';
 
 const router = useRouter();
 const articleStore = useArticleStore();
 const { tags } = storeToRefs(articleStore);
 
+import type { IArticle } from '@/stores/types/article.result';
+
 const props = defineProps({
   editData: {
-    type: Object,
+    type: Object as PropType<IArticle>,
     default: () => {}
   },
   draft: {
@@ -46,10 +48,10 @@ const oldTags = ref<any[]>([]);
 
 onMounted(() => {
   articleStore.getTagsAction();
-  if (props.editData) {
+  if (isEmptyObj(props.editData)) {
     console.log('editForm存在props.editData', props.editData);
     const { title, tags } = props.editData;
-    form.title = title;
+    form.title = title!;
     tags?.forEach((tag) => oldTags.value.push(tag.name));
     tags?.forEach((tag) => form.tags.push(tag.name));
     console.log('editForm onMounted拿到form', form);
@@ -68,16 +70,18 @@ const onSubmit = () => {
   };
   emit('formSubmit', articleDraft);
 };
+const route = useRoute();
+const isEdit = computed(() => !!route.query.editArticleId);
 // 取消修改
 const goBack = () => {
-  ElMessageBox.confirm(`是否${props.editData ? '取消修改' : '退出并保存草稿'}`, '提示', {
+  ElMessageBox.confirm(`是否${isEdit.value ? '取消修改' : '退出并保存草稿'}`, '提示', {
     type: 'info',
     distinguishCancelAndClose: true,
-    confirmButtonText: `${props.editData ? '取消修改' : '保存退出'}`,
-    cancelButtonText: `${props.editData ? '再想想' : '不保存退出'}`
+    confirmButtonText: `${isEdit.value ? '取消修改' : '保存退出'}`,
+    cancelButtonText: `${isEdit.value ? '再想想' : '不保存退出'}`
   })
     .then(() => {
-      if (!props.editData) {
+      if (!isEdit) {
         router.push('/article');
         const draftObj = { ...form, draft: props.draft };
         console.log('保存并退出文章编辑!!!!!!!!', draftObj);
@@ -88,7 +92,7 @@ const goBack = () => {
       }
     })
     .catch((action) => {
-      if (action === 'cancel' && !props.editData) {
+      if (action === 'cancel' && !isEdit.value) {
         LocalCache.removeCache('draft');
         LocalCache.removeCache('pictures');
         router.push('/article');

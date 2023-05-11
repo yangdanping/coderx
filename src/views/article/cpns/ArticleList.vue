@@ -31,6 +31,8 @@ const changePage = () => articleStore.getListAction();
   flex-direction: column;
   align-items: center;
   color: #333;
+  backdrop-filter: blur(10px);
+
   border-radius: 10px;
   animation: moveDown 1s forwards;
 }

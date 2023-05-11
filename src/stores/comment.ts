@@ -9,8 +9,10 @@ import useUserStore from './user';
 export const useCommentStore = defineStore('comment', {
   state: () => ({
     commentInfo: [] as IComment[],
-    replyInfo: [] as any[],
-    commentLikedId: [] as any[] //该用户点赞过的评论id,通过computed计算是否有点赞
+    replyInfo: [] as IComment[],
+    replyInfo2: [] as IComment[],
+    commentCount: 0,
+    commentLikedId: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
   }),
   getters: {
     isCommentUserLiked() {
@@ -19,31 +21,43 @@ export const useCommentStore = defineStore('comment', {
       };
     },
     commentReply() {
-      return (comment) => this.replyInfo.filter((reply) => reply.commentId === comment.id);
+      return (comment) => this.replyInfo.filter((reply) => reply.cid === comment.id);
     },
-    commentReplyCount() {
+    commentReply2() {
       return (comment) => {
-        const totalChildReply: any[] = [];
-        this.commentReply(comment).forEach((reply) => (reply.replyInfo ? totalChildReply.push(...reply.replyInfo) : null));
-        const count = this.commentReply(comment).length + totalChildReply.length;
-        return count ? count : '回复'; //若没点击回复按钮,则显示评论数或回复
+        const arr: IComment[] = [];
+        const replyInfo2: IComment[] = this.replyInfo2
+          .filter((reply) => reply.rid === comment.id)
+          .map((reply: IComment) => {
+            const replyedObj = this.replyInfo2.find((item) => item.rid === reply.id);
+            if (replyedObj) {
+              arr.push(replyedObj);
+              reply.childReply = arr;
+            }
+            return reply;
+          });
+
+        if (replyInfo2.length) {
+          console.log('commentReply2', replyInfo2);
+        }
+        return replyInfo2;
       };
     }
   },
   actions: {
-    getCommentInfo(commentInfo) {
-      commentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
-      this.commentInfo = commentInfo.filter((comment) => !comment.commentId);
-      this.replyInfo = commentInfo.filter((comment) => comment.commentId);
-      this.replyInfo.forEach((reply) => (reply.replyInfo ? reply.replyInfo.forEach((childReply) => (childReply.createAt = timeFormat(childReply.createAt))) : null));
+    getCommentInfo(totalCommentInfo) {
+      totalCommentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
+      this.commentCount = totalCommentInfo.length;
+      this.commentInfo = totalCommentInfo.filter((comment) => !comment.cid); //对文章的普通评论
+      this.replyInfo = totalCommentInfo.filter((comment) => comment.cid && !comment.rid); //对评论的普通回复
+      this.replyInfo2 = totalCommentInfo.filter((comment) => comment.cid && comment.rid); //对回复的回复
+      console.log('对文章的普通评论--------------', this.commentInfo);
+      console.log('对评论的普通回复--------------', this.replyInfo);
+      console.log('对回复的回复--------------', this.replyInfo2);
     },
     getCommentLikedId(commentLiked) {
       this.commentLikedId = commentLiked;
-      console.log('getCommentLikedId', this.commentLikedId);
-    },
-    initComment() {
-      this.commentInfo = [];
-      this.replyInfo = [];
+      // console.log('getCommentLikedId', this.commentLikedId);
     },
     // 异步请求action---------------------------------------------------
     async getCommentAction(articleId) {
@@ -59,33 +73,33 @@ export const useCommentStore = defineStore('comment', {
       res.code === 0 && this.getCommentLikedId(res.data.commentLiked); //重新获取评论数据
     },
     async commentAction(payload) {
-      const { articleId, commentId, replyId } = payload;
-      if (!commentId && !replyId) {
+      const { articleId, cid, rid } = payload;
+      if (!cid && !rid) {
         console.log('我是一条即将发出的对文章的普通评论', payload);
-        // const res = await addComment(payload);
-        // if (res.code === -1) {
-        //   Msg.showFail(`发布评论失败 ${res.msg}`);
-        // } else if (res.code === 0) {
-        //   emitter.emit('cleanContent');
-        //   Msg.showSuccess('发表评论成功');
-        //   this.getCommentAction(articleId);
-        // } else {
-        //   Msg.showFail('发表评论失败');
-        // }
+        const res = await addComment(payload);
+        if (res.code === -1) {
+          Msg.showFail(`发布评论失败 ${res.msg}`);
+        } else if (res.code === 0) {
+          emitter.emit('cleanContent');
+          Msg.showSuccess('发表评论成功');
+          this.getCommentAction(articleId);
+        } else {
+          Msg.showFail('发表评论失败');
+        }
       } else {
         console.log('我是对评论的回复', payload);
-        // const res = await addReply(payload);
-        // if (res.code === -1) {
-        //   Msg.showFail(`发布回复失败 ${res.msg}`);
-        // } else if (res.code === 0) {
-        //   emitter.emit('cleanContent');
-        //   emitter.emit('collapse', null); //关闭评论框
-        //   emitter.emit('collapseReply', null); //关评论框闭
-        //   Msg.showSuccess('发表回复成功');
-        //   this.getCommentAction(articleId);
-        // } else {
-        //   Msg.showFail('发表回复失败');
-        // }
+        const res = await addReply(payload);
+        if (res.code === -1) {
+          Msg.showFail(`发布回复失败 ${res.msg}`);
+        } else if (res.code === 0) {
+          emitter.emit('cleanContent');
+          emitter.emit('collapse', null); //关闭评论框
+          emitter.emit('collapseReply', null); //关评论框闭
+          Msg.showSuccess('发表回复成功');
+          this.getCommentAction(articleId);
+        } else {
+          Msg.showFail('发表回复失败');
+        }
       }
     },
     async updateCommentAction(payload) {

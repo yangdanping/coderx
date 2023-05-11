@@ -9,14 +9,6 @@ export function getComment(articleId) {
   });
 }
 
-export function addComment(commentInfo) {
-  const { articleId, content } = commentInfo;
-  return myRequest.post<IDataType>({
-    url: `${urlHead}`,
-    data: { articleId, content }
-  });
-}
-
 export function updateComment(commentInfo) {
   const { commentId, content } = commentInfo;
   return myRequest.put<IDataType>({
@@ -31,20 +23,40 @@ export function removeComment(commentId) {
   });
 }
 
-export function addReply(replyInfo) {
-  const { isReplyToComment, articleId, content, commentId, replyId } = replyInfo;
-  let url = '';
-  let data = {};
-  if (isReplyToComment) {
-    url = `${urlHead}/${commentId}/reply`;
-    data = { articleId, content };
-  } else {
-    url = !replyId ? `/reply` : `/reply/${replyId}/reply`;
-    data = { articleId, commentId, content };
-  }
-  console.log('addReply数据------------------', { url, data });
-  return myRequest.post<IDataType>({ url, data });
+export function addComment(commentInfo) {
+  const { articleId, content } = commentInfo;
+  return myRequest.post<IDataType>({
+    url: `${urlHead}`,
+    data: { articleId, content }
+  });
 }
+
+export function addReply(replyInfo) {
+  const { articleId, content, cid, rid } = replyInfo;
+  const data: any = { articleId, content };
+  // 大前提:一定有articleId指明评论哪篇文章,一定有cid指明对哪条评论的回复
+  // 有rid,说明这次是对回复的回复
+  if (rid) {
+    data.replyId = cid;
+  }
+  const commentId = rid ?? cid;
+  console.log('addReply数据------------------ data', commentId, data);
+  return myRequest.post<IDataType>({ url: `${urlHead}/${commentId}/reply`, data });
+}
+// export function addReply(replyInfo) {
+//   let url = '';
+//   let data = {};
+//   const { isReplyToComment, articleId, content, commentId, replyId } = replyInfo;
+//   if (isReplyToComment) {
+//     url = `${urlHead}/${commentId}/reply`;
+//     data = { articleId, content };
+//   } else {
+//     url = !replyId ? `/reply` : `/reply/${replyId}/reply`;
+//     data = { articleId, commentId, content };
+//   }
+//   console.log('addReply数据------------------', { url, data });
+//   return myRequest.post<IDataType>({ url, data });
+// }
 
 export function like(likeInfo) {
   const { commentId, replyId } = likeInfo;

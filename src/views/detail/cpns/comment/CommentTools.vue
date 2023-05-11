@@ -1,23 +1,23 @@
 <template>
   <div class="comment-tools">
     <el-dropdown trigger="click" @command="handleCommand">
-      <el-icon style="cursor: pointer" size="20px"><More /></el-icon>
+      <el-icon style="cursor: pointer" size="20px"><IMore /></el-icon>
       <template #dropdown>
         <el-dropdown-menu v-if="isUser(userId)">
           <el-dropdown-item command="showDiglog">
-            <el-icon size="20px"><Edit /></el-icon>
+            <el-icon size="20px"><IEdit /></el-icon>
             <el-dialog width="50%" title="修改我的评论" v-model:propName="dialogVisible" append-to-body>
-              <Editor @update:content="updateContent" :editComment="editData" :isComment="true" height="300px" />
+              <Editor @update:content="(valueHtml) => (content = valueHtml)" :editComment="editData" :isComment="true" mode="simple" height="150px" />
               <el-button class="update" @click="update" type="primary">修改</el-button>
             </el-dialog>
           </el-dropdown-item>
           <el-dropdown-item command="remove">
-            <el-icon size="20px"><Delete /></el-icon>
+            <el-icon size="20px"><IDelete /></el-icon>
           </el-dropdown-item>
         </el-dropdown-menu>
         <el-dropdown-menu v-else>
           <el-dropdown-item @click="showReport = true">
-            <el-icon size="20px"><Warning /></el-icon>
+            <el-icon size="20px"><IWarning /></el-icon>
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
@@ -28,9 +28,8 @@
 
 <script lang="ts" setup>
 import { ElMessageBox } from 'element-plus';
-import { More, Edit, Delete, Warning } from '@element-plus/icons-vue';
-
 import { Msg } from '@/utils';
+import Editor from '@/components/wang-editor/Editor.vue';
 
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
@@ -54,19 +53,16 @@ const props = defineProps({
   }
 });
 
-const dialogVisible = ref(false);
 const content = ref('');
+const dialogVisible = ref(false);
 const showReport = ref(false);
 
 const handleCommand = (command) => {
-  command === 'showDiglog' ? showDiglog() : null;
-  command === 'remove' ? remove() : null;
+  command === 'showDiglog' && showDiglog();
+  command === 'remove' && remove();
 };
 const showDiglog = () => {
   dialogVisible.value = !dialogVisible.value;
-};
-const updateContent = (valueHtml: string) => {
-  content.value = valueHtml;
 };
 const update = () => {
   commentStore.updateCommentAction({ articleId: article.value.id, commentId: props.commentId, content: content.value });
@@ -100,9 +96,8 @@ const cancelReport = () => {
 
 <style lang="scss" scoped>
 .comment-tools {
-  display: none;
   position: absolute;
-  right: 10px;
+  right: 30px;
 }
 .update {
   margin-top: 10px;

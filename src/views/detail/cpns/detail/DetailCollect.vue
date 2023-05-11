@@ -9,7 +9,7 @@
             <div v-if="item.count" class="count">{{ item.count.length }}</div>
           </div>
           <i v-if="isCollected(item.count)">
-            <el-icon size="22px" color="#81c995"><SuccessFilled /></el-icon>
+            <el-icon size="22px" color="#81c995"><ISuccessFilled /></el-icon>
           </i>
           <!-- <i v-if="isCollected(item.count)" class="el-icon-success" style="color: #81c995; font-size: 22px"></i> -->
         </div>
@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
 import { emitter } from '@/utils';
-import { Plus, SuccessFilled } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
 
 import type { IArticle } from '@/stores/types/article.result';
 

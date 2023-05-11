@@ -18,20 +18,13 @@ import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 import useCommentStore from '@/stores/comment';
 
-import type { IArticle } from '@/stores/types/article.result';
-
 const route = useRoute();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const { article, isAuthor } = storeToRefs(articleStore);
 const { commentInfo } = storeToRefs(commentStore);
 const { userInfo } = storeToRefs(useUserStore());
-defineProps({
-  article: {
-    type: Object as PropType<IArticle>,
-    default: () => {}
-  }
-});
+
 onMounted(() => {
   console.log('onMounted articleStore.getDetailAction', route.params.articleId);
   articleStore.getDetailAction(route.params.articleId);

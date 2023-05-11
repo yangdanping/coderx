@@ -22,7 +22,7 @@ const useUserStore = defineStore('user', {
     articles: [] as IArticle[],
     comments: [],
     collects: [] as any,
-    isFollowed: false //仅用于单个对单个用户的判断
+    isFollowed: false //仅用于一对一用户的判断
   }),
   getters: {
     isUser() {
@@ -33,7 +33,7 @@ const useUserStore = defineStore('user', {
         // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
         // 若type是关注者,则直接查看用户的关注者中是否有该id
         const followType = type === 'follower' ? 'following' : type;
-        return this.followInfo[followType]?.some((item) => item.id === userId);
+        return !!this.followInfo[followType]?.some((item) => item.id === userId);
       };
     }
   },
@@ -108,14 +108,16 @@ const useUserStore = defineStore('user', {
         Msg.showFail(res1.msg); //若是登录用户信息则不用再请求了
       }
     },
-    async followAction(userId) {
+    async followAction(userId, isFollowListItem = false) {
       console.log('followAction follow', userId);
       const res = await follow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
+      console.log('followAction res', res);
+      const queryId = !isFollowListItem ? userId : this.userInfo.id;
       if (res.code === 0) {
-        this.getFollowAction(this.userInfo.id); //更新关注信息,默认更新的是被更新者的userId
+        this.getFollowAction(queryId); //更新关注信息,默认更新的是被更新者的userId
         Msg.showSuccess('关注成功');
       } else {
-        this.getFollowAction(this.userInfo.id); //更新关注信息
+        this.getFollowAction(queryId); //更新关注信息
         Msg.showWarn('取关成功');
       }
     },
@@ -167,9 +169,6 @@ const useUserStore = defineStore('user', {
         this.getCollectAction(userId);
       }
     },
-    async reportAction(payload) {
-      console.log('reportAction', payload);
-    },
     async getFollowAction(userId) {
       const res = await getFollow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       // console.log('getFollowAction', res.data);
@@ -198,6 +197,9 @@ const useUserStore = defineStore('user', {
       console.log('updateProfileAction form.value', form);
       const res = await updateProfile(form);
       res.code === 0 ? router.go(0) : Msg.showFail('修改信息失败');
+    },
+    async reportAction(payload) {
+      console.log('reportAction', payload);
     }
   }
 });
