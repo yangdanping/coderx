@@ -2,7 +2,7 @@
   <div class="comment-form">
     <Avatar :info="userInfo" />
     <div class="input">
-      <Editor @update:content="(valueHtml) => (content = valueHtml)" :isComment="true" mode="simple" height="150px" />
+      <Editor @update:content="(valueHtml) => (content = valueHtml)" isComment mode="simple" height="150px" />
       <div class="input-action">
         <el-button :disabled="disabled" @click="addComment" type="primary">{{ disabled ? '提交中' : '发表评论' }}</el-button>
       </div>
@@ -52,9 +52,6 @@ const addComment = () => {
         commentStore.commentAction({
           articleId: article.value.id,
           content: content.value,
-          // isReplyToComment: props.isReply ?? false,
-          // commentId: props.commentId ?? null,
-          // replyId: props.replyId ?? null,
           cid: props.commentId ?? null,
           rid: props.replyId ?? null
         });

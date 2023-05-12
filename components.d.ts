@@ -38,6 +38,5 @@ declare module '@vue/runtime-core' {
     RouterLink: typeof import('vue-router')['RouterLink'];
     RouterView: typeof import('vue-router')['RouterView'];
     UserDialog: typeof import('./src/components/user/UserDialog.vue')['default'];
-    ValidCode: typeof import('./src/components/ValidCode.vue')['default'];
   }
 }

@@ -65,8 +65,15 @@ export function changeTags(articleId: RouteParam, tags, hasOldTags: any = '') {
     data: { tags }
   });
 }
+
 export function search(keywords: string) {
   return myRequest.get<IDataType>({
     url: `${urlHead}/search?keywords=${keywords}`
+  });
+}
+
+export function getArticleLikedById(articleId) {
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/${articleId}/like`
   });
 }

@@ -4,22 +4,22 @@
     <div class="comment-box">
       <div class="user-info-box">
         <div class="user-info">
-          <div class="name">{{ item.user.name }}</div>
-          <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
+          <div class="name">{{ item.user?.name }}</div>
+          <el-tag v-if="isAuthor(item.user?.id)" size="small">作者</el-tag>
         </div>
         <div class="floor">
           <span style="margin-right: 10px">{{ floor }}楼</span>
           <span>{{ item.createAt }}</span>
         </div>
       </div>
-      <div class="comment-content">
+      <div class="editor-content">
         <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" :isReply="true" />
       <CommentReply :comment="item" />
     </div>
-    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user.id" />
+    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user?.id" />
   </div>
 </template>
 
@@ -35,9 +35,11 @@ import useArticleStore from '@/stores/article';
 
 import { emitter } from '@/utils';
 
+import type { IComment } from '@/stores/types/comment.result';
+
 const props = defineProps({
   item: {
-    type: Object,
+    type: Object as PropType<IComment>,
     default: () => {}
   },
   floor: {
@@ -78,6 +80,8 @@ const replythis = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/css/editor';
+
 .comment-list-item {
   display: flex;
   border-bottom: 1px solid #e5e6eb;
@@ -105,9 +109,8 @@ const replythis = computed(() => {
         font-size: 13px;
       }
     }
-
-    .comment-content {
-      padding: 20px 0;
+    .editor-content {
+      padding: 10px 0;
     }
   }
 }

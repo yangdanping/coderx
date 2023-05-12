@@ -58,8 +58,20 @@ export function addReply(replyInfo) {
 //   return myRequest.post<IDataType>({ url, data });
 // }
 
-export function like(likeInfo) {
-  const { commentId, replyId } = likeInfo;
-  const url = commentId ? `${urlHead}/${commentId}/like` : `/reply/${replyId}/like`;
-  return myRequest.post<IDataType>({ url });
+// export function like(likeInfo) {
+//   const { commentId, replyId } = likeInfo;
+//   const url = commentId ? `${urlHead}/${commentId}/like` : `/reply/${replyId}/like`;
+//   return myRequest.post<IDataType>({ url });
+// }
+
+export function likeComment(commentId) {
+  return myRequest.post<IDataType>({
+    url: `${urlHead}/${commentId}/like`
+  });
+}
+
+export function getCommentLikedById(commentId) {
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/${commentId}/like`
+  });
 }

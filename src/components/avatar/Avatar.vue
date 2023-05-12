@@ -28,7 +28,7 @@
 
 <script lang="ts" setup>
 import FollowButton from '@/components/FollowButton.vue';
-import { debounce } from '@/utils';
+import { debounce, getImageUrl } from '@/utils';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
@@ -55,8 +55,9 @@ const props = defineProps({
     default: false
   }
 });
-const avatarUrl = computed(() => props.info.avatarUrl ?? new URL('@/assets/img/user/avatar.png', import.meta.url).href);
-const userSex = computed(() => new URL(`../../assets/img/user/${props.info.sex === '女' ? 'female' : 'male'}-icon.webp`, import.meta.url).href);
+const avatarUrl = computed(() => props.info.avatarUrl ?? getImageUrl('user', 'avatar'));
+const userSex = computed(() => getImageUrl('user', `${props.info.sex === '女' ? 'female' : 'male'}-icon`));
+
 const mouseenter =
   !props.disabled &&
   debounce(

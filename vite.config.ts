@@ -12,10 +12,9 @@ const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // base: process.env.NODE_ENV === 'production' ? './' : '/',
   publicDir: 'public', // 作为静态资源服务的文件夹 默认public
   build: {
-    outDir: 'build', // 打包文件的输出目录
+    outDir: 'coderx-v3', // 打包文件的输出目录
     target: 'modules', // 设置最终构建的浏览器兼容目标。默认值是一个 Vite 特有的值：'modules'
     assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
     emptyOutDir: true // 打包前先清空原有打包文件
@@ -41,7 +40,7 @@ export default defineConfig({
     visualizer({
       emitFile: false,
       filename: 'stats.html', //分析图生成的文件名
-      open: true //如果存在本地服务端口,将在打包后自动展示
+      open: false //如果存在本地服务端口,将在打包后自动展示
     }),
     AutoImport({
       // Auto import functions from Vue, e.g. ref, reactive, toRef...

@@ -77,7 +77,7 @@ const collapse = ref(false);
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-bottom: 15px;
+  margin: 10px 0;
   // max-height: 600px;
   // overflow-y: scroll;
 

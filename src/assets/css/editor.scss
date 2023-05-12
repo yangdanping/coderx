@@ -48,13 +48,23 @@
   input[type='checkbox'] {
     margin-right: 5px;
   }
+}
+// 自定义样式-----------------------------------------
 
-  // 自定义样式-----------------------------------------
-
+// 定义混合指令
+@mixin p {
   p {
     line-height: 1.5;
-    margin: 15px 0;
+    margin: 10px 0;
   }
+}
+
+:deep(.w-e-text-container) {
+  @include p; //覆盖掉默认自带的p
+}
+
+:deep(.editor-content-view) {
+  @include p;
 
   img {
     max-width: 100%;

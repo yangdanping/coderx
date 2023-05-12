@@ -1,12 +1,12 @@
 <template>
-  <ActionList :isComment="true">
+  <ActionList isComment>
     <template #comment>
       <ul class="comment-action">
-        <li @click="likeComment(comment.id)" class="item like" :class="isCommentUserLiked(comment.id)">
-          <i></i><span>{{ comment.likes ?? '点赞' }}</span>
+        <li class="item like" @click="likeComment(comment)">
+          <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ?? '点赞'" />
         </li>
-        <li @click="wantReply(comment)" class="item comment">
-          <i></i><span>{{ '回复' }}</span>
+        <li class="item comment" @click="wantReply(comment)">
+          <Icon type="comment" label="回复" />
         </li>
       </ul>
     </template>
@@ -15,6 +15,7 @@
 
 <script lang="ts" setup>
 import ActionList from '@/components/ActionList.vue';
+import Icon from '@/components/icon/Icon.vue';
 
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
@@ -47,9 +48,10 @@ const wantReply = (comment) => {
   }
 };
 
-const likeComment = (commentId) => {
+const likeComment = (comment) => {
   if (token.value) {
-    commentStore.likeAction({ commentId, articleId: article.value.id });
+    // commentStore.likeAction({ commentId, articleId: article.value.id });
+    commentStore.likeAction(comment);
   } else {
     Msg.showInfo('请先登录');
     rootStore.changeLoginDialog();

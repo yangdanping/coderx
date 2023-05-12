@@ -4,7 +4,7 @@ import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
 import { uploadAvatar } from '@/service/file/file.request';
 import useRootStore from '@/stores';
-import { LocalCache, Msg, emitter, timeFormat } from '@/utils';
+import { LocalCache, Msg, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';

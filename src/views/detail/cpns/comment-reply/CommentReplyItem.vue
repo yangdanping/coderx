@@ -6,8 +6,8 @@
         <div class="user-info">
           <div class="name">
             <span>
-              {{ item.user.name }}
-              <el-tag v-if="isAuthor(item.user.id)" size="small">作者</el-tag>
+              {{ item.user?.name }}
+              <el-tag v-if="isAuthor(item.user?.id)" size="small">作者</el-tag>
             </span>
             <span>
               回复:
@@ -20,7 +20,7 @@
           <span>{{ item.createAt }}</span>
         </div>
       </div>
-      <div class="reply-content">
+      <div class="editor-content">
         <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
@@ -29,7 +29,7 @@
       <!-- 使用递归组件-------------------------------- -->
       <CommentReply :comment="item" :isReply="true" />
     </div>
-    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user.id" />
+    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user?.id" />
   </div>
 </template>
 
@@ -51,7 +51,7 @@ import type { IComment } from '@/stores/types/comment.result';
 
 const props = defineProps({
   item: {
-    type: Object,
+    type: Object as PropType<IComment>,
     default: () => {}
   },
   fatherComment: {
@@ -94,6 +94,7 @@ const replythis = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/css/editor';
 .reply-list-item {
   display: flex;
   /* background-color: rgba(220, 230, 220, 0.7); //与文章评论颜色做区分 */
@@ -122,8 +123,8 @@ const replythis = computed(() => {
         font-size: 10px;
       }
     }
-    .reply-content {
-      padding: 20px 0;
+    .editor-content {
+      padding: 10px 0;
     }
   }
 }

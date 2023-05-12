@@ -42,6 +42,7 @@ import DetailPanel from './DetailPanel.vue';
 
 import type { ElImage } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
+import { emitter } from '@/utils';
 
 defineProps({
   article: {
@@ -91,7 +92,7 @@ const bindImagesLayer = () => {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../../assets/css/editor.scss';
+@import '@/assets/css/editor';
 .detail-content {
   margin-top: 80px;
   width: 80%;

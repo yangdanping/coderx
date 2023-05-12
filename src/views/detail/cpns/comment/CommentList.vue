@@ -1,6 +1,6 @@
 <template>
-  <div ref="listRef" class="comment-list">
-    <span class="comment-title">最近评论({{ commentCount }})</span>
+  <div class="comment-list">
+    <span ref="listRef" class="comment-title">最近评论({{ commentCount }})</span>
     <template v-for="(item, index) in commentInfo" :key="item.id">
       <CommentListItem :item="item" :floor="commentInfo.length - index" />
     </template>
@@ -27,7 +27,7 @@ onMounted(() => {
     listRef.value?.scrollIntoView({ behavior: 'smooth' });
   });
 });
-onUnmounted(() => {
+onBeforeUnmount(() => {
   emitter.off('gotoCom');
 });
 </script>
@@ -43,5 +43,6 @@ onUnmounted(() => {
 .comment-title {
   font-weight: 300;
   font-size: 30px;
+  padding-top: var(--navbarHeight); //设置navbar高度,使其gotoCom能完全显示评论区
 }
 </style>

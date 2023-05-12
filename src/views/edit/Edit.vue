@@ -1,7 +1,7 @@
 <template>
   <div class="edit">
     <Editor :editData="editData" @update:content="(content) => (preview = content)" />
-    <el-drawer title="管理您的文章" draggable v-model="drawer" direction="ltr">
+    <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" />
     </el-drawer>
     <el-button class="btn" @click="drawer = true" :icon="Menu">提交</el-button>
@@ -27,8 +27,10 @@ onMounted(() => {
 const drawer = ref(false);
 const preview = ref('');
 const formSubmit = (editData: any) => {
-  if (!editData.title || !preview.value) {
-    Msg.showFail('内容不能为空!');
+  if (!editData.title) {
+    Msg.showFail('请输入标题!');
+  } else if (!preview.value) {
+    Msg.showFail('请输入内容!');
   } else {
     if (!isEdit.value) {
       //创建文章------------------------------------------
@@ -46,7 +48,7 @@ const formSubmit = (editData: any) => {
 </script>
 
 <style lang="scss" scoped>
-@import '../../assets/css/editor.scss';
+@import '@/assets/css/editor';
 .edit {
   .btn {
     position: fixed;
@@ -54,10 +56,10 @@ const formSubmit = (editData: any) => {
     left: 0;
     border: 0;
   }
-  .el-drawer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+
+  :deep(.el-drawer) {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(1px);
   }
 }
 </style>

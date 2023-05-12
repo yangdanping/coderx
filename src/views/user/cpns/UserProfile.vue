@@ -53,7 +53,7 @@
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
-import { emitter } from '@/utils';
+import { emitter, getImageUrl } from '@/utils';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
@@ -74,7 +74,8 @@ const followCount = computed(() => {
   return (type: string) => followInfo.value[type]?.length ?? 0;
 });
 
-const userSex = computed(() => new URL(`../../../assets/img/user/${props.profile.sex === '女' ? 'female' : 'male'}-icon.webp`, import.meta.url).href);
+const userSex = computed(() => getImageUrl('user', `${props.profile.sex === '女' ? 'female' : 'male'}-icon`));
+
 const route = useRoute();
 
 const updateProfile = () => {

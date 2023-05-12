@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getComment, addComment, updateComment, removeComment, addReply, like } from '@/service/comment/comment.request';
+import { getComment, addComment, updateComment, removeComment, addReply, likeComment, getCommentLikedById } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request.js';
 import { Msg, emitter, timeFormat } from '@/utils';
 
@@ -12,12 +12,12 @@ export const useCommentStore = defineStore('comment', {
     replyInfo: [] as IComment[],
     replyInfo2: [] as IComment[],
     commentCount: 0,
-    commentLikedId: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
+    commentUserLikedIdList: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
   }),
   getters: {
     isCommentUserLiked() {
       return (commentId) => {
-        return { liked: this.commentLikedId.some((id) => id === commentId) };
+        return this.commentUserLikedIdList.some((id) => id === commentId);
       };
     },
     commentReply() {
@@ -45,7 +45,7 @@ export const useCommentStore = defineStore('comment', {
     }
   },
   actions: {
-    getCommentInfo(totalCommentInfo) {
+    getTotalCommentInfo(totalCommentInfo) {
       totalCommentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
       this.commentCount = totalCommentInfo.length;
       this.commentInfo = totalCommentInfo.filter((comment) => !comment.cid); //对文章的普通评论
@@ -55,22 +55,44 @@ export const useCommentStore = defineStore('comment', {
       console.log('对评论的普通回复--------------', this.replyInfo);
       console.log('对回复的回复--------------', this.replyInfo2);
     },
-    getCommentLikedId(commentLiked) {
-      this.commentLikedId = commentLiked;
-      // console.log('getCommentLikedId', this.commentLikedId);
+    getUserLikedId(commentUserLikedIdList) {
+      this.commentUserLikedIdList = commentUserLikedIdList;
+    },
+    updateCommentLikes(comment: IComment, likes) {
+      const { id, cid, rid } = comment;
+      if (!cid) {
+        this.commentInfo.find((comment) => {
+          if (comment.id === id) {
+            comment.likes = likes;
+          }
+        });
+      } else if (cid && !rid) {
+        this.replyInfo.find((comment) => {
+          if (comment.id === id) {
+            comment.likes = likes;
+          }
+        });
+      } else if (cid && rid) {
+        this.replyInfo2.find((comment) => {
+          if (comment.id === id) {
+            comment.likes = likes;
+          }
+        });
+      }
+      // this.commentCount.likes = likes;
     },
     // 异步请求action---------------------------------------------------
     async getCommentAction(articleId) {
       // 1.获取文章的评论列表信息
       const res = await getComment(articleId);
-      res.code === 0 ? this.getCommentInfo(res.data) : Msg.showFail('获取文章评论失败');
+      res.code === 0 ? this.getTotalCommentInfo(res.data) : Msg.showFail('获取文章评论失败');
       // 2.若用户登录获取登录用户点赞过哪些评论
       this.refreshLikeAction();
     },
     async refreshLikeAction() {
       const userId = useUserStore().userInfo.id;
       const res = await getLiked(userId);
-      res.code === 0 && this.getCommentLikedId(res.data.commentLiked); //重新获取评论数据
+      res.code === 0 && this.getUserLikedId(res.data.commentLiked); //重新获取评论数据
     },
     async commentAction(payload) {
       const { articleId, cid, rid } = payload;
@@ -108,7 +130,7 @@ export const useCommentStore = defineStore('comment', {
         Msg.showSuccess('修改评论成功');
         const { articleId } = payload;
         const res2 = await getComment(articleId); //重新获取评论数据
-        res2.code === 0 ? this.getCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
+        res2.code === 0 ? this.getTotalCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
       } else {
         Msg.showFail('修改评论失败');
       }
@@ -120,22 +142,33 @@ export const useCommentStore = defineStore('comment', {
         Msg.showSuccess('删除评论成功');
         const { articleId } = payload;
         const res2 = await getComment(articleId); //重新获取评论数据
-        res2.code === 0 ? this.getCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
+        res2.code === 0 ? this.getTotalCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
       } else {
         Msg.showFail('删除评论失败');
       }
     },
-    async likeAction(payload) {
-      const { articleId } = payload;
-      const res = await like(payload);
-      if (res.code === 0) {
-        this.getCommentAction(articleId);
-        Msg.showSuccess('点赞评论成功');
-      } else {
-        this.getCommentAction(articleId);
-        Msg.showSuccess('取消点赞成功');
+    async likeAction(comment) {
+      const { id } = comment;
+      console.log('likeAction comment', comment);
+      const res1 = await likeComment(id);
+      res1.code === 0 ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
+      const res2 = await getCommentLikedById(id);
+      if (res2.code === 0) {
+        this.updateCommentLikes(comment, res2.data.likes); //传入comment是为了判断类型
+        this.refreshLikeAction(); //更新用户点赞列表
       }
     }
+    // async likeAction(payload) {
+    //   const { articleId } = payload;
+    //   const res = await like(payload);
+    //   if (res.code === 0) {
+    //     this.getCommentAction(articleId);
+    //     Msg.showSuccess('点赞评论成功');
+    //   } else {
+    //     this.getCommentAction(articleId);
+    //     Msg.showSuccess('取消点赞成功');
+    //   }
+    // }
   }
 });
 

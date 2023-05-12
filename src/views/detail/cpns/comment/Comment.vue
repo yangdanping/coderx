@@ -21,6 +21,7 @@ import CommentForm from './CommentForm.vue';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from '@/stores/comment';
+import { emitter } from '@/utils';
 const commentStore = useCommentStore();
 const rootStore = useRootStore();
 const userStore = useUserStore();
