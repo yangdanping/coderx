@@ -14,7 +14,7 @@ const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 export default defineConfig({
   publicDir: 'public', // 作为静态资源服务的文件夹 默认public
   build: {
-    outDir: 'coderx-v3', // 打包文件的输出目录
+    outDir: 'build', // 打包文件的输出目录
     target: 'modules', // 设置最终构建的浏览器兼容目标。默认值是一个 Vite 特有的值：'modules'
     assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
     emptyOutDir: true // 打包前先清空原有打包文件
