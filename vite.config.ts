@@ -20,16 +20,16 @@ export default defineConfig({
     emptyOutDir: true // 打包前先清空原有打包文件
   },
   server: {
-    port: 8000,
+    port: 8080,
     open: true,
     proxy: {
       '/dev-api': {
-        target: 'http://localhost:9000', //接口的前缀
+        target: 'http://localhost:8000', //接口的前缀
         changeOrigin: true, //支持跨域
         rewrite: (path) => path.replace(/^\/dev-api/, '') //重写路径
       },
       '/api': {
-        target: 'http://119.91.150.141:9000',
+        target: 'http://119.91.150.141:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }

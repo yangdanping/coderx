@@ -11,7 +11,6 @@ declare module '@vue/runtime-core' {
   export interface GlobalComponents {
     ActionList: typeof import('./components/ActionList.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
-    CommentIcon: typeof import('./components/icon/CommentIcon.vue')['default']
     CommentSvg: typeof import('./components/icon/cpns/CommentSvg.vue')['default']
     Editor: typeof import('./components/wang-editor/Editor.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -55,12 +54,10 @@ declare module '@vue/runtime-core' {
     IDelete: typeof import('~icons/ep/delete')['default']
     IEdit: typeof import('~icons/ep/edit')['default']
     IMore: typeof import('~icons/ep/more')['default']
-    IStar: typeof import('~icons/ep/star')['default']
     ISuccessFilled: typeof import('~icons/ep/success-filled')['default']
     ISuitcase: typeof import('~icons/ep/suitcase')['default']
     ITakeawayBox: typeof import('~icons/ep/takeaway-box')['default']
     IWarning: typeof import('~icons/ep/warning')['default']
-    LikeIcon: typeof import('./components/icon/LikeIcon.vue')['default']
     LikeSvg: typeof import('./components/icon/cpns/LikeSvg.vue')['default']
     LoginAccount: typeof import('./components/user/login/LoginAccount.vue')['default']
     LoginPanel: typeof import('./components/user/login/LoginPanel.vue')['default']
@@ -76,7 +73,6 @@ declare module '@vue/runtime-core' {
     RouterView: typeof import('vue-router')['RouterView']
     StarSvg: typeof import('./components/icon/cpns/StarSvg.vue')['default']
     UserDialog: typeof import('./components/user/UserDialog.vue')['default']
-    ViewIcon: typeof import('./components/icon/ViewIcon.vue')['default']
     ViewSvg: typeof import('./components/icon/cpns/ViewSvg.vue')['default']
   }
 }

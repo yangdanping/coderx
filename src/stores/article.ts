@@ -18,7 +18,7 @@ import { addPictureForArticle } from '@/service/file/file.request';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from './comment';
-import { Msg, timeFormat, isArrEqual } from '@/utils';
+import { Msg, timeFormat, isArrEqual, isEmptyObj } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
@@ -69,8 +69,16 @@ export const useArticleStore = defineStore('article', {
     getUserLikedId(articleUserLikedIdList) {
       this.articleUserLikedIdList = articleUserLikedIdList;
     },
-    updateArticleLikes(likes) {
-      this.article.likes = likes;
+    updateArticleLikes(articleId, likes) {
+      // 更改列表中的likes
+      this.articles.result?.find((article) => {
+        if (article.id === articleId) {
+          article.likes = likes;
+        }
+      });
+      if (isEmptyObj(this.article)) {
+        this.article.likes = likes;
+      }
     },
     initArticle() {
       this.article = {};
@@ -151,7 +159,7 @@ export const useArticleStore = defineStore('article', {
       res1.code === 0 ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
       const res2 = await getArticleLikedById(articleId); //更新文章点赞
       if (res2.code === 0) {
-        this.updateArticleLikes(res2.data.likes);
+        this.updateArticleLikes(articleId, res2.data.likes);
         this.refreshLikeAction(); //更新用户点赞列表
       }
     },
