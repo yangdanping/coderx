@@ -1,4 +1,5 @@
-export default function debounce(fn: Function, delay: number, immediate: boolean = false) {
+type CallbackFn = (...item) => void;
+export default function debounce(fn: CallbackFn, delay: number, immediate: boolean = false) {
   // 1.定义一个定时器,保存上一次的定时器
   let timer: NodeJS.Timeout | null = null;
   let isInvoke = false; //定义个自由变量控制我们在中间停掉后下一次也可立即执行函数内部改变immediate不好,因为其应该由外部决定

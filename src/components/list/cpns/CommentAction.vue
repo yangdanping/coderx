@@ -1,20 +1,20 @@
 <template>
-  <ActionList isComment>
+  <ListAction isComment>
     <template #comment>
       <ul class="comment-action">
-        <li class="item like" @click="likeComment(comment)">
+        <li class="item like" @click.stop.prevent="likeComment(comment)">
           <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ?? '点赞'" />
         </li>
-        <li class="item comment" @click="wantReply(comment)">
+        <li class="item comment" @click.stop.prevent="wantReply(comment)">
           <Icon type="comment" label="回复" />
         </li>
       </ul>
     </template>
-  </ActionList>
+  </ListAction>
 </template>
 
 <script lang="ts" setup>
-import ActionList from '@/components/ActionList.vue';
+import ListAction from './ListAction.vue';
 import Icon from '@/components/icon/Icon.vue';
 
 import useRootStore from '@/stores';

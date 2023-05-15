@@ -1,4 +1,5 @@
 import type { IUserInfo } from '@/stores/types/user.result';
+import type { IArticle } from './article.result';
 
 export interface IComment {
   id?: number;
@@ -9,7 +10,10 @@ export interface IComment {
   rid?: number;
   cid?: number; //被回复的评论id
   likes?: number;
-  user?: IUserInfo;
+  author?: IUserInfo;
+  article?: IArticle;
+  cover?: string;
+  articleUrl?: string;
   childReply?: IComment[];
   createAt?: string;
   updateAt?: string;

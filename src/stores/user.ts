@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
-import { userLogin, userRegister, getUserInfoById, follow, getFollow, getArticle, updateProfile, getCommentById } from '@/service/user/user.request';
+import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, getCommentListByUserId } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
 import { uploadAvatar } from '@/service/file/file.request';
 import useRootStore from '@/stores';
@@ -10,6 +10,8 @@ import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
 import type { IArticle } from './types/article.result';
+import useCommentStore from './comment';
+import { getComment } from '@/service/comment/comment.request';
 
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
@@ -19,8 +21,7 @@ const useUserStore = defineStore('user', {
     userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
     profile: {} as IUserInfo, //其他用户信息,只有读权限
     followInfo: {} as IFollowInfo,
-    articles: [] as IArticle[],
-    comments: [],
+    comments: [] as any[],
     collects: [] as any,
     isFollowed: false //仅用于一对一用户的判断
   }),
@@ -35,6 +36,9 @@ const useUserStore = defineStore('user', {
         const followType = type === 'follower' ? 'following' : type;
         return !!this.followInfo[followType]?.some((item) => item.id === userId);
       };
+    },
+    followCount() {
+      return (type: string) => this.followInfo[type]?.length ?? 0;
     }
   },
   actions: {
@@ -47,10 +51,7 @@ const useUserStore = defineStore('user', {
     changeProfile(profile: IUserInfo) {
       this.profile = profile;
     },
-    changeArticle(articles) {
-      articles.forEach((article) => (article.createAt = timeFormat(article.createAt)));
-      this.articles = articles;
-    },
+
     logOut(refresh = true) {
       this.token = '';
       this.userInfo = {};
@@ -130,19 +131,15 @@ const useUserStore = defineStore('user', {
       const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       if (res.code === 0) {
         this.changeProfile(res.data);
-        this.getArticleAction(res.data.id);
       } else {
         Msg.showFail('请求用户信息失败');
       }
     },
-    async getArticleAction(userId) {
-      const { pageNum, pageSize } = useRootStore();
-      const res = await getArticle(userId, pageNum, pageSize);
-      res.code === 0 ? this.changeArticle(res.data) : Msg.showFail('获取用户发表文章失败');
-    },
     async getCommentAction(userId) {
       const { pageNum, pageSize } = useRootStore();
-      const res = await getCommentById(userId, pageNum, pageSize);
+      const data = { pageNum, pageSize, userId };
+      const res = await getComment(data);
+      console.log('getCommentAction res', res);
       if (res.code === 0) {
         this.changeComment(res.data);
       } else {
@@ -181,6 +178,7 @@ const useUserStore = defineStore('user', {
       }
     },
     async getFollowAction(userId) {
+      console.log('getFollowAction', userId);
       const res = await getFollow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       // console.log('getFollowAction', res.data);
       // 若改用户中的follower的id中有当前登录用户的id,则isFollowed为true

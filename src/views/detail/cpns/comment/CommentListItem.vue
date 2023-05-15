@@ -1,11 +1,11 @@
 <template>
   <div class="comment-list-item">
-    <Avatar :info="item.user" />
+    <Avatar :info="item.author" />
     <div class="comment-box">
       <div class="user-info-box">
         <div class="user-info">
-          <div class="name">{{ item.user?.name }}</div>
-          <el-tag v-if="isAuthor(item.user?.id)" size="small">作者</el-tag>
+          <div class="name">{{ item.author?.name }}</div>
+          <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
         </div>
         <div class="floor">
           <span style="margin-right: 10px">{{ floor }}楼</span>
@@ -19,16 +19,16 @@
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" :isReply="true" />
       <CommentReply :comment="item" />
     </div>
-    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user?.id" />
+    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.author?.id" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 
+import CommentAction from '@/components/list/cpns/CommentAction.vue';
 import CommentForm from './CommentForm.vue';
 import CommentTools from './CommentTools.vue';
-import CommentAction from './CommentAction.vue';
 import CommentReply from '../comment-reply/CommentReply.vue';
 
 import useArticleStore from '@/stores/article';

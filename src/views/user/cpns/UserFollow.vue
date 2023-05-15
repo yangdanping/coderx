@@ -14,14 +14,28 @@
 </template>
 
 <script lang="ts" setup>
+import { emitter } from '@/utils';
 import UserFollowItem from './UserFollowItem.vue';
 
 import useUserStore from '@/stores/user';
 const userStore = useUserStore();
 const { profile, followInfo } = storeToRefs(userStore);
 
-const followType = ref('following'); //默认显示关注者
+const followType = ref<any>('following'); //默认显示关注者
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
+const route = useRoute();
+
+onMounted(() => {
+  emitter.on('changeFollowTab', (subTabName) => {
+    followType.value = subTabName;
+  });
+  const subTabName = route.query.subTabName;
+  console.log('UserFollow onMounted subTabName', subTabName);
+  if (subTabName) {
+    followType.value = subTabName;
+  }
+});
+
 const handleClick = (pane) => {
   console.log('handleClick', pane.paneName);
 };

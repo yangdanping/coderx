@@ -4,14 +4,14 @@ import { LocalCache } from '@/utils';
 import useUserStore from '@/stores/user';
 const useRootStore = defineStore('root', {
   state: () => ({
-    showDialog: false,
-    pageNum: 1,
-    pageSize: 5,
-    tagId: ''
+    showLoginDialog: false as boolean, //多个组件都有可能使用该参数,所以放到store中
+    pageNum: 1 as number,
+    pageSize: 5 as number,
+    tagId: '' as number | ''
   }),
   actions: {
     changeLoginDialog() {
-      this.showDialog = !this.showDialog;
+      this.showLoginDialog = !this.showLoginDialog;
     },
     changePageNum(pageNum: number) {
       this.pageNum = pageNum;
@@ -21,11 +21,6 @@ const useRootStore = defineStore('root', {
     },
     changeTag(tagId) {
       this.tagId = tagId;
-    },
-    initPage() {
-      this.pageNum = 1;
-      this.pageSize = 5;
-      this.tagId = '';
     },
     // 异步请求action---------------------------------------------------
     async checkAuthAction() {

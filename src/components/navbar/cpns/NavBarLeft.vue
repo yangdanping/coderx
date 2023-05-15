@@ -1,10 +1,17 @@
 <template>
   <div class="left">
-    <img class="logo" src="@/assets/img/logo.svg" alt="" />
+    <a href="/" @click.prevent="goHome">
+      <img class="logo" src="@/assets/img/logo.svg" alt="" />
+    </a>
   </div>
 </template>
 
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+const router = useRouter();
+const goHome = () => {
+  router.push('/');
+};
+</script>
 
 <style lang="scss" scoped>
 .left {

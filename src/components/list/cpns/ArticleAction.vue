@@ -1,23 +1,23 @@
 <template>
-  <ActionList>
+  <ListAction>
     <template #article>
       <ul class="article-action">
-        <li class="item view" @click="goDetail(article.id)">
+        <li class="item view">
           <Icon type="views" :label="article.views" />
         </li>
-        <li class="item like" @click="likeClick(article.id)">
+        <li class="item like" @click.stop.prevent="likeClick(article.id)">
           <Icon type="like" :isActive="isArticleUserLiked(article.id)" :label="article.likes" />
         </li>
-        <li class="item comment" @click="goDetail(article.id)">
+        <li class="item comment">
           <Icon type="comment" :label="article.commentCount" />
         </li>
       </ul>
     </template>
-  </ActionList>
+  </ListAction>
 </template>
 
 <script lang="ts" setup>
-import ActionList from '@/components/ActionList.vue';
+import ListAction from './ListAction.vue';
 import Icon from '@/components/icon/Icon.vue';
 import { Msg } from '@/utils';
 
@@ -42,7 +42,7 @@ const props = defineProps({
 });
 
 const likeClick = (articleId) => {
-  if (token) {
+  if (token.value) {
     if (props.article.status === '1') {
       Msg.showFail('文章已被封禁,不可点赞');
     } else {
@@ -53,7 +53,6 @@ const likeClick = (articleId) => {
     rootStore.changeLoginDialog();
   }
 };
-const goDetail = (articleId) => router.push({ path: `/article/${articleId}` });
 </script>
 
 <style lang="scss" scoped></style>

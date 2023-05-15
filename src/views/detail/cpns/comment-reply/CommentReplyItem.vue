@@ -1,18 +1,18 @@
 <template>
   <div class="reply-list-item">
-    <Avatar :info="item.user" :size="35" />
+    <Avatar :info="item.author" :size="35" />
     <div class="reply-box">
       <div class="user-info-box">
         <div class="user-info">
           <div class="name">
             <span>
-              {{ item.user?.name }}
-              <el-tag v-if="isAuthor(item.user?.id)" size="small">作者</el-tag>
+              {{ item.author?.name }}
+              <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
             </span>
             <span>
               回复:
-              {{ fatherComment.user?.name }}
-              <el-tag v-if="isAuthor(fatherComment.user?.id)" size="small">作者</el-tag>
+              {{ fatherComment.author?.name }}
+              <el-tag v-if="isAuthor(fatherComment.author?.id)" size="small">作者</el-tag>
             </span>
           </div>
         </div>
@@ -29,7 +29,7 @@
       <!-- 使用递归组件-------------------------------- -->
       <CommentReply :comment="item" :isReply="true" />
     </div>
-    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.user?.id" />
+    <CommentTools :editData="item.content" :commentId="item.id" :userId="item.author?.id" />
   </div>
 </template>
 
@@ -37,9 +37,9 @@
 import { emitter } from '@/utils';
 import Avatar from '@/components/avatar/Avatar.vue';
 
+import CommentAction from '@/components/list/cpns/CommentAction.vue';
 import CommentForm from '../comment/CommentForm.vue';
 import CommentTools from '../comment/CommentTools.vue';
-import CommentAction from '../comment/CommentAction.vue';
 // import CommentChildReply from '../comment-child-reply/CommentChildReply.vue';
 import CommentReply from './CommentReply.vue';
 

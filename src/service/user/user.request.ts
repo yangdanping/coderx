@@ -36,23 +36,23 @@ export function getLiked(id) {
   });
 }
 
-export function follow(id) {
-  return myRequest.post<IDataType>({
-    url: `${urlHead}/${id}/follow`
-  });
-}
-
 export function getFollow(id) {
   return myRequest.get<IDataType>({
     url: `${urlHead}/${id}/follow`
   });
 }
 
-export function getArticle(userId, pageNum, pageSize) {
+export function follow(id) {
+  return myRequest.post<IDataType>({
+    url: `${urlHead}/${id}/follow`
+  });
+}
+
+export function getCommentListByUserId(userId, pageNum, pageSize) {
   const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
   const limit = pageSize;
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${userId}/article?offset=${offset}&limit=${limit}`
+    url: `${urlHead}/${userId}/comment?offset=${offset}&limit=${limit}`
   });
 }
 
@@ -60,14 +60,6 @@ export function updateProfile(profile) {
   return myRequest.put<IDataType>({
     url: `${urlHead}/profile`,
     data: profile
-  });
-}
-
-export function getCommentById(userId, pageNum, pageSize) {
-  const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
-  const limit = pageSize;
-  return myRequest.get<IDataType>({
-    url: `${urlHead}/${userId}/comment?offset=${offset}&limit=${limit}`
   });
 }
 

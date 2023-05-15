@@ -1,9 +1,17 @@
 <template>
   <nav class="nav-menu">
     <div class="menu">
-      <div class="menu-item" :class="{ active: activeRoute === item.path }" v-for="item in menus" @click="handleSelect(item.path)" :index="item.path" :key="item.name">
+      <a
+        class="menu-item"
+        :class="{ active: activeRoute === item.path }"
+        v-for="item in menus"
+        @click.prevent="handleSelect(item.path)"
+        :href="item.path"
+        :index="item.path"
+        :key="item.name"
+      >
         {{ item.name }}
-      </div>
+      </a>
     </div>
   </nav>
 </template>
@@ -32,9 +40,9 @@ const handleSelect = (key: string) => {
 <style lang="scss" scoped>
 .nav-menu {
   user-select: none;
+  color: var(--fontColor);
   .menu {
     display: flex;
-    color: var(--fontColor);
     font-size: 22px;
     .menu-item {
       padding: 27px;

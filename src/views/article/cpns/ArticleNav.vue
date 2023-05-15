@@ -22,18 +22,18 @@ onMounted(() => {
     console.log('changeTag tagId!!!!!!!!!!!!!!!', id);
     activeName.value = name;
     rootStore.changeTag(id);
-    articleStore.getListAction();
+    articleStore.getArticleListAction();
   });
 });
 const handleClick = (tab) => {
   console.log('handleClick!!!!', tab);
   if (tab.index) {
-    rootStore.initPage();
+    rootStore.$reset();
     rootStore.changeTag(tab.index === '0' ? '' : tab.index);
-    articleStore.getListAction();
+    articleStore.getArticleListAction();
   } else {
-    rootStore.initPage();
-    articleStore.getListAction();
+    rootStore.$reset();
+    articleStore.getArticleListAction();
   }
 };
 </script>

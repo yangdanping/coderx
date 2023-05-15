@@ -29,7 +29,7 @@ export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: {} as IArticles,
     article: {} as IArticle,
-    articleUserLikedIdList: [] as any[], //该用户点赞过的文章id,通过computed计算是否有点赞
+    userLikedArticleIdList: [] as any[], //该用户点赞过的文章id,通过computed计算是否有点赞
     tags: [] as Itag[],
     searchResults: [] as any[],
     uploaded: [] as any[]
@@ -40,18 +40,18 @@ export const useArticleStore = defineStore('article', {
     },
     isArticleUserLiked() {
       return (articleId) => {
-        return this.articleUserLikedIdList.some((id) => id === articleId);
+        return this.userLikedArticleIdList.some((id) => id === articleId);
       };
     }
   },
   actions: {
-    getListMutation(articles: IArticles) {
+    changeArticleList(articles: IArticles) {
       articles.result?.forEach((article) => {
         article.createAt = timeFormat(article.createAt);
         article.updateAt = timeFormat(article.updateAt);
       });
       this.articles = articles;
-      console.log('getListMutation', this.articles);
+      console.log('changeArticleList', this.articles.result);
     },
     changeUploaded(imgId: number) {
       if (imgId) {
@@ -66,8 +66,8 @@ export const useArticleStore = defineStore('article', {
       article.updateAt = timeFormat(article.updateAt);
       this.article = article;
     },
-    getUserLikedId(articleUserLikedIdList) {
-      this.articleUserLikedIdList = articleUserLikedIdList;
+    changeUserLikedId(userLikedArticleIdList) {
+      this.userLikedArticleIdList = userLikedArticleIdList;
     },
     updateArticleLikes(articleId, likes) {
       // 更改列表中的likes
@@ -82,29 +82,29 @@ export const useArticleStore = defineStore('article', {
     },
     initArticle() {
       this.article = {};
+      this.articles = {};
     },
     initTag(tags: Itag[]) {
       this.tags = tags;
     },
     // 异步请求action---------------------------------------------------
-    async getListAction() {
+    async getArticleListAction(userId: number | '' = '', idList: number[] | [] = []) {
       const { pageNum, pageSize, tagId } = useRootStore();
-      const { userInfo } = useUserStore();
-      const data = { pageNum, pageSize, tagId };
-      console.log('getListAction', data);
+      const data = { pageNum, pageSize, tagId, userId, idList };
+      console.log('getArticleListAction', data);
       const res = await getList(data); //获取文章列表信息以及文章数
       if (res.code === 0) {
-        this.getListMutation(res.data);
-        userInfo.id && this.refreshLikeAction(); //若用户登录获取登录用户点赞过哪些文章
+        this.changeArticleList(res.data);
+        useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
       }
     },
-    async refreshLikeAction() {
+    async getUserLikedAction() {
       const { userInfo } = useUserStore();
-      const res = await getLiked(userInfo.id); //获取当前用户的对文章的点赞信息
-      console.log('refreshLikeAction', res);
-      res.code === 0 && this.getUserLikedId(res.data.articleLiked);
+      const res = await getLiked(userInfo.id); //获取当前用户的对所有文章的点赞信息
+      console.log('getUserLikedAction', res);
+      res.code === 0 && this.changeUserLikedId(res.data.articleLiked);
     },
     async editAction(payload) {
       const { title, content, tags } = payload;
@@ -135,7 +135,7 @@ export const useArticleStore = defineStore('article', {
       const res1 = await addView(articleId);
       if (res1.code === 0) {
         console.log('已增加浏览量,准备获取文章详情信息', articleId);
-        this.refreshLikeAction(); //获取点赞信息
+        this.getUserLikedAction(); //获取点赞信息
         const res2 = await getDetail(articleId);
         if (res2.code === 0) {
           this.getDetail(res2.data);
@@ -157,10 +157,11 @@ export const useArticleStore = defineStore('article', {
       const res1 = await likeArticle(articleId);
       console.log('likeAction!!!!', res1);
       res1.code === 0 ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
+      console.log('likeAction 更新文章点赞', articleId);
       const res2 = await getArticleLikedById(articleId); //更新文章点赞
       if (res2.code === 0) {
         this.updateArticleLikes(articleId, res2.data.likes);
-        this.refreshLikeAction(); //更新用户点赞列表
+        this.getUserLikedAction(); //更新用户点赞列表
       }
     },
     async updateAction(payload) {

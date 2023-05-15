@@ -28,7 +28,7 @@ export default function init(app: App) {
     console.log(`<路由前置守卫>检测到路由 ${from.path} --> ${to.path}`);
     to.matched.forEach((record) => (document.title = record.meta.title ? `${record.meta.title} - CoderX` : 'CoderX'));
     if (from.path !== to.path) {
-      rootStore.initPage();
+      rootStore.$reset();
     }
     if (to.path === '/article') {
       articleStore.initArticle();

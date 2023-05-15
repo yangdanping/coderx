@@ -1,6 +1,6 @@
 <template>
   <div class="user-dialog">
-    <el-dialog v-model="showDialog" @close="hindDialog" :append-to-body="false" destroy-on-close center>
+    <el-dialog v-model="showLoginDialog" @close="hindDialog" :append-to-body="false" destroy-on-close center>
       <LoginPanel v-if="!showProfile" />
       <ProfilePanel v-else :editForm="editForm" />
     </el-dialog>
@@ -14,7 +14,7 @@ import ProfilePanel from './profile/ProfilePanel.vue';
 import { emitter } from '@/utils';
 const rootStore = useRootStore();
 
-const { showDialog } = storeToRefs(rootStore);
+const { showLoginDialog } = storeToRefs(rootStore);
 const showProfile = ref(false);
 const editForm = ref({});
 onMounted(() => {

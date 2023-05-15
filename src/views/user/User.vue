@@ -40,5 +40,6 @@ const getData = (userId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  color: var(--fontColor);
 }
 </style>

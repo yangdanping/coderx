@@ -5,7 +5,7 @@
       <template v-if="collects.length">
         <div v-for="item in collects" :key="item.id" @click="addToCollect(item.id)" class="item">
           <div class="item-left">
-            <span>{{ item.name }}</span>
+            <div>{{ item.name }}</div>
             <div v-if="item.count" class="count">{{ item.count.length }}</div>
           </div>
           <i v-if="isCollected(item.count)">
@@ -100,6 +100,7 @@ const addToCollect = (collectId) => {
     cursor: pointer;
     .item-left {
       display: flex;
+      align-items: center;
       .count {
         height: 20px;
         width: 20px;

@@ -51,7 +51,7 @@ const ToggleUnFollow = (toggle: boolean) => {
 };
 
 const follow = () => {
-  if (token) {
+  if (token.value) {
     userStore.followAction(props.profile.id, props.isFollowListItem);
   } else {
     Msg.showFail('请先登录');

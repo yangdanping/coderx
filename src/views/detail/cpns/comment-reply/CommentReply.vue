@@ -21,7 +21,7 @@
       <CommentReplyItem :item="reply[0]" :fatherComment="fatherComment(reply[0])" />
     </template>
     <!-- 展开线---------------------------------------------------- -->
-    <template v-if="reply.length">
+    <template v-if="reply.length > 1">
       <el-tooltip class="item" effect="dark" :content="`${showOne ? '展开' : '折叠'}评论`" placement="left">
         <span class="line" @click="showOne = !showOne">
           <el-icon v-show="showOne" class="icon"><IDCaret /></el-icon>

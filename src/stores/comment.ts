@@ -5,6 +5,7 @@ import { Msg, emitter, timeFormat } from '@/utils';
 
 import type { IComment } from './types/comment.result';
 import useUserStore from './user';
+import useRootStore from './';
 
 export const useCommentStore = defineStore('comment', {
   state: () => ({
@@ -82,14 +83,16 @@ export const useCommentStore = defineStore('comment', {
       // this.commentCount.likes = likes;
     },
     // 异步请求action---------------------------------------------------
-    async getCommentAction(articleId) {
+    async getCommentAction(articleId, userId = '') {
       // 1.获取文章的评论列表信息
-      const res = await getComment(articleId);
+      const { pageNum, pageSize } = useRootStore();
+      const data = { pageNum, pageSize, articleId, userId };
+      const res = await getComment(data);
       res.code === 0 ? this.getTotalCommentInfo(res.data) : Msg.showFail('获取文章评论失败');
       // 2.若用户登录获取登录用户点赞过哪些评论
-      this.refreshLikeAction();
+      this.changeUserLikedId();
     },
-    async refreshLikeAction() {
+    async changeUserLikedId() {
       const userId = useUserStore().userInfo.id;
       const res = await getLiked(userId);
       res.code === 0 && this.getUserLikedId(res.data.commentLiked); //重新获取评论数据
@@ -155,7 +158,7 @@ export const useCommentStore = defineStore('comment', {
       const res2 = await getCommentLikedById(id);
       if (res2.code === 0) {
         this.updateCommentLikes(comment, res2.data.likes); //传入comment是为了判断类型
-        this.refreshLikeAction(); //更新用户点赞列表
+        this.changeUserLikedId(); //更新用户点赞列表
       }
     }
     // async likeAction(payload) {

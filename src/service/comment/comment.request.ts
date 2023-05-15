@@ -3,9 +3,15 @@ import type { IDataType } from '@/service/types';
 
 const urlHead = '/comment';
 
-export function getComment(articleId) {
+export function getComment(data) {
+  const { pageNum, pageSize, articleId = '', userId = '' } = data;
+  // const offset = 0;
+  // const limit = 100;
+  const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
+  const limit = pageSize;
+  console.log('getComment offset limit', offset, limit);
   return myRequest.get<IDataType>({
-    url: `${urlHead}?articleId=${articleId}`
+    url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`
   });
 }
 

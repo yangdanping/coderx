@@ -2,7 +2,7 @@
   <div class="avatar">
     <el-popover popper-class="user-popover" width="200px" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
-        <el-avatar :src="avatarUrl" @click="goProfile" :size="60" />
+        <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" />
         <div class="user-info">
           <div class="info1">
             <h2>{{ info.name }}</h2>
@@ -10,8 +10,8 @@
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
-            <span>关注:{{ followCount('following') }}</span>
-            <span>粉丝:{{ followCount('follower') }}</span>
+            <span @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
+            <span @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
           </div>
         </div>
       </div>
@@ -19,7 +19,7 @@
         <FollowButton :isFollowed="isFollowed" :profile="info" />
       </div>
       <template #reference>
-        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile" :size="size" />
+        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" />
       </template>
     </el-popover>
     <div class="avatar-icon" v-if="showSet && isUser(info.id)"><slot name="icon"></slot></div>
@@ -36,7 +36,7 @@ import useUserStore from '@/stores/user';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { followInfo, isFollowed, isUser } = storeToRefs(userStore);
+const { followCount, isFollowed, isUser } = storeToRefs(userStore);
 
 const props = defineProps({
   info: {
@@ -62,26 +62,43 @@ const mouseenter =
   !props.disabled &&
   debounce(
     function () {
-      console.log('mouseentermouseentermouseentermouseentermouseentermouseentermouseenter');
+      console.log('mouseenter', props.info.id);
       userStore.getFollowAction(props.info.id);
     },
     500,
     true
   );
 
-const followCount = computed(() => {
-  return (type: string) => followInfo.value[type]?.length ?? 0;
-});
-
-const goProfile = () => {
-  console.log('goProfile route.path', route.path);
-  const path = `/user/${props.info.id}`;
+const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
+  if (props.disabled) return;
+  console.log('goProfile', route.path, tabName, subTabName);
+  let path = `/user/${props.info.id}`;
   if (path === route.path) {
     router.go(0);
   } else {
-    !props.disabled && router.push(path);
+    if (!tabName && !subTabName) {
+      router.push(path); //不存在tabName,则用户界面默认展示文章列表
+    } else {
+      router.push({
+        path,
+        query: {
+          tabName,
+          subTabName
+        }
+      });
+    }
   }
 };
+
+// const goProfile = () => {
+//   console.log('goProfile route.path', route.path);
+//   const path = `/user/${props.info.id}`;
+//   if (path === route.path) {
+//     router.go(0);
+//   } else {
+//     !props.disabled && router.push(path);
+//   }
+// };
 </script>
 
 <style lang="scss" scoped>
@@ -133,7 +150,9 @@ const goProfile = () => {
       .info2 {
         display: flex;
         align-items: center;
-
+        span {
+          cursor: pointer;
+        }
         span:first-of-type {
           margin-right: 5px;
         }

@@ -4,7 +4,7 @@
       <el-tab-pane label="文章" name="文章">
         <UserArticle />
       </el-tab-pane>
-      <el-tab-pane label="回答" name="回答">
+      <el-tab-pane label="评论" name="评论">
         <UserComment />
       </el-tab-pane>
       <el-tab-pane label="收藏" name="收藏">
@@ -22,9 +22,23 @@ import UserArticle from './UserArticle.vue';
 import UserCollect from './UserCollect.vue';
 import UserComment from './UserComment.vue';
 import UserFollow from './UserFollow.vue';
+import { emitter } from '@/utils';
+
 const route = useRoute();
-const activeName = ref('文章');
+const activeName = ref<any>('文章');
 const emit = defineEmits(['tabClick']);
+
+onMounted(() => {
+  emitter.on('changeFollowTab', () => {
+    activeName.value = '关注';
+  });
+  const tabName = route.query.tabName;
+  console.log('UserProfileMenu onMounted tabName', tabName);
+  if (tabName) {
+    activeName.value = tabName;
+  }
+});
+
 watch(
   () => route.params.userId,
   () => (activeName.value = '文章') //切换不同用户时初始化为文章
@@ -33,6 +47,9 @@ const handleClick = (tab) => emit('tabClick', tab.index);
 </script>
 
 <style lang="scss" scoped>
+.user-profile-menu {
+  backdrop-filter: blur(10px);
+}
 .user-tabs {
   :deep(.el-tabs__item) {
     font-size: 20px;

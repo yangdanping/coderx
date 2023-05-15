@@ -1,18 +1,31 @@
 <template>
   <div class="nav-bar-user">
-    <el-tooltip class="item" effect="dark" content="反馈中心" placement="bottom">
-      <i @click="showFeedBack = true" class="el-icon-message"></i>
-    </el-tooltip>
-    <el-button class="editbtn" @click="goEdit" type="primary">写文章</el-button>
-    <el-dropdown>
-      <Avatar :info="userInfo" disabled></Avatar>
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item @click="goProfile">我的空间</el-dropdown-item>
-          <el-dropdown-item @click="logOut">退出登录</el-dropdown-item>
-        </el-dropdown-menu>
-      </template>
-    </el-dropdown>
+    <div class="user-avatar" @mouseenter="toggle(true)" @mouseleave="toggle(false)">
+      <Avatar :info="userInfo" disabled :size="50"></Avatar>
+      <div class="box" v-if="isShow">
+        <div class="user-info">
+          <div class="following" @click="goProfile('关注', 'following')">
+            <div>{{ followCount('following') }}</div>
+            <div>关注</div>
+          </div>
+          <div class="follower" @click="goProfile('关注', 'follower')">
+            <div>{{ followCount('follower') }}</div>
+            <div>粉丝</div>
+          </div>
+        </div>
+        <div class="btn1">
+          <el-button type="success" class="editbtn" @click="goEdit" plain>
+            <el-icon><IEditPen /></el-icon>写文章
+          </el-button>
+        </div>
+        <div class="btn2">
+          <el-button type="primary" @click="goProfile()" plain>我的空间</el-button>
+        </div>
+        <div class="btn3">
+          <el-button @click="logOut">退出登录</el-button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -20,25 +33,41 @@
 import Avatar from '@/components/avatar/Avatar.vue';
 
 import useUserStore from '@/stores/user';
+import { debounce } from '@/utils';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { userInfo } = storeToRefs(userStore);
+const { userInfo, followCount } = storeToRefs(userStore);
 
-const showFeedBack = ref(false);
+const isShow = ref(false);
+
+const toggle = debounce(function (toggle) {
+  isShow.value = toggle;
+  userStore.getFollowAction(userInfo.value.id);
+}, 200);
 
 const goEdit = () => {
   console.log('goEdit');
   router.push('/edit');
 };
 
-const goProfile = () => {
-  console.log('goProfile route.path', route.path);
-  const path = `/user/${userInfo.value.id}`;
+const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
+  console.log('goProfile', route.path, tabName, subTabName);
+  let path = `/user/${userInfo.value.id}`;
   if (path === route.path) {
     router.go(0);
   } else {
-    router.push(`/user/${userInfo.value.id}`);
+    if (!tabName && !subTabName) {
+      router.push(path); //不存在tabName,则用户界面默认展示文章列表
+    } else {
+      router.push({
+        path,
+        query: {
+          tabName,
+          subTabName
+        }
+      });
+    }
   }
 };
 const logOut = () => {
@@ -51,6 +80,67 @@ const logOut = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  .user-avatar {
+    position: relative;
+
+    .box {
+      position: absolute;
+      left: 50%;
+      bottom: -280px;
+      width: 200px;
+      background-color: rgba(255, 255, 255);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      animation: titleDown 0.8s forwards;
+      .user-info {
+        display: flex;
+        align-items: center;
+        margin: 30px 0;
+        font-size: 20px;
+        font-weight: 100;
+        > div {
+          /* margin-right: 10px; */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+          > div:first-of-type {
+            font-size: 28px;
+            font-weight: 400;
+          }
+        }
+        .following {
+          border-right: 2px solid #ccc;
+          padding-right: 10px;
+        }
+        .follower {
+          padding-left: 10px;
+        }
+      }
+      [class^='btn'] {
+        width: 100%;
+        margin-top: 10px;
+        .el-button {
+          width: 100%;
+        }
+      }
+    }
+
+    /* 头像hover */
+    :deep(.avatar) {
+      transition: transform 0.3s;
+    }
+    &:hover {
+      :deep(.avatar) {
+        transform: scale(1.8) translate(0, 15px);
+        z-index: 99;
+      }
+    }
+  }
+
   .el-icon-message {
     font-size: 30px;
     margin: 7px 10px 0 10px;

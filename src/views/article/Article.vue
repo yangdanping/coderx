@@ -33,7 +33,7 @@ const { token } = storeToRefs(userStore);
 const noList = ref(false);
 
 onMounted(() => {
-  articleStore.getListAction();
+  articleStore.getArticleListAction();
   setTimeout(() => (noList.value = !noList.value), 2000);
 });
 

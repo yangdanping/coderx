@@ -3,27 +3,25 @@
     <div class="list-header">
       <h2>{{ sex }}的评论({{ profile.commentCount }})</h2>
     </div>
-    <template v-if="comments.length">
-      <template v-for="item in (comments as any[])" :key="item.id">
-        <div class="content-wrapper">
-          <div class="content-main">
-            <div class="content" @click="goDetail(item.id)">
-              <a class="title">{{ item.title }}</a>
-              <div>
-                <span>{{ item.createAt }}</span>
-                <p class="abstract">{{ item.content }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="list">
+      <template v-if="comments.length">
+        <template v-for="item in (comments as any[])" :key="item.id">
+          <ListItem :item="item" isComment>
+            <template #action>
+              <CommentAction :comment="item" />
+            </template>
+          </ListItem>
+        </template>
+        <Page @changePage="changePage" :total="profile.commentCount" />
       </template>
-      <Page @changePage="changePage" :total="profile.commentCount" />
-    </template>
-    <template v-else><span>这个人未发表过评论</span></template>
+      <template v-else><span>这个人未发表过评论</span></template>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import ListItem from '@/components/list/ListItem.vue';
+import CommentAction from '@/components/list/cpns/CommentAction.vue';
 import useUserStore from '@/stores/user';
 const router = useRouter();
 const userStore = useUserStore();
@@ -41,29 +39,9 @@ const goDetail = (articleId) => router.push({ path: `/article/${articleId}` });
     border-bottom: 1px solid #ccc;
     padding-bottom: 10px;
   }
-  .content-wrapper {
-    display: flex;
-    border-bottom: 1px solid #e5e6eb;
-    padding-bottom: 15px;
 
-    .content-main {
-      margin: 20px 0 20px 20px;
-      .content {
-        cursor: pointer;
-      }
-      .title {
-        font-weight: 700;
-        font-size: 24px;
-      }
-      .abstract {
-        height: 20px;
-        width: 800px;
-        padding: 15px 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
+  .list {
+    padding: 0 20px;
   }
 }
 </style>
