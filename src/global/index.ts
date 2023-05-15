@@ -30,7 +30,8 @@ export default function init(app: App) {
     if (from.path !== to.path) {
       rootStore.$reset();
     }
-    if (to.path === '/article') {
+    if (to.path.includes('article')) {
+      console.log('initArticle');
       articleStore.initArticle();
       commentStore.$reset();
     }

@@ -5,10 +5,12 @@ const urlHead = '/comment';
 
 export function getComment(data) {
   const { pageNum, pageSize, articleId = '', userId = '' } = data;
-  // const offset = 0;
-  // const limit = 100;
-  const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
-  const limit = pageSize;
+  let offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
+  let limit = pageSize;
+  if (!userId) {
+    offset = 0;
+    limit = 100;
+  }
   console.log('getComment offset limit', offset, limit);
   return myRequest.get<IDataType>({
     url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`

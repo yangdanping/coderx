@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { useRouter } from 'vue-router'; //拿到router对象,进行路由跳转(.push)
+import router from '@/router'; //拿到router对象,进行路由跳转(.push)
 import {
   createArticle,
   getList,
@@ -22,8 +22,6 @@ import { Msg, timeFormat, isArrEqual, isEmptyObj } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
-
-const router = useRouter();
 
 export const useArticleStore = defineStore('article', {
   state: () => ({
@@ -86,6 +84,10 @@ export const useArticleStore = defineStore('article', {
     },
     initTag(tags: Itag[]) {
       this.tags = tags;
+    },
+    changeSearchResults(searchResults) {
+      this.searchResults = searchResults;
+      console.log('changeSearchResults', this.searchResults);
     },
     // 异步请求action---------------------------------------------------
     async getArticleListAction(userId: number | '' = '', idList: number[] | [] = []) {
@@ -198,6 +200,10 @@ export const useArticleStore = defineStore('article', {
       } else {
         Msg.showFail('删除文章失败');
       }
+    },
+    async searchAction(keywords) {
+      const res = await search(keywords);
+      res.code === 0 && this.changeSearchResults(res.data);
     }
   }
 });

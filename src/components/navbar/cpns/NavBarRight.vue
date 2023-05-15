@@ -1,5 +1,21 @@
 <template>
   <div class="right">
+    <div class="search">
+      <el-input v-model="searchValue" @input="debounceInput" placeholder="Search CoderX" :prefix-icon="Search" clearable size="large" />
+      <div class="search-box">
+        <el-card class="box-card" v-if="searchValue">
+          <template #header>
+            <span style="color: #ccc">搜索:"{{ searchValue }}"</span>
+          </template>
+          <template v-if="searchResults.length">
+            <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id">
+              <div class="search-item">{{ item.title }}</div>
+            </a>
+          </template>
+        </el-card>
+      </div>
+    </div>
+
     <template v-if="!token">
       <el-button @click="changeDialog" class="register-btn">Hello CoderX</el-button>
     </template>
@@ -11,11 +27,33 @@
 
 <script lang="ts" setup>
 import NavBarUser from './NavBarUser.vue';
+import { Search } from '@element-plus/icons-vue';
 
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
+import useArticleStore from '@/stores/article';
+import { debounce } from '@/utils';
 const rootStore = useRootStore();
+const articleStore = useArticleStore();
 const { token } = storeToRefs(useUserStore());
+const { searchResults } = storeToRefs(articleStore);
+const searchValue = ref('');
+const router = useRouter();
+
+const debounceInput = debounce(function () {
+  if (searchValue.value) {
+    articleStore.searchAction(searchValue.value);
+  }
+}, 1000);
+
+watch(
+  () => searchValue.value,
+  (newV) => {
+    if (newV === '') {
+      searchResults.value = []; //清空搜索结果
+    }
+  }
+);
 
 const changeDialog = () => {
   console.log('open Dialog');
@@ -24,10 +62,40 @@ const changeDialog = () => {
 </script>
 
 <style lang="scss" scoped>
+$searchWidth: 250px;
 .right {
+  display: flex;
+  align-items: center;
   height: 100%;
   width: 100px;
-  margin-right: 50px;
+  margin-right: 200px;
+  .search {
+    margin-right: 30px;
+    :deep(.el-input) {
+      border-radius: 30px;
+      width: $searchWidth;
+    }
+    .search-box {
+      position: relative;
+      .box-card {
+        position: absolute;
+        bottom: 70;
+        width: $searchWidth;
+        z-index: 99;
+
+        .search-item {
+          padding: 10px 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          cursor: pointer;
+          &:hover {
+            color: #03a9f4;
+          }
+        }
+      }
+    }
+  }
   .register-btn {
     position: relative;
     color: #fff;

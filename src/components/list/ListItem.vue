@@ -93,18 +93,21 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
     cursor: pointer;
     .content {
       margin-top: 10px;
+      .title,
+      .abstract {
+        width: 800px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .title {
         font-weight: 700;
         font-size: 24px;
       }
       .abstract {
         height: 30px;
-        width: 800px;
         margin-top: 10px;
-        white-space: nowrap;
         color: #777;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     }
     .cover {

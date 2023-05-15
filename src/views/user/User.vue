@@ -8,12 +8,11 @@
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
 import UserProfile from './cpns/UserProfile.vue';
-import { Msg, emitter } from '@/utils';
 
 import useUserStore from '@/stores/user';
 const route = useRoute();
 const userStore = useUserStore();
-const { userInfo, profile } = storeToRefs(userStore);
+const { profile } = storeToRefs(userStore);
 
 onMounted(() => getData(route.params.userId));
 
@@ -29,9 +28,9 @@ const getData = (userId) => {
   //首次加载,得到用户信息和关注信息
   userStore.getProfileAction(userId);
   userStore.getFollowAction(userId);
-  if (userInfo.value.id === parseInt(userId as any)) {
-    Msg.showSuccess('获取的是登录用户的信息');
-  }
+  // if (userInfo.value.id === parseInt(userId as any)) {
+  //   Msg.showSuccess('获取的是登录用户的信息');
+  // }
 };
 </script>
 
