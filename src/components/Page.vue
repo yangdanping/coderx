@@ -35,6 +35,7 @@ const handleCurrentChange = (pageNum) => {
 };
 const handleSizeChange = (pageSize) => {
   console.log('handleSizeChange pageSize', pageSize);
+  rootStore.changePageNum(1);
   rootStore.changePageSize(pageSize);
   emit('changePage');
 };
