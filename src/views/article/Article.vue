@@ -6,7 +6,7 @@
     </nav>
     <div class="list-wrapper">
       <ArticleList v-if="articles.result?.length" :articles="articles" />
-      <div v-else-if="!noList" class="skeleton"><el-skeleton animated /></div>
+      <div v-else-if="!noData" class="skeleton"><el-skeleton animated /></div>
       <div v-else class="skeleton">
         <h1>该专栏暂无文章,快来发表第一篇吧~</h1>
         <el-button @click="goEdit" type="primary">发表第一篇</el-button>
@@ -30,11 +30,10 @@ const articleStore = useArticleStore();
 const { articles } = storeToRefs(articleStore);
 const { token } = storeToRefs(userStore);
 
-const noList = ref(false);
-
+const noData = ref(false);
 onMounted(() => {
   articleStore.getArticleListAction();
-  setTimeout(() => (noList.value = !noList.value), 2000);
+  setTimeout(() => (noData.value = !noData.value), 2000);
 });
 
 const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeLoginDialog());

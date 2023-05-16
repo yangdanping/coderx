@@ -60,8 +60,11 @@ import type { IUserInfo } from '@/stores/types/user.result';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
+import useCommentStore from '@/stores/comment';
 const rootStore = useRootStore();
 const userStore = useUserStore();
+const articleStore = useArticleStore();
+const commentStore = useCommentStore();
 const { isFollowed, followCount, isUser } = storeToRefs(userStore);
 
 const props = defineProps({
@@ -86,16 +89,17 @@ const updateProfile = () => {
 };
 
 const tabClick = (index) => {
-  const userId = props.profile.id;
+  const userId = route.params.userId as any;
   rootStore.$reset(); //初始化分页数据
   console.log('tabClick', userId, index);
   switch (index) {
     case '0':
-      userStore.getProfileAction(route.params.userId);
-      useArticleStore().getArticleListAction(userId);
+      userStore.getProfileAction(userId);
+      articleStore.getArticleListAction(userId);
       break;
     case '1':
-      userStore.getCommentAction(userId);
+      // userStore.getCommentAction(userId);
+      commentStore.getCommentAction('', userId);
       break;
     case '2':
       userStore.getCollectAction(userId);

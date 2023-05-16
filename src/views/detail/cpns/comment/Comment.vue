@@ -9,7 +9,7 @@
     </template>
     <!-- -------------------------------------------------------------------- -->
     <template v-if="commentInfo.length"><CommentList :commentInfo="commentInfo" /></template>
-    <template v-else-if="!noComment"><el-skeleton animated /></template>
+    <template v-else-if="!noData"><el-skeleton animated /></template>
     <template v-else><h1 class="skeleton">评论区暂时为空~发表你的第一条评论吧~</h1></template>
   </div>
 </template>
@@ -21,18 +21,16 @@ import CommentForm from './CommentForm.vue';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from '@/stores/comment';
-import { emitter } from '@/utils';
 const commentStore = useCommentStore();
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const { token } = storeToRefs(userStore);
 const { commentInfo } = storeToRefs(commentStore);
 
+const noData = ref(false);
 onMounted(() => {
-  setTimeout(() => (noComment.value = !noComment.value), 2000);
+  setTimeout(() => (noData.value = !noData.value), 2000);
 });
-
-const noComment = ref(false);
 </script>
 
 <style lang="scss" scoped>

@@ -74,11 +74,11 @@ const useUserStore = defineStore('user', {
       this.collects = payload;
       console.log('changeCollect 收藏夹', this.collects);
     },
-    changeComment(payload) {
-      payload.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
-      this.comments = payload;
-      console.log('changeComment', this.comments);
-    },
+    // changeComment(payload) {
+    //   payload.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
+    //   this.comments = payload;
+    //   console.log('changeComment', this.comments);
+    // },
     // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
       console.log('registerAction', account);
@@ -135,17 +135,17 @@ const useUserStore = defineStore('user', {
         Msg.showFail('请求用户信息失败');
       }
     },
-    async getCommentAction(userId) {
-      const { pageNum, pageSize } = useRootStore();
-      const data = { pageNum, pageSize, userId };
-      const res = await getComment(data);
-      console.log('getCommentAction res', res);
-      if (res.code === 0) {
-        this.changeComment(res.data);
-      } else {
-        Msg.showFail('获取用户发表评论失败');
-      }
-    },
+    // async getCommentAction(userId) {
+    //   const { pageNum, pageSize } = useRootStore();
+    //   const data = { pageNum, pageSize, userId };
+    //   const res = await getComment(data);
+    //   console.log('getCommentAction res', res);
+    //   if (res.code === 0) {
+    //     this.changeComment(res.data);
+    //   } else {
+    //     Msg.showFail('获取用户发表评论失败');
+    //   }
+    // },
     async getCollectAction(userId) {
       console.log('getCollectAction userId', userId);
       const res = await getCollect(userId);
