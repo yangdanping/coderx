@@ -4,8 +4,10 @@
     <div class="comment-box">
       <div class="user-info-box">
         <div class="user-info">
-          <div class="name">{{ item.author?.name }}</div>
-          <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
+          <div class="name">
+            <span>{{ item.author?.name }}</span>
+            <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
+          </div>
         </div>
         <div class="floor">
           <span style="margin-right: 10px">{{ floor }}楼</span>
@@ -16,7 +18,7 @@
         <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
-      <CommentForm v-if="replythis(item.id)" :commentId="commentId" :isReply="true" />
+      <CommentForm v-if="replythis(item.id)" :commentId="commentId" isReply />
       <CommentReply :comment="item" />
     </div>
     <CommentTools :editData="item.content" :commentId="item.id" :userId="item.author?.id" />
@@ -99,7 +101,7 @@ const replythis = computed(() => {
         display: flex;
         align-items: center;
         margin-bottom: 5px;
-        .name {
+        .name span:not(.el-tag) {
           font-weight: 700;
           font-size: 20px;
           margin-right: 5px;

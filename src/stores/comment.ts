@@ -23,13 +23,13 @@ export const useCommentStore = defineStore('comment', {
       };
     },
     commentReply() {
-      return (comment) => this.replyInfo.filter((reply) => reply.cid === comment.id);
+      return (comment: IComment) => this.replyInfo.filter((reply: IComment) => reply.cid === comment.id);
     },
     commentReply2() {
-      return (comment) => {
+      return (comment: IComment) => {
         const arr: IComment[] = [];
         const replyInfo2: IComment[] = this.replyInfo2
-          .filter((reply) => reply.rid === comment.id)
+          .filter((reply: IComment) => reply.rid === comment.id)
           .map((reply: IComment) => {
             const replyedObj = this.replyInfo2.find((item) => item.rid === reply.id);
             if (replyedObj) {
@@ -48,11 +48,11 @@ export const useCommentStore = defineStore('comment', {
   },
   actions: {
     getTotalCommentInfo(totalCommentInfo, isUser: boolean = false) {
-      totalCommentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
       this.commentCount = totalCommentInfo.length;
+      totalCommentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
       if (isUser) {
         this.userComments = totalCommentInfo;
-        console.log('是对用户评论的请求', this.userComments);
+        console.log('对用户评论的请求', this.userComments);
       } else {
         this.commentInfo = totalCommentInfo.filter((comment) => !comment.cid); //对文章的普通评论
         this.replyInfo = totalCommentInfo.filter((comment) => comment.cid && !comment.rid); //对评论的普通回复
@@ -62,7 +62,7 @@ export const useCommentStore = defineStore('comment', {
         console.log('对回复的回复--------------', this.replyInfo2);
       }
     },
-    getUserLikedId(commentUserLikedIdList) {
+    getUserLikedId(commentUserLikedIdList: number[]) {
       this.commentUserLikedIdList = commentUserLikedIdList;
     },
     updateArticleCommentLikes(comment: IComment, likes) {
@@ -108,57 +108,37 @@ export const useCommentStore = defineStore('comment', {
     async changeUserLikedId() {
       const userId = useUserStore().userInfo.id;
       const res = await getLiked(userId);
-      res.code === 0 && this.getUserLikedId(res.data.commentLiked); //重新获取评论数据
+      res.code === 0 && this.getUserLikedId(res.data.commentLiked); //重新获取用户点赞过的评论id列表
     },
     async commentAction(payload) {
-      const { articleId, cid, rid } = payload;
-      if (!cid && !rid) {
-        console.log('我是一条即将发出的对文章的普通评论', payload);
-        const res = await addComment(payload);
-        if (res.code === -1) {
-          Msg.showFail(`发布评论失败 ${res.msg}`);
-        } else if (res.code === 0) {
-          emitter.emit('cleanContent');
-          Msg.showSuccess('发表评论成功');
-          this.getCommentAction(articleId);
-        } else {
-          Msg.showFail('发表评论失败');
-        }
+      const { articleId, cid } = payload;
+      const isNormalComment = !cid;
+      const res = isNormalComment ? await addComment(payload) : await addReply(payload);
+      if (res.code === 0) {
+        emitter.emit('cleanContent');
+        emitter.emit('collapse', null); //关闭评论框
+        Msg.showSuccess('发表评论成功');
+        this.getCommentAction(articleId);
       } else {
-        console.log('我是对评论的回复', payload);
-        const res = await addReply(payload);
-        if (res.code === -1) {
-          Msg.showFail(`发布回复失败 ${res.msg}`);
-        } else if (res.code === 0) {
-          emitter.emit('cleanContent');
-          emitter.emit('collapse', null); //关闭评论框
-          emitter.emit('collapseReply', null); //关评论框闭
-          Msg.showSuccess('发表回复成功');
-          this.getCommentAction(articleId);
-        } else {
-          Msg.showFail('发表回复失败');
-        }
+        Msg.showFail('发表评论失败');
       }
     },
     async updateCommentAction(payload) {
+      const { articleId } = payload;
       const res1 = await updateComment(payload);
       if (res1.code === 0) {
         Msg.showSuccess('修改评论成功');
-        const { articleId } = payload;
-        const res2 = await getComment(articleId); //重新获取评论数据
-        res2.code === 0 ? this.getTotalCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
+        this.getCommentAction(articleId); //重新获取评论数据
       } else {
         Msg.showFail('修改评论失败');
       }
     },
     async removeCommentAction(payload) {
-      const { commentId } = payload;
+      const { commentId, articleId } = payload;
       const res1 = await removeComment(commentId);
       if (res1.code === 0) {
         Msg.showSuccess('删除评论成功');
-        const { articleId } = payload;
-        const res2 = await getComment(articleId); //重新获取评论数据
-        res2.code === 0 ? this.getTotalCommentInfo(res2.data) : Msg.showFail('获取评论列表失败');
+        this.getCommentAction(articleId); //重新获取评论数据
       } else {
         Msg.showFail('删除评论失败');
       }

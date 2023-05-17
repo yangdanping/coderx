@@ -5,15 +5,10 @@
       <div class="user-info-box">
         <div class="user-info">
           <div class="name">
-            <span>
-              {{ item.author?.name }}
-              <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
-            </span>
-            <span>
-              回复:
-              {{ fatherComment.author?.name }}
-              <el-tag v-if="isAuthor(fatherComment.author?.id)" size="small">作者</el-tag>
-            </span>
+            <span>{{ item.author?.name }}</span>
+            <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
+            <span>回复: {{ fatherComment.author?.name }}</span>
+            <el-tag v-if="isAuthor(fatherComment.author?.id)" size="small">作者</el-tag>
           </div>
         </div>
         <div class="floor">
@@ -27,7 +22,7 @@
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" :replyId="replyId" />
       <!-- <CommentChildReply :comment="item" /> -->
       <!-- 使用递归组件-------------------------------- -->
-      <CommentReply :comment="item" :isReply="true" />
+      <CommentReply :comment="item" isReply />
     </div>
     <CommentTools :editData="item.content" :commentId="item.id" :userId="item.author?.id" />
   </div>
@@ -43,11 +38,11 @@ import CommentTools from '../comment/CommentTools.vue';
 // import CommentChildReply from '../comment-child-reply/CommentChildReply.vue';
 import CommentReply from './CommentReply.vue';
 
+import type { IComment } from '@/stores/types/comment.result';
+
 import useArticleStore from '@/stores/article';
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
-
-import type { IComment } from '@/stores/types/comment.result';
 
 const props = defineProps({
   item: {
@@ -75,7 +70,6 @@ onMounted(() => {
       }
     }
     isReply.value = !isReply.value; //一点击isReply就取反,isReply控制form的显示
-    //id && emitter.emit('collapseReply', null); //把其他所有打开的子评论折叠
   });
 });
 
@@ -116,6 +110,9 @@ const replythis = computed(() => {
         .name span:not(.el-tag) {
           font-weight: 700;
           font-size: 15px;
+        }
+        .name span {
+          margin-left: 5px;
         }
       }
       .floor span {

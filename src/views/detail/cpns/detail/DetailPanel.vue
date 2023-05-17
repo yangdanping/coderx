@@ -1,7 +1,7 @@
 <template>
   <div class="detail-panel">
     <Icon @click="likeClick(article.id)" type="like" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
-    <Icon @click="gotoComment" type="comment" :size="40" :label="article.commentCount" flex="column" />
+    <Icon @click="gotoComment" type="comment" :size="40" :label="commentCount" flex="column" />
     <Icon type="views" :size="40" :label="article.views" flex="column" />
     <Icon type="star" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" />
     <el-popover
@@ -32,14 +32,17 @@ import type { ElPopover } from 'element-plus';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
+import useCommentStore from '@/stores/comment';
 const userStore = useUserStore();
 const rootStore = useRootStore();
+const commentStore = useCommentStore();
+const articleStore = useArticleStore();
+const { token, userInfo } = storeToRefs(userStore);
+const { isArticleUserLiked } = storeToRefs(articleStore);
+const { commentCount } = storeToRefs(commentStore);
+
 const buttonRef = ref();
 const popoverRef = ref();
-const { token, userInfo } = storeToRefs(userStore);
-const articleStore = useArticleStore();
-const { isArticleUserLiked } = storeToRefs(articleStore);
-
 const props = defineProps({
   article: {
     type: Object as PropType<IArticle>,

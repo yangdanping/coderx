@@ -9,7 +9,6 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
-    ActionList: typeof import('./components/ActionList.vue')['default']
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
@@ -80,5 +79,8 @@ declare module '@vue/runtime-core' {
     StarSvg: typeof import('./components/icon/cpns/StarSvg.vue')['default']
     UserDialog: typeof import('./components/user/UserDialog.vue')['default']
     ViewSvg: typeof import('./components/icon/cpns/ViewSvg.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

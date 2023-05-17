@@ -32,7 +32,7 @@
 
 <script lang="ts" setup>
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { LocalCache, isEmptyObj } from '@/utils';
+import { LocalCache, isEmptyObj, emitter } from '@/utils';
 import { useEditorConfig } from './config';
 import { DomEditor } from '@wangeditor/editor';
 const editorRef = shallowRef();
@@ -76,7 +76,7 @@ onMounted(() => {
       valueHtml.value = props.editComment;
     }
   });
-  // emitter.on('cleanContent', () => (valueHtml.value = ''));
+  emitter.on('cleanContent', () => (valueHtml.value = ''));
 });
 
 const emit = defineEmits(['update:content']);

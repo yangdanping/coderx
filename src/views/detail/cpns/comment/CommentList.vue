@@ -1,6 +1,6 @@
 <template>
   <div class="comment-list">
-    <span ref="listRef" class="comment-title">最近评论({{ commentCount }})</span>
+    <span ref="listRef" class="comment-title">最新评论({{ commentCount }})</span>
     <template v-for="(item, index) in commentInfo" :key="item.id">
       <CommentListItem :item="item" :floor="commentInfo.length - index" />
     </template>

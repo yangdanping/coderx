@@ -7,6 +7,10 @@
           <template #header>
             <span style="color: #ccc">搜索:"{{ searchValue }}"</span>
           </template>
+          <div v-if="!searchResults.length">
+            <div v-if="!searchResults.length && showLoading" class="loading" v-loading="!searchResults.length && showLoading"></div>
+            <div v-else style="color: #ccc">暂无该内容</div>
+          </div>
           <template v-if="searchResults.length">
             <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id">
               <div class="search-item">{{ item.title }}</div>
@@ -38,7 +42,6 @@ const articleStore = useArticleStore();
 const { token } = storeToRefs(useUserStore());
 const { searchResults } = storeToRefs(articleStore);
 const searchValue = ref('');
-const router = useRouter();
 
 const debounceInput = debounce(function () {
   if (searchValue.value) {
@@ -46,11 +49,26 @@ const debounceInput = debounce(function () {
   }
 }, 1000);
 
+const showLoading = ref(false);
+
 watch(
   () => searchValue.value,
   (newV) => {
-    if (newV === '') {
+    if (!newV) {
       searchResults.value = []; //清空搜索结果
+      showLoading.value = false;
+    } else {
+      showLoading.value = true;
+    }
+  }
+);
+watch(
+  () => searchResults.value,
+  (newV) => {
+    if (!newV.length) {
+      setTimeout(() => {
+        showLoading.value = false;
+      }, 1000);
     }
   }
 );
@@ -82,6 +100,9 @@ $searchWidth: 250px;
         bottom: 70;
         width: $searchWidth;
         z-index: 99;
+        .loading {
+          padding: 10px 0;
+        }
 
         .search-item {
           padding: 10px 0;
