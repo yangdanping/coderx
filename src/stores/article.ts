@@ -142,7 +142,7 @@ export const useArticleStore = defineStore('article', {
         if (res2.code === 0) {
           this.getDetail(res2.data);
           // 获取内容后再获取文章评论
-          useCommentStore().getCommentAction(articleId);
+          useCommentStore().getCommentAction(articleId as any);
         } else {
           Msg.showFail('获取文章详情失败');
         }

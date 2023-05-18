@@ -16,6 +16,11 @@
   --lightpurple: #3d147f;
   --brightpurple: #8400ff;
   --pink: #ff034a;
+
+  ::selection {
+    background: #81c995;
+    color: #fff;
+  }
 }
 
 hr {
