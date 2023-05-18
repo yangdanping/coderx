@@ -4,7 +4,7 @@
       <el-icon style="cursor: pointer" size="20px"><IMore /></el-icon>
       <template #dropdown>
         <el-dropdown-menu v-if="isUser(userId)">
-          <el-dropdown-item command="showDiglog">
+          <el-dropdown-item command="edit">
             <el-icon size="20px"><IEdit /></el-icon>
           </el-dropdown-item>
           <el-dropdown-item command="remove">
@@ -18,11 +18,11 @@
         </el-dropdown-menu>
       </template>
     </el-dropdown>
-    <el-dialog width="50%" title="修改我的评论" v-model="dialogVisible" append-to-body destroy-on-close center>
+    <el-dialog width="50%" title="修改我的评论" v-model="isShowEdit" append-to-body destroy-on-close center>
       <Editor @update:content="(valueHtml) => (content = valueHtml)" :editComment="editData" isComment mode="simple" height="150px" />
-      <el-button class="update" @click="update" type="primary">修改</el-button>
+      <el-button @click="submitEdit" type="primary" style="margin-top: 10px">修改</el-button>
     </el-dialog>
-    <!-- <ReportDialog @submit="submitReport" @cancel="isShowReport = !isShowReport" :show="isShowReport" /> -->
+    <ReportDialog @submit="submitReport" @cancel="isShowReport = !isShowReport" :show="isShowReport" />
   </div>
 </template>
 
@@ -30,6 +30,7 @@
 import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
 import Editor from '@/components/wang-editor/Editor.vue';
+import ReportDialog from '@/components/dialog/ReportDialog.vue';
 
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
@@ -54,23 +55,25 @@ const props = defineProps({
 });
 
 const content = ref('');
-const dialogVisible = ref(false);
+const isShowEdit = ref(false);
 const isShowReport = ref(false);
 
 const handleCommand = (command) => {
-  command === 'showDiglog' && showDiglog();
+  command === 'edit' && edit();
   command === 'remove' && remove();
-  command === 'report' && showReport();
+  command === 'report' && (isShowReport.value = true);
 };
-
-const update = () => {
-  dialogVisible.value = !dialogVisible.value;
+// 编辑-------------------------------------------------------
+const edit = () => {
+  isShowEdit.value = !isShowEdit.value;
+  console.log(isShowEdit.value);
+};
+const submitEdit = () => {
+  isShowEdit.value = !isShowEdit.value;
   commentStore.updateCommentAction({ articleId: article.value.id, commentId: props.commentId, content: content.value });
 };
-const showDiglog = () => {
-  dialogVisible.value = !dialogVisible.value;
-  console.log(dialogVisible.value);
-};
+
+// 删除-------------------------------------------------------
 const remove = () => {
   ElMessageBox.confirm(`是否删除评论`, '提示', {
     type: 'info',
@@ -80,9 +83,18 @@ const remove = () => {
     commentStore.removeCommentAction({ articleId: article.value.id, commentId: props.commentId });
   });
 };
-//举报
-const showReport = () => {
-  Msg.showInfo('该功能开发中');
+// 举报-------------------------------------------------------
+const submitReport = ({ reportOptions, otherReport }) => {
+  console.log('submitReport submitReport');
+  if (reportOptions.length || otherReport) {
+    otherReport && reportOptions.push(otherReport);
+    const report = { commentId: props.commentId, reportOptions };
+    userStore.reportAction({ userId: props.userId, report });
+    isShowReport.value = false;
+  } else {
+    Msg.showInfo('您没有提交任何举报信息');
+    isShowReport.value = false;
+  }
 };
 </script>
 
@@ -90,8 +102,5 @@ const showReport = () => {
 .comment-tools {
   position: absolute;
   right: 30px;
-}
-.update {
-  margin-top: 10px;
 }
 </style>

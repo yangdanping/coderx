@@ -3,7 +3,7 @@
     <template #comment>
       <ul class="comment-action">
         <li class="item like" @click.stop.prevent="likeComment(comment)">
-          <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ?? '点赞'" />
+          <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ? comment.likes : '点赞'" />
         </li>
         <li class="item comment" @click="wantReply(comment)">
           <Icon type="comment" label="回复" />

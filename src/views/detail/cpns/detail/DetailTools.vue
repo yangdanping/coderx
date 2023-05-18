@@ -12,28 +12,28 @@
         </i>
       </el-tooltip>
       <el-tooltip class="item" effect="dark" content="删除我的文章" placement="bottom">
-        <i class="el-icon-delete" @click="goDelete">
+        <i class="el-icon-delete" @click="remove">
           <el-icon><IDelete /></el-icon>
         </i>
       </el-tooltip>
     </template>
     <template v-else-if="token">
       <el-tooltip class="item" effect="dark" content="举报文章" placement="bottom">
-        <i class="el-icon-warning" @click="showReport = true">
+        <i class="el-icon-warning" @click="isShowReport = true">
           <el-icon><IWarning /></el-icon>
         </i>
       </el-tooltip>
     </template>
-    <!-- <ReportDialog @submit="submitReport" @cancel="showReport = !showReport" :show="showReport" /> -->
+    <ReportDialog @submit="submitReport" @cancel="isShowReport = !isShowReport" :show="isShowReport" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
+import ReportDialog from '@/components/dialog/ReportDialog.vue';
 
 import type { IArticle } from '@/stores/types/article.result';
-
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 const router = useRouter();
@@ -50,13 +50,15 @@ const props = defineProps({
     default: () => {}
   }
 });
-const showReport = ref(false);
+const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
 const goBack = () => router.push('/article');
+// 编辑-------------------------------------------------------
 const goEdit = () => {
   router.push({ path: `/edit`, query: { editArticleId: props.article.id } });
 };
-const goDelete = () => {
+// 删除-------------------------------------------------------
+const remove = () => {
   ElMessageBox.confirm(`是否删除文章`, '提示', {
     type: 'info',
     confirmButtonText: `删除`,
@@ -66,16 +68,17 @@ const goDelete = () => {
     router.replace('/article');
   });
 };
-const submitReport = (reportOptions, otherReport) => {
-  if (reportOptions.length) {
+// 举报-------------------------------------------------------
+const submitReport = ({ reportOptions, otherReport }) => {
+  console.log('submitReport submitReport');
+  if (reportOptions.length || otherReport) {
     otherReport && reportOptions.push(otherReport);
     const report = { articleId: props.article.id, reportOptions };
-    console.log('文章submitReport!!!!!!!!', report);
     userStore.reportAction({ userId: props.article.author?.id, report });
-    showReport.value = false;
+    isShowReport.value = false;
   } else {
     Msg.showInfo('您没有提交任何举报信息');
-    showReport.value = false;
+    isShowReport.value = false;
   }
 };
 </script>

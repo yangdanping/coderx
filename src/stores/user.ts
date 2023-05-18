@@ -1,18 +1,13 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
-import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, getCommentListByUserId } from '@/service/user/user.request';
+import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
 import { uploadAvatar } from '@/service/file/file.request';
-import useRootStore from '@/stores';
 import { LocalCache, Msg, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
-import type { IArticle } from './types/article.result';
-import useCommentStore from './comment';
-import { getComment } from '@/service/comment/comment.request';
-
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -135,17 +130,6 @@ const useUserStore = defineStore('user', {
         Msg.showFail('请求用户信息失败');
       }
     },
-    // async getCommentAction(userId) {
-    //   const { pageNum, pageSize } = useRootStore();
-    //   const data = { pageNum, pageSize, userId };
-    //   const res = await getComment(data);
-    //   console.log('getCommentAction res', res);
-    //   if (res.code === 0) {
-    //     this.changeComment(res.data);
-    //   } else {
-    //     Msg.showFail('获取用户发表评论失败');
-    //   }
-    // },
     async getCollectAction(userId) {
       console.log('getCollectAction userId', userId);
       const res = await getCollect(userId);
@@ -208,7 +192,14 @@ const useUserStore = defineStore('user', {
       res.code === 0 ? router.go(0) : Msg.showFail('修改信息失败');
     },
     async reportAction(payload) {
-      console.log('reportAction', payload);
+      const { userId, report } = payload;
+      console.log('reportAction', userId, report);
+      const res = await reportUser(userId, report);
+      if (res.code === 0) {
+        Msg.showSuccess('举报用户成功');
+      } else {
+        Msg.showFail('举报用户失败');
+      }
     }
   }
 });

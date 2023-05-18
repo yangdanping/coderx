@@ -9,7 +9,7 @@
           </template>
           <div v-if="!searchResults.length">
             <div v-if="!searchResults.length && showLoading" class="loading" v-loading="!searchResults.length && showLoading"></div>
-            <div v-else style="color: #ccc">暂无该内容</div>
+            <div v-else style="color: #ccc">未搜索到相关内容</div>
           </div>
           <template v-if="searchResults.length">
             <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id">

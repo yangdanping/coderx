@@ -26,8 +26,6 @@ import { emitter } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { IComment } from '@/stores/types/comment.result';
 
-const router = useRouter();
-
 const props = defineProps({
   item: {
     type: Object as PropType<IArticle & IComment>,
@@ -42,15 +40,7 @@ const props = defineProps({
     default: true
   }
 });
-const goDetail = (item: IArticle & IComment) => {
-  if (!props.isComment) {
-    console.log('文章列表中点击', item.id);
-    router.push({ path: `/article/${item.id}` });
-  } else {
-    console.log('用户评论列表中点击', item.article?.id);
-    router.push({ path: `/article/${item.article?.id}` });
-  }
-};
+const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
 const goTag = (tag) => emitter.emit('changeTag', tag);
 </script>
 
