@@ -65,7 +65,6 @@ const remove = () => {
     cancelButtonText: `取消`
   }).then(() => {
     articleStore.removeAction(props.article.id);
-    router.replace('/article');
   });
 };
 // 举报-------------------------------------------------------

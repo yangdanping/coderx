@@ -2,7 +2,7 @@
   <div class="edit">
     <Editor :editData="editData" @update:content="(content) => (preview = content)" />
     <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
-      <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" />
+      <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
     <el-button class="btn" @click="drawer = true" :icon="Menu">提交</el-button>
   </div>
@@ -12,20 +12,60 @@
 import { Menu } from '@element-plus/icons-vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';
-import { Msg } from '@/utils';
+import { Msg, emitter, isEmptyObj } from '@/utils';
 
 import useArticleStore from '@/stores/article';
+import type { UploadProps, UploadUserFile } from 'element-plus';
+
 const route = useRoute();
 const articleStore = useArticleStore();
 const { article } = storeToRefs(articleStore);
 const isEdit = computed(() => !!route.query.editArticleId);
 const editData = computed(() => (isEdit.value ? article.value : {}));
-// 通过路由是否传入待修改文章的id来判断是创建还是修改
-onMounted(() => {
-  console.log(`是${!isEdit.value ? '创建' : '修改'}文章------------------------`, route.query.editArticleId);
-});
+// const emit = defineEmits(['update:editData']);
+// const editData = computed({
+//   get: () => (isEdit.value ? article.value : {}),
+//   set: (val) => emit('update:editData', val)
+// });
+
 const drawer = ref(false);
 const preview = ref('');
+const fileList = ref<UploadUserFile[]>([]);
+// 通过路由是否传入待修改文章的id来判断是创建还是修改
+onMounted(() => {
+  // const isCreate = !isEmptyObj(editData.value);
+  if (!isEdit.value) {
+    console.log(`是创建文章------------------------`);
+    emitter.on('uploadedImage', (payload: any) => {
+      const { url, imgId } = payload;
+      console.log('直接在编辑器中上传,第一张图片作为封面', payload);
+      fileList.value.push({ url: url?.concat('?type=small'), name: 'img' });
+    });
+    window.addEventListener('beforeunload', (e) => {
+      articleStore.deletePictrueAction();
+    });
+  } else {
+    console.log(`是修改文章------------------------`, route.query.editArticleId);
+    // 刷新后editData消失,重新获取,
+    if (!isEmptyObj(editData.value)) {
+      articleStore.getDetailAction(route.query.editArticleId as any, true);
+    }
+  }
+});
+
+watch(
+  () => article.value,
+  (newV) => {
+    emitter.emit('updateEditorContent', newV.content);
+  }
+);
+
+const handleSetCover = (file) => {
+  // fileList.value.push(file);
+  fileList.value.unshift(file);
+  console.log('handleSetCover fileList.value', fileList.value);
+};
+
 const formSubmit = (editData: any) => {
   if (!editData.title) {
     Msg.showFail('请输入标题!');

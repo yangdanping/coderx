@@ -86,12 +86,20 @@ $searchWidth: 250px;
   align-items: center;
   height: 100%;
   width: 100px;
-  margin-right: 200px;
+  margin-right: 300px;
   .search {
     margin-right: 30px;
     :deep(.el-input) {
-      border-radius: 30px;
+      border-radius: 50px;
+      transition: all 0.3s;
       width: $searchWidth;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      .el-input__wrapper {
+        border-radius: 50px;
+      }
+      &:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
     }
     .search-box {
       position: relative;

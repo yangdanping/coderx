@@ -77,6 +77,10 @@ onMounted(() => {
     }
   });
   emitter.on('cleanContent', () => (valueHtml.value = ''));
+  emitter.on('updateEditorContent', (content) => {
+    // console.log('updateEditorContent', content);
+    valueHtml.value = content as any;
+  });
 });
 
 const emit = defineEmits(['update:content']);

@@ -14,7 +14,7 @@ import {
   getArticleLikedById
 } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
-import { addPictureForArticle } from '@/service/file/file.request';
+import { addPictureForArticle, uploadPicture, deletePicture } from '@/service/file/file.request';
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from './comment';
@@ -51,9 +51,9 @@ export const useArticleStore = defineStore('article', {
       this.articles = articles;
       console.log('changeArticleList', this.articles.result);
     },
-    changeUploaded(imgId: number) {
+    changeUploaded(imgId: number, isCover = false) {
       if (imgId) {
-        this.uploaded.push(imgId);
+        isCover ? this.uploaded.unshift(imgId) : this.uploaded.push(imgId);
       } else {
         this.uploaded = [];
         console.log('changeUploaded已清0!!!!!!!!!!!!!!!!');
@@ -133,21 +133,19 @@ export const useArticleStore = defineStore('article', {
         Msg.showFail('发布文章失败');
       }
     },
-    async getDetailAction(articleId?: RouteParam) {
-      const res1 = await addView(articleId);
-      if (res1.code === 0) {
-        console.log('已增加浏览量,准备获取文章详情信息', articleId);
+    async getDetailAction(articleId?: RouteParam, isEditRefresh = false) {
+      if (!isEditRefresh) {
+        await addView(articleId); //新增浏览量
         this.getUserLikedAction(); //获取点赞信息
-        const res2 = await getDetail(articleId);
-        if (res2.code === 0) {
-          this.getDetail(res2.data);
-          // 获取内容后再获取文章评论
-          useCommentStore().getCommentAction(articleId as any);
-        } else {
-          Msg.showFail('获取文章详情失败');
-        }
+      }
+      console.log('articleIdarticleIdarticleId', articleId);
+      const res = await getDetail(articleId);
+      if (res.code === 0) {
+        this.getDetail(res.data);
+        // 获取内容后再获取文章评论
+        !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
-        Msg.showFail('浏览量增加失败');
+        Msg.showFail('获取文章详情失败');
       }
     },
     async getTagsAction() {
@@ -196,7 +194,7 @@ export const useArticleStore = defineStore('article', {
       const res = await removeArticle(articleId);
       if (res.code === 0) {
         Msg.showSuccess('删除文章成功');
-        this.articles.result?.length ? router.push({ path: `/article` }) : router.go(0);
+        router.push({ path: `/article` });
       } else {
         Msg.showFail('删除文章失败');
       }
@@ -204,6 +202,31 @@ export const useArticleStore = defineStore('article', {
     async searchAction(keywords) {
       const res = await search(keywords);
       res.code === 0 && this.changeSearchResults(res.data);
+    },
+    async uploadCoverAction(file: File) {
+      const res = await uploadPicture(file);
+      if (res.code === 0) {
+        const url = res.data[0].url;
+        const imgId = res.data[0].result.insertId;
+        console.log('上传图片成功! 获取到了上传的图片', url, imgId);
+        this.changeUploaded(imgId, true);
+        return Promise.resolve(url.concat('?type=small'));
+      } else {
+        Msg.showFail('图片上传失败');
+      }
+    },
+    async deletePictrueAction() {
+      if (this.uploaded.length) {
+        const res = await deletePicture(this.uploaded);
+        if (res.code === 0) {
+          this.uploaded = [];
+          Msg.showInfo('文章未上传,所以已上传图片删除');
+        } else {
+          Msg.showFail('文章未上传,且图片删除失败');
+        }
+      } else {
+        console.log('没有可删除的图片');
+      }
     }
   }
 });

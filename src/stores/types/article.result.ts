@@ -10,6 +10,7 @@ export interface IArticle {
   articleUrl?: string;
   author?: IAuthor;
   cover?: string;
+  images?: IArticleImg[];
   tags?: any[];
   likes?: number;
   commentCount?: number;
@@ -19,6 +20,10 @@ export interface IArticle {
   updateAt?: string;
 }
 
+export interface IArticleImg {
+  id?: number;
+  url?: string;
+}
 export interface IAuthor {
   id?: number;
   sex?: string;

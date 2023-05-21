@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogShow" @closed="closed" title="举报内容" width="30%" append-to-body destroy-on-close center>
+  <el-dialog v-model="dialogVisible" @closed="closed" :before-close="cancelReport" title="举报内容" width="30%" append-to-body destroy-on-close center>
     <el-checkbox-group v-model="reportOptions">
       <el-checkbox v-for="item in reportList" :label="item" :key="item"></el-checkbox>
     </el-checkbox-group>
@@ -19,7 +19,7 @@ const props = defineProps({
   }
 });
 
-const dialogShow = computed({
+const dialogVisible = computed({
   get: () => props.show,
   set: (val) => emit('update:dialogVisible', val)
 });

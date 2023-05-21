@@ -1,7 +1,7 @@
 import { uploadPicture } from '@/service/file/file.request';
 import useArticleStore from '@/stores/article';
 import '@wangeditor/editor/dist/css/style.css'; // 引入 css
-import { Msg } from '@/utils';
+import { Msg, emitter } from '@/utils';
 
 import type { IToolbarConfig, IEditorConfig } from '@wangeditor/editor';
 type InsertFnType = (url: string, alt: string, href: string) => void;
@@ -16,12 +16,9 @@ export const useEditorConfig = () => {
       uploadImage: {
         // 自定义上传
         async customUpload(file: File, insertFn: InsertFnType) {
-          const fd = new FormData();
-          fd.append('picture', file);
-          console.log('FormData picture', fd);
           // file 即选中的文件
           // 自己实现上传,并得到图片 url alt href,最后插入图片
-          const res = await uploadPicture(fd);
+          const res = await uploadPicture(file);
           console.log('uploadPicture res', res);
           if (res.code === 0) {
             console.log('上传图片成功!', res);
@@ -29,6 +26,7 @@ export const useEditorConfig = () => {
             const imgId = res.data[0].result.insertId;
             articleStore.changeUploaded(imgId);
             const url = res.data[0].url;
+            emitter.emit('uploadedImage', { url, imgId });
             const href = res.data[0].url;
             insertFn(url, '', href);
           } else {

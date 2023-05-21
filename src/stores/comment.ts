@@ -71,18 +71,21 @@ export const useCommentStore = defineStore('comment', {
         this.commentInfo.find((comment) => {
           if (comment.id === id) {
             comment.likes = likes;
+            return true; //中断
           }
         });
       } else if (cid && !rid) {
         this.replyInfo.find((comment) => {
           if (comment.id === id) {
             comment.likes = likes;
+            return true; //中断
           }
         });
       } else if (cid && rid) {
         this.replyInfo2.find((comment) => {
           if (comment.id === id) {
             comment.likes = likes;
+            return true; //中断
           }
         });
       }

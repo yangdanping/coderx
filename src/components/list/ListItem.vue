@@ -14,7 +14,7 @@
         <p class="abstract">{{ item.content }}</p>
         <slot name="action"></slot>
       </div>
-      <img v-if="item.cover" class="cover" :src="item.cover[0]" />
+      <img v-if="item.cover" class="cover" :src="item.cover" />
       <div v-else class="cover"></div>
     </a>
   </div>
@@ -102,8 +102,8 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
     }
     .cover {
       width: 170px;
-      height: 100%;
-      object-fit: cover;
+      height: 100px;
+      object-fit: cover; //保持原来宽高比,遮盖整个区域
       border-radius: 5px;
       overflow: hidden;
       cursor: pointer;
