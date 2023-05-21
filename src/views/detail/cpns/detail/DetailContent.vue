@@ -86,8 +86,7 @@ const bindImagesLayer = () => {
       });
     });
   }
-
-  console.log('imgsvimgs', imgPreview.imgs);
+  console.log('文章图片---------------------------', imgPreview.imgs);
 };
 </script>
 

@@ -43,28 +43,28 @@ export const useArticleStore = defineStore('article', {
     }
   },
   actions: {
-    changeArticleList(articles: IArticles) {
+    getArticleList(articles: IArticles) {
       articles.result?.forEach((article) => {
         article.createAt = timeFormat(article.createAt);
         article.updateAt = timeFormat(article.updateAt);
       });
       this.articles = articles;
-      console.log('changeArticleList', this.articles.result);
-    },
-    changeUploaded(imgId: number, isCover = false) {
-      if (imgId) {
-        isCover ? this.uploaded.unshift(imgId) : this.uploaded.push(imgId);
-      } else {
-        this.uploaded = [];
-        console.log('changeUploaded已清0!!!!!!!!!!!!!!!!');
-      }
+      console.log('getArticleList', this.articles.result);
     },
     getDetail(article: IArticle) {
       article.createAt = timeFormat(article.createAt);
       article.updateAt = timeFormat(article.updateAt);
       this.article = article;
     },
-    changeUserLikedId(userLikedArticleIdList) {
+    updateUploaded(imgId: number, isCover = false) {
+      if (imgId) {
+        isCover ? this.uploaded.unshift(imgId) : this.uploaded.push(imgId);
+      } else {
+        this.uploaded = [];
+        console.log('updateUploaded已清0!!!!!!!!!!!!!!!!');
+      }
+    },
+    updateUserLikedId(userLikedArticleIdList) {
       this.userLikedArticleIdList = userLikedArticleIdList;
     },
     updateArticleLikes(articleId, likes) {
@@ -85,9 +85,9 @@ export const useArticleStore = defineStore('article', {
     initTag(tags: Itag[]) {
       this.tags = tags;
     },
-    changeSearchResults(searchResults) {
+    updateSearchResults(searchResults) {
       this.searchResults = searchResults;
-      console.log('changeSearchResults', this.searchResults);
+      console.log('updateSearchResults', this.searchResults);
     },
     // 异步请求action---------------------------------------------------
     async getArticleListAction(userId: number | '' = '', idList: number[] | [] = []) {
@@ -96,41 +96,10 @@ export const useArticleStore = defineStore('article', {
       console.log('getArticleListAction', data);
       const res = await getList(data); //获取文章列表信息以及文章数
       if (res.code === 0) {
-        this.changeArticleList(res.data);
+        this.getArticleList(res.data);
         useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
-      }
-    },
-    async getUserLikedAction() {
-      const { userInfo } = useUserStore();
-      const res = await getLiked(userInfo.id); //获取当前用户的对所有文章的点赞信息
-      console.log('getUserLikedAction', res);
-      res.code === 0 && this.changeUserLikedId(res.data.articleLiked);
-    },
-    async editAction(payload) {
-      const { title, content, tags } = payload;
-      console.log('editAction createArticle', { title, content });
-      const res = await createArticle({ title, content });
-      console.log('创建文章成功!!!!!!', res);
-      if (res.code === -1) {
-        Msg.showFail(`发布文章失败 ${res.msg}`);
-      } else if (res.code === 0) {
-        const articleId = res.data.insertId;
-        if (this.uploaded.length) {
-          console.log(`articleId为${articleId}的文章已创建,要为该文章添加以下图片id`, this.uploaded);
-          const res = await addPictureForArticle(articleId, this.uploaded);
-          res.code === 0 && console.log(`id为${articleId}的文章成功添加${res.data.affectedRows}张图片`);
-          this.changeUploaded(0);
-        }
-        if (tags.length) {
-          const res = await changeTags(articleId, tags);
-          res.code === 0 && Msg.showSuccess('添加标签成功');
-        }
-        router.replace(`/article/${articleId}`);
-        Msg.showSuccess('发布文章成功');
-      } else {
-        Msg.showFail('发布文章失败');
       }
     },
     async getDetailAction(articleId?: RouteParam, isEditRefresh = false) {
@@ -138,7 +107,6 @@ export const useArticleStore = defineStore('article', {
         await addView(articleId); //新增浏览量
         this.getUserLikedAction(); //获取点赞信息
       }
-      console.log('articleIdarticleIdarticleId', articleId);
       const res = await getDetail(articleId);
       if (res.code === 0) {
         this.getDetail(res.data);
@@ -153,11 +121,41 @@ export const useArticleStore = defineStore('article', {
       res.code === 0 && this.initTag(res.data);
       console.log('getTagsAction');
     },
+    async getUserLikedAction() {
+      const { userInfo } = useUserStore();
+      const res = await getLiked(userInfo.id); //获取当前用户的对所有文章的点赞信息
+      console.log('getUserLikedAction', res);
+      res.code === 0 && this.updateUserLikedId(res.data.articleLiked);
+    },
+    async editAction(payload) {
+      const { title, content, tags } = payload;
+      console.log('editAction createArticle', { title, content });
+      const res = await createArticle({ title, content });
+      console.log('创建文章成功!!!!!!', res);
+      if (res.code === -1) {
+        Msg.showFail(`发布文章失败 ${res.msg}`);
+      } else if (res.code === 0) {
+        const articleId = res.data.insertId;
+        if (this.uploaded.length) {
+          console.log(`articleId为${articleId}的文章已创建,要为该文章添加以下图片id`, this.uploaded);
+          const res = await addPictureForArticle(articleId, this.uploaded);
+          res.code === 0 && console.log(`id为${articleId}的文章成功添加${res.data.affectedRows}张图片`);
+          this.updateUploaded(0);
+        }
+        if (tags.length) {
+          const res = await changeTags(articleId, tags);
+          res.code === 0 && Msg.showSuccess('添加标签成功');
+        }
+        router.replace(`/article/${articleId}`);
+        Msg.showSuccess('发布文章成功');
+      } else {
+        Msg.showFail('发布文章失败');
+      }
+    },
     async likeAction(articleId) {
       const res1 = await likeArticle(articleId);
       console.log('likeAction!!!!', res1);
       res1.code === 0 ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
-      console.log('likeAction 更新文章点赞', articleId);
       const res2 = await getArticleLikedById(articleId); //更新文章点赞
       if (res2.code === 0) {
         this.updateArticleLikes(articleId, res2.data.likes);
@@ -181,7 +179,7 @@ export const useArticleStore = defineStore('article', {
           console.log(`articleId为${articleId}的文章已创建,要为该文章添加以下图片id`, this.uploaded);
           const res = await addPictureForArticle(articleId, this.uploaded);
           res.code === 0 && console.log(`id为${articleId}的文章成功添加${res.data.affectedRows}张图片`);
-          this.changeUploaded(0);
+          this.updateUploaded(0);
         }
         Msg.showSuccess('修改文章成功');
         router.push({ path: `/article/${articleId}` });
@@ -199,17 +197,13 @@ export const useArticleStore = defineStore('article', {
         Msg.showFail('删除文章失败');
       }
     },
-    async searchAction(keywords) {
-      const res = await search(keywords);
-      res.code === 0 && this.changeSearchResults(res.data);
-    },
     async uploadCoverAction(file: File) {
       const res = await uploadPicture(file);
       if (res.code === 0) {
         const url = res.data[0].url;
         const imgId = res.data[0].result.insertId;
         console.log('上传图片成功! 获取到了上传的图片', url, imgId);
-        this.changeUploaded(imgId, true);
+        this.updateUploaded(imgId, true);
         return Promise.resolve(url.concat('?type=small'));
       } else {
         Msg.showFail('图片上传失败');
@@ -227,6 +221,10 @@ export const useArticleStore = defineStore('article', {
       } else {
         console.log('没有可删除的图片');
       }
+    },
+    async searchAction(keywords) {
+      const res = await search(keywords);
+      res.code === 0 && this.updateSearchResults(res.data);
     }
   }
 });

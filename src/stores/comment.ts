@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getComment, addComment, updateComment, removeComment, addReply, likeComment, getCommentLikedById } from '@/service/comment/comment.request';
+import { getComment, addComment, updateComment, removeComment, addReply, likeComment, getCommentById } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request.js';
 import { Msg, emitter, timeFormat } from '@/utils';
 
@@ -38,10 +38,6 @@ export const useCommentStore = defineStore('comment', {
             }
             return reply;
           });
-
-        if (replyInfo2.length) {
-          console.log('commentReply2', replyInfo2);
-        }
         return replyInfo2;
       };
     }
@@ -62,39 +58,40 @@ export const useCommentStore = defineStore('comment', {
         console.log('对回复的回复--------------', this.replyInfo2);
       }
     },
-    getUserLikedId(commentUserLikedIdList: number[]) {
+    updateUserLikedId(commentUserLikedIdList: number[]) {
       this.commentUserLikedIdList = commentUserLikedIdList;
     },
-    updateArticleCommentLikes(comment: IComment, likes) {
-      const { id, cid, rid } = comment;
+    updateArticleComment(upatedComment: IComment, prop: string) {
+      const { id, cid, rid } = upatedComment;
       if (!cid) {
         this.commentInfo.find((comment) => {
           if (comment.id === id) {
-            comment.likes = likes;
+            comment[prop] = upatedComment[prop];
             return true; //中断
           }
         });
       } else if (cid && !rid) {
         this.replyInfo.find((comment) => {
           if (comment.id === id) {
-            comment.likes = likes;
+            comment[prop] = upatedComment[prop];
             return true; //中断
           }
         });
       } else if (cid && rid) {
         this.replyInfo2.find((comment) => {
           if (comment.id === id) {
-            comment.likes = likes;
+            comment[prop] = upatedComment[prop];
             return true; //中断
           }
         });
       }
       // this.commentCount.likes = likes;
     },
-    updateUserCommentLikes({ id }, likes) {
+    updateUserComment(upatedComment: IComment, prop: any) {
       this.userComments.find((comment) => {
-        if (comment.id === id) {
-          comment.likes = likes;
+        if (comment.id === upatedComment.id) {
+          comment[prop] = upatedComment[prop];
+          return true;
         }
       });
     },
@@ -106,12 +103,12 @@ export const useCommentStore = defineStore('comment', {
       const res = await getComment(data);
       res.code === 0 ? this.getTotalCommentInfo(res.data, !!userId) : Msg.showFail('获取文章评论失败');
       // 2.若用户登录获取登录用户点赞过哪些评论
-      this.changeUserLikedId();
+      this.getUserLikedAction();
     },
-    async changeUserLikedId() {
+    async getUserLikedAction() {
       const userId = useUserStore().userInfo.id;
       const res = await getLiked(userId);
-      res.code === 0 && this.getUserLikedId(res.data.commentLiked); //重新获取用户点赞过的评论id列表
+      res.code === 0 && this.updateUserLikedId(res.data.commentLiked); //重新获取用户点赞过的评论id列表
     },
     async commentAction(payload) {
       const { articleId, cid } = payload;
@@ -126,12 +123,19 @@ export const useCommentStore = defineStore('comment', {
         Msg.showFail('发表评论失败');
       }
     },
+    async likeAction(comment, inArticle = true) {
+      const { id } = comment;
+      const res = await likeComment(id);
+      res.code === 0 ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
+      this.updateCommentByIdAction(id, 'likes', inArticle);
+    },
     async updateCommentAction(payload) {
-      const { articleId } = payload;
+      const { commentId } = payload;
       const res1 = await updateComment(payload);
       if (res1.code === 0) {
         Msg.showSuccess('修改评论成功');
-        this.getCommentAction(articleId); //重新获取评论数据
+        // this.getCommentAction(articleId); //重新获取评论数据
+        this.updateCommentByIdAction(commentId, 'content');
       } else {
         Msg.showFail('修改评论失败');
       }
@@ -146,19 +150,13 @@ export const useCommentStore = defineStore('comment', {
         Msg.showFail('删除评论失败');
       }
     },
-    async likeAction(comment, inArticle: boolean) {
-      const { id } = comment;
-      console.log('likeAction comment', comment);
-      const res1 = await likeComment(id);
-      res1.code === 0 ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
-      const res2 = await getCommentLikedById(id);
-      if (res2.code === 0) {
-        if (inArticle) {
-          this.updateArticleCommentLikes(comment, res2.data.likes); //传入comment是为了判断类型
-        } else {
-          this.updateUserCommentLikes(comment, res2.data.likes); //传入comment是为了判断类型
-        }
-        this.changeUserLikedId(); //更新用户点赞列表
+    async updateCommentByIdAction(id, updateProp: string, inArticle = true) {
+      const res = await getCommentById(id);
+      if (res.code === 0) {
+        const upatedComment = res.data;
+        console.log('upatedComment', upatedComment);
+        inArticle ? this.updateArticleComment(upatedComment, updateProp) : this.updateUserComment(upatedComment, updateProp); //传入comment是为了判断类型
+        this.getUserLikedAction(); //更新用户点赞列表
       }
     }
     // async likeAction(payload) {

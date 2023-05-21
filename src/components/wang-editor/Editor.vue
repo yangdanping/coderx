@@ -98,7 +98,6 @@ watch(
 const handleCreated = (editor) => {
   editorRef.value = editor;
   const toolbar = DomEditor.getToolbar(editor);
-  console.log('toolbartoolbartoolbartoolbar', toolbar);
 };
 const handleChanged = (editor: any) => {
   if (editor.isEmpty()) {

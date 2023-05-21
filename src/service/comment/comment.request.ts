@@ -78,8 +78,8 @@ export function likeComment(commentId) {
   });
 }
 
-export function getCommentLikedById(commentId) {
+export function getCommentById(commentId) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${commentId}/like`
+    url: `${urlHead}/${commentId}`
   });
 }

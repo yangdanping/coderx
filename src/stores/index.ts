@@ -26,7 +26,7 @@ const useRootStore = defineStore('root', {
     async checkAuthAction() {
       const res = await checkAuth();
       const { logOut } = useUserStore();
-      console.log('checkAuthAction res', res);
+      console.log('checkAuthAction res', res.code === 0 ? '验证通过' : '验证失败');
       res.code && logOut(false);
     },
     async loadLoginAction() {

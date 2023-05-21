@@ -14,7 +14,6 @@ export function getList(data: IArticleList) {
   const { pageNum, pageSize, tagId, userId, idList } = data;
   const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
   const limit = pageSize;
-  console.log('idListidListidListidListidListidList', idList);
   return myRequest.get<IDataType>({
     url: `${urlHead}?offset=${offset}&limit=${limit}&tagId=${tagId}&userId=${userId}&idList=${JSON.stringify(idList)}`
   });

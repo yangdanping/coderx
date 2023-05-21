@@ -24,7 +24,7 @@ export const useEditorConfig = () => {
             console.log('上传图片成功!', res);
             console.log('获取到了上传的图片', res.data[0].url);
             const imgId = res.data[0].result.insertId;
-            articleStore.changeUploaded(imgId);
+            articleStore.updateUploaded(imgId);
             const url = res.data[0].url;
             emitter.emit('uploadedImage', { url, imgId });
             const href = res.data[0].url;
