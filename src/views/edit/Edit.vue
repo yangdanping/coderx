@@ -12,7 +12,7 @@
 import { Menu } from '@element-plus/icons-vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';
-import { Msg, emitter, isEmptyObj } from '@/utils';
+import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
 import useArticleStore from '@/stores/article';
 import type { UploadProps, UploadUserFile } from 'element-plus';
@@ -22,12 +22,6 @@ const articleStore = useArticleStore();
 const { article } = storeToRefs(articleStore);
 const isEdit = computed(() => !!route.query.editArticleId);
 const editData = computed(() => (isEdit.value ? article.value : {}));
-// const emit = defineEmits(['update:editData']);
-// const editData = computed({
-//   get: () => (isEdit.value ? article.value : {}),
-//   set: (val) => emit('update:editData', val)
-// });
-
 const drawer = ref(false);
 const preview = ref('');
 const fileList = ref<UploadUserFile[]>([]);

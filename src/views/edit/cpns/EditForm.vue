@@ -41,15 +41,14 @@
 <script lang="ts" setup>
 import useArticleStore from '@/stores/article';
 import { ElMessageBox } from 'element-plus';
-import { LocalCache, Msg, isEmptyObj, emitter } from '@/utils';
-import type { UploadRequestHandler } from 'element-plus';
+import { LocalCache, Msg, isEmptyObj } from '@/utils';
 const router = useRouter();
 const articleStore = useArticleStore();
-const { tags, uploaded } = storeToRefs(articleStore);
+const { tags } = storeToRefs(articleStore);
 
 import type { IArticle } from '@/stores/types/article.result';
-import type { ElForm, ElInput } from 'element-plus';
-import type { UploadProps, UploadUserFile } from 'element-plus';
+import type { UploadRequestHandler } from 'element-plus';
+import type { UploadUserFile } from 'element-plus';
 const props = defineProps({
   editData: {
     type: Object as PropType<IArticle>,
@@ -75,8 +74,17 @@ const emit = defineEmits(['formSubmit', 'setCover']);
 
 onMounted(() => {
   articleStore.getTagsAction();
-  if (isEmptyObj(props.editData)) {
-    console.log('编辑文章', props.editData);
+  const draft = LocalCache.getCache('draft');
+  if (draft) {
+    console.log('EditForm组件 修改已保存文章详情表单的草稿-------------------------', draft);
+    const { title, tags, fileList = [] } = draft;
+    form = reactive({ title, tags });
+    if (fileList.length) {
+      //已上传的就是拼接了small,所以这边不用
+      emit('setCover', { url: fileList[0].url, name: 'img' });
+    }
+  } else if (isEmptyObj(props.editData)) {
+    console.log('EditForm组件 修改已上传文章详情表单-------------------------', props.editData);
     const { title, tags, images } = props.editData;
     if (images) {
       const url = images[0].url?.concat('?type=small');
@@ -85,10 +93,8 @@ onMounted(() => {
     form.title = title!;
     tags?.forEach((tag) => oldTags.value.push(tag.name));
     tags?.forEach((tag) => form.tags.push(tag.name));
-    console.log('编辑文章 editForm onMounted拿到form', form);
-  } else if (LocalCache.getCache('draft')) {
-    form = reactive(LocalCache.getCache('draft'));
-    console.log('editForm不存在props.editData,在缓存中拿', form);
+  } else {
+    console.log('EditForm组件 创建文章详情表单-------------------------');
   }
 });
 
@@ -127,12 +133,11 @@ const goBack = () => {
   })
     .then(() => {
       if (!isEdit.value) {
-        router.push('/article').then(() => {
-          const draftObj = { ...form, draft: props.draft };
-          console.log('保存并退出文章编辑!!!!!!!!', draftObj);
-          LocalCache.setCache('draft', draftObj);
-          Msg.showSuccess('已保存并退出文章编辑!');
-        });
+        const draftObj = { ...form, draft: props.draft, fileList: props.fileList };
+        console.log('保存并退出文章编辑!!!!!!!!', draftObj);
+        LocalCache.setCache('draft', draftObj);
+        Msg.showSuccess('已保存并退出文章编辑!');
+        router.push('/article');
       } else {
         router.back();
       }

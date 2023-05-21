@@ -63,17 +63,19 @@ const props = defineProps({
 });
 const valueHtml = ref('');
 onMounted(() => {
+  console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
   nextTick(() => {
-    console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
-    const isDraft = !!LocalCache.getCache('draft') && !isEmptyObj(props.editData) && !props.isComment;
+    const draft = LocalCache.getCache('draft');
+    const isDraft = !!draft && !isEmptyObj(props.editData) && !props.isComment;
     if (isDraft) {
-      const { draft } = LocalCache.getCache('draft');
-      valueHtml.value = draft;
-      console.log('文章草稿-------------------------------', valueHtml.value);
+      valueHtml.value = draft.draft;
+      console.log('Editor组件 修改已保存文章内容的草稿-------------------------------', valueHtml.value);
     } else if (isEmptyObj(props.editData)) {
       valueHtml.value = props.editData.content ?? '';
+      console.log('Editor组件 修改已上传文章内容-------------------------------', valueHtml.value);
     } else if (props.editComment) {
       valueHtml.value = props.editComment;
+      console.log('Editor组件 修改评论-------------------------------', valueHtml.value);
     }
   });
   emitter.on('cleanContent', () => (valueHtml.value = ''));
@@ -87,7 +89,9 @@ const emit = defineEmits(['update:content']);
 //监听editor数据变化
 watch(
   () => valueHtml.value,
-  (newV) => emit('update:content', newV),
+  (newV) => {
+    emit('update:content', newV);
+  },
   { deep: true }
 );
 
@@ -99,8 +103,6 @@ const handleCreated = (editor) => {
 const handleChanged = (editor: any) => {
   if (editor.isEmpty()) {
     valueHtml.value = '';
-  } else {
-    // console.log('handleChanged', valueHtml.value);
   }
 };
 
@@ -120,6 +122,7 @@ onBeforeUnmount(() => {
     overflow: auto;
     background: #fafff3;
     height: 100vh;
+    word-wrap: break-word;
     display: inline-block;
     vertical-align: top;
     /* box-sizing: border-box; */
