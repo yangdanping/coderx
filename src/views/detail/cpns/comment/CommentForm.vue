@@ -40,7 +40,7 @@ const content = ref('');
 const disabled = ref(false);
 
 const addComment = () => {
-  if (article.value.status === '1') {
+  if (article.value.status) {
     Msg.showFail('文章已被封禁,不可评论');
   } else {
     if (!content.value) {

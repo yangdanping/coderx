@@ -78,16 +78,16 @@ export const useArticleStore = defineStore('article', {
         this.article.likes = likes;
       }
     },
+    updateSearchResults(searchResults) {
+      this.searchResults = searchResults;
+      console.log('updateSearchResults', this.searchResults);
+    },
     initArticle() {
       this.article = {};
       this.articles = {};
     },
     initTag(tags: Itag[]) {
       this.tags = tags;
-    },
-    updateSearchResults(searchResults) {
-      this.searchResults = searchResults;
-      console.log('updateSearchResults', this.searchResults);
     },
     // 异步请求action---------------------------------------------------
     async getArticleListAction(userId: number | '' = '', order = 'date', idList: number[] | [] = []) {

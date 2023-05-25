@@ -53,7 +53,7 @@ export function addView(articleId?: RouteParam) {
   });
 }
 
-export function getTags(offset = 0, limit = 10) {
+export function getTags(offset = 0, limit = 30) {
   return myRequest.get<IDataType>({
     url: `/tag?offset=${offset}&limit=${limit}`
   });

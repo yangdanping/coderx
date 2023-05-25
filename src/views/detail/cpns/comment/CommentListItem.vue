@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="editor-content">
-        <div class="editor-content-view" :style="item.status === '1' ? 'color: red' : ''" v-dompurify-html="item.content"></div>
+        <div class="editor-content-view" :style="item.status ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" isReply />

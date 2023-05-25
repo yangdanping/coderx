@@ -3,6 +3,7 @@
     <el-popover popper-class="user-popover" width="200px" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
         <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" />
+        <el-tag size="small" effect="plain" :type="onlineStatus(info.name).type">{{ onlineStatus(info.name).msg }}</el-tag>
         <div class="user-info">
           <div class="info1">
             <h2>{{ info.name }}</h2>
@@ -36,7 +37,7 @@ import useUserStore from '@/stores/user';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { followCount, isFollowed, isUser } = storeToRefs(userStore);
+const { followCount, isFollowed, isUser, onlineUsers } = storeToRefs(userStore);
 
 const props = defineProps({
   info: {
@@ -57,7 +58,16 @@ const props = defineProps({
 });
 const avatarUrl = computed(() => props.info.avatarUrl ?? getImageUrl('user', 'avatar'));
 const userSex = computed(() => getImageUrl('user', `${props.info.sex === '女' ? 'female' : 'male'}-icon`));
-
+const onlineStatus = computed<any>(() => {
+  return (userName) => {
+    const user = onlineUsers.value.find((user) => user.userName === userName);
+    if (user && !user?.status) {
+      return { type: 'success', msg: '在线' };
+    } else {
+      return { type: 'info', msg: '离线' };
+    }
+  };
+});
 const mouseenter =
   !props.disabled &&
   debounce(
@@ -134,9 +144,16 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   backdrop-filter: blur(10px);
 
   .user {
+    position: relative;
     display: flex;
     align-items: center;
 
+    .el-tag {
+      position: absolute;
+      bottom: -12px;
+      left: 11px;
+      user-select: none;
+    }
     .user-info {
       margin-left: 10px;
       .info1 {

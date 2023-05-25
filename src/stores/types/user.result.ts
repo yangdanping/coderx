@@ -9,6 +9,8 @@ export interface IUserInfo {
   address?: string;
   articleCount?: number;
   commentCount?: number;
+  status?: number;
+  onlineStatus?: number;
 }
 export interface IFollowInfo {
   follower?: any[];

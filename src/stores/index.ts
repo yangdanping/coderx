@@ -30,11 +30,11 @@ const useRootStore = defineStore('root', {
       res.code && logOut(false);
     },
     async loadLoginAction() {
-      const { changeToken, changeUserInfo } = useUserStore();
+      const { updateToken, updateUserInfo } = useUserStore();
       const token = LocalCache.getCache('token');
-      token && changeToken(token);
+      token && updateToken(token);
       const userInfo = LocalCache.getCache('userInfo');
-      userInfo && changeUserInfo(userInfo);
+      userInfo && updateUserInfo(userInfo);
     }
   }
 });

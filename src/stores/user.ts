@@ -18,6 +18,7 @@ const useUserStore = defineStore('user', {
     followInfo: {} as IFollowInfo,
     comments: [] as any[],
     collects: [] as any,
+    onlineUsers: [] as any[],
     isFollowed: false //仅用于一对一用户的判断
   }),
   getters: {
@@ -37,16 +38,21 @@ const useUserStore = defineStore('user', {
     }
   },
   actions: {
-    changeToken(token: string) {
+    updateToken(token: string) {
       this.token = token;
     },
-    changeUserInfo(userInfo: IUserInfo) {
+    updateUserInfo(userInfo: IUserInfo) {
       this.userInfo = userInfo;
     },
-    changeProfile(profile: IUserInfo) {
+    updateProfile(profile: IUserInfo) {
       this.profile = profile;
     },
-
+    updateOnlineUsers(users) {
+      this.onlineUsers = users;
+    },
+    updateOnlineStatus(onlineStatus) {
+      this.userInfo.onlineStatus = onlineStatus;
+    },
     logOut(refresh = true) {
       this.token = '';
       this.userInfo = {};
@@ -98,9 +104,9 @@ const useUserStore = defineStore('user', {
         const res2 = await getUserInfoById(id);
         if (res2.code === 0) {
           const userInfo = res2.data;
-          this.changeUserInfo(userInfo);
+          this.updateUserInfo(userInfo);
           LocalCache.setCache('userInfo', userInfo);
-          this.changeToken(token);
+          this.updateToken(token);
           LocalCache.setCache('token', token); //注意拿到token第一时间先做缓存,然后就可以在axios实例拦截器中getCache了
           //   // 3.成功登录后刷新页面-----------------------------------------------------
           LocalCache.getCache('token') ? router.go(0) : Msg.showFail('请求登录用户信息失败'); //若是登录用户信息则不用再请求了
@@ -125,7 +131,7 @@ const useUserStore = defineStore('user', {
     async getProfileAction(userId: RouteParam) {
       const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       if (res.code === 0) {
-        this.changeProfile(res.data);
+        this.updateProfile(res.data);
       } else {
         Msg.showFail('请求用户信息失败');
       }
@@ -176,7 +182,7 @@ const useUserStore = defineStore('user', {
         Msg.showSuccess('更换头像成功');
         const res = await getUserInfoById(userId);
         if (res.code === 0) {
-          this.changeUserInfo(res.data);
+          this.updateUserInfo(res.data);
           LocalCache.setCache('userInfo', res.data);
           router.go(0);
         } else {

@@ -43,7 +43,7 @@ const props = defineProps({
 
 const likeClick = (articleId) => {
   if (token.value) {
-    if (props.article.status === '1') {
+    if (props.article.status) {
       Msg.showFail('文章已被封禁,不可点赞');
     } else {
       articleStore.likeAction(articleId);
