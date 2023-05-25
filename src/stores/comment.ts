@@ -14,12 +14,12 @@ export const useCommentStore = defineStore('comment', {
     replyInfo2: [] as IComment[],
     userComments: [] as IComment[],
     commentCount: 0,
-    commentUserLikedIdList: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
+    userLikedCommentIdList: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
   }),
   getters: {
     isCommentUserLiked() {
       return (commentId) => {
-        return this.commentUserLikedIdList.some((id) => id === commentId);
+        return this.userLikedCommentIdList.some((id) => id === commentId);
       };
     },
     commentReply() {
@@ -58,34 +58,18 @@ export const useCommentStore = defineStore('comment', {
         console.log('对回复的回复--------------', this.replyInfo2);
       }
     },
-    updateUserLikedId(commentUserLikedIdList: number[]) {
-      this.commentUserLikedIdList = commentUserLikedIdList;
+    updateUserLikedId(userLikedCommentIdList: number[]) {
+      this.userLikedCommentIdList = userLikedCommentIdList;
     },
     updateArticleComment(upatedComment: IComment, prop: string) {
       const { id, cid, rid } = upatedComment;
-      if (!cid) {
-        this.commentInfo.find((comment) => {
-          if (comment.id === id) {
-            comment[prop] = upatedComment[prop];
-            return true; //中断
-          }
-        });
-      } else if (cid && !rid) {
-        this.replyInfo.find((comment) => {
-          if (comment.id === id) {
-            comment[prop] = upatedComment[prop];
-            return true; //中断
-          }
-        });
-      } else if (cid && rid) {
-        this.replyInfo2.find((comment) => {
-          if (comment.id === id) {
-            comment[prop] = upatedComment[prop];
-            return true; //中断
-          }
-        });
-      }
-      // this.commentCount.likes = likes;
+      const commentType = !cid ? 'commentInfo' : cid && !rid ? 'replyInfo' : 'replyInfo2';
+      this[commentType].find((comment) => {
+        if (comment.id === id) {
+          comment[prop] = upatedComment[prop];
+          return true; //中断
+        }
+      });
     },
     updateUserComment(upatedComment: IComment, prop: any) {
       this.userComments.find((comment) => {

@@ -21,5 +21,6 @@ export interface IArticleList {
   pageSize: number;
   tagId: number | '';
   userId: number | '';
+  order: string;
   idList: number[] | [];
 }

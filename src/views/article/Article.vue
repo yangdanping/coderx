@@ -1,11 +1,11 @@
 <template>
   <div class="article">
     <NavBar />
-    <nav class="article-nav">
-      <ArticleNav />
+    <nav class="article-nav" v-if="tags.length">
+      <ArticleNav :tags="tags" />
     </nav>
-    <div class="list-wrapper">
-      <ArticleList v-if="articles.result?.length" :articles="articles" />
+    <div class="list-wrapper" :style="{ width: `${articleListWidth}px` }">
+      <ArticleList v-if="articles.result?.length" :articles="articles" @tabClick="tabClick" />
       <div v-else-if="!noData" class="skeleton"><el-skeleton animated /></div>
       <div v-else class="skeleton">
         <h1>该专栏暂无文章,快来发表第一篇吧~</h1>
@@ -19,6 +19,7 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 import ArticleList from './cpns/ArticleList.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
+import { listWidth } from '@/global/constants/list-width';
 
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
@@ -27,15 +28,22 @@ const router = useRouter();
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
-const { articles } = storeToRefs(articleStore);
+const { articles, tags } = storeToRefs(articleStore);
 const { token } = storeToRefs(userStore);
 
 const noData = ref(false);
+const articleListWidth = ref(listWidth);
+
 onMounted(() => {
   articleStore.getArticleListAction();
+  articleStore.getTagsAction();
   setTimeout(() => (noData.value = !noData.value), 2000);
 });
 
+const tabClick = (order) => {
+  console.log('article tabClick', order);
+  articles.value.total! > 1 && articleStore.getArticleListAction('', order);
+};
 const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeLoginDialog());
 </script>
 
@@ -53,9 +61,12 @@ $paddingTop: 60px;
   }
   .list-wrapper {
     padding-top: $paddingTop;
-    margin: 0 60px;
     .skeleton {
-      width: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
   }
 }

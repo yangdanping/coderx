@@ -19,10 +19,10 @@
           </el-button>
         </div>
         <div class="btn2">
-          <el-button type="primary" @click="goProfile()" plain>我的空间</el-button>
+          <el-button @click="goProfile()" type="primary" plain>我的空间</el-button>
         </div>
         <div class="btn3">
-          <el-button @click="logOut">退出登录</el-button>
+          <el-button @click="logOut" type="danger" plain>退出登录</el-button>
         </div>
       </div>
     </div>
@@ -86,8 +86,8 @@ const logOut = () => {
     .box {
       position: absolute;
       left: 50%;
-      bottom: -280px;
-      width: 200px;
+      bottom: -240px;
+      width: 150px;
       background-color: rgba(255, 255, 255);
       border-radius: 8px;
       display: flex;
@@ -98,7 +98,7 @@ const logOut = () => {
       .user-info {
         display: flex;
         align-items: center;
-        margin: 30px 0;
+        margin-top: 20px;
         font-size: 20px;
         font-weight: 100;
         > div {
@@ -108,7 +108,7 @@ const logOut = () => {
           align-items: center;
           cursor: pointer;
           > div:first-of-type {
-            font-size: 28px;
+            font-size: 25px;
             font-weight: 400;
           }
         }

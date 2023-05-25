@@ -10,7 +10,7 @@
     </div>
     <a class="content-wrapper" :href="item.articleUrl" @click.stop.prevent="goDetail(item)">
       <div class="content">
-        <div class="title">{{ !isComment ? item.title : item.article?.title }}</div>
+        <h2 class="title">{{ !isComment ? item.title : item.article?.title }}</h2>
         <p class="abstract">{{ item.content }}</p>
         <slot name="action"></slot>
       </div>
@@ -48,11 +48,12 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
 .list-item {
   display: flex;
   flex-direction: column;
-  transition: all 0.3s;
-  padding: 20px 10px 0;
+  padding: 10px 10px 0 10px;
   margin-bottom: 10px;
   border-radius: 10px;
+  transition: all 0.3s;
   color: var(--fontColor);
+  width: 90%;
 
   &:hover {
     transform: scale(1.01);
@@ -82,29 +83,26 @@ const goTag = (tag) => emitter.emit('changeTag', tag);
     padding-bottom: 10px;
     cursor: pointer;
     .content {
+      flex: 1 1 auto;
       margin-top: 10px;
       .title,
       .abstract {
-        width: 800px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .title {
-        font-weight: 700;
-        font-size: 24px;
-      }
       .abstract {
-        height: 30px;
-        margin-top: 10px;
-        color: #777;
+        max-width: 600px;
+        color: #999;
       }
     }
     .cover {
+      flex: 0 0 auto;
       width: 170px;
       height: 100px;
       object-fit: cover; //保持原来宽高比,遮盖整个区域
       border-radius: 5px;
+      margin-left: 24px;
       overflow: hidden;
       cursor: pointer;
     }

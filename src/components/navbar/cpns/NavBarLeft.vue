@@ -15,7 +15,8 @@ const goHome = () => {
 
 <style lang="scss" scoped>
 .left {
-  width: 120px;
+  max-width: 120px;
+  min-width: 100px;
   /* padding: 0 20px; */
   cursor: pointer;
   .logo {

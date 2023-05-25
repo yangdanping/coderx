@@ -44,11 +44,14 @@ const handleSelect = (key: string) => {
   .menu {
     display: flex;
     font-size: 22px;
+    margin-left: 60px;
     .menu-item {
-      padding: 27px;
-      &:first-child {
-        margin-left: 100px;
-      }
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      padding: 0 10px;
+      height: var(--navbarHeight);
       &:hover {
         color: #81c995;
         cursor: pointer;

@@ -88,24 +88,24 @@ const updateProfile = () => {
   emitter.emit('updateProfile', JSON.parse(JSON.stringify(props.profile))); //深拷贝
 };
 
-const tabClick = (index) => {
+const tabClick = ({ paneName }) => {
   const userId = route.params.userId as any;
   rootStore.$reset(); //初始化分页数据
-  console.log('tabClick', userId, index);
-  switch (index) {
-    case '0':
+  console.log('tabClick', userId, paneName);
+  switch (paneName) {
+    case '文章':
       userStore.getProfileAction(userId);
       articleStore.getArticleListAction(userId);
       break;
-    case '1':
+    case '评论':
       // userStore.getCommentAction(userId);
       commentStore.getCommentAction('', userId);
       break;
-    case '2':
+    case '收藏':
       userStore.getCollectAction(userId);
       useArticleStore().initArticle();
       break;
-    case '3':
+    case '关注':
       emitter.emit('updateFollowList');
       userStore.getFollowAction(userId);
       break;

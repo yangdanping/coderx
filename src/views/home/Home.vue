@@ -7,7 +7,7 @@
         <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
       </div>
       <hr />
-      <div class="box">
+      <div class="brief">
         <div>Power By ⚡⚡yangdanping⚡⚡</div>
         <div>Email📧:1240645840@qq.com</div>
         <div>GitHub😺:https://github.com/yangdanping</div>
@@ -48,6 +48,7 @@ $TitleSize: 2em;
 .home {
   > .content {
     max-width: 1432px;
+    padding: 0 10px;
     margin: 0 auto;
 
     .title {
@@ -79,18 +80,7 @@ $TitleSize: 2em;
       }
     }
 
-    @media screen and (max-width: 880px) {
-      .title {
-        font-size: 70px;
-      }
-    }
-    @media screen and (max-width: 630px) {
-      .title {
-        font-size: 40px;
-      }
-    }
-
-    .box {
+    .brief {
       height: 500px;
       display: flex;
       flex-direction: column;
@@ -101,6 +91,23 @@ $TitleSize: 2em;
       div {
         padding: 20px 0;
         transition: all 0.3s;
+      }
+    }
+
+    @media screen and (max-width: 880px) {
+      .title {
+        font-size: 70px;
+      }
+      .brief {
+        font-size: 25px;
+      }
+    }
+    @media screen and (max-width: 630px) {
+      .title {
+        font-size: 40px;
+      }
+      .brief {
+        font-size: 18px;
       }
     }
   }

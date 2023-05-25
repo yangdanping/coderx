@@ -9,14 +9,20 @@
 import { emitter } from '@/utils';
 import useArticleStore from '@/stores/article';
 import useRootStore from '@/stores';
+import type { Itag } from '@/stores/types/article.result';
 const articleStore = useArticleStore();
 const rootStore = useRootStore();
 
 const activeName = ref('综合');
-const { tags } = storeToRefs(articleStore);
+defineProps({
+  tags: {
+    type: Array as PropType<Itag[]>,
+    default: () => []
+  }
+});
 
 onMounted(() => {
-  articleStore.getTagsAction();
+  // articleStore.getTagsAction();
   emitter.on('changeTag', (tag: any) => {
     const { id, name } = tag;
     console.log('changeTag tagId!!!!!!!!!!!!!!!', id);

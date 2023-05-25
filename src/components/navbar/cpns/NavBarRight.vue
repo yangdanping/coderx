@@ -80,7 +80,7 @@ const changeDialog = () => {
 </script>
 
 <style lang="scss" scoped>
-$searchWidth: 250px;
+$searchWidth: 230px;
 .right {
   display: flex;
   align-items: center;
@@ -88,7 +88,7 @@ $searchWidth: 250px;
   width: 100px;
   margin-right: 300px;
   .search {
-    margin-right: 30px;
+    margin: 0 30px;
     :deep(.el-input) {
       border-radius: 50px;
       transition: all 0.3s;

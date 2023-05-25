@@ -43,7 +43,7 @@ watch(
   () => route.params.userId,
   () => (activeName.value = '文章') //切换不同用户时初始化为文章
 );
-const handleClick = (tab) => emit('tabClick', tab.index);
+const handleClick = (tab) => emit('tabClick', tab);
 </script>
 
 <style lang="scss" scoped>
