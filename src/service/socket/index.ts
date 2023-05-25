@@ -1,21 +1,18 @@
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
-export function useSocket(state?: any) {
+import { LocalCache } from '@/utils';
+import useUserStore from '@/stores/user';
+export default function useSocket(state?: any) {
+  const userStore = useUserStore();
   const socket = io(SOCKET_URL, {
     query: {
-      userName: state.userName
+      userName: LocalCache.getCache('userInfo')?.name ?? ''
+      // userName: userStore.userInfo?.name ?? ''
     }
   })
     // 监听io的online事件----------------------------------
     .on('online', ({ userList }) => {
-      state.userList = userList;
-      // 把当前用户置顶
-      (state.userList as any[]).find((user, index) => {
-        if (user.userName === state.userName) {
-          return state.userList.unshift(state.userList.splice(index, 1)[0]);
-        }
-      });
-      console.log('前端拿到了进入聊天室的用户列表', state.userList);
+      console.log('userStore', userStore.updateOnlineUsers(userList));
     })
     // 监听targetSocket的receive事件----------------------------------
     .on('receive', (data) => {

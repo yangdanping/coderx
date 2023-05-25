@@ -47,11 +47,17 @@ const useUserStore = defineStore('user', {
     updateProfile(profile: IUserInfo) {
       this.profile = profile;
     },
-    updateOnlineUsers(users) {
-      this.onlineUsers = users;
-    },
-    updateOnlineStatus(onlineStatus) {
-      this.userInfo.onlineStatus = onlineStatus;
+    updateOnlineUsers(userList) {
+      if (userList.length > 1) {
+        (userList as any[]).find((user, index) => {
+          if (user.userName === this.userInfo.name) {
+            console.log('将当前用户' + user.userName + '置顶');
+            return userList.unshift(userList.splice(index, 1)[0]);
+          }
+        });
+      }
+      this.onlineUsers = userList;
+      console.log('前端拿到了进入聊天室的用户列表', this.onlineUsers);
     },
     logOut(refresh = true) {
       this.token = '';

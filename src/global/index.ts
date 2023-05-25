@@ -12,6 +12,7 @@ import '@/assets/css/index.scss';
 import 'element-plus/dist/index.css';
 
 import type { App } from 'vue';
+import useSocket from '@/service/socket';
 export default function init(app: App) {
   app.use(createPinia()).use(router).use(VueDOMPurifyHTML).mount('#app');
   // 使用vue-dompurify-html既可以保留样式和防止xss攻击
@@ -22,7 +23,7 @@ export default function init(app: App) {
   const commentStore = useCommentStore();
 
   rootStore.loadLoginAction();
-
+  const socket = useSocket();
   // 路由前置守卫
   router.beforeEach((to, from) => {
     console.log(`<路由前置守卫>检测到路由 ${from.path} --> ${to.path}`);
