@@ -48,14 +48,14 @@ const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeL
 </script>
 
 <style lang="scss" scoped>
-$paddingTop: 60px;
+$paddingTop: 40px;
 .article {
   display: flex;
   justify-content: center;
 
   .article-nav {
     position: sticky;
-    top: 30px;
+    top: 50px;
     height: 100%;
     padding-top: $paddingTop;
   }

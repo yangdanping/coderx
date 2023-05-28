@@ -33,6 +33,7 @@ defineProps({
 const activeOrder = ref('date');
 const emit = defineEmits(['tabClick']);
 const setOrder = (order) => {
+  window.scrollTo(0, 0);
   activeOrder.value = order;
   emit('tabClick', order);
 };
@@ -49,19 +50,23 @@ const changePage = () => articleStore.getArticleListAction();
   border-radius: 10px;
   animation: moveDown 1s forwards;
   .list-order {
-    position: absolute;
-    top: -35px;
-    right: 30px;
+    position: sticky;
+    top: 80px;
     display: flex;
+    justify-content: right;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
     > div {
       display: flex;
-      background: #f1f1f1;
+      background-color: rgba(255, 255, 255, 0.5);
+
       align-items: center;
       justify-content: center;
       border-radius: 10px;
       height: 30px;
       width: 60px;
-      margin-right: 10px;
+      margin-left: 10px;
       cursor: pointer;
       &.active {
         background: #409eff;
