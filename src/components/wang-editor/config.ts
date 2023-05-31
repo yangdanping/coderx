@@ -24,7 +24,13 @@ export const useEditorConfig = () => {
             console.log('上传图片成功!', res);
             console.log('获取到了上传的图片', res.data[0].url);
             const imgId = res.data[0].result.insertId;
-            articleStore.updateUploaded(imgId);
+            const uploaded = articleStore.uploaded;
+            if (uploaded.length && uploaded.some((img) => img.isCover)) {
+              articleStore.updateUploaded(imgId);
+            } else {
+              // 当且仅当uploaded无图片且带编辑文章没有任何图片是封面时,设置该图片为封面
+              articleStore.updateUploaded(imgId, true);
+            }
             const url = res.data[0].url;
             emitter.emit('uploadedImage', { url, imgId });
             const href = res.data[0].url;

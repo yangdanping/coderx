@@ -14,7 +14,7 @@
         <p class="abstract">{{ item.content }}</p>
         <slot name="action"></slot>
       </div>
-      <img v-if="item.cover" class="cover" :src="item.cover" />
+      <img v-if="item.cover" class="cover" :src="item.cover" loading="lazy" />
       <div v-else class="cover"></div>
     </a>
   </div>

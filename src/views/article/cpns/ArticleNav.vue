@@ -32,7 +32,7 @@ onMounted(() => {
   });
 });
 const handleClick = (tab) => {
-  console.log('handleClick!!!!', tab);
+  console.log('更换标签!!!!', tab.paneName);
   if (tab.paneName) {
     rootStore.$reset();
     rootStore.changeTag(tab.paneName === '0' ? '' : tab.paneName);

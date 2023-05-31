@@ -73,6 +73,7 @@ const bindImagesLayer = () => {
   const imgs = [].slice.call(content?.querySelectorAll('img'));
   if (imgs?.length) {
     imgs.forEach((item: HTMLImageElement, index) => {
+      item.setAttribute('loading', 'lazy'); //增加图片懒加载:延迟加载图像,直到它和视口接近到一个计算得到的距离(由浏览器定义).目的是在需要图像之前,避免加载图像所需要的网络和存储带宽。这通常会提高大多数典型用场景中内容的性能。
       item.classList.add('medium-zoom-image'); //为图片添加样式
       const src = item.getAttribute('src');
       if (!imgPreview.imgs.includes(src)) {

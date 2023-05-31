@@ -51,16 +51,25 @@ export const useArticleStore = defineStore('article', {
       this.articles = articles;
       console.log('getArticleList', this.articles.result);
     },
-    getDetail(article: IArticle) {
+    getDetail(article: IArticle, isEditRefresh = false) {
       article.createAt = timeFormat(article.createAt);
       article.updateAt = timeFormat(article.updateAt);
       this.article = article;
+      if (isEditRefresh) {
+        this.setupUploaded(article);
+      }
     },
-    updateUploaded(imgId: number, isCover = false) {
+    setupUploaded(article: IArticle) {
+      article.images?.forEach((item) => {
+        this.updateUploaded(item.id, item.url?.endsWith('-cover') ? true : false);
+      });
+    },
+    updateUploaded(imgId?: number, isCover = false) {
       if (imgId) {
-        isCover ? this.uploaded.unshift(imgId) : this.uploaded.push(imgId);
+        // isCover ? this.uploaded.unshift(imgId) : this.uploaded.push(imgId);
+        this.uploaded.push({ id: imgId, isCover });
       } else {
-        this.uploaded = [];
+        this.uploaded.length && (this.uploaded = []);
         console.log('updateUploaded已清0!!!!!!!!!!!!!!!!');
       }
     },
@@ -109,7 +118,7 @@ export const useArticleStore = defineStore('article', {
       }
       const res = await getDetail(articleId);
       if (res.code === 0) {
-        this.getDetail(res.data);
+        this.getDetail(res.data, isEditRefresh);
         // 获取内容后再获取文章评论
         !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
@@ -198,6 +207,9 @@ export const useArticleStore = defineStore('article', {
       }
     },
     async uploadCoverAction(file: File) {
+      if (this.uploaded.length) {
+        this.uploaded.find((item) => item.isCover).isCover = false;
+      }
       const res = await uploadPicture(file);
       if (res.code === 0) {
         const url = res.data[0].url;

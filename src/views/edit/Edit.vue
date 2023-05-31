@@ -43,6 +43,8 @@ onMounted(() => {
     // 刷新后editData消失,重新获取,
     if (!isEmptyObj(editData.value)) {
       articleStore.getDetailAction(route.query.editArticleId as any, true);
+    } else {
+      articleStore.setupUploaded(editData.value);
     }
   }
 });

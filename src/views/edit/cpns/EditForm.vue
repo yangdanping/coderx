@@ -139,11 +139,13 @@ const goBack = () => {
         Msg.showSuccess('已保存并退出文章编辑!');
         router.push('/article');
       } else {
+        articleStore.updateUploaded(0);
         router.back();
       }
     })
     .catch((action) => {
       if (action === 'cancel' && !isEdit.value) {
+        console.log('取消编辑文章----------------------------------------');
         LocalCache.removeCache('draft');
         router.push('/article').then(() => {
           articleStore.deletePictrueAction();
