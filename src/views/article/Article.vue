@@ -42,7 +42,7 @@ onMounted(() => {
 
 const tabClick = (order) => {
   console.log('article tabClick', order);
-  articles.value.total! > 1 && articleStore.getArticleListAction('', order);
+  articles.value.total! > 1 && articleStore.getArticleListAction();
 };
 const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeLoginDialog());
 </script>

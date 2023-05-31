@@ -11,11 +11,11 @@ export function createArticle(data: IArticle) {
 }
 
 export function getList(data: IArticleList) {
-  const { pageNum, pageSize, tagId, userId, idList, order } = data;
+  const { pageNum, pageSize, tagId, userId, idList, pageOrder } = data;
   const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
   const limit = pageSize;
   return myRequest.get<IDataType>({
-    url: `${urlHead}?offset=${offset}&limit=${limit}&tagId=${tagId}&userId=${userId}&order=${order}&idList=${JSON.stringify(idList)}`
+    url: `${urlHead}?offset=${offset}&limit=${limit}&tagId=${tagId}&userId=${userId}&order=${pageOrder}&idList=${JSON.stringify(idList)}`
   });
 }
 

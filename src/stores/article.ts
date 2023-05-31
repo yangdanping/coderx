@@ -90,9 +90,9 @@ export const useArticleStore = defineStore('article', {
       this.tags = tags;
     },
     // 异步请求action---------------------------------------------------
-    async getArticleListAction(userId: number | '' = '', order = 'date', idList: number[] | [] = []) {
-      const { pageNum, pageSize, tagId } = useRootStore();
-      const data = { pageNum, pageSize, tagId, userId, order, idList };
+    async getArticleListAction(userId: number | '' = '', idList: number[] | [] = []) {
+      const { pageNum, pageSize, tagId, pageOrder } = useRootStore();
+      const data = { pageNum, pageSize, tagId, userId, pageOrder, idList };
       console.log('getArticleListAction', data);
       const res = await getList(data); //获取文章列表信息以及文章数
       if (res.code === 0) {

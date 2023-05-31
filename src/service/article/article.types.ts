@@ -19,8 +19,8 @@ export interface IArticle {
 export interface IArticleList {
   pageNum: number;
   pageSize: number;
+  pageOrder: string;
   tagId: number | '';
   userId: number | '';
-  order: string;
   idList: number[] | [];
 }

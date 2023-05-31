@@ -1,8 +1,8 @@
 <template>
   <div class="article-list">
     <div class="list-order">
-      <div @click="setOrder('date')" :class="{ active: activeOrder === 'date' }">最新</div>
-      <div @click="setOrder('hot')" :class="{ active: activeOrder === 'hot' }">热门</div>
+      <div @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
+      <div @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
     </div>
     <template v-for="item in articles?.result" :key="item.id">
       <ListItem :item="item">
@@ -19,23 +19,26 @@
 import Page from '@/components/Page.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
+import useRootStore from '@/stores';
 import useArticleStore from '@/stores/article';
 
 import type { IArticles } from '@/stores/types/article.result';
 
 const articleStore = useArticleStore();
+const rootStore = useRootStore();
+const { pageOrder } = storeToRefs(rootStore);
 defineProps({
   articles: {
     type: Object as PropType<IArticles>,
     default: () => {}
   }
 });
-const activeOrder = ref('date');
 const emit = defineEmits(['tabClick']);
-const setOrder = (order) => {
-  window.scrollTo(0, 0);
-  activeOrder.value = order;
+const setOrder = (order: string) => {
+  rootStore.changePageNum(1);
+  rootStore.changePageOrder(order);
   emit('tabClick', order);
+  window.scrollTo(0, 0);
 };
 const changePage = () => articleStore.getArticleListAction();
 </script>

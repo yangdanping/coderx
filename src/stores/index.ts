@@ -7,6 +7,7 @@ const useRootStore = defineStore('root', {
     showLoginDialog: false as boolean, //多个组件都有可能使用该参数,所以放到store中
     pageNum: 1 as number,
     pageSize: 5 as number,
+    pageOrder: 'date',
     tagId: '' as number | ''
   }),
   actions: {
@@ -18,6 +19,9 @@ const useRootStore = defineStore('root', {
     },
     changePageSize(pageSize: number) {
       this.pageSize = pageSize;
+    },
+    changePageOrder(pageOrder: string) {
+      this.pageOrder = pageOrder;
     },
     changeTag(tagId) {
       this.tagId = tagId;
