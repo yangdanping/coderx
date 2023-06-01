@@ -1,7 +1,7 @@
 // service统一的出口
 import { LocalCache, Msg } from '@/utils';
 import MyRequest from '@/global/request';
-import { BASE_URL, TIME_OUT } from '@/global/request/config';
+import { BASE_URL, NEWS_BASE_URL, TIME_OUT } from '@/global/request/config';
 import useUserStore from '@/stores/user';
 
 //new--->执行构造器--->创建一个唯一的实例(已在构造器里用axios.create()的前提下)
@@ -43,5 +43,25 @@ const myRequest = new MyRequest({
     }
   }
 });
+const newsRequest = new MyRequest({
+  baseURL: NEWS_BASE_URL,
+  timeout: TIME_OUT,
+  interceptors: {
+    reqSuccess: (config) => {
+      return config;
+    },
+    reqFail: (err) => {
+      return err;
+    },
+    resSuccess: (res) => {
+      return res;
+    },
+    resFail: (err) => {
+      return err;
+    }
+  }
+});
+
+export { newsRequest };
 
 export default myRequest;
