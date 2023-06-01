@@ -5,9 +5,10 @@
       <el-carousel-item v-for="(item, index) in news" :key="index">
         <div class="item">
           <a class="disc" :href="item.url" target="_blank">
-            <h2 class="author">{{ item.source.name }}</h2>
+            <h2 class="author">
+              来源: {{ item.source.name }} <el-icon size="40px"><IArrowRight /></el-icon>
+            </h2>
             <h3 class="title">{{ item.title }}</h3>
-            <el-icon size="30px"><IArrowRight /></el-icon>
           </a>
           <img class="cover" :src="item.image" alt="" loading="lazy" />
         </div>
@@ -44,10 +45,11 @@ const props = defineProps({
       padding: 20px;
       background: rgba(0, 0, 0, 0.7);
       transition: transform 0.5s;
+      .author {
+        display: flex;
+        align-items: center;
+      }
       .el-icon {
-        position: absolute;
-        top: 20px;
-        right: 20px;
         transition: transform 0.5s;
       }
       &:hover {
