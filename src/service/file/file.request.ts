@@ -35,3 +35,9 @@ export function deletePicture(uploaded) {
     data: { uploaded }
   });
 }
+
+export function deleteOldAvatar(userId) {
+  return myRequest.delete<IDataType>({
+    url: `${urlHead}/avatar/${userId}`
+  });
+}

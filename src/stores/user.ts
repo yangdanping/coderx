@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
-import { uploadAvatar } from '@/service/file/file.request';
+import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { LocalCache, Msg, SessionCache, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
@@ -181,6 +181,7 @@ const useUserStore = defineStore('user', {
     },
     async uploadAvatarAction(payload) {
       const userId = this.userInfo.id;
+      await deleteOldAvatar(userId); //删除原来的头像
       const res = await uploadAvatar(payload);
       console.log('uploadAvatarAction', payload);
       if (res.code === 0) {
