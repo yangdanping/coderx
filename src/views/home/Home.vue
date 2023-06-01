@@ -44,7 +44,9 @@ onMounted(() => {
     }
     line2Str.value = str;
   }, 300);
-  homeStore.getNewsAction();
+  setTimeout(() => {
+    homeStore.getNewsAction();
+  });
 });
 </script>
 

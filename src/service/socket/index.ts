@@ -13,7 +13,7 @@ export default function useSocket(state?: any) {
   })
     // 监听io的online事件----------------------------------
     .on('online', ({ userList }) => {
-      console.log('userStore', userStore.updateOnlineUsers(userList));
+      userStore.updateOnlineUsers(userList);
     })
     // 监听targetSocket的receive事件----------------------------------
     .on('receive', (data) => {

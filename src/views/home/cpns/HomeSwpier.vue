@@ -5,11 +5,11 @@
       <el-carousel-item v-for="(item, index) in news" :key="index">
         <div class="item">
           <a class="disc" :href="item.url" target="_blank">
-            <h2 class="author">{{ item.author }}</h2>
+            <h2 class="author">{{ item.source.name }}</h2>
             <h3 class="title">{{ item.title }}</h3>
             <el-icon size="30px"><IArrowRight /></el-icon>
           </a>
-          <img class="cover" :src="item.urlToImage" alt="" />
+          <img class="cover" :src="item.image" alt="" loading="lazy" />
         </div>
       </el-carousel-item>
     </el-carousel>
