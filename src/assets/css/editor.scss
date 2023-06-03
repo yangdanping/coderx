@@ -64,7 +64,44 @@
 }
 
 :deep(.editor-content-view) {
+  padding: 0 10px;
   @include p;
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.5;
+    margin: 20px 0;
+  }
+  code,
+  li {
+    line-height: 1.5;
+  }
+  code {
+    // background: #f5f2f0;
+    tab-size: 4;
+    white-space: pre;
+    word-break: normal;
+    word-spacing: normal;
+    hyphens: none;
+    font-size: 18px;
+    background-color: transparent;
+  }
+  &.preview-content {
+    code {
+      background: #f5f2f0;
+      border: 1px solid #e8e8e8;
+    }
+  }
+
+  table {
+    margin: 10px 0;
+    th,
+    td {
+      line-height: 1.5;
+      padding: 3px 5px;
+    }
+  }
 
   img {
     max-width: 100%;

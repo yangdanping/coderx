@@ -1,32 +1,30 @@
 <template>
-  <div>
-    <div class="editor-container">
-      <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #ccc" />
-      <Editor
-        v-if="isComment"
-        :style="{ height, 'overflow-y': 'hidden' }"
-        v-model="valueHtml"
-        :defaultConfig="editorConfig"
-        @onChange="handleChanged"
-        @onCreated="handleCreated"
-        :mode="mode"
-      />
-      <el-row v-else>
-        <el-col :span="12">
-          <Editor
-            :style="{ height, 'overflow-y': 'hidden' }"
-            v-model="valueHtml"
-            :defaultConfig="editorConfig"
-            @onChange="handleChanged"
-            @onCreated="(editor) => (editorRef = editor)"
-            :mode="mode"
-          />
-        </el-col>
-        <el-col :span="12" class="preview">
-          <div class="editor-content-view" v-dompurify-html="valueHtml"></div>
-        </el-col>
-      </el-row>
-    </div>
+  <div class="editor-container" :class="{ fixed: !isComment }">
+    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #ccc" />
+    <Editor
+      v-if="isComment"
+      :style="{ height, 'overflow-y': 'hidden' }"
+      v-model="valueHtml"
+      :defaultConfig="editorConfig"
+      @onChange="handleChanged"
+      @onCreated="handleCreated"
+      :mode="mode"
+    />
+    <el-row v-else>
+      <el-col :span="12">
+        <Editor
+          :style="{ height, 'overflow-y': 'hidden' }"
+          v-model="valueHtml"
+          :defaultConfig="editorConfig"
+          @onChange="handleChanged"
+          @onCreated="(editor) => (editorRef = editor)"
+          :mode="mode"
+        />
+      </el-col>
+      <el-col :span="12" class="preview">
+        <div class="editor-content-view preview-content" v-dompurify-html="valueHtml"></div>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -126,5 +124,11 @@ onBeforeUnmount(() => {
     vertical-align: top;
     /* box-sizing: border-box; */
   }
+}
+.editor-container.fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 </style>

@@ -10,6 +10,8 @@ import VueDOMPurifyHTML from 'vue-dompurify-html';
 import 'normalize.css';
 import '@/assets/css/index.scss';
 import 'element-plus/dist/index.css';
+import 'prismjs';
+import 'prismjs/themes/prism-okaidia.css';
 
 import type { App } from 'vue';
 import useSocket from '@/service/socket';
