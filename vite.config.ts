@@ -8,6 +8,7 @@ import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
+
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/

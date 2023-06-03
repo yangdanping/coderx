@@ -1,13 +1,15 @@
-import Prismjs from 'prismjs'; //引入插件
+import Prism from 'prismjs'; //引入插件
 
-const codeHeightlight = (htmlContent: any) => {
+type CodeType = 'javascript' | 'typescript' | 'java';
+
+const codeHeightlight = (htmlContent: any, type: CodeType = 'javascript') => {
   console.log('codeHeightlight htmlContent', htmlContent);
   const codes = Array.of(...(htmlContent?.querySelectorAll('code') as any)).filter((block: any) => block.innerText.length > 30);
   console.log('codeHeightlight codes', codes);
   codes.forEach((code: any) => {
-    code.classList.add('language-javascript'); //为图片添加样式
-    code.classList.add('language-java'); //为图片添加样式
-    Prismjs.highlightElement(code);
+    code.classList.add(`language-${type}`);
+    // code.classList.add('language-java');
+    Prism.highlightElement(code);
     // console.log('codeHeightlight code', code);
   });
 };

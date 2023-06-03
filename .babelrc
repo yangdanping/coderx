@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    [
+      "prismjs",
+      {
+        "languages": ["javascript", "typescript", "css", "markup", "java"],
+        "plugins": ["line-numbers"],
+        "theme": "twilight",
+        "css": true
+      }
+    ]
+  ]
+}
