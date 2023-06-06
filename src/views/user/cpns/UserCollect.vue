@@ -71,7 +71,7 @@ const goCollectDetial = (item) => {
     //获取到收藏夹名
     activeCollect.value = collects.value.find((collect) => collect.id === item.id).name;
     //对收藏夹下的文章列表进行请求
-    articleStore.getArticleListAction('', [...item.count]);
+    articleStore.getArticleListAction('', [...item.count] as any);
   } else {
     Msg.showInfo('该收藏夹还没有文章');
   }

@@ -11,7 +11,7 @@
       :mode="mode"
     />
     <el-row v-else>
-      <el-col :span="12">
+      <el-col :span="isShowPreviw ? 12 : 24">
         <Editor
           :style="{ height, 'overflow-y': 'hidden' }"
           v-model="valueHtml"
@@ -25,10 +25,14 @@
         <div class="editor-content-view preview-content" v-dompurify-html="valueHtml"></div>
       </el-col>
     </el-row>
+    <el-tooltip class="item" effect="dark" :content="`${isShowPreviw ? '关闭' : '打开'}预览`" placement="top">
+      <el-button class="show-preview-btn" @click="togglePreview" :icon="Memo"></el-button>
+    </el-tooltip>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { Memo } from '@element-plus/icons-vue';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { LocalCache, isEmptyObj, emitter } from '@/utils';
 import { useEditorConfig } from './config';
@@ -60,7 +64,9 @@ const props = defineProps({
   }
 });
 const valueHtml = ref('');
+const isShowPreviw = ref(LocalCache.getCache('isShowPreviw') ?? true);
 onMounted(() => {
+  console.log('LocalCache.getCache', LocalCache.getCache('isShowPreviw'));
   console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
   nextTick(() => {
     const draft = LocalCache.getCache('draft');
@@ -82,7 +88,10 @@ onMounted(() => {
     valueHtml.value = content as any;
   });
 });
-
+const togglePreview = () => {
+  isShowPreviw.value = !isShowPreviw.value;
+  LocalCache.setCache('isShowPreviw', isShowPreviw.value);
+};
 const emit = defineEmits(['update:content']);
 //监听editor数据变化
 watch(
@@ -123,6 +132,12 @@ onBeforeUnmount(() => {
     display: inline-block;
     vertical-align: top;
     /* box-sizing: border-box; */
+  }
+  .show-preview-btn {
+    position: fixed;
+    bottom: 0;
+    right: 10px;
+    opacity: 0.5;
   }
 }
 .editor-container.fixed {

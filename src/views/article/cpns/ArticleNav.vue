@@ -1,6 +1,6 @@
 <template>
   <el-tabs tab-position="right" v-model="activeId" @tab-click="handleClick">
-    <el-tab-pane label="综合" name="0"></el-tab-pane>
+    <el-tab-pane label="综合" name="综合"></el-tab-pane>
     <el-tab-pane v-for="item in tags" :key="item.id" :data-id="item.id" :label="item.name" :name="item.id"></el-tab-pane>
   </el-tabs>
 </template>
@@ -13,7 +13,7 @@ import type { Itag } from '@/stores/types/article.result';
 const articleStore = useArticleStore();
 const rootStore = useRootStore();
 
-const activeId = ref('0');
+const activeId = ref('综合');
 defineProps({
   tags: {
     type: Array as PropType<Itag[]>,
@@ -23,19 +23,23 @@ defineProps({
 
 onMounted(() => {
   // articleStore.getTagsAction();
-  emitter.on('changeTag', (tag: any) => {
+  emitter.on('changeTagInList', (tag: any) => {
     const { id } = tag;
     console.log('changeTag tagId!!!!!!!!!!!!!!!', id);
     activeId.value = id;
     rootStore.changeTag(id);
     articleStore.getArticleListAction();
   });
+  emitter.on('submitSearchValue', () => (activeId.value = '综合'));
 });
+const emit = defineEmits(['changeTagInNav']);
 const handleClick = (tab) => {
+  emitter.emit('changeTagInNav');
+  emit('changeTagInNav');
   console.log('更换标签!!!!', tab.paneName);
   if (tab.paneName) {
     rootStore.$reset();
-    rootStore.changeTag(tab.paneName === '0' ? '' : tab.paneName);
+    rootStore.changeTag(tab.paneName === '综合' ? '' : tab.paneName);
     articleStore.getArticleListAction();
   } else {
     rootStore.$reset();

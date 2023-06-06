@@ -4,7 +4,7 @@ type CodeType = 'javascript' | 'typescript' | 'java';
 
 const codeHeightlight = (htmlContent: any, type: CodeType = 'javascript') => {
   console.log('codeHeightlight htmlContent', htmlContent);
-  const codes = Array.of(...(htmlContent?.querySelectorAll('code') as any)).filter((block: any) => block.innerText.length > 30);
+  const codes = Array.from(htmlContent?.querySelectorAll('code')).filter((block: any) => block.innerText.length > 30);
   console.log('codeHeightlight codes', codes);
   codes.forEach((code: any) => {
     code.classList.add(`language-${type}`);

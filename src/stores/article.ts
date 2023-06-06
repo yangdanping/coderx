@@ -43,15 +43,15 @@ export const useArticleStore = defineStore('article', {
     }
   },
   actions: {
-    getArticleList(articles: IArticles) {
+    updateArticleList(articles: IArticles) {
       articles.result?.forEach((article) => {
         article.createAt = timeFormat(article.createAt);
         article.updateAt = timeFormat(article.updateAt);
       });
       this.articles = articles;
-      console.log('getArticleList', this.articles.result);
+      console.log('updateArticleList', this.articles.result);
     },
-    getDetail(article: IArticle, isEditRefresh = false) {
+    updateDetail(article: IArticle, isEditRefresh = false) {
       article.createAt = timeFormat(article.createAt);
       article.updateAt = timeFormat(article.updateAt);
       this.article = article;
@@ -91,21 +91,21 @@ export const useArticleStore = defineStore('article', {
       this.searchResults = searchResults;
       console.log('updateSearchResults', this.searchResults);
     },
+    updateTag(tags: Itag[]) {
+      this.tags = tags;
+    },
     initArticle() {
       this.article = {};
       this.articles = {};
     },
-    initTag(tags: Itag[]) {
-      this.tags = tags;
-    },
     // 异步请求action---------------------------------------------------
-    async getArticleListAction(userId: number | '' = '', idList: number[] | [] = []) {
+    async getArticleListAction(userId: number | '' = '', idList = [], keywords = '') {
       const { pageNum, pageSize, tagId, pageOrder } = useRootStore();
-      const data = { pageNum, pageSize, tagId, userId, pageOrder, idList };
+      const data = { pageNum, pageSize, tagId, userId, pageOrder, idList, keywords };
       console.log('getArticleListAction', data);
       const res = await getList(data); //获取文章列表信息以及文章数
       if (res.code === 0) {
-        this.getArticleList(res.data);
+        this.updateArticleList(res.data);
         useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
@@ -118,7 +118,7 @@ export const useArticleStore = defineStore('article', {
       }
       const res = await getDetail(articleId);
       if (res.code === 0) {
-        this.getDetail(res.data, isEditRefresh);
+        this.updateDetail(res.data, isEditRefresh);
         // 获取内容后再获取文章评论
         !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
@@ -127,7 +127,7 @@ export const useArticleStore = defineStore('article', {
     },
     async getTagsAction() {
       const res = await getTags();
-      res.code === 0 && this.initTag(res.data);
+      res.code === 0 && this.updateTag(res.data);
       console.log('getTagsAction');
     },
     async getUserLikedAction() {

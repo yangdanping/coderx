@@ -41,7 +41,7 @@ const props = defineProps({
   }
 });
 const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
-const goTag = (tag) => emitter.emit('changeTag', tag);
+const goTag = (tag) => emitter.emit('changeTagInList', tag);
 </script>
 
 <style lang="scss" scoped>

@@ -22,5 +22,6 @@ export interface IArticleList {
   pageOrder: string;
   tagId: number | '';
   userId: number | '';
+  keywords: string | '';
   idList: number[] | [];
 }

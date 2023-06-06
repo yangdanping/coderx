@@ -4,12 +4,12 @@
     <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
-    <el-button class="btn" @click="drawer = true" :icon="Menu">提交</el-button>
+    <el-button class="submit-btn" @click="drawer = true" :icon="Menu">提交</el-button>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Menu } from '@element-plus/icons-vue';
+import { Menu, Memo } from '@element-plus/icons-vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
@@ -86,11 +86,12 @@ const formSubmit = (editData: any) => {
 <style lang="scss" scoped>
 @import '@/assets/css/editor';
 .edit {
-  .btn {
+  .submit-btn {
     position: fixed;
     bottom: 0;
     left: 0;
     border: 0;
+    opacity: 0.9;
   }
 
   :deep(.el-drawer) {

@@ -1,5 +1,5 @@
 import myRequest from '@/service';
-import type { IArticle, IArticleList } from './article.types';
+import type { IArticle, IArticleList } from '@/service/article/article.types';
 import type { IDataType, RouteParam } from '@/service/types';
 const urlHead = '/article';
 
@@ -11,11 +11,11 @@ export function createArticle(data: IArticle) {
 }
 
 export function getList(data: IArticleList) {
-  const { pageNum, pageSize, tagId, userId, idList, pageOrder } = data;
+  const { pageNum, pageSize, tagId, userId, idList, pageOrder, keywords } = data;
   const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
   const limit = pageSize;
   return myRequest.get<IDataType>({
-    url: `${urlHead}?offset=${offset}&limit=${limit}&tagId=${tagId}&userId=${userId}&order=${pageOrder}&idList=${JSON.stringify(idList)}`
+    url: `${urlHead}?offset=${offset}&limit=${limit}&tagId=${tagId}&userId=${userId}&order=${pageOrder}&idList=${JSON.stringify(idList)}&keywords=${keywords}`
   });
 }
 

@@ -17,6 +17,8 @@
 </template>
 
 <script lang="ts" setup>
+import useArticleStore from '@/stores/article';
+const articleStore = useArticleStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -32,6 +34,9 @@ onMounted(() => {
 });
 const handleSelect = (key: string) => {
   activeRoute.value = key;
+  if (key === '/article' && route.query.searchValue) {
+    articleStore.getArticleListAction();
+  }
   console.log('activeRoute.value', activeRoute.value);
   router.push({ path: key });
 };
