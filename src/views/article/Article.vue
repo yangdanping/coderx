@@ -12,12 +12,16 @@
         <el-button @click="goEdit" type="primary">发表第一篇</el-button>
       </div>
     </div>
+    <div class="article-recommends">
+      <ArticleRecommend v-if="showRecommend" :recommends="recommends" />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
 import ArticleList from './cpns/ArticleList.vue';
+import ArticleRecommend from './cpns/ArticleRecommend.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
 import { listWidth } from '@/global/constants/list-width';
 import { emitter } from '@/utils';
@@ -30,11 +34,17 @@ const route = useRoute();
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
-const { articles, tags } = storeToRefs(articleStore);
+const { articles, recommends, tags } = storeToRefs(articleStore);
 const { token } = storeToRefs(userStore);
+const { windowInfo } = storeToRefs(rootStore);
 
 const noData = ref(false);
 const articleListWidth = ref(listWidth);
+const showRecommend = ref(true);
+watch(
+  () => windowInfo.value,
+  (newV) => (showRecommend.value = newV.width < 1100 ? false : true)
+);
 
 const searchValue = ref<any>('');
 const querySearch = computed(() => route.query.searchValue);
@@ -42,6 +52,7 @@ const searchStr = computed(() => querySearch.value ?? searchValue.value); //用�
 onMounted(() => {
   console.log('当前页面是否有搜索内容', !!searchStr.value);
   articleStore.getTagsAction();
+  articleStore.getRecommendAction();
   if (!searchStr.value) {
     articleStore.getArticleListAction();
   } else {
@@ -80,15 +91,19 @@ $paddingTop: 40px;
 .article {
   display: flex;
   justify-content: center;
-
-  .article-nav {
+  padding: 0 350px;
+  .article-nav,
+  .article-recommends {
     position: sticky;
-    top: 50px;
-    height: 100%;
+    top: calc($paddingTop + 20px);
     padding-top: $paddingTop;
+    height: 100%;
   }
   .list-wrapper {
     padding-top: $paddingTop;
+    flex: 1;
+    margin: 0 50px;
+
     .skeleton {
       display: flex;
       flex-direction: column;

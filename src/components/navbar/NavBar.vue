@@ -18,22 +18,16 @@ import NavBarLeft from './cpns/NavBarLeft.vue';
 import NavBarRight from './cpns/NavBarRight.vue';
 import NavMenu from './cpns/NavMenu.vue';
 import UserDialog from '../user/UserDialog.vue';
+import useRootStore from '@/stores';
+const rootStore = useRootStore();
+const { windowInfo } = storeToRefs(rootStore);
 const showNavMenu = ref(true);
-const getWindowInfo = () => {
-  const windowInfo = {
-    width: window.innerWidth,
-    hight: window.innerHeight
-  };
-  if (windowInfo.width < 790) {
-    showNavMenu.value = false;
-  } else {
-    showNavMenu.value = true;
+watch(
+  () => windowInfo.value,
+  (newV) => {
+    showNavMenu.value = newV.width < 790 ? false : true;
   }
-  // console.log('windowInfo', windowInfo);
-};
-onMounted(() => {
-  window.addEventListener('resize', getWindowInfo);
-});
+);
 </script>
 
 <style lang="scss" scoped>
@@ -45,7 +39,7 @@ onMounted(() => {
   top: 0;
   /* display: flex; */
   height: var(--navbarHeight);
-  z-index: 999;
+  z-index: 9999;
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);

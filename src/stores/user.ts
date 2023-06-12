@@ -3,7 +3,7 @@ import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
-import { LocalCache, Msg, SessionCache, timeFormat } from '@/utils';
+import { LocalCache, Msg, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';

@@ -8,7 +8,8 @@ const useRootStore = defineStore('root', {
     pageNum: 1 as number,
     pageSize: 5 as number,
     pageOrder: 'date',
-    tagId: '' as number | ''
+    tagId: '' as number | '',
+    windowInfo: {} as any
   }),
   actions: {
     changeLoginDialog() {
@@ -25,6 +26,15 @@ const useRootStore = defineStore('root', {
     },
     changeTag(tagId) {
       this.tagId = tagId;
+    },
+    changeWindowInfo() {
+      window.addEventListener('resize', () => {
+        const windowInfo = {
+          width: window.innerWidth,
+          hight: window.innerHeight
+        };
+        this.windowInfo = windowInfo;
+      });
     },
     // 异步请求action---------------------------------------------------
     async checkAuthAction() {

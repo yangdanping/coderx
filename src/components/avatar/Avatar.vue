@@ -1,6 +1,6 @@
 <template>
   <div class="avatar">
-    <el-popover popper-class="user-popover" width="200px" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
+    <el-popover popper-class="user-popover" :width="`calc(200px + ${nameCount}em)`" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
         <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" />
         <el-tag size="small" effect="plain" :type="onlineStatus(info.name).type">{{ onlineStatus(info.name).msg }}</el-tag>
@@ -56,6 +56,11 @@ const props = defineProps({
     default: false
   }
 });
+const nameCount = computed(() => {
+  let count = props.info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
+  return count > 0 ? count + 1 : 0;
+});
+
 const avatarUrl = computed(() => props.info.avatarUrl ?? getImageUrl('user', 'avatar'));
 const userSex = computed(() => getImageUrl('user', `${props.info.sex === '女' ? 'female' : 'male'}-icon`));
 const onlineStatus = computed<any>(() => {
@@ -75,7 +80,7 @@ const mouseenter =
       console.log('mouseenter', props.info.id);
       userStore.getFollowAction(props.info.id);
     },
-    500,
+    100,
     true
   );
 

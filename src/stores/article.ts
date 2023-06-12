@@ -11,6 +11,7 @@ import {
   getTags,
   changeTags,
   search,
+  getRecommend,
   getArticleLikedById
 } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
@@ -26,6 +27,7 @@ import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
 export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: {} as IArticles,
+    recommends: [] as any[],
     article: {} as IArticle,
     userLikedArticleIdList: [] as any[], //该用户点赞过的文章id,通过computed计算是否有点赞
     tags: [] as Itag[],
@@ -39,6 +41,15 @@ export const useArticleStore = defineStore('article', {
     isArticleUserLiked() {
       return (articleId) => {
         return this.userLikedArticleIdList.some((id) => id === articleId);
+      };
+    },
+    isArticleUserCollected() {
+      return (articleId) => {
+        const userCollect = useUserStore().collects;
+        return userCollect
+          .map((item) => item.count)
+          .flat() //展平嵌套数组
+          .some((id) => id === articleId);
       };
     }
   },
@@ -111,6 +122,11 @@ export const useArticleStore = defineStore('article', {
         Msg.showFail('获取文章列表失败');
       }
     },
+    async getRecommendAction(offset = 0, limit = 10) {
+      const res = await getRecommend(offset, limit);
+      res.code === 0 && (this.recommends = res.data);
+      console.log('getRecommendAction res', this.recommends);
+    },
     async getDetailAction(articleId?: RouteParam, isEditRefresh = false) {
       if (!isEditRefresh) {
         await addView(articleId); //新增浏览量
@@ -118,6 +134,9 @@ export const useArticleStore = defineStore('article', {
       }
       const res = await getDetail(articleId);
       if (res.code === 0) {
+        const userStore = useUserStore();
+        const { userInfo } = userStore;
+        await userStore.getCollectAction(userInfo.id); //请求收藏夹
         this.updateDetail(res.data, isEditRefresh);
         // 获取内容后再获取文章评论
         !isEditRefresh && useCommentStore().getCommentAction(articleId as any);

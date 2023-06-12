@@ -1,9 +1,10 @@
-import { getNews } from '@/service/home/home.request';
+import { getNews, getHotUsers } from '@/service/home/home.request';
 import { LocalCache } from '@/utils';
 
 const useHomeStore = defineStore('home', {
   state: () => ({
-    news: [] as any[]
+    news: [] as any[],
+    hotUsers: [] as any[]
   }),
   actions: {
     updateNews(news: any[]) {
@@ -28,6 +29,13 @@ const useHomeStore = defineStore('home', {
         console.log('拿到已有新闻', news);
         this.updateNews(news);
       }
+    },
+    async getHotUsersAction() {
+      const res = await getHotUsers();
+      if (res.code === 0) {
+        this.hotUsers = res.data;
+      }
+      console.log('getHotUsersAction res', this.hotUsers);
     }
   }
 });

@@ -3,18 +3,8 @@
     <Icon @click="likeClick(article.id)" type="like" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
     <Icon @click="gotoComment" type="comment" :size="40" :label="commentCount" flex="column" />
     <Icon type="views" :size="40" :label="article.views" flex="column" />
-    <Icon type="star" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" />
-    <el-popover
-      :disabled="disabled"
-      ref="popoverRef"
-      @show="handleShow"
-      @after-leave="handleHide"
-      :virtual-ref="buttonRef"
-      trigger="click"
-      width="400"
-      virtual-triggering
-      placement="right"
-    >
+    <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" />
+    <el-popover :disabled="disabled" ref="popoverRef" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
       <DetailCollect />
     </el-popover>
   </div>
@@ -37,8 +27,8 @@ const userStore = useUserStore();
 const rootStore = useRootStore();
 const commentStore = useCommentStore();
 const articleStore = useArticleStore();
-const { token, userInfo } = storeToRefs(userStore);
-const { isArticleUserLiked } = storeToRefs(articleStore);
+const { token } = storeToRefs(userStore);
+const { isArticleUserLiked, isArticleUserCollected } = storeToRefs(articleStore);
 const { commentCount } = storeToRefs(commentStore);
 
 const buttonRef = ref();
@@ -70,12 +60,11 @@ const likeClick = (articleId) => {
   }
 };
 const gotoComment = () => emitter.emit('gotoCom');
-const handleShow = (e) => {
-  console.log('handleShowhandleShowhandleShowhandleShowhandleShow', e);
-  if (!disabled.value) {
-    userStore.getCollectAction(userInfo.value.id);
-  }
-};
+// const handleShow = (e) => {
+//   if (!disabled.value) {
+//     userStore.getCollectAction(userInfo.value.id);
+//   }
+// };
 const handleHide = () => emitter.emit('hideCollect');
 const onClickOutside = () => {
   if (disabled.value && !token.value) {

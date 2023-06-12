@@ -30,7 +30,7 @@ import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import useRootStore from '@/stores';
 import useArticleStore from '@/stores/article';
-import { emitter } from '@/utils';
+import { emitter, throttle } from '@/utils';
 
 import type { IArticles } from '@/stores/types/article.result';
 
@@ -76,13 +76,14 @@ const goBack = () => {
   articleStore.getArticleListAction();
 };
 const emit = defineEmits(['tabClick']);
-const setOrder = (order: string) => {
+
+const setOrder = throttle(function (order: string) {
   noSearchData.value && (noSearchData.value = false);
   rootStore.changePageNum(1);
   rootStore.changePageOrder(order);
   emit('tabClick', order);
   window.scrollTo(0, 0);
-};
+}, 1000);
 const changePage = () => articleStore.getArticleListAction();
 </script>
 
@@ -114,7 +115,7 @@ const changePage = () => articleStore.getArticleListAction();
   }
   .list-order {
     position: sticky;
-    top: 80px;
+    top: var(--navbarHeight);
     display: flex;
     justify-content: right;
     width: 100%;

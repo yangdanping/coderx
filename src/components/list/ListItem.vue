@@ -14,15 +14,19 @@
         <p class="abstract">{{ item.content }}</p>
         <slot name="action"></slot>
       </div>
-      <img v-if="item.cover" class="cover" :src="item.cover" loading="lazy" />
-      <div v-else class="cover"></div>
+      <div class="cover">
+        <img v-if="item.cover" :src="item.cover" loading="lazy" />
+      </div>
+      <!-- <img v-if="item.cover" class="cover" :src="item.cover" loading="lazy" />
+      <div v-else class="cover"></div> -->
     </a>
   </div>
 </template>
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
-import { emitter } from '@/utils';
+import { emitter, throttle } from '@/utils';
+
 import type { IArticle } from '@/stores/types/article.result';
 import type { IComment } from '@/stores/types/comment.result';
 
@@ -41,7 +45,10 @@ const props = defineProps({
   }
 });
 const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
-const goTag = (tag) => emitter.emit('changeTagInList', tag);
+// const goTag = (tag) => emitter.emit('changeTagInList', tag);
+const goTag = throttle(function (tag) {
+  emitter.emit('changeTagInList', tag);
+}, 300);
 </script>
 
 <style lang="scss" scoped>
@@ -53,7 +60,7 @@ const goTag = (tag) => emitter.emit('changeTagInList', tag);
   border-radius: 10px;
   transition: all 0.3s;
   color: var(--fontColor);
-  width: 90%;
+  /* width: 80%; */
 
   &:hover {
     transform: scale(1.01);
@@ -84,27 +91,33 @@ const goTag = (tag) => emitter.emit('changeTagInList', tag);
     cursor: pointer;
     .content {
       flex: 1 1 auto;
-      margin-top: 10px;
+      margin-top: 5px;
       .title,
       .abstract {
+        width: 600px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .abstract {
-        max-width: 600px;
+        /* width: 30%; */
         color: #999;
       }
     }
+
     .cover {
       flex: 0 0 auto;
       width: 170px;
       height: 100px;
-      object-fit: cover; //保持原来宽高比,遮盖整个区域
-      border-radius: 5px;
+      border-radius: 8px;
       margin-left: 24px;
       overflow: hidden;
       cursor: pointer;
+      img {
+        object-fit: cover; //保持原来宽高比,遮盖整个区域
+        width: 100%;
+        height: 100%;
+      }
     }
   }
 }

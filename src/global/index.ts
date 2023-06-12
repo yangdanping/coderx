@@ -25,6 +25,7 @@ export default function init(app: App) {
   const commentStore = useCommentStore();
 
   rootStore.loadLoginAction();
+  rootStore.changeWindowInfo();
   const socket = useSocket();
   // 路由前置守卫
   router.beforeEach((to, from) => {

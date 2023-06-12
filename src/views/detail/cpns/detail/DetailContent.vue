@@ -102,7 +102,7 @@ watch(
   width: 100vw;
   height: 100vh;
   backdrop-filter: blur(10px);
-  z-index: 9999;
+  z-index: 999;
   :deep(.el-image__preview) {
     display: none;
   }

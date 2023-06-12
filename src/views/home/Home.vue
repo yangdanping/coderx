@@ -7,6 +7,8 @@
         <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
       </div>
       <hr />
+      <HomeHotUser :hotUsers="hotUsers" />
+      <hr />
       <HomeSwpier :news="news" />
       <hr />
       <div class="brief">
@@ -20,6 +22,7 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
+import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeSwpier from './cpns/HomeSwpier.vue';
 import useHomeStore from '@/stores/home';
 const counter = ref(1);
@@ -28,7 +31,7 @@ const line2Str = ref('');
 const isLast = ref(false); //是否激活最后一个字符的class
 let timer = ref();
 const homeStore = useHomeStore();
-const { news } = storeToRefs(homeStore);
+const { news, hotUsers } = storeToRefs(homeStore);
 onMounted(() => {
   timer.value = setInterval(() => {
     let str = line2.value.slice(0, counter.value);
@@ -44,9 +47,8 @@ onMounted(() => {
     }
     line2Str.value = str;
   }, 300);
-  setTimeout(() => {
-    homeStore.getNewsAction();
-  });
+  homeStore.getNewsAction();
+  homeStore.getHotUsersAction();
 });
 </script>
 

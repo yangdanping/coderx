@@ -77,3 +77,8 @@ export function getArticleLikedById(articleId) {
     url: `${urlHead}/${articleId}/like`
   });
 }
+export function getRecommend(offset = 0, limit = 10) {
+  return myRequest.get<IDataType>({
+    url: `${urlHead}/recommend?offset=${offset}&limit=${limit}`
+  });
+}

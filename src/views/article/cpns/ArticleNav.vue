@@ -10,6 +10,8 @@ import { emitter } from '@/utils';
 import useArticleStore from '@/stores/article';
 import useRootStore from '@/stores';
 import type { Itag } from '@/stores/types/article.result';
+import { throttle } from '@/utils';
+
 const articleStore = useArticleStore();
 const rootStore = useRootStore();
 
@@ -25,7 +27,7 @@ onMounted(() => {
   // articleStore.getTagsAction();
   emitter.on('changeTagInList', (tag: any) => {
     const { id } = tag;
-    console.log('changeTag tagId!!!!!!!!!!!!!!!', id);
+    console.log('changeTagInList!!!!!!', id);
     activeId.value = id;
     rootStore.changeTag(id);
     articleStore.getArticleListAction();
@@ -33,10 +35,10 @@ onMounted(() => {
   emitter.on('submitSearchValue', () => (activeId.value = '综合'));
 });
 const emit = defineEmits(['changeTagInNav']);
-const handleClick = (tab) => {
+const handleClick = throttle(function (tab) {
+  console.log('更换标签!!!!', tab.paneName);
   emitter.emit('changeTagInNav');
   emit('changeTagInNav');
-  console.log('更换标签!!!!', tab.paneName);
   if (tab.paneName) {
     rootStore.$reset();
     rootStore.changeTag(tab.paneName === '综合' ? '' : tab.paneName);
@@ -45,7 +47,7 @@ const handleClick = (tab) => {
     rootStore.$reset();
     articleStore.getArticleListAction();
   }
-};
+}, 300);
 </script>
 
 <style lang="scss" scoped>
