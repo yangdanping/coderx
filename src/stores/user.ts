@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
-import { getCollect, addCollect, addToCollect } from '@/service/collect/collect.request';
+import { getCollect, addCollect, addToCollect, removeCollectArticle } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
-import { LocalCache, Msg, timeFormat } from '@/utils';
+import { LocalCache, Msg, emitter, timeFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
+import useArticleStore from './article';
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -211,6 +212,19 @@ const useUserStore = defineStore('user', {
         Msg.showSuccess('举报用户成功');
       } else {
         Msg.showFail('举报用户失败');
+      }
+    },
+    async removeCollectArticle(collectId, idList) {
+      const res = await removeCollectArticle(collectId, idList);
+      if (res.code === 0) {
+        if (res.data.collectedArticle) {
+          useArticleStore().getArticleListAction('', res.data.collectedArticle);
+        } else {
+          emitter.emit('clearResultAndBack');
+        }
+        Msg.showSuccess('移除文章成功!');
+      } else {
+        Msg.showFail('移除文章失败!');
       }
     }
   }

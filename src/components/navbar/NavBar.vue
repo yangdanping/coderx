@@ -39,7 +39,7 @@ watch(
   top: 0;
   /* display: flex; */
   height: var(--navbarHeight);
-  z-index: 9999;
+  z-index: 99;
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);

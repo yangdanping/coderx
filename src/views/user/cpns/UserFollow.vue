@@ -29,8 +29,8 @@ onMounted(() => {
   emitter.on('changeFollowTab', (subTabName) => {
     followType.value = subTabName;
   });
-  const subTabName = route.query.subTabName;
-  console.log('UserFollow onMounted subTabName', subTabName);
+  const { tabName, subTabName } = route.query;
+  console.log('UserFollow onMounted', tabName, subTabName);
   if (subTabName) {
     followType.value = subTabName;
   }

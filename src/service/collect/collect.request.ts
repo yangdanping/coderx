@@ -29,3 +29,9 @@ export function addToCollect({ collectId, articleId }) {
     }
   });
 }
+
+export function removeCollectArticle(collectId, idList) {
+  return myRequest.delete<IDataType>({
+    url: `${urlHead}/${collectId}?idList=${JSON.stringify(idList)}`
+  });
+}

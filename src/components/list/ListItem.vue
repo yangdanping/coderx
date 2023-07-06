@@ -1,5 +1,8 @@
 <template>
   <div class="list-item">
+    <div class="checkbox">
+      <slot name="checkbox"> </slot>
+    </div>
     <div class="author">
       <Avatar v-if="showAvatar" :info="item.author" :src="item.author?.avatarUrl" />
       <div class="author-info">
@@ -53,6 +56,7 @@ const goTag = throttle(function (tag) {
 
 <style lang="scss" scoped>
 .list-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 10px 10px 0 10px;
@@ -60,7 +64,15 @@ const goTag = throttle(function (tag) {
   border-radius: 10px;
   transition: all 0.3s;
   color: var(--fontColor);
+  z-index: 99;
   /* width: 80%; */
+
+  .checkbox {
+    position: absolute;
+    left: -13px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 
   &:hover {
     transform: scale(1.01);

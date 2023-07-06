@@ -1,6 +1,11 @@
 <template>
   <div class="detail-collect">
-    <div class="title"><h2>添加到收藏夹</h2></div>
+    <div class="title">
+      <h2>添加到收藏夹</h2>
+      <el-tooltip effect="dark" content="查看我的收藏" placement="top">
+        <el-icon class="btn" @click="goProfile" size="23" color="#999" style="cursor: pointer"> <IArrowRightBold /> </el-icon>
+      </el-tooltip>
+    </div>
     <div class="collect-list">
       <template v-if="collects.length">
         <div v-for="item in collects" :key="item.id" @click="addToCollect(item.id)" class="item">
@@ -35,15 +40,13 @@
 import { emitter } from '@/utils';
 import { Plus } from '@element-plus/icons-vue';
 
-import type { IArticle } from '@/stores/types/article.result';
-
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
-const { collects } = storeToRefs(userStore);
+const { collects, userInfo } = storeToRefs(userStore);
 const { article } = storeToRefs(articleStore);
-
+const router = useRouter();
 const btnDisabled = ref(true);
 const newCollect = ref(false);
 const input = ref('');
@@ -63,6 +66,13 @@ onMounted(() => {
     input.value = '';
   });
 });
+const goProfile = () => {
+  const routeData = router.resolve({
+    path: `/user/${userInfo.value.id}`,
+    query: { tabName: '收藏' }
+  });
+  window.open(routeData.href, '_blank');
+};
 
 const add = () => {
   userStore.addCollectAction(input.value);
@@ -77,10 +87,16 @@ const addToCollect = (collectId) => {
 
 <style lang="scss" scoped>
 .title {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 10px 0;
+  .btn {
+    position: absolute;
+    top: 14px;
+    right: 0;
+  }
 }
 
 .collect-list {

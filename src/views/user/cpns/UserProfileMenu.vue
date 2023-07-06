@@ -18,6 +18,7 @@
 </template>
 
 <script lang="ts" setup>
+import useUserStore from '@/stores/user';
 import UserArticle from './UserArticle.vue';
 import UserCollect from './UserCollect.vue';
 import UserComment from './UserComment.vue';
@@ -25,6 +26,7 @@ import UserFollow from './UserFollow.vue';
 import { emitter } from '@/utils';
 
 const route = useRoute();
+const userStore = useUserStore();
 const activeName = ref<any>('文章');
 const emit = defineEmits(['tabClick']);
 
@@ -36,6 +38,9 @@ onMounted(() => {
   console.log('UserProfileMenu onMounted tabName', tabName);
   if (tabName) {
     activeName.value = tabName;
+    if (tabName === '收藏') {
+      userStore.getCollectAction(userStore.userInfo.id);
+    }
   }
 });
 

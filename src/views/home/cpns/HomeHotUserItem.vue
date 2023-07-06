@@ -4,6 +4,8 @@
       <Avatar :info="item" :size="60" />
       <h3 class="name">{{ item.name }}</h3>
     </div>
+    <img class="bg" :src="item.avatarUrl" alt="" />
+    <div class="bg-mask"></div>
   </div>
 </template>
 
@@ -39,9 +41,36 @@ const props = defineProps({
   &:last-child {
     margin-right: 0;
   }
+
+  .bg,
+  .bg-mask {
+    opacity: 0;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    z-index: -1;
+    transition: all 0.3s;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  .bg-mask {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .bg {
+    object-fit: cover;
+  }
   &:hover {
     box-shadow: 0px 2px 8px rgba(100, 100, 100, 0.7);
-    transform: scale(1.01);
+    transform: scale(1.02);
+    color: #fff;
+    .bg,
+    .bg-mask {
+      opacity: 1;
+    }
   }
 }
 </style>

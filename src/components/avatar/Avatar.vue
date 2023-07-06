@@ -121,6 +121,7 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   position: relative;
   outline: none;
   border-radius: 50%;
+  z-index: 9999;
   .avatar-icon {
     position: absolute;
     top: 0;
@@ -145,9 +146,6 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   cursor: pointer;
 }
 .user-popover {
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-
   .user {
     position: relative;
     display: flex;
