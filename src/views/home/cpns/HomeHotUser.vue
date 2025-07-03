@@ -14,11 +14,8 @@
 <script lang="ts" setup>
 import HomeHotUserItem from './HomeHotUserItem.vue';
 import ScrollView from '@/components/scroll-view/ScrollView.vue';
-const props = defineProps({
-  hotUsers: {
-    type: Array as PropType<any[]>,
-    default: () => []
-  }
+const { hotUsers = [] } = defineProps({
+  hotUsers: Array as PropType<any[]>,
 });
 </script>
 

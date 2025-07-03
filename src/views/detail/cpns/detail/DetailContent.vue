@@ -46,8 +46,8 @@ import { codeHeightlight, bindImagesLayer } from '@/utils';
 defineProps({
   article: {
     type: Object as PropType<IArticle>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 const imageRef = ref<InstanceType<typeof ElImage>>();
 const htmlContentRef = ref<null | HTMLElement>();
@@ -56,7 +56,7 @@ const imgPreview = reactive({
   img: '',
   imgs: [] as any[],
   show: false,
-  index: 0
+  index: 0,
 });
 
 watch(
@@ -64,7 +64,7 @@ watch(
   (newV) => {
     newV && bindImagesLayer(newV, imgPreview); //图片放大
     newV && codeHeightlight(newV); //代码高亮
-  }
+  },
 );
 </script>
 

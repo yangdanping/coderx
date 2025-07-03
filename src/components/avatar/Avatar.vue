@@ -11,8 +11,8 @@
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
-            <span @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
-            <span @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
+            <span class="btn" @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
+            <span class="btn" @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
           </div>
         </div>
       </div>
@@ -42,19 +42,19 @@ const { followCount, isFollowed, isUser, onlineUsers } = storeToRefs(userStore);
 const props = defineProps({
   info: {
     type: Object as PropType<IUserInfo>,
-    default: () => {}
+    default: () => {},
   },
   size: {
-    type: Number
+    type: Number,
   },
   showSet: {
     type: Boolean,
-    default: false
+    default: false,
   },
   disabled: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 const nameCount = computed(() => {
   let count = props.info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
@@ -81,7 +81,7 @@ const mouseenter =
       userStore.getFollowAction(props.info.id);
     },
     100,
-    true
+    true,
   );
 
 const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
@@ -98,8 +98,8 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
         path,
         query: {
           tabName,
-          subTabName
-        }
+          subTabName,
+        },
       });
     }
   }
@@ -121,7 +121,7 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   position: relative;
   outline: none;
   border-radius: 50%;
-  z-index: 9999;
+  /* z-index: 99; */
   .avatar-icon {
     position: absolute;
     top: 0;

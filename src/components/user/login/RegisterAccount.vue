@@ -34,7 +34,7 @@ const form = reactive({ name: '', password: '', confirm: '' });
 const rules = ref({
   name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  confirm: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  confirm: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 });
 
 const register = () => {

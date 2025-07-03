@@ -17,8 +17,8 @@ const { commentCount } = storeToRefs(useCommentStore());
 const props = defineProps({
   commentInfo: {
     type: Array as PropType<IComment[]>,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 const listRef = ref<Element>();
 

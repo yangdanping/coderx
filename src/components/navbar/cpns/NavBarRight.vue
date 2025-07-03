@@ -65,7 +65,7 @@ const submitSearch = () => {
     if (route.path !== '/article') {
       const routeData = router.resolve({
         path: '/article',
-        query: { searchValue: searchValue.value }
+        query: { searchValue: searchValue.value },
       });
       console.log('在其他页面,进行跳转,在跳转页面中请求', routeData);
       window.open(routeData.href, '_blank');
@@ -96,7 +96,7 @@ watch(
       hindResult.value = false;
       showLoading.value = true;
     }
-  }
+  },
 );
 // 控制showLoading的出现-----------------------------
 watch(
@@ -105,7 +105,7 @@ watch(
     if (!newV.length) {
       setTimeout(() => (showLoading.value = false), 1000);
     }
-  }
+  },
 );
 
 const changeDialog = () => {

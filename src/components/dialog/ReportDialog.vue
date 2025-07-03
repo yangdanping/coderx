@@ -15,13 +15,13 @@
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
 const dialogVisible = computed({
   get: () => props.show,
-  set: (val) => emit('update:dialogVisible', val)
+  set: (val) => emit('update:dialogVisible', val),
 });
 
 const reportOptions = ref<any[]>([]);
@@ -33,7 +33,7 @@ const emit = defineEmits(['submit', 'cancel', 'update:dialogVisible']);
 const submitReport = () => {
   emit('submit', {
     reportOptions: reportOptions.value,
-    otherReport: otherReport.value
+    otherReport: otherReport.value,
   });
 };
 const cancelReport = () => emit('cancel');

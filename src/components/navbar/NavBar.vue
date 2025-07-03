@@ -26,7 +26,7 @@ watch(
   () => windowInfo.value,
   (newV) => {
     showNavMenu.value = newV.width < 790 ? false : true;
-  }
+  },
 );
 </script>
 

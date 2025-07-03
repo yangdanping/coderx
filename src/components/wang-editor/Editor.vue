@@ -44,24 +44,24 @@ import type { IArticle } from '@/stores/types/article.result';
 const props = defineProps({
   editData: {
     type: Object as PropType<IArticle>,
-    default: () => {}
+    default: () => {},
   },
   isComment: {
     type: Boolean,
-    default: false
+    default: false,
   },
   editComment: {
     type: String,
-    default: ''
+    default: '',
   },
   mode: {
     type: String as PropType<'default' | 'simple'>,
-    default: 'default'
+    default: 'default',
   },
   height: {
     type: [Number, String],
-    default: '100vh'
-  }
+    default: '100vh',
+  },
 });
 const valueHtml = ref('');
 const isShowPreviw = ref(LocalCache.getCache('isShowPreviw') ?? true);
@@ -99,7 +99,7 @@ watch(
   (newV) => {
     emit('update:content', newV);
   },
-  { deep: true }
+  { deep: true },
 );
 
 const handleCreated = (editor) => {

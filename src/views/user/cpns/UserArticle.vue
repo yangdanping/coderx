@@ -34,7 +34,7 @@ watch(
   () => profile.value.id,
   (newV) => {
     articleStore.getArticleListAction(newV); //初始化时获取该用户发表过的文章
-  }
+  },
 );
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 

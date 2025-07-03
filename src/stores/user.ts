@@ -20,7 +20,7 @@ const useUserStore = defineStore('user', {
     comments: [] as any[],
     collects: [] as any,
     onlineUsers: [] as any[],
-    isFollowed: false //仅用于一对一用户的判断
+    isFollowed: false, //仅用于一对一用户的判断
   }),
   getters: {
     isUser() {
@@ -36,7 +36,7 @@ const useUserStore = defineStore('user', {
     },
     followCount() {
       return (type: string) => this.followInfo[type]?.length ?? 0;
-    }
+    },
   },
   actions: {
     updateToken(token: string) {
@@ -226,8 +226,8 @@ const useUserStore = defineStore('user', {
       } else {
         Msg.showFail('移除文章失败!');
       }
-    }
-  }
+    },
+  },
 });
 
 // 与compositionAPI的用法类似

@@ -36,16 +36,16 @@ import type { IComment } from '@/stores/types/comment.result';
 const props = defineProps({
   item: {
     type: Object as PropType<IArticle & IComment>,
-    default: () => {}
+    default: () => {},
   },
   isComment: {
     type: Boolean,
-    default: false
+    default: false,
   },
   showAvatar: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 });
 const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
 // const goTag = (tag) => emitter.emit('changeTagInList', tag);

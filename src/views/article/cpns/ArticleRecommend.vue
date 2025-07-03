@@ -25,8 +25,8 @@ const articleStore = useArticleStore();
 const props = defineProps({
   recommends: {
     type: Array as PropType<any[]>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 const offset = ref(0);
 const refresh = throttle(function () {

@@ -47,12 +47,12 @@ const { isAuthor } = storeToRefs(articleStore);
 const props = defineProps({
   item: {
     type: Object as PropType<IComment>,
-    default: () => {}
+    default: () => {},
   },
   fatherComment: {
     type: Object as PropType<IComment>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 
 const isReply = ref(false); //组件内部变量
@@ -79,7 +79,7 @@ watch(
     if (oldV !== '' && newV !== oldV && !isReply.value) {
       isReply.value = !isReply.value; //只有评论区某form处于打开情况下,点击其他回复才会来到这里,折叠其他form,并打开这个form
     }
-  }
+  },
 );
 
 const replythis = computed(() => {
@@ -92,7 +92,7 @@ const replythis = computed(() => {
 .reply-list-item {
   display: flex;
   /* background-color: rgba(220, 230, 220, 0.7); //与文章评论颜色做区分 */
-  background-image: linear-gradient(90deg, #e0f3e0b3, #f4fef4b3); //与文章评论颜色做区分
+  background-image: var(--blockBg); //与文章评论颜色做区分
   padding: 10px;
 
   .reply-box {

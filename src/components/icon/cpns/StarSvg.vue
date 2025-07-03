@@ -15,12 +15,12 @@ import { activeColor, defaultColor } from '@/global/constants/color';
 defineProps({
   color: {
     type: String,
-    default: defaultColor
+    default: defaultColor,
   },
   size: {
     type: [Number],
-    default: 20
-  }
+    default: 20,
+  },
 });
 </script>
 

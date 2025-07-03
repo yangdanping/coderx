@@ -8,7 +8,7 @@ export function getCollect(userId, pageNum = 0, pageSize = 10) {
   const limit = pageSize;
   console.log('getCollect', userId);
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${userId}?offset=${offset}&limit=${limit}`
+    url: `${urlHead}/${userId}?offset=${offset}&limit=${limit}`,
   });
 }
 
@@ -16,8 +16,8 @@ export function addCollect(collectName) {
   return myRequest.post<IDataType>({
     url: `${urlHead}`,
     data: {
-      name: collectName
-    }
+      name: collectName,
+    },
   });
 }
 
@@ -25,13 +25,13 @@ export function addToCollect({ collectId, articleId }) {
   return myRequest.post<IDataType>({
     url: `${urlHead}/${collectId}`,
     data: {
-      articleId
-    }
+      articleId,
+    },
   });
 }
 
 export function removeCollectArticle(collectId, idList) {
   return myRequest.delete<IDataType>({
-    url: `${urlHead}/${collectId}?idList=${JSON.stringify(idList)}`
+    url: `${urlHead}/${collectId}?idList=${JSON.stringify(idList)}`,
   });
 }

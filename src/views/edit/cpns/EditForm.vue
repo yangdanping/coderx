@@ -13,7 +13,7 @@
       <el-form-item label="封面" prop="cover">
         <el-upload
           :on-change="handleFileChange"
-          :http-request="(coverUpLoad as UploadRequestHandler)"
+          :http-request="coverUpLoad as UploadRequestHandler"
           :before-upload="beforeCoverUpload"
           :show-file-list="false"
           class="cover-uploader"
@@ -52,16 +52,16 @@ import type { UploadUserFile } from 'element-plus';
 const props = defineProps({
   editData: {
     type: Object as PropType<IArticle>,
-    default: () => {}
+    default: () => {},
   },
   fileList: {
     type: Array as PropType<UploadUserFile[]>,
-    default: () => {}
+    default: () => {},
   },
   draft: {
     type: String,
-    default: ''
-  }
+    default: '',
+  },
 });
 let form = reactive({ title: '', tags: [] as any[] });
 
@@ -116,7 +116,7 @@ const onSubmit = () => {
   const articleDraft = {
     title: form.title,
     tags: form.tags,
-    oldTags: oldTags.value
+    oldTags: oldTags.value,
   };
   emit('formSubmit', articleDraft);
 };
@@ -129,7 +129,7 @@ const goBack = () => {
     type: 'info',
     distinguishCancelAndClose: true,
     confirmButtonText: `${isEdit.value ? '取消修改' : '保存退出'}`,
-    cancelButtonText: `${isEdit.value ? '再想想' : '不保存退出'}`
+    cancelButtonText: `${isEdit.value ? '再想想' : '不保存退出'}`,
   })
     .then(() => {
       if (!isEdit.value) {

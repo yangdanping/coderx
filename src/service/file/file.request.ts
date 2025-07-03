@@ -7,7 +7,7 @@ export function uploadPicture(file: File) {
   formData.append('picture', file);
   return myRequest.post<IDataType>({
     url: `${urlHead}/picture`,
-    data: formData
+    data: formData,
   });
 }
 
@@ -18,26 +18,26 @@ export function uploadAvatar(payload) {
   fd.append('avatar', file);
   return myRequest.post<IDataType>({
     url: `${urlHead}/${action}`,
-    data: fd
+    data: fd,
   });
 }
 
 export function addPictureForArticle(articleId, uploaded) {
   return myRequest.post<IDataType>({
     url: `${urlHead}/picture/${articleId}`,
-    data: { uploaded }
+    data: { uploaded },
   });
 }
 
 export function deletePicture(uploaded) {
   return myRequest.delete<IDataType>({
     url: `${urlHead}/picture`,
-    data: { uploaded }
+    data: { uploaded },
   });
 }
 
 export function deleteOldAvatar(userId) {
   return myRequest.delete<IDataType>({
-    url: `${urlHead}/avatar/${userId}`
+    url: `${urlHead}/avatar/${userId}`,
   });
 }

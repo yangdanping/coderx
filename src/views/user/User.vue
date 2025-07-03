@@ -21,7 +21,7 @@ watch(
   (newUserId) => {
     console.log('watch newUserId', newUserId);
     getData(newUserId);
-  }
+  },
 );
 
 const getData = (userId) => {

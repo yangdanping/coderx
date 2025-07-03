@@ -13,7 +13,7 @@ export function getComment(data) {
   }
   console.log('getComment offset limit', offset, limit);
   return myRequest.get<IDataType>({
-    url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`
+    url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`,
   });
 }
 
@@ -21,13 +21,13 @@ export function updateComment(commentInfo) {
   const { commentId, content } = commentInfo;
   return myRequest.put<IDataType>({
     url: `${urlHead}/${commentId}`,
-    data: { content }
+    data: { content },
   });
 }
 
 export function removeComment(commentId) {
   return myRequest.delete<IDataType>({
-    url: `${urlHead}/${commentId}`
+    url: `${urlHead}/${commentId}`,
   });
 }
 
@@ -35,7 +35,7 @@ export function addComment(commentInfo) {
   const { articleId, content } = commentInfo;
   return myRequest.post<IDataType>({
     url: `${urlHead}`,
-    data: { articleId, content }
+    data: { articleId, content },
   });
 }
 
@@ -74,12 +74,12 @@ export function addReply(replyInfo) {
 
 export function likeComment(commentId) {
   return myRequest.post<IDataType>({
-    url: `${urlHead}/${commentId}/like`
+    url: `${urlHead}/${commentId}/like`,
   });
 }
 
 export function getCommentById(commentId) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${commentId}`
+    url: `${urlHead}/${commentId}`,
   });
 }

@@ -36,8 +36,8 @@ const popoverRef = ref();
 const props = defineProps({
   article: {
     type: Object as PropType<IArticle>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 
 const disabled = ref(true);

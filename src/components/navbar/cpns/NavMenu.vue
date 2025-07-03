@@ -24,7 +24,7 @@ const route = useRoute();
 
 const menus = ref([
   { name: '首页', path: '/' },
-  { name: '专栏', path: '/article' }
+  { name: '专栏', path: '/article' },
   // { name: '写文章', path: '/edit' },
   // { name: '个人空间', path: '/user' }
 ]);
@@ -43,6 +43,11 @@ const handleSelect = (key: string) => {
 </script>
 
 <style lang="scss" scoped>
+@media (hover: hover) and (pointer: fine) {
+  :deep(.el-tabs__nav) {
+    cursor: url('@/assets/img/pointer.svg'), auto;
+  }
+}
 .nav-menu {
   user-select: none;
   color: var(--fontColor);

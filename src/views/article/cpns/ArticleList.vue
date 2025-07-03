@@ -6,8 +6,8 @@
     </h3>
     <template v-if="!noSearchData">
       <div class="list-order">
-        <div @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
-        <div @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
+        <div class="btn" @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
+        <div class="btn" @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
       </div>
       <template v-for="item in articles?.result" :key="item.id">
         <ListItem :item="item">
@@ -43,8 +43,8 @@ const noSearchData = ref(false);
 const props = defineProps({
   articles: {
     type: Object as PropType<IArticles>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 onMounted(() => {
   emitter.on('submitSearchValue', (value) => {
@@ -67,7 +67,7 @@ watch(
         console.log(searchValue.value, '无搜索结果');
       }
     }
-  }
+  },
 );
 
 const goBack = () => {

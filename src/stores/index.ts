@@ -9,7 +9,7 @@ const useRootStore = defineStore('root', {
     pageSize: 5 as number,
     pageOrder: 'date',
     tagId: '' as number | '',
-    windowInfo: {} as any
+    windowInfo: {} as any,
   }),
   actions: {
     changeLoginDialog() {
@@ -31,7 +31,7 @@ const useRootStore = defineStore('root', {
       window.addEventListener('resize', () => {
         const windowInfo = {
           width: window.innerWidth,
-          hight: window.innerHeight
+          hight: window.innerHeight,
         };
         this.windowInfo = windowInfo;
       });
@@ -49,8 +49,8 @@ const useRootStore = defineStore('root', {
       token && updateToken(token);
       const userInfo = LocalCache.getCache('userInfo');
       userInfo && updateUserInfo(userInfo);
-    }
-  }
+    },
+  },
 });
 
 export default useRootStore;

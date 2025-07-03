@@ -12,7 +12,7 @@ import {
   changeTags,
   search,
   getRecommend,
-  getArticleLikedById
+  getArticleLikedById,
 } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import { addPictureForArticle, uploadPicture, deletePicture } from '@/service/file/file.request';
@@ -32,7 +32,7 @@ export const useArticleStore = defineStore('article', {
     userLikedArticleIdList: [] as any[], //该用户点赞过的文章id,通过computed计算是否有点赞
     tags: [] as Itag[],
     searchResults: [] as any[],
-    uploaded: [] as any[]
+    uploaded: [] as any[],
   }),
   getters: {
     isAuthor() {
@@ -51,7 +51,7 @@ export const useArticleStore = defineStore('article', {
           .flat() //展平嵌套数组
           .some((id) => id === articleId);
       };
-    }
+    },
   },
   actions: {
     updateArticleList(articles: IArticles) {
@@ -137,9 +137,10 @@ export const useArticleStore = defineStore('article', {
         const userStore = useUserStore();
         const { userInfo } = userStore;
         await userStore.getCollectAction(userInfo.id); //请求收藏夹
-        this.updateDetail(res.data, isEditRefresh);
-        // 获取内容后再获取文章评论
-        !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
+        const article: IArticle = res.data;
+        this.updateDetail(article, isEditRefresh);
+        // 确认文章有评论 且 非编辑时刷新的情况下,才去获取文章评论
+        article.commentCount && !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
         Msg.showFail('获取文章详情失败');
       }
@@ -256,8 +257,8 @@ export const useArticleStore = defineStore('article', {
     async searchAction(keywords) {
       const res = await search(keywords);
       res.code === 0 && this.updateSearchResults(res.data);
-    }
-  }
+    },
+  },
 });
 
 export default useArticleStore;

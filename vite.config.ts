@@ -8,6 +8,7 @@ import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
+import viteCompression from 'vite-plugin-compression';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
@@ -16,10 +17,10 @@ export default defineConfig({
   publicDir: 'public', // 作为静态资源服务的文件夹 默认public
   build: {
     outDir: 'build', // 打包文件的输出目录
-    // outDir: 'coderx-v3', // 打包文件的输出目录
+    // outDir: 'coderx', // 打包文件的输出目录
     target: 'modules', // 设置最终构建的浏览器兼容目标。默认值是一个 Vite 特有的值：'modules'
     assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
-    emptyOutDir: true // 打包前先清空原有打包文件
+    emptyOutDir: true, // 打包前先清空原有打包文件
   },
   server: {
     port: 8080,
@@ -28,26 +29,27 @@ export default defineConfig({
       '/dev-api': {
         target: 'http://localhost:8000', //接口的前缀
         changeOrigin: true, //支持跨域
-        rewrite: (path) => path.replace(/^\/dev-api/, '') //重写路径
+        rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
       },
       '/api': {
         target: 'http://119.91.150.141:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/news-api/': {
         target: 'https://gnews.io/api/v4',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/news-api/, '')
-      }
-    }
+        rewrite: (path) => path.replace(/^\/news-api/, ''),
+      },
+    },
   },
   plugins: [
     vue(),
+    viteCompression(), //在客户端压缩,注意,服务器nginx那边要配置gzip_static on,使得优先使用这边压缩好的
     visualizer({
       emitFile: false,
       filename: 'stats.html', //分析图生成的文件名
-      open: false //如果存在本地服务端口,将在打包后自动展示
+      open: false, //如果存在本地服务端口,将在打包后自动展示
     }),
     AutoImport({
       // Auto import functions from Vue, e.g. ref, reactive, toRef...
@@ -60,9 +62,9 @@ export default defineConfig({
         ElementPlusResolver(),
         // Auto import icon components
         // 自动导入图标组件
-        IconsResolver({ prefix: 'Icon' })
+        IconsResolver({ prefix: 'Icon' }),
       ],
-      dts: path.resolve(pathSrc, 'auto-imports.d.ts')
+      dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
     }),
 
     Components({
@@ -72,18 +74,18 @@ export default defineConfig({
         IconsResolver({ enabledCollections: ['ep'], prefix: false, alias: { i: 'ep' } }),
         // Auto register Element Plus components
         // 自动导入 Element Plus 组件
-        ElementPlusResolver()
+        ElementPlusResolver(),
       ],
-      dts: path.resolve(pathSrc, 'components.d.ts')
+      dts: path.resolve(pathSrc, 'components.d.ts'),
     }),
 
     Icons({
-      autoInstall: true
-    })
+      autoInstall: true,
+    }),
   ],
   resolve: {
     alias: {
-      '@': pathSrc
-    }
-  }
+      '@': pathSrc,
+    },
+  },
 });

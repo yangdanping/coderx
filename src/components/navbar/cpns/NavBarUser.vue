@@ -4,11 +4,11 @@
       <Avatar :info="userInfo" disabled :size="50"></Avatar>
       <div class="box" v-if="isShow">
         <div class="user-info">
-          <div class="following" @click="goProfile('关注', 'following')">
+          <div class="following btn" @click="goProfile('关注', 'following')">
             <div>{{ followCount('following') }}</div>
             <div>关注</div>
           </div>
-          <div class="follower" @click="goProfile('关注', 'follower')">
+          <div class="follower btn" @click="goProfile('关注', 'follower')">
             <div>{{ followCount('follower') }}</div>
             <div>粉丝</div>
           </div>
@@ -64,8 +64,8 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
         path,
         query: {
           tabName,
-          subTabName
-        }
+          subTabName,
+        },
       });
     }
   }

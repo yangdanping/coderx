@@ -1,6 +1,6 @@
 <template>
   <div class="user-avatar">
-    <el-upload action="avatar" :http-request="(avatarUpLoad as UploadRequestHandler)" :before-upload="beforeAvatarUpload" :disabled="!isUser(info.id)" :show-file-list="false">
+    <el-upload action="avatar" :http-request="avatarUpLoad as UploadRequestHandler" :before-upload="beforeAvatarUpload" :disabled="!isUser(info.id)" :show-file-list="false">
       <Avatar :info="info" :size="200" showSet disabled>
         <template #icon>
           <el-icon><IEdit /></el-icon>
@@ -24,8 +24,8 @@ const { isUser } = storeToRefs(userStore);
 const props = defineProps({
   info: {
     type: Object as PropType<IUserInfo>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 
 const beforeAvatarUpload = (file) => {
