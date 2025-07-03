@@ -1,7 +1,48 @@
 :root {
+  // 悬停只在非触摸设备上可见
+  @media (hover: hover) and (pointer: fine) {
+    cursor: var(--cursorDefault);
+
+    button,
+    a,
+    .btn,
+    .icon,
+    .cover,
+    [class$='-action'] .item,
+    [class$='-list'] .item,
+    .el-avatar,
+    .el-tabs__item,
+    .el-tag,
+    .el-icon,
+    .el-upload,
+    .el-tooltip__trigger .el-input__inner,
+    .el-cascader-panel .el-cascader-node,
+    // pagination
+    .el-pagination .el-pager li,
+    .el-pagination .el-pagination__sizes .el-input__wrapper,
+    .el-pagination .el-pagination__sizes .el-input__inner,
+    .el-dropdown-menu__item,
+    .el-select-dropdown__item,
+    // checkbox
+    .el-checkbox,
+    .el-checkbox .el-checkbox__input,
+    // 编辑器
+    .w-e-panel-content-emotion li,
+    .w-e-select-list li,
+    .w-e-panel-content-color li,
+    .w-e-modal .btn-close,
+    .w-e-panel-content-table td,
+    .el-backtop {
+      cursor: var(--pointerDefault) !important;
+    }
+  }
+
+  --cursorDefault: url('@/assets/img/cursor.svg'), auto;
+  --pointerDefault: url('@/assets/img/pointer.svg'), auto;
   --fontColor: #5f5f5f;
   --navbarHeight: 80px;
-  --bg: url('../img/bg.svg') center/cover no-repeat fixed;
+  --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
+  --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
   --red: #ea3329;
   --orange: #eb6a2c;
   --yellow: #f29c38;

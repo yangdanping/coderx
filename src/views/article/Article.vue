@@ -43,7 +43,7 @@ const articleListWidth = ref(listWidth);
 const showRecommend = ref(true);
 watch(
   () => windowInfo.value,
-  (newV) => (showRecommend.value = newV.width < 1100 ? false : true)
+  (newV) => (showRecommend.value = newV.width < 1100 ? false : true),
 );
 
 const searchValue = ref<any>('');

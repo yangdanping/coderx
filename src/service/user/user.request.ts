@@ -6,64 +6,64 @@ const urlHead = '/user';
 export function checkAuth() {
   // body中的数据存在data中
   return myRequest.get<IDataType>({
-    url: `${urlHead}/checkAuth`
+    url: `${urlHead}/checkAuth`,
   });
 }
 
 export function userRegister(account: IAccount) {
   return myRequest.post<IDataType>({
     url: `${urlHead}/register`,
-    data: account
+    data: account,
   });
 }
 
 export function userLogin(account: IAccount) {
   return myRequest.post<IDataType<ILoginResult>>({
     url: `${urlHead}/login`,
-    data: account
+    data: account,
   });
 }
 
 export function getUserInfoById(id) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${id}/profile`
+    url: `${urlHead}/${id}/profile`,
   });
 }
 
 export function getLiked(id) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${id}/like`
+    url: `${urlHead}/${id}/like`,
   });
 }
 
 export function getFollow(id) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${id}/follow`
+    url: `${urlHead}/${id}/follow`,
   });
 }
 
 export function follow(id) {
   return myRequest.post<IDataType>({
-    url: `${urlHead}/${id}/follow`
+    url: `${urlHead}/${id}/follow`,
   });
 }
 
 export function updateProfile(profile) {
   return myRequest.put<IDataType>({
     url: `${urlHead}/profile`,
-    data: profile
+    data: profile,
   });
 }
 
 export function getArtcileByCollectId(userId, collectId, offset = 0, limit = 10) {
   return myRequest.get<IDataType>({
-    url: `${urlHead}/${userId}/collect?collectId=${collectId}&offset=${offset}&limit=${limit}`
+    url: `${urlHead}/${userId}/collect?collectId=${collectId}&offset=${offset}&limit=${limit}`,
   });
 }
 
 export function reportUser(userId, report) {
   return myRequest.post<IDataType>({
     url: `${urlHead}/${userId}/report`,
-    data: report
+    data: report,
   });
 }

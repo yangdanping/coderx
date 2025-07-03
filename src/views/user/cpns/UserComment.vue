@@ -5,7 +5,7 @@
     </div>
     <div class="list">
       <template v-if="userComments.length">
-        <template v-for="item in (userComments as any[])" :key="item.id">
+        <template v-for="item in userComments as any[]" :key="item.id">
           <ListItem :item="item" isComment>
             <template #action>
               <CommentAction :comment="item" :inArticle="false" />

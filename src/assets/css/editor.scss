@@ -49,23 +49,31 @@
     margin-right: 5px;
   }
 }
+
 // 自定义样式-----------------------------------------
 
 // 定义混合指令
-@mixin p {
+@mixin customCSS {
+  font-size: 18px;
+  blockquote,
   p {
     line-height: 1.5;
     margin: 10px 0;
+    font-family: '宋体', sans-serif;
+  }
+  blockquote {
+    border-left: 8px solid rgb(201, 246, 200);
+    background-image: var(--blockBg);
   }
 }
 
 :deep(.w-e-text-container) {
-  @include p; //覆盖掉默认自带的p
+  @include customCSS; //覆盖掉默认自带的p
 }
 
 :deep(.editor-content-view) {
   padding: 0 10px;
-  @include p;
+  @include customCSS;
   h1,
   h2,
   h3,

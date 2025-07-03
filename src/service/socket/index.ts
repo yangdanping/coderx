@@ -8,8 +8,8 @@ export default function useSocket(state?: any) {
   const socket = io(SOCKET_URL, {
     query: {
       userName: LocalCache.getCache('userInfo')?.name ?? '',
-      userId: LocalCache.getCache('socketUser')?.id ?? ''
-    }
+      userId: LocalCache.getCache('socketUser')?.id ?? '',
+    },
   })
     // 监听io的online事件----------------------------------
     .on('online', ({ userList }) => {

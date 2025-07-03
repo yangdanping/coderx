@@ -14,7 +14,7 @@ export const useCommentStore = defineStore('comment', {
     replyInfo2: [] as IComment[],
     userComments: [] as IComment[],
     commentCount: 0,
-    userLikedCommentIdList: [] as number[] //该用户点赞过的评论id,通过computed计算是否有点赞
+    userLikedCommentIdList: [] as number[], //该用户点赞过的评论id,通过computed计算是否有点赞
   }),
   getters: {
     isCommentUserLiked() {
@@ -40,7 +40,7 @@ export const useCommentStore = defineStore('comment', {
           });
         return replyInfo2;
       };
-    }
+    },
   },
   actions: {
     getTotalCommentInfo(totalCommentInfo, isUser: boolean = false) {
@@ -142,7 +142,7 @@ export const useCommentStore = defineStore('comment', {
         inArticle ? this.updateArticleComment(upatedComment, updateProp) : this.updateUserComment(upatedComment, updateProp); //传入comment是为了判断类型
         this.getUserLikedAction(); //更新用户点赞列表
       }
-    }
+    },
     // async likeAction(payload) {
     //   const { articleId } = payload;
     //   const res = await like(payload);
@@ -154,7 +154,7 @@ export const useCommentStore = defineStore('comment', {
     //     Msg.showSuccess('取消点赞成功');
     //   }
     // }
-  }
+  },
 });
 
 export default useCommentStore;

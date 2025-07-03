@@ -43,12 +43,12 @@ import type { IComment } from '@/stores/types/comment.result';
 const props = defineProps({
   comment: {
     type: Object as PropType<IComment>,
-    default: () => {}
+    default: () => {},
   },
   isReply: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
 const showOne = ref(false);

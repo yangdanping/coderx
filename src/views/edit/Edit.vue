@@ -53,7 +53,7 @@ watch(
   () => article.value,
   (newV) => {
     emitter.emit('updateEditorContent', newV.content);
-  }
+  },
 );
 
 const handleSetCover = (file) => {

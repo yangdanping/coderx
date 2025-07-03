@@ -70,7 +70,6 @@ declare module '@vue/runtime-core' {
     ISuccessFilled: typeof import('~icons/ep/success-filled')['default']
     ISuitcase: typeof import('~icons/ep/suitcase')['default']
     ITakeawayBox: typeof import('~icons/ep/takeaway-box')['default']
-    ITopRight: typeof import('~icons/ep/top-right')['default']
     IWarning: typeof import('~icons/ep/warning')['default']
     LikeSvg: typeof import('./components/icon/cpns/LikeSvg.vue')['default']
     ListAction: typeof import('./components/list/cpns/ListAction.vue')['default']

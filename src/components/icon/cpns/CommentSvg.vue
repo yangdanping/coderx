@@ -19,12 +19,12 @@ import { activeColor, defaultColor } from '@/global/constants/color';
 const props = defineProps({
   size: {
     type: [Number],
-    default: 20
+    default: 20,
   },
   color: {
     type: [String],
-    default: defaultColor
-  }
+    default: defaultColor,
+  },
 });
 </script>
 

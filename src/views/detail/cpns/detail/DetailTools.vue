@@ -43,12 +43,12 @@ const articleStore = useArticleStore();
 const props = defineProps({
   isAuthor: {
     type: Boolean,
-    default: false
+    default: false,
   },
   article: {
     type: Object as PropType<IArticle>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
@@ -62,7 +62,7 @@ const remove = () => {
   ElMessageBox.confirm(`是否删除文章`, '提示', {
     type: 'info',
     confirmButtonText: `删除`,
-    cancelButtonText: `取消`
+    cancelButtonText: `取消`,
   }).then(() => {
     articleStore.removeAction(props.article.id);
   });

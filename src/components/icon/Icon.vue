@@ -32,28 +32,28 @@ type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire';
 const props = defineProps({
   type: {
     type: String as PropType<IconType>,
-    required: true
+    required: true,
   },
   isActive: {
     type: Boolean,
-    default: false
+    default: false,
   },
   size: {
     type: [Number],
-    default: 20
+    default: 20,
   },
   label: {
     type: [Number, String],
-    default: 0
+    default: 0,
   },
   color: {
     type: [String],
-    default: ''
+    default: '',
   },
   flex: {
     type: String as PropType<'row' | 'column'>,
-    default: 'row'
-  }
+    default: 'row',
+  },
 });
 
 const except = computed(() => {

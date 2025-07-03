@@ -19,8 +19,8 @@ import useRootStore from '@/stores';
 defineProps({
   total: {
     type: Number,
-    default: 0
-  }
+    default: 0,
+  },
 });
 
 const rootStore = useRootStore();

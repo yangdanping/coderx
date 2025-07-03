@@ -4,7 +4,7 @@ import { LocalCache } from '@/utils';
 const useHomeStore = defineStore('home', {
   state: () => ({
     news: [] as any[],
-    hotUsers: [] as any[]
+    hotUsers: [] as any[],
   }),
   actions: {
     updateNews(news: any[]) {
@@ -36,8 +36,8 @@ const useHomeStore = defineStore('home', {
         this.hotUsers = res.data;
       }
       console.log('getHotUsersAction res', this.hotUsers);
-    }
-  }
+    },
+  },
 });
 
 export default useHomeStore;

@@ -30,12 +30,12 @@ const { isUserFollowed, token } = storeToRefs(userStore);
 const props = defineProps({
   followType: {
     type: String,
-    default: ''
+    default: '',
   },
   userFollow: {
     type: Array as PropType<IUserInfo[]>,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 //定义非响应式常量(涉及以下三次手动更新 1.UserFollow中tab列表切换 2.UserProfile中tab列表切换 3.路由更新后手动清空)
 let userFollowList: IUserInfo[] = props.userFollow;
@@ -52,7 +52,7 @@ watch(
   (newV) => {
     console.log('watch切换tab 手动更新userFollowList', newV);
     userFollowList = props.userFollow;
-  }
+  },
 );
 
 const goDetail = (userId) => {

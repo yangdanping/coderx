@@ -21,8 +21,8 @@
 const props = defineProps({
   news: {
     type: Array as PropType<any[]>,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 </script>
 

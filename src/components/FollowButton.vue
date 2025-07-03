@@ -27,21 +27,21 @@ const { isUser, token } = storeToRefs(userStore);
 const props = defineProps({
   profile: {
     type: Object as PropType<IUserInfo>,
-    default: () => {}
+    default: () => {},
   },
   isFollowed: {
     type: Boolean,
-    default: false
+    default: false,
   },
   // false:传入用户id,true:传入登录用户id
   isFollowListItem: {
     type: Boolean,
-    default: false
+    default: false,
   },
   width: {
     type: String,
-    default: '100%'
-  }
+    default: '100%',
+  },
 });
 const isWantToUnFollowed = ref(false);
 const ToggleUnFollow = (toggle: boolean) => {

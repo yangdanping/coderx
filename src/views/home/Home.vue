@@ -7,14 +7,14 @@
         <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
       </div>
       <hr />
-      <HomeHotUser :hotUsers="hotUsers" />
+      <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
       <hr />
       <HomeSwpier :news="news" />
       <hr />
       <div class="brief">
         <div>Power By ⚡⚡yangdanping⚡⚡</div>
         <div>Email📧:1240645840@qq.com</div>
-        <div>GitHub😺:https://github.com/yangdanping</div>
+        <div class="btn" @click="goGitHub">GitHub😺:{{ githubUrl }}</div>
       </div>
     </div>
   </div>
@@ -28,6 +28,7 @@ import useHomeStore from '@/stores/home';
 const counter = ref(1);
 const line2 = ref('Coder');
 const line2Str = ref('');
+const githubUrl = ref('https://github.com/yangdanping');
 const isLast = ref(false); //是否激活最后一个字符的class
 let timer = ref();
 const homeStore = useHomeStore();
@@ -50,6 +51,8 @@ onMounted(() => {
   homeStore.getNewsAction();
   homeStore.getHotUsersAction();
 });
+
+const goGitHub = () => window.open(githubUrl.value);
 </script>
 
 <style lang="scss" scoped>

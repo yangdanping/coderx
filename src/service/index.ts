@@ -40,8 +40,8 @@ const myRequest = new MyRequest({
         userStore.logOut();
       }
       return err;
-    }
-  }
+    },
+  },
 });
 const newsRequest = new MyRequest({
   baseURL: NEWS_BASE_URL,
@@ -58,8 +58,8 @@ const newsRequest = new MyRequest({
     },
     resFail: (err) => {
       return err;
-    }
-  }
+    },
+  },
 });
 
 export { newsRequest };

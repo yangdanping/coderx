@@ -19,8 +19,8 @@ const activeId = ref('综合');
 defineProps({
   tags: {
     type: Array as PropType<Itag[]>,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
 onMounted(() => {

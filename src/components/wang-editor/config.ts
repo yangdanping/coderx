@@ -38,9 +38,9 @@ export const useEditorConfig = () => {
           } else {
             Msg.showFail('图片上传失败');
           }
-        }
-      }
-    }
+        },
+      },
+    },
   };
 
   return [toolbarConfig, editorConfig];

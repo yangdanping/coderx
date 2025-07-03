@@ -42,11 +42,11 @@ import type { IComment } from '@/stores/types/comment.result';
 const props = defineProps({
   item: {
     type: Object as PropType<IComment>,
-    default: () => {}
+    default: () => {},
   },
   floor: {
-    type: Number
-  }
+    type: Number,
+  },
 });
 
 const isReply = ref(false);
@@ -73,7 +73,7 @@ watch(
     if (oldV !== '' && newV !== oldV && !isReply.value) {
       isReply.value = !isReply.value; //只有评论区某form处于打开情况下,点击其他回复才会来到这里,折叠其他form,并打开这个form
     }
-  }
+  },
 );
 
 const replythis = computed(() => {

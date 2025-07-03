@@ -44,14 +44,14 @@ const { isUser } = storeToRefs(userStore);
 const props = defineProps({
   editData: {
     type: String,
-    default: ''
+    default: '',
   },
   userId: {
-    type: Number
+    type: Number,
   },
   commentId: {
-    type: Number
-  }
+    type: Number,
+  },
 });
 
 const content = ref('');
@@ -78,7 +78,7 @@ const remove = () => {
   ElMessageBox.confirm(`是否删除评论`, '提示', {
     type: 'info',
     confirmButtonText: `删除`,
-    cancelButtonText: `取消`
+    cancelButtonText: `取消`,
   }).then(() => {
     commentStore.removeCommentAction({ articleId: article.value.id, commentId: props.commentId });
   });

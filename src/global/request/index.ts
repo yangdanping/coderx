@@ -27,11 +27,12 @@ interface MyRequestConfig<T = AxiosResponse> extends AxiosRequestConfig {
 }
 
 class MyRequest {
+  // 属性
   instance: AxiosInstance;
   interceptors?: MyRequestInterceptors;
   // loading?: LoadingInstance; //loading保存Loading实例,先有实例才能用showLoading控制是否显示
   showLoading: boolean; //showLoading控制整体请求是否显示loading
-
+  // 构造方法
   constructor(config: MyRequestConfig) {
     // 1.创建axios实例 --> (一切的起点,非常重要,我们之前用axios本质上是用axios对象的一个实例)
     this.instance = axios.create(config);
@@ -59,7 +60,7 @@ class MyRequest {
         }
         return config;
       },
-      (err) => err
+      (err) => err,
     );
     this.instance.interceptors.response.use(
       (res) => {
@@ -82,7 +83,7 @@ class MyRequest {
         if (err.response.status === 404) {
           console.log('404的错误~'); //真实开发是switch根据status的不同显示不同的错误信息
         }
-      }
+      },
     );
   }
   // 封装request等请求 --> (要在内部做单个请求的拦截器,所以把config:AxiosRequestConfig换成config:MyRequestConfig)

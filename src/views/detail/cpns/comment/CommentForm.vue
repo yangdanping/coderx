@@ -26,14 +26,14 @@ const { article } = storeToRefs(articleStore);
 
 const props = defineProps({
   commentId: {
-    type: Number
+    type: Number,
   },
   isReply: {
-    type: Boolean
+    type: Boolean,
   },
   replyId: {
-    type: Number
-  }
+    type: Number,
+  },
 });
 
 const content = ref('');
@@ -53,7 +53,7 @@ const addComment = () => {
           articleId: article.value.id,
           content: content.value,
           cid: props.commentId ?? null,
-          rid: props.replyId ?? null
+          rid: props.replyId ?? null,
         });
         disabled.value = !disabled.value;
       }, 500);

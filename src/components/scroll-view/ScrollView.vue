@@ -18,13 +18,13 @@
 const props = defineProps({
   data: {
     type: Array as PropType<any[]>,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
 watch(
   () => props.data,
-  () => nextTick(() => initScrollContent()) //nextTick一定要加
+  () => nextTick(() => initScrollContent()), //nextTick一定要加
 );
 
 const scrollContentRef = ref();

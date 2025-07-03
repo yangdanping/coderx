@@ -55,7 +55,7 @@ watch(
   () => input.value,
   (newV) => {
     btnDisabled.value = newV ? false : true;
-  }
+  },
 );
 const isCollected = computed(() => {
   return (count) => count && count.some((v) => v === article.value.id);
@@ -69,7 +69,7 @@ onMounted(() => {
 const goProfile = () => {
   const routeData = router.resolve({
     path: `/user/${userInfo.value.id}`,
-    query: { tabName: '收藏' }
+    query: { tabName: '收藏' },
   });
   window.open(routeData.href, '_blank');
 };

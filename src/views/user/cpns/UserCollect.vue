@@ -34,9 +34,9 @@
         </ul>
       </div>
       <template v-if="collects.length">
-        <div v-if="!articles.result?.length">
+        <div v-if="!articles.result?.length" class="collect-list">
           <template v-for="item in collects" :key="item.id">
-            <div class="collect-wrapper">
+            <div class="item">
               <div class="collect-name" @click="goCollectDetial(item)">
                 <div>{{ item.name }}</div>
                 <div v-if="item.count" class="count">{{ item.count.length }}</div>
@@ -107,7 +107,7 @@ const goCollectDetial = (item) => {
 const manageArr = ref<any[]>([]);
 watch(
   () => manageArr.value,
-  (newV) => console.log('manageArr newV', newV)
+  (newV) => console.log('manageArr newV', newV),
 );
 const handleCollect = () => {
   showCheckBox.value = !showCheckBox.value;
@@ -120,11 +120,11 @@ const handleCheckbox = (e) => {
 };
 const handleCheckboxAll = (e) => {
   const all = document.getElementById('all') as HTMLInputElement;
-  const oneList = document.getElementsByName('one') as any;
+  const oneList = Array.from(document.getElementsByName('one'));
   manageArr.value = []; //初始化为空
   console.log('handleCheckboxAll all.checked', all.checked);
   // 若全选复选框选中(all.checked为true)则将所有id加入到manageArr中
-  oneList.forEach((item: HTMLInputElement) => {
+  oneList.forEach((item: any) => {
     item.checked = all.checked;
     all.checked && manageArr.value.push(item.value);
   });
@@ -178,7 +178,7 @@ const clearResultAndBack = () => {
     }
   }
 
-  .collect-wrapper {
+  .item {
     border-bottom: 1px solid #e5e6eb;
     cursor: pointer;
     .collect-name {

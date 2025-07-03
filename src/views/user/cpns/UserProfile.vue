@@ -32,11 +32,11 @@
       </div>
       <div class="profile-right">
         <div>
-          <div @click="goFollowTab('following')">
+          <div class="btn" @click="goFollowTab('following')">
             <div>关注数</div>
             <div>{{ followCount('following') }}</div>
           </div>
-          <div @click="goFollowTab('follower')">
+          <div class="btn" @click="goFollowTab('follower')">
             <div>粉丝数</div>
             <div>{{ followCount('follower') }}</div>
           </div>
@@ -71,8 +71,8 @@ const { isFollowed, followCount, isUser, onlineUsers } = storeToRefs(userStore);
 const props = defineProps({
   profile: {
     type: Object as PropType<IUserInfo>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 
 const goFollowTab = (subTabName: string) => {

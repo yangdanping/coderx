@@ -9,8 +9,8 @@
 defineProps({
   isComment: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 </script>
 

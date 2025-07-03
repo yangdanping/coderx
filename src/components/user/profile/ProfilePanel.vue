@@ -3,11 +3,11 @@
     <div v-if="active === 0" class="sex-info">
       <h2>您的性别</h2>
       <div class="sex-select">
-        <div @click="handleSelect('男')" class="sex" :class="{ active: form.sex === '男' }">
+        <div @click="handleSelect('男')" class="icon" :class="{ active: form.sex === '男' }">
           <h1>男</h1>
           <img src="@/assets/img/user/male.svg" alt="" />
         </div>
-        <div @click="handleSelect('女')" class="sex" :class="{ active: form.sex === '女' }">
+        <div @click="handleSelect('女')" class="icon" :class="{ active: form.sex === '女' }">
           <h1>女</h1>
           <img src="@/assets/img/user/female.svg" alt="" />
         </div>
@@ -53,8 +53,8 @@ const userStore = useUserStore();
 const props = defineProps({
   editForm: {
     type: Object as PropType<IUserInfo>,
-    default: () => {}
-  }
+    default: () => {},
+  },
 });
 
 const active = ref(0);
@@ -65,11 +65,11 @@ const form = ref<any>({
   age: null,
   email: null,
   career: null,
-  address: null
+  address: null,
 });
 const rules = ref({
   age: [{ pattern: /^(?:[1-9][0-9]?|1[01][0-9]|120)$/, message: '请输入正确的年龄', trigger: 'blur' }],
-  email: [{ pattern: /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/, message: '请输入正确的邮箱格式', trigger: 'blur' }]
+  email: [{ pattern: /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/, message: '请输入正确的邮箱格式', trigger: 'blur' }],
 });
 
 onMounted(() => {
@@ -126,7 +126,7 @@ const next = () => {
       justify-content: space-around;
       width: 100%;
       margin: 40px 0;
-      .sex {
+      .icon {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -136,13 +136,17 @@ const next = () => {
         transition: all 0.3s;
         cursor: pointer;
       }
-      .sex:hover {
+      .icon:hover {
         transform: scale(1.2);
-        box-shadow: 2px 4px 20px #c8d0e7, 2px 4px 20px #fff;
+        box-shadow:
+          2px 4px 20px #c8d0e7,
+          2px 4px 20px #fff;
       }
-      .sex.active {
+      .icon.active {
         transform: scale(1.2);
-        box-shadow: 2px 4px 10px #5e86ff, 2px 4px 10px #fff;
+        box-shadow:
+          2px 4px 10px #5e86ff,
+          2px 4px 10px #fff;
       }
     }
   }
