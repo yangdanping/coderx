@@ -1,4 +1,25 @@
 :root {
+  --cursorDefault: url('@/assets/img/cursor.svg'), auto;
+  --pointerDefault: url('@/assets/img/pointer.svg'), auto;
+  --fontColor: #5f5f5f;
+  --navbarHeight: 80px;
+  --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
+  --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
+  --red: #ea3329;
+  --orange: #eb6a2c;
+  --yellow: #f29c38;
+  --lightyellow: #ffd321;
+  --green: #75fb4c;
+  --cyan: #00f0ff;
+  --blue: #0c8cfe;
+  --darkblue: #003b6e;
+  --purple: #e532ad;
+  --deeppurple: #970056;
+  --darkpurple: #2b0c5c;
+  --lightpurple: #3d147f;
+  --brightpurple: #8400ff;
+  --pink: #ff034a;
+
   // 悬停只在非触摸设备上可见
   @media (hover: hover) and (pointer: fine) {
     cursor: var(--cursorDefault);
@@ -36,27 +57,6 @@
       cursor: var(--pointerDefault) !important;
     }
   }
-
-  --cursorDefault: url('@/assets/img/cursor.svg'), auto;
-  --pointerDefault: url('@/assets/img/pointer.svg'), auto;
-  --fontColor: #5f5f5f;
-  --navbarHeight: 80px;
-  --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
-  --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
-  --red: #ea3329;
-  --orange: #eb6a2c;
-  --yellow: #f29c38;
-  --lightyellow: #ffd321;
-  --green: #75fb4c;
-  --cyan: #00f0ff;
-  --blue: #0c8cfe;
-  --darkblue: #003b6e;
-  --purple: #e532ad;
-  --deeppurple: #970056;
-  --darkpurple: #2b0c5c;
-  --lightpurple: #3d147f;
-  --brightpurple: #8400ff;
-  --pink: #ff034a;
 
   ::selection {
     background: #81c995;

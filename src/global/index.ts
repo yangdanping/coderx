@@ -26,7 +26,7 @@ export default function init(app: App) {
 
   rootStore.loadLoginAction();
   rootStore.changeWindowInfo();
-  const socket = useSocket();
+  // const socket = useSocket();
   // 路由前置守卫
   router.beforeEach((to, from) => {
     console.log(`<路由前置守卫>检测到路由 ${from.path} --> ${to.path}`);
