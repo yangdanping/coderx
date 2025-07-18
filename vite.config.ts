@@ -18,7 +18,7 @@ export default defineConfig({
   build: {
     outDir: 'build', // 打包文件的输出目录
     // outDir: 'coderx', // 打包文件的输出目录
-    target: 'modules', // 设置最终构建的浏览器兼容目标。默认值是一个 Vite 特有的值：'modules'
+    target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：：'baseline-widely-available'
     assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
     emptyOutDir: true, // 打包前先清空原有打包文件
   },

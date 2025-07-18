@@ -82,7 +82,7 @@ const replythis = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/css/editor';
+@use '@/assets/css/editor';
 
 .comment-list-item {
   display: flex;

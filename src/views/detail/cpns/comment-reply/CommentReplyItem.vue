@@ -88,7 +88,7 @@ const replythis = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/css/editor';
+@use '@/assets/css/editor';
 .reply-list-item {
   display: flex;
   /* background-color: rgba(220, 230, 220, 0.7); //与文章评论颜色做区分 */
