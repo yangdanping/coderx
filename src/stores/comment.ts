@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { getComment, addComment, updateComment, removeComment, addReply, likeComment, getCommentById } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request.js';
-import { Msg, emitter, timeFormat } from '@/utils';
+import { Msg, emitter, dateFormat } from '@/utils';
 
 import type { IComment } from './types/comment.result';
 import useUserStore from './user';
@@ -45,7 +45,6 @@ export const useCommentStore = defineStore('comment', {
   actions: {
     getTotalCommentInfo(totalCommentInfo, isUser: boolean = false) {
       this.commentCount = totalCommentInfo.length;
-      totalCommentInfo.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
       if (isUser) {
         this.userComments = totalCommentInfo;
         console.log('对用户评论的请求', this.userComments);

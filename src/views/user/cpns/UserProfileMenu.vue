@@ -13,6 +13,9 @@
       <el-tab-pane label="关注" name="关注">
         <UserFollow />
       </el-tab-pane>
+      <el-tab-pane label="最近浏览" name="最近浏览">
+        <UserHistory />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -23,6 +26,7 @@ import UserArticle from './UserArticle.vue';
 import UserCollect from './UserCollect.vue';
 import UserComment from './UserComment.vue';
 import UserFollow from './UserFollow.vue';
+import UserHistory from './UserHistory.vue';
 import { emitter } from '@/utils';
 
 const route = useRoute();

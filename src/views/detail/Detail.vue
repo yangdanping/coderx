@@ -17,6 +17,7 @@ import Comment from './cpns/comment/Comment.vue';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 import useCommentStore from '@/stores/comment';
+import useHistoryStore from '@/stores/history';
 
 const route = useRoute();
 const articleStore = useArticleStore();
@@ -24,10 +25,14 @@ const commentStore = useCommentStore();
 const { article, isAuthor } = storeToRefs(articleStore);
 const { commentInfo } = storeToRefs(commentStore);
 const { userInfo } = storeToRefs(useUserStore());
+const historyStore = useHistoryStore();
+const userStore = useUserStore();
+const { token } = storeToRefs(userStore);
 
 onMounted(() => {
   console.log('onMounted articleStore.getDetailAction', route.params.articleId);
   articleStore.getDetailAction(route.params.articleId);
+  token.value && historyStore.addHistoryAction(route.params.articleId);
 });
 </script>
 

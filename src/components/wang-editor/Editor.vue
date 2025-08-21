@@ -26,7 +26,7 @@
       </el-col>
     </el-row>
     <el-tooltip class="item" effect="dark" :content="`${isShowPreviw ? '关闭' : '打开'}预览`" placement="top">
-      <el-button class="show-preview-btn" @click="togglePreview" :icon="Memo"></el-button>
+      <el-button v-if="route.path.includes('edit')" class="show-preview-btn" @click="togglePreview" :icon="Memo"></el-button>
     </el-tooltip>
   </div>
 </template>
@@ -39,7 +39,7 @@ import { useEditorConfig } from './config';
 import { DomEditor } from '@wangeditor/editor';
 const editorRef = shallowRef();
 const [toolbarConfig, editorConfig] = useEditorConfig();
-
+const route = useRoute();
 import type { IArticle } from '@/stores/types/article.result';
 const props = defineProps({
   editData: {

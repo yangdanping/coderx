@@ -8,8 +8,8 @@
       <ArticleList v-if="articles.result?.length" :articles="articles" @tabClick="tabClick" />
       <div v-else-if="!noData" class="skeleton"><el-skeleton animated /></div>
       <div v-else class="skeleton">
-        <h1>{{ searchStr ? `"${searchStr}"相关内容` : '该专栏' }}暂无文章,快来发表第一篇吧~</h1>
-        <el-button @click="goEdit" type="primary">发表第一篇</el-button>
+        <h1 style="margin-bottom: 10px">{{ searchStr ? `"${searchStr}"相关内容` : '该专栏' }}暂无文章,快来发表第一篇吧~</h1>
+        <el-button @click="goEdit" type="primary" plain>发表第一篇</el-button>
       </div>
     </div>
     <div class="article-recommends">
@@ -95,7 +95,7 @@ $paddingTop: 40px;
   .article-nav,
   .article-recommends {
     position: sticky;
-    top: calc($paddingTop + 20px);
+    top: calc($paddingTop + 7px);
     padding-top: $paddingTop;
     height: 100%;
   }
@@ -109,7 +109,7 @@ $paddingTop: 40px;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 100%;
+      width: 814px;
     }
   }
 }

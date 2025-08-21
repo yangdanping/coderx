@@ -55,8 +55,8 @@ const handleClick = throttle(function (tab) {
   :deep(.el-tabs__nav-scroll) {
     display: flex;
     justify-content: center;
-    background: #fafafa;
-    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border-radius: 5px;
     overflow: hidden;
   }
 
@@ -68,9 +68,15 @@ const handleClick = throttle(function (tab) {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 18px;
+    color: var(--fontColor);
+    font-size: 16px;
+    &:hover {
+      color: #409eff;
+    }
+    // 动态下划线
     &.is-active {
       color: #fff;
+      background: #409eff;
     }
   }
 

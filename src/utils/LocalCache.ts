@@ -34,6 +34,62 @@ class LocalCache {
     window.sessionStorage.clear();
     window.localStorage.clear();
   }
+
+  /**
+   * 添加搜索记录
+   * @param searchText 搜索文本
+   */
+  static addSearchHistory(searchText: string) {
+    if (!searchText || !searchText.trim()) return;
+
+    const key = 'coderx_search_history';
+    const maxItems = 20;
+    const trimmedText = searchText.trim();
+
+    // 获取现有搜索记录
+    let searchHistory: string[] = this.getCache(key) || [];
+    // 如果已经存在相同记录，直接返回
+    if (searchHistory.includes(trimmedText)) return;
+    // 添加新记录到开头
+    searchHistory.unshift(trimmedText);
+
+    // 限制最大数量
+    if (searchHistory.length > maxItems) {
+      searchHistory = searchHistory.slice(0, maxItems);
+    }
+
+    // 保存到本地存储
+    this.setCache(key, searchHistory);
+  }
+
+  /**
+   * 获取搜索记录
+   * @returns 搜索记录数组
+   */
+  static getSearchHistory(): string[] {
+    const key = 'coderx_search_history';
+    return this.getCache(key) || [];
+  }
+
+  /**
+   * 删除单个搜索记录
+   * @param searchText 要删除的搜索文本
+   */
+  static removeSearchHistory(searchText: string) {
+    const key = 'coderx_search_history';
+    let searchHistory: string[] = this.getCache(key) || [];
+
+    searchHistory = searchHistory.filter((item) => item !== searchText);
+    this.setCache(key, searchHistory);
+  }
+
+  /**
+   * 清空所有搜索记录
+   */
+  static clearSearchHistory() {
+    const key = 'coderx_search_history';
+    this.removeCache(key);
+  }
 }
 
 export default LocalCache; //new出来对象并导出去,这样外面就可以拿到对象去使用我们这里的属性/方法

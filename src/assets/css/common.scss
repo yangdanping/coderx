@@ -19,7 +19,7 @@
   --lightpurple: #3d147f;
   --brightpurple: #8400ff;
   --pink: #ff034a;
-
+  color: var(--fontColor);
   // 悬停只在非触摸设备上可见
   @media (hover: hover) and (pointer: fine) {
     cursor: var(--cursorDefault);
@@ -77,12 +77,12 @@ hr {
 }
 
 ::-webkit-scrollbar-thumb {
-  border-radius: 6px;
+  border-radius: 4px;
   height: 50px;
   background: #42b983; //滚动条颜色
 }
 ::-webkit-scrollbar-track {
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  border-radius: 4px;
   background: #eee; //滚动条背景色
 }

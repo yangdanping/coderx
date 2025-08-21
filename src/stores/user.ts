@@ -3,7 +3,7 @@ import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect, removeCollectArticle } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
-import { LocalCache, Msg, emitter, timeFormat } from '@/utils';
+import { LocalCache, Msg, emitter, dateFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
@@ -77,12 +77,10 @@ const useUserStore = defineStore('user', {
       // bug问题可能出现在this.isFollowed不适用于列表中
     },
     changeCollect(payload) {
-      payload.forEach((collect) => (collect.createAt = timeFormat(collect.createAt)));
       this.collects = payload;
       console.log('changeCollect 收藏夹', this.collects);
     },
     // changeComment(payload) {
-    //   payload.forEach((comment) => (comment.createAt = timeFormat(comment.createAt)));
     //   this.comments = payload;
     //   console.log('changeComment', this.comments);
     // },

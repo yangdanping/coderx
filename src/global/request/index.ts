@@ -1,7 +1,7 @@
 import axios from 'axios'; //对axios做封装只需在这一个文件里引用axios就可以了(相当于当前项目对axios有依赖的只有该文件)
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'; //axios已提供对应的类型(三者缺一不可)
-// import { ElLoading } from 'element-plus';
-// import { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
+import { ElLoading } from 'element-plus';
+import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
 const DEAFULT_LOADING = true;
 
 /* 由于我们对拦截器做了三层封装,所以传类型得一步步传递过去
@@ -30,7 +30,7 @@ class MyRequest {
   // 属性
   instance: AxiosInstance;
   interceptors?: MyRequestInterceptors;
-  // loading?: LoadingInstance; //loading保存Loading实例,先有实例才能用showLoading控制是否显示
+  loading?: LoadingInstance; //loading保存Loading实例,先有实例才能用showLoading控制是否显示
   showLoading: boolean; //showLoading控制整体请求是否显示loading
   // 构造方法
   constructor(config: MyRequestConfig) {
@@ -50,14 +50,13 @@ class MyRequest {
       (config) => {
         // console.log('全局请求拦截器请求成功');
         // 将返回的loading组件实例赋值给loading属性,与showLoading配合控制loading开关
-        if (this.showLoading) {
-          // console.log('showLoading', this.showLoading);
-          // this.loading = ElLoading.service({
-          //   lock: true,
-          //   text: '正在请求...',
-          //   background: 'rgba(0,0,0,0.5)'
-          // });
-        }
+        // if (this.showLoading) {
+        //   this.loading = ElLoading.service({
+        //     lock: true,
+        //     text: '正在请求...',
+        //     background: 'rgba(0,0,0,0.5)',
+        //   });
+        // }
         return config;
       },
       (err) => err,
@@ -67,7 +66,6 @@ class MyRequest {
         // console.log('全局响应拦截器响应成功');
         // 请求成功后将loading移除(请求失败也得移除)
         // this.loading?.close();
-
         const realData = res.data; //取出服务器返回的真实数据
         return realData;
         // 这里模拟数据响应失败时的情况
@@ -123,7 +121,40 @@ class MyRequest {
 
   //get是调用request的,但同时明确请求方式为GET,下面同理
   get<T = any>(config: MyRequestConfig<T>): Promise<T> {
-    return this.request<T>({ ...config, method: 'GET' });
+    // 处理params参数，将其拼接到URL上
+    let finalUrl = config.url || '';
+
+    if (config.params && typeof config.params === 'object') {
+      // 将params对象转换为URL参数字符串
+      const searchParams = new URLSearchParams();
+
+      Object.entries(config.params).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          // 处理数组参数，将数组参数拼接到URL上
+          if (Array.isArray(value)) {
+            value.forEach((item) => searchParams.append(key, String(item)));
+          } else {
+            searchParams.append(key, String(value));
+          }
+        }
+      });
+
+      const queryString = searchParams.toString();
+      if (queryString) {
+        // 检查URL是否已经包含查询参数
+        const separator = finalUrl.includes('?') ? '&' : '?';
+        finalUrl = `${finalUrl}${separator}${queryString}`;
+      }
+    }
+
+    // 创建新的config，移除params并使用拼接后的URL
+    const { params, ...restConfig } = config;
+
+    return this.request<T>({
+      ...restConfig,
+      url: finalUrl,
+      method: 'GET',
+    });
   }
   post<T = any>(config: MyRequestConfig<T>): Promise<T> {
     return this.request<T>({ ...config, method: 'POST' });
