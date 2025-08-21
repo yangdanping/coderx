@@ -41,7 +41,7 @@
                 <div>{{ item.name }}</div>
                 <div v-if="item.count" class="count">{{ item.count.length }}</div>
               </div>
-              <span class="collect-time">创建于{{ item.createAt }}</span>
+              <span>创建于</span><span class="collect-time" v-dateformat="item.createAt"></span>
             </div>
           </template>
         </div>

@@ -2,7 +2,7 @@
   <div class="login-account">
     <el-form :rules="rules" :model="loginForm" status-icon ref="loginFormRef" label-width="90px">
       <el-form-item label="用户名" prop="name">
-        <el-input v-model.trim="loginForm.name" ref="getFocus" @keyup.enter="focusNext" clearable></el-input>
+        <el-input v-model.trim="loginForm.name" @keyup.enter="focusNext" clearable></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input v-model.trim="loginForm.password" ref="nextRef" type="password" @keyup.enter="login" clearable show-password></el-input>
@@ -23,7 +23,6 @@ import useUserStore from '@/stores/user';
 const userStore = useUserStore();
 
 const loginFormRef = ref<InstanceType<typeof ElForm>>();
-const getFocus = ref<InstanceType<typeof ElInput>>();
 const nextRef = ref<InstanceType<typeof ElInput>>();
 const loginForm = reactive({ name: '', password: '' });
 const rules = {
@@ -44,11 +43,6 @@ const login = () => {
 };
 // 回车聚焦
 const focusNext = () => nextRef.value?.focus();
-onMounted(() => {
-  nextTick(() => {
-    getFocus.value?.focus();
-  });
-});
 </script>
 
 <style lang="scss" scoped>

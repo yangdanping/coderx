@@ -19,7 +19,7 @@ import { addPictureForArticle, uploadPicture, deletePicture } from '@/service/fi
 import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useCommentStore from './comment';
-import { Msg, timeFormat, isArrEqual, isEmptyObj } from '@/utils';
+import { Msg, dateFormat, isArrEqual, isEmptyObj } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
@@ -55,16 +55,10 @@ export const useArticleStore = defineStore('article', {
   },
   actions: {
     updateArticleList(articles: IArticles) {
-      articles.result?.forEach((article) => {
-        article.createAt = timeFormat(article.createAt);
-        article.updateAt = timeFormat(article.updateAt);
-      });
       this.articles = articles;
       console.log('updateArticleList', this.articles.result);
     },
     updateDetail(article: IArticle, isEditRefresh = false) {
-      article.createAt = timeFormat(article.createAt);
-      article.updateAt = timeFormat(article.updateAt);
       this.article = article;
       if (isEditRefresh) {
         this.setupUploaded(article);

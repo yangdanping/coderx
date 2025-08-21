@@ -7,7 +7,7 @@
       <Avatar v-if="showAvatar" :info="item.author" :src="item.author?.avatarUrl" />
       <div class="author-info">
         <span>{{ item.author?.name }}</span>
-        <span>{{ item.createAt }}</span>
+        <span v-dateformat="item.createAt"></span>
       </div>
       <el-tag v-for="tag in item.tags" size="small" :key="tag.name" @click="goTag(tag)" type="success">{{ tag.name }}</el-tag>
     </div>
@@ -19,6 +19,9 @@
       </div>
       <div class="cover">
         <img v-if="item.cover" :src="item.cover" loading="lazy" />
+        <div class="multiple-action">
+          <slot name="multiple-action"></slot>
+        </div>
       </div>
       <!-- <img v-if="item.cover" class="cover" :src="item.cover" loading="lazy" />
       <div v-else class="cover"></div> -->
@@ -61,11 +64,8 @@ const goTag = throttle(function (tag) {
   flex-direction: column;
   padding: 10px 10px 0 10px;
   margin-bottom: 10px;
-  border-radius: 10px;
-  transition: all 0.3s;
   color: var(--fontColor);
   z-index: 99;
-  /* width: 80%; */
 
   .checkbox {
     position: absolute;
@@ -73,10 +73,22 @@ const goTag = throttle(function (tag) {
     top: 50%;
     transform: translateY(-50%);
   }
-
-  &:hover {
-    transform: scale(1.01);
-    box-shadow: 3px 3px 8px rgba(100, 100, 100, 0.7);
+  // 动态下划线
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    z-index: 0;
+    height: 1.5px;
+    width: 100%;
+    background-color: #409eff;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.5s ease-out;
+  }
+  &:hover::after {
+    transform: scaleX(1);
   }
 
   .author {
@@ -118,6 +130,7 @@ const goTag = throttle(function (tag) {
     }
 
     .cover {
+      position: relative;
       flex: 0 0 auto;
       width: 170px;
       height: 100px;
@@ -129,6 +142,13 @@ const goTag = throttle(function (tag) {
         object-fit: cover; //保持原来宽高比,遮盖整个区域
         width: 100%;
         height: 100%;
+      }
+      .multiple-action {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 100;
       }
     }
   }

@@ -13,16 +13,22 @@
             <div>粉丝</div>
           </div>
         </div>
-        <div class="btn1">
-          <el-button type="success" class="editbtn" @click="goEdit" plain>
-            <el-icon><IEditPen /></el-icon>写文章
-          </el-button>
-        </div>
-        <div class="btn2">
-          <el-button @click="goProfile()" type="primary" plain>我的空间</el-button>
-        </div>
-        <div class="btn3">
-          <el-button @click="logOut" type="danger" plain>退出登录</el-button>
+        <div class="panel-default">
+          <div class="btn1">
+            <el-button type="success" class="editbtn" @click="goEdit" plain>
+              <el-icon><IEditPen /></el-icon>写文章
+            </el-button>
+          </div>
+          <div class="btn2">
+            <el-button @click="goProfile()" type="primary" plain>
+              <el-icon><ICoordinate /></el-icon>我的空间
+            </el-button>
+          </div>
+          <div class="btn3">
+            <el-button @click="logOut" type="danger" plain>
+              <el-icon><ISwitchButton /></el-icon>退出登录
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -40,7 +46,6 @@ const userStore = useUserStore();
 const { userInfo, followCount } = storeToRefs(userStore);
 
 const isShow = ref(false);
-
 const toggle = debounce(function (toggle) {
   isShow.value = toggle;
   userStore.getFollowAction(userInfo.value.id);
@@ -70,6 +75,7 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
     }
   }
 };
+
 const logOut = () => {
   userStore.logOut();
 };
@@ -86,15 +92,21 @@ const logOut = () => {
     .box {
       position: absolute;
       left: 50%;
-      bottom: -240px;
+      transform: translateX(-50%);
+      bottom: -250px;
       width: 150px;
-      background-color: rgba(255, 255, 255);
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 10px;
       animation: titleDown 0.8s forwards;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      transition: all 0.3s ease-in-out;
+
       .user-info {
         display: flex;
         align-items: center;
@@ -102,14 +114,17 @@ const logOut = () => {
         font-size: 20px;
         font-weight: 100;
         > div {
-          /* margin-right: 10px; */
           display: flex;
           flex-direction: column;
           align-items: center;
           cursor: pointer;
+          transition: all 0.3s;
           > div:first-of-type {
             font-size: 25px;
             font-weight: 400;
+          }
+          &:hover {
+            color: #409eff;
           }
         }
         .following {
@@ -120,11 +135,36 @@ const logOut = () => {
           padding-left: 10px;
         }
       }
-      [class^='btn'] {
+
+      .panel-default {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         margin-top: 10px;
-        .el-button {
+        transition: all 0.3s ease-in-out;
+        transform: translateX(0);
+        opacity: 1;
+
+        [class^='btn'] {
           width: 100%;
+          margin-top: 10px;
+          .el-button {
+            width: 100%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .el-icon {
+              font-size: 14px;
+            }
+          }
         }
       }
     }

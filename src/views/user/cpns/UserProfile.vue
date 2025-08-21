@@ -62,10 +62,12 @@ import useRootStore from '@/stores';
 import useUserStore from '@/stores/user';
 import useArticleStore from '@/stores/article';
 import useCommentStore from '@/stores/comment';
+import useHistoryStore from '@/stores/history';
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
+const historyStore = useHistoryStore();
 const { isFollowed, followCount, isUser, onlineUsers } = storeToRefs(userStore);
 
 const props = defineProps({
@@ -118,6 +120,10 @@ const tabClick = ({ paneName }) => {
     case '关注':
       emitter.emit('updateFollowList');
       userStore.getFollowAction(userId);
+      break;
+    case '最近浏览':
+      historyStore.resetHistory();
+      historyStore.getHistoryAction(true);
       break;
     default:
       break;

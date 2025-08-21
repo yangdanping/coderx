@@ -1,6 +1,6 @@
 import LocalCache from './LocalCache';
 import SessionCache from './SessionCache';
-import timeFormat from './timeFormat';
+import dateFormat from './dateFormat';
 import debounce from './debounce';
 import throttle from './throttle';
 import isEmptyObj from './isEmptyObj';
@@ -11,4 +11,4 @@ import bindImagesLayer from './bindImagesLayer';
 import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
 
-export { LocalCache, SessionCache, Msg, timeFormat, debounce, throttle, isEmptyObj, isArrEqual, getImageUrl, bindImagesLayer, codeHeightlight, emitter };
+export { LocalCache, SessionCache, Msg, dateFormat, debounce, throttle, isEmptyObj, isArrEqual, getImageUrl, bindImagesLayer, codeHeightlight, emitter };

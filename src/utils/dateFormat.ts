@@ -14,7 +14,7 @@ type formatType = 'zh-cn' | 'mormal';
  * @param {formatType} type 格式化类型
  * @returns 格式化后的时间
  */
-export default function timeFormat(time?: string, type: formatType = 'zh-cn') {
+export default function dateFormat(time?: string, type: formatType = 'zh-cn') {
   if (type === 'zh-cn') {
     return dayjs(time).fromNow();
   } else {

@@ -1,5 +1,5 @@
 <template>
-  <div class="article-list">
+  <div class="article-list" ref="articleListRef">
     <h3 class="result" v-if="searchValue">
       <el-icon class="back" @click="goBack"><IBack /></el-icon>
       搜索:"{{ searchValue }}"
@@ -37,7 +37,7 @@ import type { IArticles } from '@/stores/types/article.result';
 const articleStore = useArticleStore();
 const rootStore = useRootStore();
 const { pageOrder } = storeToRefs(rootStore);
-
+const articleListRef = ref<HTMLElement | null>(null);
 const searchValue = ref('');
 const noSearchData = ref(false);
 const props = defineProps({
@@ -94,7 +94,7 @@ const changePage = () => articleStore.getArticleListAction();
   flex-direction: column;
   align-items: center;
   backdrop-filter: blur(10px);
-  border-radius: 10px;
+  border-radius: 5px;
   animation: moveDown 1s forwards;
   .msg {
     margin-top: 100px;
@@ -115,26 +115,24 @@ const changePage = () => articleStore.getArticleListAction();
   }
   .list-order {
     position: sticky;
-    top: var(--navbarHeight);
+    top: calc(var(--navbarHeight));
     display: flex;
-    justify-content: right;
+    justify-content: left;
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
-    > div {
+    background-color: #fff;
+    z-index: 999;
+    .btn {
       display: flex;
       background-color: rgba(255, 255, 255, 0.5);
-
       align-items: center;
       justify-content: center;
-      border-radius: 10px;
       height: 30px;
       width: 60px;
       margin-left: 10px;
       cursor: pointer;
       &.active {
-        background: #409eff;
-        color: #fff;
+        border-bottom: 2px solid #409eff;
+        color: #409eff;
       }
     }
   }

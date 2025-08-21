@@ -11,7 +11,7 @@
         </div>
         <div class="floor">
           <span style="margin-right: 10px">{{ floor }}楼</span>
-          <span>{{ item.createAt }}</span>
+          <span v-dateformat="item.createAt"></span>
         </div>
       </div>
       <div class="editor-content">
