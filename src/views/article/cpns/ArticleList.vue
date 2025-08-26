@@ -40,12 +40,9 @@ const { pageOrder } = storeToRefs(rootStore);
 const articleListRef = ref<HTMLElement | null>(null);
 const searchValue = ref('');
 const noSearchData = ref(false);
-const props = defineProps({
-  articles: {
-    type: Object as PropType<IArticles>,
-    default: () => {},
-  },
-});
+const { articles = {} } = defineProps<{
+  articles?: IArticles;
+}>();
 onMounted(() => {
   emitter.on('submitSearchValue', (value) => {
     searchValue.value = value as string;
@@ -56,7 +53,7 @@ onMounted(() => {
 });
 
 watch(
-  () => props.articles,
+  () => articles,
   (newV) => {
     if (searchValue.value) {
       if (newV.result?.length) {

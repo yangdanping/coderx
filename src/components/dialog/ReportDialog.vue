@@ -12,15 +12,12 @@
 </template>
 
 <script lang="ts" setup>
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false,
-  },
-});
+const { show = false } = defineProps<{
+  show?: boolean;
+}>();
 
 const dialogVisible = computed({
-  get: () => props.show,
+  get: () => show,
   set: (val) => emit('update:dialogVisible', val),
 });
 

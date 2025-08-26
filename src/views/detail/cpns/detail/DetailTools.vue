@@ -40,22 +40,16 @@ const router = useRouter();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 
-const props = defineProps({
-  isAuthor: {
-    type: Boolean,
-    default: false,
-  },
-  article: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-});
+const { isAuthor = false, article = {} } = defineProps<{
+  isAuthor?: boolean;
+  article?: IArticle;
+}>();
 const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
 const goBack = () => router.push('/article');
 // 编辑-------------------------------------------------------
 const goEdit = () => {
-  router.push({ path: `/edit`, query: { editArticleId: props.article.id } });
+  router.push({ path: `/edit`, query: { editArticleId: article.id } });
 };
 // 删除-------------------------------------------------------
 const remove = () => {
@@ -64,7 +58,7 @@ const remove = () => {
     confirmButtonText: `删除`,
     cancelButtonText: `取消`,
   }).then(() => {
-    articleStore.removeAction(props.article.id);
+    articleStore.removeAction(article.id);
   });
 };
 // 举报-------------------------------------------------------
@@ -72,8 +66,8 @@ const submitReport = ({ reportOptions, otherReport }) => {
   console.log('submitReport submitReport');
   if (reportOptions.length || otherReport) {
     otherReport && reportOptions.push(otherReport);
-    const report = { articleId: props.article.id, reportOptions };
-    userStore.reportAction({ userId: props.article.author?.id, report });
+    const report = { articleId: article.id, reportOptions };
+    userStore.reportAction({ userId: article.author?.id, report });
     isShowReport.value = false;
   } else {
     Msg.showInfo('您没有提交任何举报信息');

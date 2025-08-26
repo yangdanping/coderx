@@ -60,9 +60,10 @@ const changeDialog = () => {
     text-shadow: 0px 2px 10px rgb(255, 255, 255);
     animation: flow 3s infinite;
     transform: scale(1.2);
-  }
-  .register-btn:hover ::before {
-    animation: flow 3s infinite;
+
+    &::before {
+      animation: flow 3s infinite;
+    }
   }
 }
 </style>

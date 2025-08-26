@@ -41,18 +41,15 @@ const commentStore = useCommentStore();
 const { article } = storeToRefs(articleStore);
 const { isUser } = storeToRefs(userStore);
 
-const props = defineProps({
-  editData: {
-    type: String,
-    default: '',
-  },
-  userId: {
-    type: Number,
-  },
-  commentId: {
-    type: Number,
-  },
-});
+const {
+  editData = '',
+  userId,
+  commentId,
+} = defineProps<{
+  editData?: string;
+  userId?: number;
+  commentId?: number;
+}>();
 
 const content = ref('');
 const isShowEdit = ref(false);
@@ -70,7 +67,7 @@ const edit = () => {
 };
 const submitEdit = () => {
   isShowEdit.value = !isShowEdit.value;
-  commentStore.updateCommentAction({ articleId: article.value.id, commentId: props.commentId, content: content.value });
+  commentStore.updateCommentAction({ articleId: article.value.id, commentId: commentId, content: content.value });
 };
 
 // 删除-------------------------------------------------------
@@ -80,7 +77,7 @@ const remove = () => {
     confirmButtonText: `删除`,
     cancelButtonText: `取消`,
   }).then(() => {
-    commentStore.removeCommentAction({ articleId: article.value.id, commentId: props.commentId });
+    commentStore.removeCommentAction({ articleId: article.value.id, commentId: commentId });
   });
 };
 // 举报-------------------------------------------------------
@@ -88,8 +85,8 @@ const submitReport = ({ reportOptions, otherReport }) => {
   console.log('submitReport submitReport');
   if (reportOptions.length || otherReport) {
     otherReport && reportOptions.push(otherReport);
-    const report = { commentId: props.commentId, reportOptions };
-    userStore.reportAction({ userId: props.userId, report });
+    const report = { commentId: commentId, reportOptions };
+    userStore.reportAction({ userId: userId, report });
     isShowReport.value = false;
   } else {
     Msg.showInfo('您没有提交任何举报信息');

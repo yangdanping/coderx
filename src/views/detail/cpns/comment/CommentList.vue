@@ -14,12 +14,9 @@ import CommentListItem from './CommentListItem.vue';
 import type { IComment } from '@/stores/types/comment.result';
 import useCommentStore from '@/stores/comment';
 const { commentCount } = storeToRefs(useCommentStore());
-const props = defineProps({
-  commentInfo: {
-    type: Array as PropType<IComment[]>,
-    default: () => [],
-  },
-});
+const { commentInfo = [] } = defineProps<{
+  commentInfo?: IComment[];
+}>();
 const listRef = ref<Element>();
 
 onMounted(() => {

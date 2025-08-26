@@ -24,7 +24,7 @@
     "pinia": "^3.0.3",
     "prismjs": "^1.30.0",
     "socket.io-client": "^4.8.1",
-    "vue": "^3.5.19",
+    "vue": "^3.5.20",
     "vue-dompurify-html": "^5.3.0",
     "vue-router": "^4.5.1"
   },

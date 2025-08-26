@@ -24,35 +24,28 @@ const rootStore = useRootStore();
 const userStore = useUserStore();
 const { isUser, token } = storeToRefs(userStore);
 
-const props = defineProps({
-  profile: {
-    type: Object as PropType<IUserInfo>,
-    default: () => {},
-  },
-  isFollowed: {
-    type: Boolean,
-    default: false,
-  },
+const {
+  profile = {},
+  isFollowed = false,
+  isFollowListItem = false,
+  width = '100%',
+} = defineProps<{
+  profile: IUserInfo;
+  isFollowed?: boolean;
   // false:传入用户id,true:传入登录用户id
-  isFollowListItem: {
-    type: Boolean,
-    default: false,
-  },
-  width: {
-    type: String,
-    default: '100%',
-  },
-});
+  isFollowListItem?: boolean;
+  width?: string;
+}>();
 const isWantToUnFollowed = ref(false);
 const ToggleUnFollow = (toggle: boolean) => {
-  if (props.isFollowed) {
+  if (isFollowed) {
     isWantToUnFollowed.value = toggle;
   }
 };
 
 const follow = () => {
   if (token.value) {
-    userStore.followAction(props.profile.id, props.isFollowListItem);
+    userStore.followAction(profile.id, isFollowListItem);
   } else {
     Msg.showFail('请先登录');
     rootStore.changeLoginDialog();

@@ -44,16 +44,10 @@ import useArticleStore from '@/stores/article';
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
 
-const props = defineProps({
-  item: {
-    type: Object as PropType<IComment>,
-    default: () => {},
-  },
-  fatherComment: {
-    type: Object as PropType<IComment>,
-    default: () => {},
-  },
-});
+const { item = {}, fatherComment = {} } = defineProps<{
+  item?: IComment;
+  fatherComment?: IComment;
+}>();
 
 const isReply = ref(false); //组件内部变量
 const commentId = ref<any>('');

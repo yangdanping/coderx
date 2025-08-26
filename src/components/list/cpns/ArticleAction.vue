@@ -34,16 +34,13 @@ const articleStore = useArticleStore();
 const { token } = storeToRefs(userStore);
 const { isArticleUserLiked } = storeToRefs(articleStore);
 
-const props = defineProps({
-  article: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-});
+const { article = {} } = defineProps<{
+  article: IArticle;
+}>();
 
 const likeClick = (articleId) => {
   if (token.value) {
-    if (props.article.status) {
+    if (article.status) {
       Msg.showFail('文章已被封禁,不可点赞');
     } else {
       articleStore.likeAction(articleId);

@@ -29,32 +29,21 @@ import FireSvg from './cpns/FireSvg.vue';
 
 type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire';
 
-const props = defineProps({
-  type: {
-    type: String as PropType<IconType>,
-    required: true,
-  },
-  isActive: {
-    type: Boolean,
-    default: false,
-  },
-  size: {
-    type: [Number],
-    default: 20,
-  },
-  label: {
-    type: [Number, String],
-    default: 0,
-  },
-  color: {
-    type: [String],
-    default: '',
-  },
-  flex: {
-    type: String as PropType<'row' | 'column'>,
-    default: 'row',
-  },
-});
+const {
+  type,
+  isActive = false,
+  size = 20,
+  label = 0,
+  color: propColor = '',
+  flex = 'row',
+} = defineProps<{
+  type: IconType;
+  isActive?: boolean;
+  size?: number;
+  label?: number | string;
+  color?: string;
+  flex?: 'row' | 'column';
+}>();
 
 const except = computed(() => {
   return (type: IconType) => {
@@ -68,9 +57,9 @@ const except = computed(() => {
   };
 });
 const color = computed(() => {
-  if (props.color) {
-    return props.color;
-  } else if (!props.isActive) {
+  if (propColor) {
+    return propColor;
+  } else if (!isActive) {
     return !isHover.value ? defaultColor : activeColor;
   } else {
     return activeColor;

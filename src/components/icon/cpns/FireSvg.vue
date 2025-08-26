@@ -12,16 +12,10 @@
 
 <script lang="ts" setup>
 import { activeColor, defaultColor } from '@/global/constants/color';
-const props = defineProps({
-  size: {
-    type: [Number],
-    default: 20,
-  },
-  color: {
-    type: [String],
-    default: defaultColor,
-  },
-});
+const { size = 20, color = defaultColor } = defineProps<{
+  size?: number;
+  color?: string;
+}>();
 </script>
 
 <style lang="scss" scoped></style>

@@ -41,7 +41,7 @@
             <div>{{ followCount('follower') }}</div>
           </div>
         </div>
-        <FollowButton :isFollowed="isFollowed" :profile="props.profile" />
+        <FollowButton :isFollowed="isFollowed" :profile="profile" />
       </div>
     </div>
     <div class="profile-main">
@@ -70,12 +70,9 @@ const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
 const { isFollowed, followCount, isUser, onlineUsers } = storeToRefs(userStore);
 
-const props = defineProps({
-  profile: {
-    type: Object as PropType<IUserInfo>,
-    default: () => {},
-  },
-});
+const { profile = {} } = defineProps<{
+  profile: IUserInfo;
+}>();
 
 const goFollowTab = (subTabName: string) => {
   console.log('goFollowTab subTabName', subTabName);
@@ -91,13 +88,13 @@ const onlineStatus = computed<any>(() => {
     }
   };
 });
-const userSex = computed(() => getImageUrl('user', `${props.profile.sex === '女' ? 'female' : 'male'}-icon`));
+const userSex = computed(() => getImageUrl('user', `${profile.sex === '女' ? 'female' : 'male'}-icon`));
 
 const route = useRoute();
 
 const updateProfile = () => {
   rootStore.changeLoginDialog();
-  emitter.emit('updateProfile', JSON.parse(JSON.stringify(props.profile))); //深拷贝
+  emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile))); //深拷贝
 };
 
 const tabClick = ({ paneName }) => {

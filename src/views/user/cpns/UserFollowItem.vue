@@ -27,31 +27,25 @@ const router = useRouter();
 const userStore = useUserStore();
 const { isUserFollowed, token } = storeToRefs(userStore);
 
-const props = defineProps({
-  followType: {
-    type: String,
-    default: '',
-  },
-  userFollow: {
-    type: Array as PropType<IUserInfo[]>,
-    default: () => [],
-  },
-});
+const { followType = '', userFollow = [] } = defineProps<{
+  followType?: string;
+  userFollow?: IUserInfo[];
+}>();
 //定义非响应式常量(涉及以下三次手动更新 1.UserFollow中tab列表切换 2.UserProfile中tab列表切换 3.路由更新后手动清空)
-let userFollowList: IUserInfo[] = props.userFollow;
+let userFollowList: IUserInfo[] = userFollow;
 
 onMounted(() => {
   emitter.on('updateFollowList', () => {
     console.log('updateFollowList 手动更新userFollowList');
-    userFollowList = props.userFollow;
+    userFollowList = userFollow;
   });
 });
 
 watch(
-  () => props.followType,
+  () => followType,
   (newV) => {
     console.log('watch切换tab 手动更新userFollowList', newV);
-    userFollowList = props.userFollow;
+    userFollowList = userFollow;
   },
 );
 

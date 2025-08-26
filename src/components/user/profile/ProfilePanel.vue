@@ -50,12 +50,9 @@ import type { IUserInfo } from '@/stores/types/user.result';
 import useUserStore from '@/stores/user';
 const userStore = useUserStore();
 
-const props = defineProps({
-  editForm: {
-    type: Object as PropType<IUserInfo>,
-    default: () => {},
-  },
-});
+const { editForm = {} } = defineProps<{
+  editForm?: IUserInfo;
+}>();
 
 const active = ref(0);
 const career = ref(['自由职业者', '前端', '后端', 'UI设计', '运维', '测试', '产品经理']);
@@ -73,9 +70,9 @@ const rules = ref({
 });
 
 onMounted(() => {
-  console.log('profile-panel 传来的所有信息:', props.editForm);
-  if (Object.keys(props.editForm).length) {
-    let { sex, age, email, career, address } = props.editForm;
+  console.log('profile-panel 传来的所有信息:', editForm);
+  if (Object.keys(editForm).length) {
+    let { sex, age, email, career, address } = editForm;
     address && formatCity(address.split(' ')[0], address.split(' ')[1]);
     form.value = { sex, age, email, career, address };
   }

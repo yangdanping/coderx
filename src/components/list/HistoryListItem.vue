@@ -27,16 +27,10 @@ import { ElMessageBox } from 'element-plus';
 import useHistoryStore from '@/stores/history';
 import type { IArticle } from '@/stores/types/article.result';
 
-const props = defineProps({
-  item: {
-    type: Object as PropType<any>,
-    default: () => {},
-  },
-  deletingItems: {
-    type: Array as PropType<any[]>,
-    default: () => [],
-  },
-});
+const { item, deletingItems = [] } = defineProps<{
+  item: any;
+  deletingItems?: any[];
+}>();
 
 const emit = defineEmits(['delete-start', 'delete-end']);
 

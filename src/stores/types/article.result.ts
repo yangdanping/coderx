@@ -1,3 +1,5 @@
+import type { IUserInfo } from './user.result';
+
 export interface IArticles {
   result?: IArticle[];
   total?: number;
@@ -24,7 +26,7 @@ export interface IArticleImg {
   id?: number;
   url?: string;
 }
-export interface IAuthor {
+export interface IAuthor extends IUserInfo {
   id?: number;
   sex?: string;
   name?: string;
