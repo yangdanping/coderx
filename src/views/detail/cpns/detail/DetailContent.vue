@@ -43,12 +43,9 @@ import DetailPanel from './DetailPanel.vue';
 import type { ElImage } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
 import { codeHeightlight, bindImagesLayer } from '@/utils';
-defineProps({
-  article: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-});
+const { article = {} } = defineProps<{
+  article?: IArticle;
+}>();
 const imageRef = ref<InstanceType<typeof ElImage>>();
 const htmlContentRef = ref<null | HTMLElement>();
 

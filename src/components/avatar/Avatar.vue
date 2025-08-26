@@ -39,30 +39,24 @@ const route = useRoute();
 const userStore = useUserStore();
 const { followCount, isFollowed, isUser, onlineUsers } = storeToRefs(userStore);
 
-const props = defineProps({
-  info: {
-    type: Object as PropType<IUserInfo>,
-    default: () => {},
-  },
-  size: {
-    type: Number,
-  },
-  showSet: {
-    type: Boolean,
-    default: false,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-});
+const {
+  info = {},
+  size,
+  showSet = false,
+  disabled = false,
+} = defineProps<{
+  info?: IUserInfo;
+  size?: number;
+  showSet?: boolean;
+  disabled?: boolean;
+}>();
 const nameCount = computed(() => {
-  let count = props.info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
+  let count = info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
   return count > 0 ? count + 1 : 0;
 });
 
-const avatarUrl = computed(() => props.info.avatarUrl ?? getImageUrl('user', 'avatar'));
-const userSex = computed(() => getImageUrl('user', `${props.info.sex === '女' ? 'female' : 'male'}-icon`));
+const avatarUrl = computed(() => info.avatarUrl ?? getImageUrl('user', 'avatar'));
+const userSex = computed(() => getImageUrl('user', `${info.sex === '女' ? 'female' : 'male'}-icon`));
 const onlineStatus = computed<any>(() => {
   return (userName) => {
     const user = onlineUsers.value.find((user) => user.userName === userName);
@@ -74,20 +68,20 @@ const onlineStatus = computed<any>(() => {
   };
 });
 const mouseenter =
-  !props.disabled &&
+  !disabled &&
   debounce(
     function () {
-      console.log('mouseenter', props.info.id);
-      userStore.getFollowAction(props.info.id);
+      console.log('mouseenter', info?.id);
+      userStore.getFollowAction(info?.id);
     },
     100,
     true,
   );
 
 const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
-  if (props.disabled) return;
+  if (disabled) return;
   console.log('goProfile', route.path, tabName, subTabName);
-  let path = `/user/${props.info.id}`;
+  let path = `/user/${info.id}`;
   if (path === route.path) {
     router.go(0);
   } else {

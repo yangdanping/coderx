@@ -12,12 +12,9 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 
-const props = defineProps({
-  item: {
-    type: Object,
-    default: () => {},
-  },
-});
+const { item = {} } = defineProps<{
+  item: any;
+}>();
 </script>
 
 <style lang="scss" scoped>

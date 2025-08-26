@@ -16,12 +16,9 @@
 <script lang="ts" setup>
 import useRootStore from '@/stores';
 
-defineProps({
-  total: {
-    type: Number,
-    default: 0,
-  },
-});
+const { total = 0 } = defineProps<{
+  total?: number;
+}>();
 
 const rootStore = useRootStore();
 const { pageNum, pageSize } = storeToRefs(rootStore);

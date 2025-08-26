@@ -6,12 +6,9 @@
 </template>
 
 <script lang="ts" setup>
-defineProps({
-  isComment: {
-    type: Boolean,
-    default: false,
-  },
-});
+const { isComment = false } = defineProps<{
+  isComment?: boolean;
+}>();
 </script>
 
 <style lang="scss" scoped>

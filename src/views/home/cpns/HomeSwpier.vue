@@ -18,12 +18,9 @@
 </template>
 
 <script lang="ts" setup>
-const props = defineProps({
-  news: {
-    type: Array as PropType<any[]>,
-    default: () => [],
-  },
-});
+const { news = [] } = defineProps<{
+  news?: any[];
+}>();
 </script>
 
 <style lang="scss" scoped>

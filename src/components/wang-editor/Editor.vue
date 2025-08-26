@@ -41,44 +41,35 @@ const editorRef = shallowRef();
 const [toolbarConfig, editorConfig] = useEditorConfig();
 const route = useRoute();
 import type { IArticle } from '@/stores/types/article.result';
-const props = defineProps({
-  editData: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-  isComment: {
-    type: Boolean,
-    default: false,
-  },
-  editComment: {
-    type: String,
-    default: '',
-  },
-  mode: {
-    type: String as PropType<'default' | 'simple'>,
-    default: 'default',
-  },
-  height: {
-    type: [Number, String],
-    default: '100vh',
-  },
-});
+const {
+  editData = {},
+  isComment = false,
+  editComment = '',
+  mode = 'default',
+  height = '100vh',
+} = defineProps<{
+  editData?: IArticle;
+  isComment?: boolean;
+  editComment?: string;
+  mode?: 'default' | 'simple';
+  height?: number | string;
+}>();
 const valueHtml = ref('');
 const isShowPreviw = ref(LocalCache.getCache('isShowPreviw') ?? true);
 onMounted(() => {
   console.log('LocalCache.getCache', LocalCache.getCache('isShowPreviw'));
-  console.log('editor onMounted', LocalCache.getCache('draft'), props.editData, props.isComment);
+  console.log('editor onMounted', LocalCache.getCache('draft'), editData, isComment);
   nextTick(() => {
     const draft = LocalCache.getCache('draft');
-    const isDraft = !!draft && !isEmptyObj(props.editData) && !props.isComment;
+    const isDraft = !!draft && !isEmptyObj(editData) && !isComment;
     if (isDraft) {
       valueHtml.value = draft.draft;
       console.log('Editor组件 修改已保存文章内容的草稿-------------------------------', valueHtml.value);
-    } else if (isEmptyObj(props.editData)) {
-      valueHtml.value = props.editData.content ?? '';
+    } else if (isEmptyObj(editData)) {
+      valueHtml.value = editData?.content ?? '';
       // console.log('Editor组件 修改已上传文章内容-------------------------------', valueHtml.value);
-    } else if (props.editComment) {
-      valueHtml.value = props.editComment;
+    } else if (editComment) {
+      valueHtml.value = editComment;
       console.log('Editor组件 修改评论-------------------------------', valueHtml.value);
     }
   });

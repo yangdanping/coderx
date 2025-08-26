@@ -32,26 +32,19 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 import { emitter, throttle } from '@/utils';
-
 import type { IArticle } from '@/stores/types/article.result';
 import type { IComment } from '@/stores/types/comment.result';
 
-const props = defineProps({
-  item: {
-    type: Object as PropType<IArticle & IComment>,
-    default: () => {},
-  },
-  isComment: {
-    type: Boolean,
-    default: false,
-  },
-  showAvatar: {
-    type: Boolean,
-    default: true,
-  },
-});
+const {
+  item = {},
+  isComment = false,
+  showAvatar = true,
+} = defineProps<{
+  item: IArticle & IComment;
+  isComment?: boolean;
+  showAvatar?: boolean;
+}>();
 const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
-// const goTag = (tag) => emitter.emit('changeTagInList', tag);
 const goTag = throttle(function (tag) {
   emitter.emit('changeTagInList', tag);
 }, 300);
@@ -82,7 +75,7 @@ const goTag = throttle(function (tag) {
     z-index: 0;
     height: 1.5px;
     width: 100%;
-    background-color: #409eff;
+    background: linear-gradient(90deg, #43c3ff, #afffe3);
     transform: scaleX(0);
     transform-origin: left center;
     transition: transform 0.5s ease-out;

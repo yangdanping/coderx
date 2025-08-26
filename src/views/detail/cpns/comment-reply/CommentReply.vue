@@ -40,33 +40,27 @@ const { commentReply, commentReply2 } = storeToRefs(commentStore);
 
 import type { IComment } from '@/stores/types/comment.result';
 
-const props = defineProps({
-  comment: {
-    type: Object as PropType<IComment>,
-    default: () => {},
-  },
-  isReply: {
-    type: Boolean,
-    default: false,
-  },
-});
+const { comment = {}, isReply = false } = defineProps<{
+  comment?: IComment;
+  isReply?: boolean;
+}>();
 
 const showOne = ref(false);
 
 const fatherComment = computed(() => {
   return (item) => {
     if (!item?.childReply) {
-      return props.comment;
+      return comment;
     } else {
       return item.childReply;
     }
   };
 });
 const reply = computed(() => {
-  if (!props.isReply) {
-    return commentReply.value(props.comment);
+  if (!isReply) {
+    return commentReply.value(comment);
   } else {
-    return commentReply2.value(props.comment);
+    return commentReply2.value(comment);
   }
 });
 const collapse = ref(false);

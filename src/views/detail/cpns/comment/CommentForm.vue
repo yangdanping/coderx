@@ -24,17 +24,11 @@ const commentStore = useCommentStore();
 const { userInfo } = storeToRefs(userStore);
 const { article } = storeToRefs(articleStore);
 
-const props = defineProps({
-  commentId: {
-    type: Number,
-  },
-  isReply: {
-    type: Boolean,
-  },
-  replyId: {
-    type: Number,
-  },
-});
+const { commentId, isReply, replyId } = defineProps<{
+  commentId?: number;
+  isReply?: boolean;
+  replyId?: number;
+}>();
 
 const content = ref('');
 const disabled = ref(false);
@@ -52,8 +46,8 @@ const addComment = () => {
         commentStore.commentAction({
           articleId: article.value.id,
           content: content.value,
-          cid: props.commentId ?? null,
-          rid: props.replyId ?? null,
+          cid: commentId ?? null,
+          rid: replyId ?? null,
         });
         disabled.value = !disabled.value;
       }, 500);

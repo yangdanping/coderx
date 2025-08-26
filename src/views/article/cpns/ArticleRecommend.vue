@@ -22,12 +22,9 @@ import Icon from '@/components/icon/Icon.vue';
 import { throttle } from '@/utils';
 import useArticleStore from '@/stores/article';
 const articleStore = useArticleStore();
-const props = defineProps({
-  recommends: {
-    type: Array as PropType<any[]>,
-    default: () => {},
-  },
-});
+const { recommends = [] } = defineProps<{
+  recommends?: any[];
+}>();
 const offset = ref(0);
 const refresh = throttle(function () {
   offset.value += 10;

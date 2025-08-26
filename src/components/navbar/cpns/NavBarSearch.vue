@@ -50,7 +50,6 @@ import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Search, Close } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
-import myRequest from '@/service';
 
 import useRootStore from '@/stores';
 import useArticleStore from '@/stores/article';

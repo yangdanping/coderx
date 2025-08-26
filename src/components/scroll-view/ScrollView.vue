@@ -15,15 +15,12 @@
 </template>
 
 <script lang="ts" setup>
-const props = defineProps({
-  data: {
-    type: Array as PropType<any[]>,
-    default: () => [],
-  },
-});
+const { data = [] } = defineProps<{
+  data?: any[];
+}>();
 
 watch(
-  () => props.data,
+  () => data,
   () => nextTick(() => initScrollContent()), //nextTick一定要加
 );
 

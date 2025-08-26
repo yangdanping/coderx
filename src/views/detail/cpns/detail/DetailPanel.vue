@@ -33,12 +33,9 @@ const { commentCount } = storeToRefs(commentStore);
 
 const buttonRef = ref();
 const popoverRef = ref();
-const props = defineProps({
-  article: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-});
+const { article = {} } = defineProps<{
+  article?: IArticle;
+}>();
 
 const disabled = ref(true);
 
@@ -49,7 +46,7 @@ onMounted(() => {
 const likeClick = (articleId) => {
   console.log('likeClick', articleId);
   if (token.value) {
-    if (props.article.status) {
+    if (article.status) {
       Msg.showFail('文章已被封禁,不可点赞');
     } else {
       articleStore.likeAction(articleId);

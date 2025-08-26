@@ -39,15 +39,10 @@ import { emitter } from '@/utils';
 
 import type { IComment } from '@/stores/types/comment.result';
 
-const props = defineProps({
-  item: {
-    type: Object as PropType<IComment>,
-    default: () => {},
-  },
-  floor: {
-    type: Number,
-  },
-});
+const { item, floor } = defineProps<{
+  item: IComment;
+  floor?: number;
+}>();
 
 const isReply = ref(false);
 const commentId = ref<any>('');

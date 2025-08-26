@@ -16,12 +16,9 @@ const articleStore = useArticleStore();
 const rootStore = useRootStore();
 
 const activeId = ref('综合');
-defineProps({
-  tags: {
-    type: Array as PropType<Itag[]>,
-    default: () => [],
-  },
-});
+const { tags = [] } = defineProps<{
+  tags?: Itag[];
+}>();
 
 onMounted(() => {
   // articleStore.getTagsAction();

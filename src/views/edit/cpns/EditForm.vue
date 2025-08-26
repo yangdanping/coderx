@@ -49,20 +49,15 @@ const { tags } = storeToRefs(articleStore);
 import type { IArticle } from '@/stores/types/article.result';
 import type { UploadRequestHandler } from 'element-plus';
 import type { UploadUserFile } from 'element-plus';
-const props = defineProps({
-  editData: {
-    type: Object as PropType<IArticle>,
-    default: () => {},
-  },
-  fileList: {
-    type: Array as PropType<UploadUserFile[]>,
-    default: () => {},
-  },
-  draft: {
-    type: String,
-    default: '',
-  },
-});
+const {
+  editData = {},
+  fileList = [],
+  draft = '',
+} = defineProps<{
+  editData?: IArticle;
+  fileList?: UploadUserFile[];
+  draft?: string;
+}>();
 let form = reactive({ title: '', tags: [] as any[] });
 
 const oldTags = ref<any[]>([]);
@@ -83,9 +78,9 @@ onMounted(() => {
       //已上传的就是拼接了small,所以这边不用
       emit('setCover', { url: fileList[0].url, name: 'img' });
     }
-  } else if (isEmptyObj(props.editData)) {
-    console.log('EditForm组件 修改已上传文章详情表单-------------------------', props.editData);
-    const { title, tags, images } = props.editData;
+  } else if (isEmptyObj(editData)) {
+    console.log('EditForm组件 修改已上传文章详情表单-------------------------', editData);
+    const { title, tags, images } = editData;
     if (images) {
       const url = images[0].url?.concat('?type=small');
       emit('setCover', { url, name: 'img' });
@@ -133,7 +128,7 @@ const goBack = () => {
   })
     .then(() => {
       if (!isEdit.value) {
-        const draftObj = { ...form, draft: props.draft, fileList: props.fileList };
+        const draftObj = { ...form, draft: draft, fileList: fileList };
         console.log('保存并退出文章编辑!!!!!!!!', draftObj);
         LocalCache.setCache('draft', draftObj);
         Msg.showSuccess('已保存并退出文章编辑!');

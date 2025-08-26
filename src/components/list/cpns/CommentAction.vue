@@ -32,16 +32,10 @@ const { isCommentUserLiked } = storeToRefs(commentStore);
 
 import type { IComment } from '@/stores/types/comment.result';
 
-const props = defineProps({
-  inArticle: {
-    type: Boolean,
-    default: true,
-  },
-  comment: {
-    type: Object as PropType<IComment>,
-    default: () => {},
-  },
-});
+const { inArticle = true, comment } = defineProps<{
+  inArticle?: boolean;
+  comment: IComment;
+}>();
 
 const wantReply = (comment) => {
   if (token.value) {
@@ -55,7 +49,7 @@ const wantReply = (comment) => {
 const likeComment = (comment) => {
   if (token.value) {
     // commentStore.likeAction({ commentId, articleId: article.value.id });
-    commentStore.likeAction(comment, props.inArticle);
+    commentStore.likeAction(comment, inArticle);
   } else {
     Msg.showInfo('请先登录');
     rootStore.changeLoginDialog();
