@@ -33,13 +33,15 @@
       </div>
       <!-- 搜索结果-------------------------------- -->
       <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchResults.length && searchHistory.length }">
-        <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id" target="_blank" @click="handleSearchResultClick(item.title)">
-          <div class="search-item" v-html="highlightText(item.title, searchValue)"></div>
-        </a>
-        <div class="no-data" v-if="!searchResults.length">
-          <div v-if="showLoading" class="loading" v-loading="showLoading"></div>
+        <template v-if="!isSearchLoading">
+          <template v-if="searchResults.length">
+            <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id" target="_blank" @click="handleSearchResultClick(item.title)">
+              <div class="search-item" v-html="highlightText(item.title, searchValue)"></div>
+            </a>
+          </template>
           <div v-else class="no-data-text">未搜索到相关内容</div>
-        </div>
+        </template>
+        <div v-else class="loading" v-loading="isSearchLoading"></div>
       </div>
     </el-card>
   </div>
@@ -60,11 +62,16 @@ const rootStore = useRootStore();
 const articleStore = useArticleStore();
 const { searchResults } = storeToRefs(articleStore);
 
+import useLoadingStore from '@/stores/loading';
+const loadingKey = 'search';
+const loadingStore = useLoadingStore();
+const isSearchLoading = computed(() => loadingStore.isLoading(loadingKey));
+
 const ElInputRef = ref();
 const ElCardRef = ref();
 const searchValue = ref('');
 const isShowResultCard = ref(false);
-const showLoading = ref(false);
+// const showLoading = ref(false);
 const router = useRouter();
 const route = useRoute();
 
@@ -96,9 +103,16 @@ const windowHandleClick = (e) => {
   isShowResultCard.value = (isClickInput || isClickSearchResultBox) && (searchValue.value || searchHistory.value.length);
   // console.log('isShowResultCard=========', isShowResultCard.value);
 };
+const typinglagTime = 500;
 
-onMounted(() => window.addEventListener('click', windowHandleClick, true));
-onBeforeUnmount(() => window.removeEventListener('click', windowHandleClick, true));
+onMounted(() => {
+  window.addEventListener('click', windowHandleClick, true);
+  // 组件挂载时加载搜索记录
+  loadSearchHistory();
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('click', windowHandleClick, true);
+});
 
 const submitSearch = () => {
   if (searchValue.value) {
@@ -122,8 +136,8 @@ const submitSearch = () => {
 };
 
 const debounceInput = debounce(() => {
-  searchValue.value && articleStore.searchAction(searchValue.value);
-}, 1000);
+  searchValue.value && articleStore.searchAction(searchValue.value, loadingKey);
+}, typinglagTime);
 
 // 搜索记录相关方法
 const loadSearchHistory = () => {
@@ -133,7 +147,7 @@ const loadSearchHistory = () => {
 const selectHistoryItem = (value: string) => {
   searchValue.value = value;
   submitSearch();
-  articleStore.searchAction(searchValue.value);
+  articleStore.searchAction(searchValue.value, 'search');
 };
 
 const removeHistoryItem = (item: string) => {
@@ -161,32 +175,25 @@ const highlightText = computed(() => {
   };
 });
 
-// 组件挂载时加载搜索记录
-onMounted(() => {
-  loadSearchHistory();
-});
-
 watch(
   () => searchValue.value,
   (newV) => {
     if (!newV) {
       searchResults.value = []; //清空搜索结果
       isShowResultCard.value = false;
-      showLoading.value = false;
     } else {
       isShowResultCard.value = true;
-      showLoading.value = true;
     }
   },
 );
 
 // 控制showLoading的出现-----------------------------
-watch(
-  () => searchResults.value,
-  (newV) => {
-    !newV.length && setTimeout(() => (showLoading.value = false), 2500);
-  },
-);
+// watch(
+//   () => searchResults.value,
+//   (newV) => {
+//     !newV.length && setTimeout(() => (showLoading.value = false), 2500);
+//   },
+// );
 </script>
 
 <style lang="scss" scoped>
@@ -287,7 +294,7 @@ $searchWidth: 260px;
     }
 
     .search-result-content {
-      min-height: 60px;
+      min-height: 30px;
       &.showborder {
         border-top: 1px solid #ccc;
       }
@@ -312,20 +319,21 @@ $searchWidth: 260px;
           border-radius: 2px;
         }
       }
-
-      .no-data {
+      .no-data-text {
         display: flex;
         justify-content: center;
         align-items: center;
-        .loading {
-          width: 100%;
-          margin-top: 25px;
-        }
-        .no-data-text {
-          margin-top: 25px;
-          color: #ccc;
-          font-size: 14px;
-        }
+        margin-top: 30px;
+        color: #ccc;
+        font-size: 14px;
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-top: 30px;
       }
     }
   }

@@ -3,12 +3,12 @@
     <h2 class="title">
       推荐文章
       <el-tooltip effect="dark" content="换一批" placement="top">
-        <el-icon @click="refresh"><IRefresh /></el-icon>
+        <el-icon @click="refresh" :class="{ rotating: isRotating }"><IRefresh /></el-icon>
       </el-tooltip>
     </h2>
     <ul>
       <li v-for="item in recommends" :key="item.id">
-        <Icon v-if="item.views > 20" type="fire" color="red" />
+        <Icon v-if="item.views > 20" type="fire" :showLabel="false" color="red" />
         <a :href="item.articleUrl" target="_blank">
           {{ item.title }}
         </a>
@@ -26,9 +26,19 @@ const { recommends = [] } = defineProps<{
   recommends?: any[];
 }>();
 const offset = ref(0);
+const isRotating = ref(false);
+
 const refresh = throttle(function () {
+  // 触发旋转动画
+  isRotating.value = true;
+
+  // 0.8秒后停止旋转动画
+  setTimeout(() => {
+    isRotating.value = false;
+  }, 800);
+
   offset.value += 10;
-  if (offset.value > 10) offset.value = 0;
+  if (offset.value > 20) offset.value = 0;
   articleStore.getRecommendAction(offset.value);
 }, 1000);
 </script>
@@ -45,6 +55,11 @@ const refresh = throttle(function () {
 
     .el-icon {
       cursor: pointer;
+      /* transition: transform 0.3s ease; */
+
+      &.rotating {
+        animation: rotate 0.8s linear;
+      }
     }
   }
   li {
@@ -64,6 +79,15 @@ const refresh = throttle(function () {
     &:hover {
       color: #409eff;
     }
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

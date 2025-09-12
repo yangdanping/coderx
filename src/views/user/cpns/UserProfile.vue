@@ -3,7 +3,7 @@
     <div class="profile-header">
       <UserAvatar :info="profile" />
       <div class="profile-info">
-        <div class="profile-1">
+        <div class="profile-item-1">
           <span class="name">{{ profile.name }}</span>
           <img :src="userSex" alt="" />
           <template v-if="isUser(profile.id)">
@@ -13,22 +13,13 @@
           </template>
           <el-tag size="small" effect="plain" :type="onlineStatus(profile.name).type">{{ onlineStatus(profile.name).msg }}</el-tag>
         </div>
-        <div class="profile-2">
-          <el-icon color="#999"><ICoin /></el-icon>
-          <span>年龄:{{ profile.age ?? '无' }}</span>
-        </div>
-        <div class="profile-3">
-          <el-icon color="#999"><ISuitcase /></el-icon>
-          <span>职业:{{ profile.career ?? 'Coder' }}</span>
-        </div>
-        <div class="profile-4">
-          <el-icon color="#999"><ICoordinate /></el-icon>
-          <span>居住地:{{ profile.address ?? 'CoderX星球' }}</span>
-        </div>
-        <div class="profile-5">
-          <el-icon color="#999"><ITakeawayBox /></el-icon>
-          <span>邮箱:{{ profile.email ?? '无' }}</span>
-        </div>
+        <template v-for="info in infos" :key="info.label">
+          <div class="profile-item-other">
+            <Icon :type="info.icon" :showLabel="false" />
+            <span class="label">{{ info.label }}:</span>
+            <span class="value">{{ info.value }}</span>
+          </div>
+        </template>
       </div>
       <div class="profile-right">
         <div>
@@ -55,7 +46,7 @@ import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
 import { emitter, getImageUrl } from '@/utils';
-
+import Icon from '@/components/icon/Icon.vue';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 import useRootStore from '@/stores';
@@ -73,6 +64,31 @@ const { isFollowed, followCount, isUser, onlineUsers } = storeToRefs(userStore);
 const { profile = {} } = defineProps<{
   profile: IUserInfo;
 }>();
+
+const infos = computed(() => {
+  return [
+    {
+      label: '年龄',
+      value: profile.age ?? '无',
+      icon: 'coin',
+    },
+    {
+      label: '职业',
+      value: profile.career ?? 'Coder',
+      icon: 'suitcase',
+    },
+    {
+      label: '居住地',
+      value: profile.address ?? 'CoderX星球',
+      icon: 'coordinate',
+    },
+    {
+      label: '邮箱',
+      value: profile.email ?? '无',
+      icon: 'takeaway-box',
+    },
+  ] as any[];
+});
 
 const goFollowTab = (subTabName: string) => {
   console.log('goFollowTab subTabName', subTabName);
@@ -132,7 +148,7 @@ const tabClick = ({ paneName }) => {
 .user-profile {
   margin-top: 80px;
   // height: 100vh;//高度是个坑!!!不要设置高度!!!
-  width: 60%;
+  width: 75%;
   .profile-header,
   .profile-main {
     display: flex;
@@ -146,21 +162,27 @@ const tabClick = ({ paneName }) => {
       flex: 1;
       display: flex;
       flex-direction: column;
-
       margin: 0 0 0 30px;
-      .name {
-        font-weight: 700;
-        font-size: 35px;
-      }
-      .edit {
-        cursor: pointer;
-        margin-top: 5px;
-      }
-      [class^='profile-'] {
+      .profile-item-1 {
         display: flex;
         align-items: center;
         margin-bottom: 10px;
-        font-size: 25px;
+        .name {
+          font-weight: 700;
+          font-size: 35px;
+        }
+        .edit {
+          cursor: pointer;
+          margin-top: 5px;
+        }
+      }
+
+      .profile-item-other {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 16px;
+        gap: 3px;
       }
     }
     .profile-right {
@@ -170,11 +192,11 @@ const tabClick = ({ paneName }) => {
       align-items: center;
       justify-content: space-between;
       > div {
-        /* background: rgba(0, 0, 0, 0.2); */
         display: flex;
         align-items: center;
         margin-bottom: 20px;
         cursor: pointer;
+
         > div:first-of-type {
           border-right: 1px solid #ccc;
         }
@@ -185,6 +207,9 @@ const tabClick = ({ paneName }) => {
           justify-content: space-between;
           padding: 10px;
           font-size: 22px;
+          &:hover {
+            color: #409eff;
+          }
 
           > div:last-of-type {
             font-size: 30px;
