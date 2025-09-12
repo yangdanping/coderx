@@ -1,3 +1,4 @@
+import type { IPage } from '@/service/types';
 /**
  * 定义文章
  * @param articleId 文章id
@@ -16,9 +17,7 @@ export interface IArticle {
  * @param pageSize 页数
  * @param tagId 标签id
  */
-export interface IArticleList {
-  pageNum: number;
-  pageSize: number;
+export interface IArticleList extends IPage {
   pageOrder: string;
   tagId: number | '';
   userId: number | '';

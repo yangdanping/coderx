@@ -2,6 +2,7 @@ import axios from 'axios'; //对axios做封装只需在这一个文件里引用a
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'; //axios已提供对应的类型(三者缺一不可)
 import { ElLoading } from 'element-plus';
 import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
+import useLoadingStore from '@/stores/loading';
 const DEAFULT_LOADING = true;
 
 /* 由于我们对拦截器做了三层封装,所以传类型得一步步传递过去
@@ -24,6 +25,7 @@ interface MyRequestConfig<T = AxiosResponse> extends AxiosRequestConfig {
   // 对原来的ARC类型做扩展(在原来的基础上增添了可选的interceptors属性)
   interceptors?: MyRequestInterceptors<T>; //注意!当MyRequestInterceptors的类型参数不再是默认的AxiosResponse类型时,要通过MyRequestConfig的接口给他传入泛型
   showLoading?: boolean; //showLoading控制各个请求是否显示loading
+  loadingKey?: string; //loadingKey控制各个请求的loadingKey
 }
 
 class MyRequest {
@@ -47,7 +49,13 @@ class MyRequest {
 
     // 全局拦截器 --> (把别人传进来的拦截函数放到实例里的拦截器给他做一个应用,注意写成可选链)
     this.instance.interceptors.request.use(
-      (config) => {
+      (config: any) => {
+        // const key = config.loadingKey ?? 'global';
+        if (this.showLoading) {
+          const loadingStore = useLoadingStore();
+          config.loadingKey && console.log('我是全局请求拦截器===========================', '可以按key触发loading', config.loadingKey);
+          loadingStore.start(config.loadingKey ?? 'global');
+        }
         // console.log('全局请求拦截器请求成功');
         // 将返回的loading组件实例赋值给loading属性,与showLoading配合控制loading开关
         // if (this.showLoading) {
@@ -62,12 +70,18 @@ class MyRequest {
       (err) => err,
     );
     this.instance.interceptors.response.use(
-      (res) => {
+      (res: any) => {
         // console.log('全局响应拦截器响应成功');
         // 请求成功后将loading移除(请求失败也得移除)
         // this.loading?.close();
         const realData = res.data; //取出服务器返回的真实数据
+        if (this.showLoading) {
+          const loadingStore = useLoadingStore();
+          res.config.loadingKey && console.log('接口响应拦截器 停止loading', res.config.loadingKey);
+          loadingStore.end(res.config.loadingKey ?? 'global');
+        }
         return realData;
+
         // 这里模拟数据响应失败时的情况
         // if (realData.returnCode === '-1001') {
         //   console.log('请求失败,将错误信息显示在界面(组件)上');
@@ -90,6 +104,8 @@ class MyRequest {
   request<T = any>(config: MyRequestConfig<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.showLoading = config.showLoading ?? true; //类型缩小(注意!,为了不影响下一个请求,请求完后(成功/失败)应当设置回初始化值)
+
+      console.log('我是request方法===========================');
 
       // 单个请求的请求拦截器,若有reqSuccess函数,那我在内部执行一些这个函数就可以了(把拦截器函数返回的转化后的config替换掉原生config)
       if (config.interceptors?.reqSuccess) {
@@ -130,12 +146,8 @@ class MyRequest {
 
       Object.entries(config.params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          // 处理数组参数，将数组参数拼接到URL上
-          if (Array.isArray(value)) {
-            value.forEach((item) => searchParams.append(key, String(item)));
-          } else {
-            searchParams.append(key, String(value));
-          }
+          const isObject = Array.isArray(value) || typeof value === 'object'; // 数组和对象类型使用JSON.stringify进行序列化
+          searchParams.append(key, isObject ? JSON.stringify(value) : String(value));
         }
       });
 

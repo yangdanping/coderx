@@ -23,7 +23,7 @@ import { Msg, dateFormat, isArrEqual, isEmptyObj } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
-
+import useLoadingStore from './loading';
 export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: {} as IArticles,
@@ -48,7 +48,7 @@ export const useArticleStore = defineStore('article', {
         const userCollect = useUserStore().collects;
         return userCollect
           .map((item) => item.count)
-          .flat() //展平嵌套数组
+          .flat()
           .some((id) => id === articleId);
       };
     },
@@ -105,10 +105,12 @@ export const useArticleStore = defineStore('article', {
     },
     // 异步请求action---------------------------------------------------
     async getArticleListAction(userId: number | '' = '', idList = [], keywords = '') {
-      const { pageNum, pageSize, tagId, pageOrder } = useRootStore();
-      const data = { pageNum, pageSize, tagId, userId, pageOrder, idList, keywords };
-      console.log('getArticleListAction', data);
-      const res = await getList(data); //获取文章列表信息以及文章数
+      const { pageNum, pageSize, pageOrder, tagId } = useRootStore();
+      const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
+      const limit = pageSize;
+      const params = { offset, limit, tagId, pageOrder, userId, idList, keywords };
+      console.log('getArticleListAction', params);
+      const res = await getList(params); //获取文章列表信息以及文章数
       if (res.code === 0) {
         this.updateArticleList(res.data);
         useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
@@ -117,7 +119,7 @@ export const useArticleStore = defineStore('article', {
       }
     },
     async getRecommendAction(offset = 0, limit = 10) {
-      const res = await getRecommend(offset, limit);
+      const res = await getRecommend({ offset, limit });
       res.code === 0 && (this.recommends = res.data);
       console.log('getRecommendAction res', this.recommends);
     },
@@ -248,9 +250,11 @@ export const useArticleStore = defineStore('article', {
         console.log('没有可删除的图片');
       }
     },
-    async searchAction(keywords) {
-      const res = await search(keywords);
-      res.code === 0 && this.updateSearchResults(res.data);
+    async searchAction(keywords, loadingKey) {
+      const res = await search(keywords, loadingKey);
+      if (res.code === 0) {
+        this.updateSearchResults(res.data);
+      }
     },
   },
 });

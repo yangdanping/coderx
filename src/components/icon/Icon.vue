@@ -15,7 +15,20 @@
     <template v-else-if="type === 'fire'">
       <FireSvg :size="size" :color="color" />
     </template>
-    <span v-if="except(type)" :style="{ color }">{{ label ?? 0 }}</span>
+    <!-- 用户信息icon -->
+    <template v-else-if="type === 'coin'">
+      <el-icon :color="color"><ICoin /></el-icon>
+    </template>
+    <template v-else-if="type === 'suitcase'">
+      <el-icon :color="color"><ISuitcase /></el-icon>
+    </template>
+    <template v-else-if="type === 'coordinate'">
+      <el-icon :color="color"><ICoordinate /></el-icon>
+    </template>
+    <template v-else-if="type === 'takeaway-box'">
+      <el-icon :color="color"><ITakeawayBox /></el-icon>
+    </template>
+    <span v-if="showLabel" :style="{ color }">{{ label ?? 0 }}</span>
   </div>
 </template>
 
@@ -27,7 +40,9 @@ import CommentSvg from './cpns/CommentSvg.vue';
 import StarSvg from './cpns/StarSvg.vue';
 import FireSvg from './cpns/FireSvg.vue';
 
-type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire';
+type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire' | profileIconType;
+
+type profileIconType = 'coin' | 'suitcase' | 'coordinate' | 'takeaway-box';
 
 const {
   type,
@@ -36,26 +51,17 @@ const {
   label = 0,
   color: propColor = '',
   flex = 'row',
+  showLabel = true,
 } = defineProps<{
   type: IconType;
   isActive?: boolean;
   size?: number;
-  label?: number | string;
+  label?: number | string | boolean;
   color?: string;
   flex?: 'row' | 'column';
+  showLabel?: boolean;
 }>();
 
-const except = computed(() => {
-  return (type: IconType) => {
-    if (type === 'star') {
-      return false;
-    } else if (type === 'fire') {
-      return false;
-    } else {
-      return true;
-    }
-  };
-});
 const color = computed(() => {
   if (propColor) {
     return propColor;

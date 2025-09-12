@@ -1,9 +1,9 @@
 <template>
   <div class="detail-panel">
-    <Icon @click="likeClick(article.id)" type="like" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
-    <Icon @click="gotoComment" type="comment" :size="40" :label="commentCount" flex="column" />
+    <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
+    <Icon type="comment" @click="gotoComment" :size="40" :label="commentCount" flex="column" />
     <Icon type="views" :size="40" :label="article.views" flex="column" />
-    <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" />
+    <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" :showLabel="false" />
     <el-popover :disabled="disabled" ref="popoverRef" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
       <DetailCollect />
     </el-popover>

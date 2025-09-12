@@ -1,5 +1,5 @@
 import myRequest from '@/service';
-import type { IDataType } from '@/service/types';
+import type { IResData } from '@/service/types';
 
 const urlHead = '/comment';
 
@@ -12,28 +12,28 @@ export function getComment(data) {
     limit = 100;
   }
   console.log('getComment offset limit', offset, limit);
-  return myRequest.get<IDataType>({
+  return myRequest.get<IResData>({
     url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`,
   });
 }
 
 export function updateComment(commentInfo) {
   const { commentId, content } = commentInfo;
-  return myRequest.put<IDataType>({
+  return myRequest.put<IResData>({
     url: `${urlHead}/${commentId}`,
     data: { content },
   });
 }
 
 export function removeComment(commentId) {
-  return myRequest.delete<IDataType>({
+  return myRequest.delete<IResData>({
     url: `${urlHead}/${commentId}`,
   });
 }
 
 export function addComment(commentInfo) {
   const { articleId, content } = commentInfo;
-  return myRequest.post<IDataType>({
+  return myRequest.post<IResData>({
     url: `${urlHead}`,
     data: { articleId, content },
   });
@@ -49,7 +49,7 @@ export function addReply(replyInfo) {
   }
   const commentId = rid ?? cid;
   console.log('addReply数据------------------ data', commentId, data);
-  return myRequest.post<IDataType>({ url: `${urlHead}/${commentId}/reply`, data });
+  return myRequest.post<IResData>({ url: `${urlHead}/${commentId}/reply`, data });
 }
 // export function addReply(replyInfo) {
 //   let url = '';
@@ -63,23 +63,23 @@ export function addReply(replyInfo) {
 //     data = { articleId, commentId, content };
 //   }
 //   console.log('addReply数据------------------', { url, data });
-//   return myRequest.post<IDataType>({ url, data });
+//   return myRequest.post<IResData>({ url, data });
 // }
 
 // export function like(likeInfo) {
 //   const { commentId, replyId } = likeInfo;
 //   const url = commentId ? `${urlHead}/${commentId}/like` : `/reply/${replyId}/like`;
-//   return myRequest.post<IDataType>({ url });
+//   return myRequest.post<IResData>({ url });
 // }
 
 export function likeComment(commentId) {
-  return myRequest.post<IDataType>({
+  return myRequest.post<IResData>({
     url: `${urlHead}/${commentId}/like`,
   });
 }
 
 export function getCommentById(commentId) {
-  return myRequest.get<IDataType>({
+  return myRequest.get<IResData>({
     url: `${urlHead}/${commentId}`,
   });
 }

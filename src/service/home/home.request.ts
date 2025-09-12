@@ -1,5 +1,5 @@
 import myRequest, { newsRequest } from '@/service';
-import type { IDataType } from '../types';
+import type { IResData } from '../types';
 import { NEWS_API_KEY } from '@/global/constants/keys';
 
 const urlHead = '/user';
@@ -12,7 +12,7 @@ export function getNews(pageSize = 10) {
 }
 
 export function getHotUsers() {
-  return myRequest.get<IDataType>({
+  return myRequest.get<IResData>({
     url: `${urlHead}/hot`,
   });
 }
