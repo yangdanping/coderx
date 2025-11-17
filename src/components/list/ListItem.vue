@@ -34,7 +34,9 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import { emitter, throttle } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { IComment } from '@/stores/types/comment.result';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const {
   item = {},
   isComment = false,
@@ -44,7 +46,13 @@ const {
   isComment?: boolean;
   showAvatar?: boolean;
 }>();
-const goDetail = (item: IArticle & IComment) => window.open(item.articleUrl);
+
+const goDetail = (item: IArticle & IComment) => {
+  const articleId = isComment ? item.article?.id : item.id;
+  const routeUrl = router.resolve({ name: 'detail', params: { articleId } });
+  window.open(routeUrl.href, '_blank'); // routeUrl.href 是相对路径article/:id
+  // 当在 http://192.168.3.96:8080/article 访问id为123的文章时 会打开 http://192.168.3.96:8080/article/123
+};
 const goTag = throttle(function (tag) {
   emitter.emit('changeTagInList', tag);
 }, 300);

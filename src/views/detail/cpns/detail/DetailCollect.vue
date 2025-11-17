@@ -40,8 +40,8 @@
 import { emitter } from '@/utils';
 import { Plus } from '@element-plus/icons-vue';
 
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const { collects, userInfo } = storeToRefs(userStore);

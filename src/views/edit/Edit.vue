@@ -14,7 +14,7 @@ import Editor from '@/components/wang-editor/Editor.vue';
 import EditForm from './cpns/EditForm.vue';
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
 import type { UploadProps, UploadUserFile } from 'element-plus';
 
 const route = useRoute();
@@ -25,29 +25,37 @@ const editData = computed(() => (isEdit.value ? article.value : {}));
 const drawer = ref(false);
 const preview = ref('');
 const fileList = ref<UploadUserFile[]>([]);
+const isSubmitting = ref(false); // 标记是否正在提交，用于避免提交时显示离开提示
+
 // 通过路由是否传入待修改文章的id来判断是创建还是修改
 onMounted(() => {
-  // const isCreate = !isEmptyObj(editData.value);
-  if (!isEdit.value) {
-    console.log(`是创建文章------------------------`);
-    emitter.on('uploadedImage', (payload: any) => {
-      const { url, imgId } = payload;
-      console.log('直接在编辑器中上传,第一张图片作为封面', payload);
-      fileList.value.push({ url: url?.concat('?type=small'), name: 'img' });
-    });
-    window.addEventListener('beforeunload', (e) => {
-      articleStore.deletePictrueAction();
-    });
-  } else {
-    console.log(`是修改文章------------------------`, route.query.editArticleId);
-    // 刷新后editData消失,重新获取,
+  if (isEdit.value) {
+    console.log('编辑模式 - 文章ID:', route.query.editArticleId);
+    // 刷新后editData消失，重新获取
     if (!isEmptyObj(editData.value)) {
       articleStore.getDetailAction(route.query.editArticleId as any, true);
-    } else {
-      articleStore.setupUploaded(editData.value);
     }
+  } else {
+    console.log('创建模式');
   }
+  // 监听页面刷新/关闭，显示提示
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  // 只有在有内容且不是正在提交时才显示提示
+  if ((preview.value || isEdit.value) && !isSubmitting.value) {
+    // 显示浏览器确认对话框
+    const message = '未保存的内容将会丢失，确定要离开吗？';
+    event.preventDefault();
+    event.returnValue = message; // 现代浏览器需要设置 returnValue
+    return message; // 旧版浏览器需要返回字符串
+  }
+};
 
 watch(
   () => article.value,
@@ -57,9 +65,9 @@ watch(
 );
 
 const handleSetCover = (file) => {
-  // fileList.value.push(file);
-  fileList.value.unshift(file);
-  console.log('handleSetCover fileList.value', fileList.value);
+  // 设置封面预览
+  fileList.value = [file];
+  console.log('设置封面预览:', file);
 };
 
 const formSubmit = (editData: any) => {
@@ -68,11 +76,14 @@ const formSubmit = (editData: any) => {
   } else if (!preview.value) {
     Msg.showFail('请输入内容!');
   } else {
+    // 标记正在提交，避免显示离开提示
+    isSubmitting.value = true;
+
     if (!isEdit.value) {
       //创建文章------------------------------------------
       const sumbitPayload = { content: preview.value, ...editData };
       console.log('创建文章', sumbitPayload);
-      articleStore.editAction(sumbitPayload);
+      articleStore.createAction(sumbitPayload);
     } else {
       //修改文章------------------------------------------
       const updatedPayload = { articleId: article.value.id, content: preview.value, ...editData };

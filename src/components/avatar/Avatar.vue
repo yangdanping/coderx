@@ -2,7 +2,7 @@
   <div class="avatar">
     <el-popover popper-class="user-popover" :width="`calc(200px + ${nameCount}em)`" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
-        <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" />
+        <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" :class="{ 'online-border': isOnline }" />
         <el-tag size="small" effect="plain" :type="onlineStatus(info.name).type">{{ onlineStatus(info.name).msg }}</el-tag>
         <div class="user-info">
           <div class="info1">
@@ -20,7 +20,7 @@
         <FollowButton :isFollowed="isFollowed" :profile="info" />
       </div>
       <template #reference>
-        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" />
+        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" :class="{ 'online-border': isOnline }" />
       </template>
     </el-popover>
     <div class="avatar-icon" v-if="showSet && isUser(info.id)"><slot name="icon"></slot></div>
@@ -33,7 +33,7 @@ import { debounce, getImageUrl } from '@/utils';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
@@ -45,7 +45,7 @@ const {
   showSet = false,
   disabled = false,
 } = defineProps<{
-  info?: IUserInfo;
+  info?: IUserInfo & any;
   size?: number;
   showSet?: boolean;
   disabled?: boolean;
@@ -58,14 +58,14 @@ const nameCount = computed(() => {
 const avatarUrl = computed(() => info.avatarUrl ?? getImageUrl('user', 'avatar'));
 const userSex = computed(() => getImageUrl('user', `${info.sex === '女' ? 'female' : 'male'}-icon`));
 const onlineStatus = computed<any>(() => {
-  return (userName) => {
+  return (userName: string) => {
     const user = onlineUsers.value.find((user) => user.userName === userName);
-    if (user && !user?.status) {
-      return { type: 'success', msg: '在线' };
-    } else {
-      return { type: 'info', msg: '离线' };
-    }
+    return user?.status === 'online' ? { type: 'success', msg: '在线' } : { type: 'info', msg: '离线' };
   };
+});
+const isOnline = computed(() => {
+  const user = onlineUsers.value.find((user) => user.userName === info.name);
+  return user?.status === 'online';
 });
 const mouseenter =
   !disabled &&
@@ -138,6 +138,14 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
 }
 :deep(.el-avatar) {
   cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+:deep(.el-avatar.online-border) {
+  box-shadow:
+    0 0 0 2px #41b983,
+    0 0 8px 2px rgba(65, 185, 131, 0.6),
+    0 0 16px 4px rgba(65, 185, 131, 0.3),
+    0 0 24px 6px rgba(65, 185, 131, 0.1);
 }
 .user-popover {
   .user {

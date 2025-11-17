@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import useRootStore from '@/stores';
+import useRootStore from '@/stores/index.store';
 import LoginPanel from './login/LoginPanel.vue';
 import ProfilePanel from './profile/ProfilePanel.vue';
 import { emitter } from '@/utils';

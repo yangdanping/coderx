@@ -2,7 +2,7 @@
 import { LocalCache, Msg } from '@/utils';
 import MyRequest from '@/global/request';
 import { BASE_URL, NEWS_BASE_URL, TIME_OUT } from '@/global/request/config';
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 
 //new--->执行构造器--->创建一个唯一的实例(已在构造器里用axios.create()的前提下)
 // 一般情况下只有一个实例,以后项目就用这一个实例去用它的request/get/post/...(除非你有不同baseURL,那就要创建第二个实例)

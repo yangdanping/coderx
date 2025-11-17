@@ -18,7 +18,7 @@ import NavBarLeft from './cpns/NavBarLeft.vue';
 import NavBarRight from './cpns/NavBarRight.vue';
 import NavMenu from './cpns/NavMenu.vue';
 import UserDialog from '../user/UserDialog.vue';
-import useRootStore from '@/stores';
+import useRootStore from '@/stores/index.store';
 const rootStore = useRootStore();
 const { windowInfo } = storeToRefs(rootStore);
 const showNavMenu = ref(true);

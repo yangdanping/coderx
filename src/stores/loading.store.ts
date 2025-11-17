@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 
-export const useLoadingStore = defineStore('loading', {
+const useLoadingStore = defineStore('loading', {
   state: () => ({
     counters: {} as Record<string, number>,
   }),

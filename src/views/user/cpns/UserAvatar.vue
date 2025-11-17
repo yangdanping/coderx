@@ -17,7 +17,7 @@ import { Msg } from '@/utils';
 import type { UploadRequestHandler } from 'element-plus';
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 const { isUser } = storeToRefs(userStore);
 

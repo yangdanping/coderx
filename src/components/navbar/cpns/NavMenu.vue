@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
 const articleStore = useArticleStore();
 const router = useRouter();
 const route = useRoute();
@@ -25,6 +25,7 @@ const route = useRoute();
 const menus = ref([
   { name: '首页', path: '/' },
   { name: '专栏', path: '/article' },
+  { name: '论坛', path: '/forum' },
   // { name: '写文章', path: '/edit' },
   // { name: '个人空间', path: '/user' }
 ]);
@@ -35,7 +36,7 @@ onMounted(() => {
 const handleSelect = (key: string) => {
   activeRoute.value = key;
   if (key === '/article' && route.query.searchValue) {
-    articleStore.getArticleListAction();
+    articleStore.refreshFirstPageAction();
   }
   console.log('activeRoute.value', activeRoute.value);
   router.push({ path: key });

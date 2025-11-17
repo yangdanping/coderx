@@ -17,7 +17,7 @@
 import { emitter } from '@/utils';
 import UserFollowItem from './UserFollowItem.vue';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 const { profile, followInfo } = storeToRefs(userStore);
 

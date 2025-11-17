@@ -8,7 +8,7 @@ import { LocalCache, Msg, emitter, dateFormat } from '@/utils';
 import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
-import useArticleStore from './article';
+import useArticleStore from './article.store';
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -49,10 +49,9 @@ const useUserStore = defineStore('user', {
       this.profile = profile;
     },
     updateOnlineUsers(userList) {
+      // 将当前用户置顶
       (userList as any[]).find((user, index) => {
         if (user.userName === this.userInfo.name) {
-          console.log('将当前用户' + user.userName + '置顶');
-          LocalCache.setCache('socketUser', user);
           return userList.unshift(userList.splice(index, 1)[0]);
         }
       });
@@ -60,10 +59,39 @@ const useUserStore = defineStore('user', {
       console.log('当前在线用户列表', this.onlineUsers);
     },
     logOut(refresh = true) {
+      // 1. 断开在线连接
+      // 动态导入以避免循环依赖，支持可插拔切换
+      try {
+        // 优先尝试 Socket.IO 版本
+        import('@/service/online/socketio')
+          .then((module) => {
+            module.default.disconnect();
+            console.log('Socket.IO 连接已断开（退出登录）');
+          })
+          .catch(() => {
+            // 如果 Socket.IO 未启用，尝试 WebSocket 版本
+            import('@/service/online/websocket')
+              .then((module) => {
+                module.default.disconnect();
+                console.log('WebSocket 连接已断开（退出登录）');
+              })
+              .catch(() => {
+                // 两者都未启用，跳过
+                console.log('在线状态功能未启用');
+              });
+          });
+      } catch (error) {
+        console.warn('断开在线连接失败:', error);
+      }
+
+      // 2. 清除登录状态
       this.token = '';
       this.userInfo = {};
       LocalCache.removeCache('token'); //退出登录要清除token和用户信息
       LocalCache.removeCache('userInfo');
+      LocalCache.removeCache('socketUser'); // 清理遗留缓存（如果存在）
+
+      // 3. 刷新页面
       refresh && router.go(0);
     },
     initProfile() {
@@ -135,6 +163,7 @@ const useUserStore = defineStore('user', {
     async getProfileAction(userId: RouteParam) {
       const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       if (res.code === 0) {
+        console.log(res.data);
         this.updateProfile(res.data);
       } else {
         Msg.showFail('请求用户信息失败');
@@ -216,7 +245,7 @@ const useUserStore = defineStore('user', {
       const res = await removeCollectArticle(collectId, idList);
       if (res.code === 0) {
         if (res.data.collectedArticle) {
-          useArticleStore().getArticleListAction('', res.data.collectedArticle);
+          useArticleStore().getArticleListAction({ idList: res.data.collectedArticle });
         } else {
           emitter.emit('clearResultAndBack');
         }

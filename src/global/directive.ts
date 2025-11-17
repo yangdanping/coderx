@@ -5,7 +5,6 @@ import { ElLoading } from 'element-plus';
 export default function initDirective(app: App) {
   const dateFormatter = (el, binding) => {
     const time = binding.value;
-    console.log('dateformat binding----', binding, time);
     if (time) {
       el.innerHTML = dateFormat(time, binding.arg);
     }

@@ -4,7 +4,7 @@
     <div class="scroll-user">
       <ScrollView :data="hotUsers">
         <template #scrollItems="slotProps">
-          <HomeHotUserItem v-for="item in slotProps.data" :key="item.id" :item="item" />
+          <HomeHotUserCard v-for="item in slotProps.data" :key="item.id" :item="item" />
         </template>
       </ScrollView>
     </div>
@@ -12,11 +12,9 @@
 </template>
 
 <script lang="ts" setup>
-import HomeHotUserItem from './HomeHotUserItem.vue';
+import HomeHotUserCard from './HomeHotUserCard.vue';
 import ScrollView from '@/components/scroll-view/ScrollView.vue';
-// const { hotUsers = [] } = defineProps({
-//   hotUsers: Array as PropType<any[]>,
-// });
+
 const { hotUsers = [] } = defineProps<{
   hotUsers: any[];
 }>();

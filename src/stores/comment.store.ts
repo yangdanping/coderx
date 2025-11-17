@@ -4,10 +4,10 @@ import { getLiked } from '@/service/user/user.request.js';
 import { Msg, emitter, dateFormat } from '@/utils';
 
 import type { IComment } from './types/comment.result';
-import useUserStore from './user';
-import useRootStore from './';
+import useUserStore from './user.store';
+import useRootStore from './index.store';
 
-export const useCommentStore = defineStore('comment', {
+const useCommentStore = defineStore('comment', {
   state: () => ({
     commentInfo: [] as IComment[],
     replyInfo: [] as IComment[],

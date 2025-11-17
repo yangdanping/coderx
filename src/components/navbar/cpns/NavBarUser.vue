@@ -38,7 +38,7 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 import { debounce } from '@/utils';
 const router = useRouter();
 const route = useRoute();
@@ -102,7 +102,7 @@ const logOut = () => {
       flex-direction: column;
       align-items: center;
       padding: 10px;
-      animation: titleDown 0.8s forwards;
+      animation: boxDown 0.3s forwards;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       overflow: hidden;
       transition: all 0.3s ease-in-out;

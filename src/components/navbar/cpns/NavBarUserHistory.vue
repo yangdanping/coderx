@@ -46,8 +46,8 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 
-import useHistoryStore from '@/stores/history';
-import useUserStore from '@/stores/user';
+import useHistoryStore from '@/stores/history.store';
+import useUserStore from '@/stores/user.store';
 import { debounce } from '@/utils';
 
 const router = useRouter();
@@ -66,10 +66,10 @@ const toggle = debounce(async function (show: boolean) {
   }
 }, 200);
 
-// 跳转到文章详情
+// 跳转到文章详情 - 使用路由跳转避免 localhost 域名问题
 const goToArticle = (item: any) => {
-  const url = item.articleUrl || `/detail/${item.articleId}`;
-  window.open(url, '_blank');
+  const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.articleId } });
+  window.open(routeUrl.href, '_blank');
 };
 
 // 跳转到个人空间的浏览记录
@@ -100,7 +100,8 @@ const goToHistoryPage = () => {
 
   .history-box {
     position: absolute;
-    right: -178px;
+    left: 50%;
+    transform: translateX(-50%);
     top: 55px;
     margin-top: 10px;
     width: 380px;
@@ -110,7 +111,7 @@ const goToHistoryPage = () => {
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: 999;
-    animation: titleDown 0.3s forwards;
+    animation: boxDown 0.3s forwards;
     .panel-history {
       width: 100%;
       height: calc(100% - 40px);
@@ -270,17 +271,6 @@ const goToHistoryPage = () => {
   }
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes titleDown {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 </style>

@@ -40,7 +40,7 @@ import CommentReply from './CommentReply.vue';
 
 import type { IComment } from '@/stores/types/comment.result';
 
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
 

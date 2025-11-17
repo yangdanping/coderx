@@ -37,8 +37,8 @@
 
 <script lang="ts" setup>
 import HistoryListItem from '@/components/list/HistoryListItem.vue';
-import useUserStore from '@/stores/user';
-import useHistoryStore from '@/stores/history';
+import useUserStore from '@/stores/user.store';
+import useHistoryStore from '@/stores/history.store';
 import { ElMessageBox } from 'element-plus';
 import { Delete } from '@element-plus/icons-vue';
 import { Msg } from '@/utils';
@@ -61,6 +61,7 @@ watch(
   selectedItems,
   (newVal) => {
     const totalItems = historyStore.historyList.length;
+    console.log('totalItems', totalItems);
     selectAll.value = newVal.length === totalItems && totalItems > 0;
     indeterminate.value = newVal.length > 0 && newVal.length < totalItems;
   },
@@ -74,15 +75,6 @@ watch(
     if (newV) {
       historyStore.resetHistory();
       historyStore.getHistoryAction(true);
-    }
-  },
-  { immediate: true },
-);
-watch(
-  () => historyStore.historyList,
-  (newV) => {
-    if (newV.length) {
-      console.log('historyStore.historyList-----', toRaw(newV));
     }
   },
 );

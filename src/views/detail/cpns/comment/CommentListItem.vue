@@ -33,7 +33,7 @@ import CommentForm from './CommentForm.vue';
 import CommentTools from './CommentTools.vue';
 import CommentReply from '../comment-reply/CommentReply.vue';
 
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
 
 import { emitter } from '@/utils';
 

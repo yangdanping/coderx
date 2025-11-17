@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
 import { checkAuth } from '@/service/user/user.request';
 import { LocalCache } from '@/utils';
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const useRootStore = defineStore('root', {
   state: () => ({
     showLoginDialog: false as boolean, //多个组件都有可能使用该参数,所以放到store中
     pageNum: 1 as number,
-    pageSize: 5 as number,
+    pageSize: 10 as number,
     pageOrder: 'date',
     tagId: '' as number | '',
     windowInfo: {} as any,
@@ -29,10 +29,7 @@ const useRootStore = defineStore('root', {
     },
     changeWindowInfo() {
       window.addEventListener('resize', () => {
-        const windowInfo = {
-          width: window.innerWidth,
-          hight: window.innerHeight,
-        };
+        const windowInfo = { width: window.innerWidth, hight: window.innerHeight };
         this.windowInfo = windowInfo;
       });
     },

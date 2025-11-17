@@ -10,5 +10,6 @@ import emitter from './eventBus';
 import bindImagesLayer from './bindImagesLayer';
 import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
+import extractImagesFromHtml from './extractImagesFromHtml';
 
-export { LocalCache, SessionCache, Msg, dateFormat, debounce, throttle, isEmptyObj, isArrEqual, getImageUrl, bindImagesLayer, codeHeightlight, emitter };
+export { LocalCache, SessionCache, Msg, dateFormat, debounce, throttle, isEmptyObj, isArrEqual, getImageUrl, bindImagesLayer, codeHeightlight, emitter, extractImagesFromHtml };

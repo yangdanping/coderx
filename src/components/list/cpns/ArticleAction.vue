@@ -23,9 +23,9 @@ import { Msg } from '@/utils';
 
 import type { IArticle } from '@/stores/types/article.result';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const router = useRouter();
 const rootStore = useRootStore();
 const userStore = useUserStore();

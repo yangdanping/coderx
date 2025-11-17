@@ -20,7 +20,7 @@ import FollowButton from '@/components/FollowButton.vue';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 import { emitter } from '@/utils';
 
 const router = useRouter();

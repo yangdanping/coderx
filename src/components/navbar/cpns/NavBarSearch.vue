@@ -35,9 +35,9 @@
       <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchResults.length && searchHistory.length }">
         <template v-if="!isSearchLoading">
           <template v-if="searchResults.length">
-            <a v-for="item in searchResults" :href="item.articleUrl" :key="item.id" target="_blank" @click="handleSearchResultClick(item.title)">
+            <div v-for="item in searchResults" :key="item.id" @click="goToArticle(item)" class="result-item-wrapper">
               <div class="search-item" v-html="highlightText(item.title, searchValue)"></div>
-            </a>
+            </div>
           </template>
           <div v-else class="no-data-text">未搜索到相关内容</div>
         </template>
@@ -53,8 +53,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { Search, Close } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
 
-import useRootStore from '@/stores';
-import useArticleStore from '@/stores/article';
+import useRootStore from '@/stores/index.store';
+import useArticleStore from '@/stores/article.store';
 import { debounce, emitter } from '@/utils';
 import LocalCache from '@/utils/LocalCache';
 
@@ -62,7 +62,7 @@ const rootStore = useRootStore();
 const articleStore = useArticleStore();
 const { searchResults } = storeToRefs(articleStore);
 
-import useLoadingStore from '@/stores/loading';
+import useLoadingStore from '@/stores/loading.store';
 const loadingKey = 'search';
 const loadingStore = useLoadingStore();
 const isSearchLoading = computed(() => loadingStore.isLoading(loadingKey));
@@ -129,7 +129,7 @@ const submitSearch = () => {
       window.open(routeData.href, '_blank');
     } else {
       console.log('在文章列表页面,直接在当前页面中请求');
-      articleStore.getArticleListAction('', [], searchValue.value);
+      articleStore.refreshFirstPageAction({ keywords: searchValue.value });
     }
     emitter.emit('submitSearchValue', searchValue.value);
   }
@@ -163,6 +163,13 @@ const clearAllHistory = () => {
 const handleSearchResultClick = (title: string) => {
   LocalCache.addSearchHistory(title);
   loadSearchHistory();
+};
+
+// 跳转到文章详情 - 使用路由跳转避免 localhost 域名问题
+const goToArticle = (item: any) => {
+  handleSearchResultClick(item.title);
+  const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.id } });
+  window.open(routeUrl.href, '_blank');
 };
 
 // 高亮匹配文本的函数
@@ -297,6 +304,10 @@ $searchWidth: 260px;
       min-height: 30px;
       &.showborder {
         border-top: 1px solid #ccc;
+      }
+
+      .result-item-wrapper {
+        cursor: pointer;
       }
 
       .search-item {

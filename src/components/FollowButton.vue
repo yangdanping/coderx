@@ -18,8 +18,8 @@ import { Plus } from '@element-plus/icons-vue';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const { isUser, token } = storeToRefs(userStore);

@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts" setup>
-import useRootStore from '@/stores';
+import useRootStore from '@/stores/index.store';
 
 const { total = 0 } = defineProps<{
   total?: number;

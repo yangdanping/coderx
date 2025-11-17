@@ -2,7 +2,7 @@ import axios from 'axios'; //对axios做封装只需在这一个文件里引用a
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'; //axios已提供对应的类型(三者缺一不可)
 import { ElLoading } from 'element-plus';
 import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
-import useLoadingStore from '@/stores/loading';
+import useLoadingStore from '@/stores/loading.store';
 const DEAFULT_LOADING = true;
 
 /* 由于我们对拦截器做了三层封装,所以传类型得一步步传递过去
@@ -90,11 +90,17 @@ class MyRequest {
         // }
       },
       (err) => {
-        // this.loading?.close();
+        if (this.showLoading) {
+          const loadingStore = useLoadingStore();
+          const key = err?.config?.loadingKey ?? 'global';
+          key && console.log('接口响应拦截器(错误) 停止loading', key);
+          loadingStore.end(key);
+        }
         // 判断不同的HttpErrorCode显示不同的错误信息
-        if (err.response.status === 404) {
+        if (err?.response?.status === 404) {
           console.log('404的错误~'); //真实开发是switch根据status的不同显示不同的错误信息
         }
+        return Promise.reject(err);
       },
     );
   }
@@ -104,8 +110,6 @@ class MyRequest {
   request<T = any>(config: MyRequestConfig<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.showLoading = config.showLoading ?? true; //类型缩小(注意!,为了不影响下一个请求,请求完后(成功/失败)应当设置回初始化值)
-
-      console.log('我是request方法===========================');
 
       // 单个请求的请求拦截器,若有reqSuccess函数,那我在内部执行一些这个函数就可以了(把拦截器函数返回的转化后的config替换掉原生config)
       if (config.interceptors?.reqSuccess) {
@@ -162,11 +166,7 @@ class MyRequest {
     // 创建新的config，移除params并使用拼接后的URL
     const { params, ...restConfig } = config;
 
-    return this.request<T>({
-      ...restConfig,
-      url: finalUrl,
-      method: 'GET',
-    });
+    return this.request<T>({ ...restConfig, url: finalUrl, method: 'GET' });
   }
   post<T = any>(config: MyRequestConfig<T>): Promise<T> {
     return this.request<T>({ ...config, method: 'POST' });

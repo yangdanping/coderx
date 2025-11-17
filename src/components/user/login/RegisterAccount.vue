@@ -23,7 +23,7 @@ import { User, Lock } from '@element-plus/icons-vue';
 
 import type { ElForm, ElInput } from 'element-plus';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 
 const registerForm = ref<InstanceType<typeof ElForm>>();

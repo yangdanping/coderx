@@ -18,9 +18,9 @@
 import CommentList from './CommentList.vue';
 import CommentForm from './CommentForm.vue';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useCommentStore from '@/stores/comment';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useCommentStore from '@/stores/comment.store';
 const commentStore = useCommentStore();
 const rootStore = useRootStore();
 const userStore = useUserStore();

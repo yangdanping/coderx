@@ -9,7 +9,7 @@
     <ul>
       <li v-for="item in recommends" :key="item.id">
         <Icon v-if="item.views > 20" type="fire" :showLabel="false" color="red" />
-        <a :href="item.articleUrl" target="_blank">
+        <a @click="goToArticle(item)" style="cursor: pointer">
           {{ item.title }}
         </a>
       </li>
@@ -20,7 +20,10 @@
 <script lang="ts" setup>
 import Icon from '@/components/icon/Icon.vue';
 import { throttle } from '@/utils';
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 const articleStore = useArticleStore();
 const { recommends = [] } = defineProps<{
   recommends?: any[];
@@ -41,6 +44,11 @@ const refresh = throttle(function () {
   if (offset.value > 20) offset.value = 0;
   articleStore.getRecommendAction(offset.value);
 }, 1000);
+
+const goToArticle = (item: any) => {
+  const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.id } });
+  window.open(routeUrl.href, '_blank');
+};
 </script>
 
 <style lang="scss" scoped>

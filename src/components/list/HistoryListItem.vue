@@ -24,9 +24,11 @@
 import Avatar from '@/components/avatar/Avatar.vue';
 import { Delete } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
-import useHistoryStore from '@/stores/history';
+import useHistoryStore from '@/stores/history.store';
 import type { IArticle } from '@/stores/types/article.result';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const { item, deletingItems = [] } = defineProps<{
   item: any;
   deletingItems?: any[];
@@ -36,7 +38,10 @@ const emit = defineEmits(['delete-start', 'delete-end']);
 
 const historyStore = useHistoryStore();
 
-const goDetail = (item: IArticle) => window.open(item.articleUrl);
+const goDetail = (item: any) => {
+  const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.articleId } });
+  window.open(routeUrl.href, '_blank');
+};
 
 const handleDelete = async (articleId: any) => {
   try {

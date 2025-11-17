@@ -47,7 +47,7 @@ import { provinceAndCityData, CodeToText, TextToCode } from 'element-china-area-
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 
 const { editForm = {} } = defineProps<{

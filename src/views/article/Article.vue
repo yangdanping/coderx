@@ -20,15 +20,15 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
-import ArticleList from './cpns/ArticleList.vue';
+import ArticleList from './cpns/ArticleList2.vue';
 import ArticleRecommend from './cpns/ArticleRecommend.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
 import { listWidth } from '@/global/constants/list-width';
 import { emitter } from '@/utils';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const router = useRouter();
 const route = useRoute();
 const rootStore = useRootStore();
@@ -54,9 +54,9 @@ onMounted(() => {
   articleStore.getTagsAction();
   articleStore.getRecommendAction();
   if (!searchStr.value) {
-    articleStore.getArticleListAction();
+    articleStore.refreshFirstPageAction();
   } else {
-    articleStore.getArticleListAction('', [], searchStr.value as string);
+    articleStore.refreshFirstPageAction({ keywords: searchStr.value });
   }
   setTimeout(() => (noData.value = !noData.value), 2000);
   emitter.on('submitSearchValue', (value) => {
@@ -77,9 +77,9 @@ const tabClick = (order) => {
   if (articles.value.total! > 1) {
     if (searchStr.value) {
       console.log('对搜索结果进行排序!', searchStr.value);
-      articleStore.getArticleListAction('', [], searchStr.value as string);
+      articleStore.refreshFirstPageAction({ keywords: searchStr.value as string });
     } else {
-      articleStore.getArticleListAction();
+      articleStore.refreshFirstPageAction();
     }
   }
 };
@@ -87,7 +87,7 @@ const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeL
 </script>
 
 <style lang="scss" scoped>
-$paddingTop: 40px;
+$paddingTop: 60px;
 .article {
   display: flex;
   justify-content: center;
@@ -95,14 +95,14 @@ $paddingTop: 40px;
   .article-nav,
   .article-recommends {
     position: sticky;
-    top: calc($paddingTop + 7px);
+    top: calc($paddingTop * 2);
     padding-top: $paddingTop;
     height: 100%;
   }
   .list-wrapper {
-    padding-top: $paddingTop;
+    padding-top: 20px;
     flex: 1;
-    margin: 0 50px;
+    margin: 0 60px;
 
     .skeleton {
       display: flex;

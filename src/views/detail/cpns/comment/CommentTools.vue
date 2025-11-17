@@ -32,9 +32,9 @@ import { Msg } from '@/utils';
 import Editor from '@/components/wang-editor/Editor.vue';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
