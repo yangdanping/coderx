@@ -14,10 +14,10 @@ import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
 import Comment from './cpns/comment/Comment.vue';
 
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
-import useHistoryStore from '@/stores/history';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
+import useHistoryStore from '@/stores/history.store';
 
 const route = useRoute();
 const articleStore = useArticleStore();

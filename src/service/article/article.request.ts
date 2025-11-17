@@ -5,7 +5,7 @@ import type { IPage, IResData, RouteParam } from '@/service/types';
 const urlHead = '/article';
 
 // 获取文章列表
-export const getList = (params: IArticleList) => {
+export const getList = (params: IArticleList, loadingKey?: string) => {
   // 原来的多项传参方式
   // const { offset, limit, tagId, userId, idList, pageOrder, keywords } = params;
   // return myRequest.get<IResData>({
@@ -16,6 +16,7 @@ export const getList = (params: IArticleList) => {
   return myRequest.get<IResData>({
     url: `${urlHead}`,
     params,
+    loadingKey,
   });
 };
 

@@ -19,7 +19,7 @@ import { Msg } from '@/utils';
 
 import type { ElForm, ElInput } from 'element-plus';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 
 const loginFormRef = ref<InstanceType<typeof ElForm>>();

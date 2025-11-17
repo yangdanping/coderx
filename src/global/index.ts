@@ -2,10 +2,10 @@ import { createPinia } from 'pinia';
 import router from '@/router';
 import { LocalCache } from '@/utils';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
 import VueDOMPurifyHTML from 'vue-dompurify-html';
 import 'normalize.css';
 import '@/assets/css/index.scss';

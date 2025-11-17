@@ -7,8 +7,8 @@
 
 <script lang="ts" setup>
 import { emitter } from '@/utils';
-import useArticleStore from '@/stores/article';
-import useRootStore from '@/stores';
+import useArticleStore from '@/stores/article.store';
+import useRootStore from '@/stores/index.store';
 import type { Itag } from '@/stores/types/article.result';
 import { throttle } from '@/utils';
 
@@ -27,7 +27,7 @@ onMounted(() => {
     console.log('changeTagInList!!!!!!', id);
     activeId.value = id;
     rootStore.changeTag(id);
-    articleStore.getArticleListAction();
+    articleStore.refreshFirstPageAction();
   });
   emitter.on('submitSearchValue', () => (activeId.value = '综合'));
 });
@@ -39,11 +39,13 @@ const handleClick = throttle(function (tab) {
   if (tab.paneName) {
     rootStore.$reset();
     rootStore.changeTag(tab.paneName === '综合' ? '' : tab.paneName);
-    articleStore.getArticleListAction();
+    articleStore.refreshFirstPageAction();
   } else {
     rootStore.$reset();
-    articleStore.getArticleListAction();
+    articleStore.refreshFirstPageAction();
   }
+  // 切换标签后回到列表顶部
+  window.scrollTo(0, 0);
 }, 300);
 </script>
 
@@ -53,7 +55,7 @@ const handleClick = throttle(function (tab) {
     display: flex;
     justify-content: center;
     backdrop-filter: blur(10px);
-    border-radius: 5px;
+    /* border-radius: 5px; */
     overflow: hidden;
   }
 
@@ -66,14 +68,18 @@ const handleClick = throttle(function (tab) {
     justify-content: center;
     align-items: center;
     color: var(--fontColor);
+    width: 80px;
+    height: 34px;
+    font-weight: 400;
     font-size: 16px;
     &:hover {
       color: #409eff;
     }
     // 动态下划线
     &.is-active {
-      color: #fff;
-      background: #409eff;
+      background: #ecf5ff;
+      color: #409eff;
+      border: 1px solid #409eff;
     }
   }
 

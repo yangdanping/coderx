@@ -34,7 +34,7 @@
 <script lang="ts" setup>
 import CommentReplyItem from './CommentReplyItem.vue';
 
-import useCommentStore from '@/stores/comment';
+import useCommentStore from '@/stores/comment.store';
 const commentStore = useCommentStore();
 const { commentReply, commentReply2 } = storeToRefs(commentStore);
 

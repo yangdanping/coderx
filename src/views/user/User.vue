@@ -9,7 +9,7 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 import UserProfile from './cpns/UserProfile.vue';
 
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 const route = useRoute();
 const userStore = useUserStore();
 const { profile } = storeToRefs(userStore);

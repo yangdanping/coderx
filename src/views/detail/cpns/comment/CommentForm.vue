@@ -15,9 +15,9 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import Editor from '@/components/wang-editor/Editor.vue';
 import { Msg } from '@/utils';
 
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();

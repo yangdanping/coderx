@@ -17,6 +17,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/article/Article.vue'),
   },
   {
+    name: 'forum',
+    path: '/forum',
+    meta: { title: '论坛' },
+    component: () => import('@/views/forum/Forum.vue'),
+  },
+  {
     name: 'detail',
     path: '/article/:articleId',
     props: true,

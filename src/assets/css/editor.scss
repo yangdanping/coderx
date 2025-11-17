@@ -128,4 +128,24 @@
     cursor: zoom-in;
     transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1) !important;
   }
+
+  // 视频样式 - 响应式布局
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #000;
+
+    // 允许用户调整大小
+    resize: both;
+    overflow: hidden;
+
+    &:focus {
+      outline: 2px solid #409eff;
+      outline-offset: 2px;
+    }
+  }
 }

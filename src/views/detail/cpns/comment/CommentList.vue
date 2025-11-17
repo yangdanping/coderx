@@ -12,7 +12,7 @@ import { emitter } from '@/utils';
 import CommentListItem from './CommentListItem.vue';
 
 import type { IComment } from '@/stores/types/comment.result';
-import useCommentStore from '@/stores/comment';
+import useCommentStore from '@/stores/comment.store';
 const { commentCount } = storeToRefs(useCommentStore());
 const { commentInfo = [] } = defineProps<{
   commentInfo?: IComment[];

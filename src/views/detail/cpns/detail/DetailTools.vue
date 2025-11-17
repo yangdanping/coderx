@@ -34,8 +34,8 @@ import { Msg } from '@/utils';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 
 import type { IArticle } from '@/stores/types/article.result';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const router = useRouter();
 const userStore = useUserStore();
 const articleStore = useArticleStore();

@@ -3,7 +3,7 @@ import { getUserHistory, deleteHistory, clearUserHistory, addHistory } from '@/s
 import { Msg, dateFormat } from '@/utils';
 import type { RouteParam } from '@/service/types';
 import type { IHistoryItem, IHistoryState } from '@/stores/types/history.result';
-export const useHistoryStore = defineStore('history', {
+const useHistoryStore = defineStore('history', {
   state: (): IHistoryState => ({
     historyList: [],
     total: 0,

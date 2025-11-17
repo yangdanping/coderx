@@ -17,8 +17,8 @@ import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
 import NavBarSearch from './NavBarSearch.vue';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
 const rootStore = useRootStore();
 const { token } = storeToRefs(useUserStore());
 

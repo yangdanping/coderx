@@ -19,10 +19,10 @@ import { Msg, emitter } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { ElPopover } from 'element-plus';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
 const userStore = useUserStore();
 const rootStore = useRootStore();
 const commentStore = useCommentStore();

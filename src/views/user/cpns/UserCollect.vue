@@ -73,8 +73,8 @@ import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import { Msg, emitter } from '@/utils';
 import { Plus, Setting } from '@element-plus/icons-vue';
 
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 
@@ -99,7 +99,7 @@ const goCollectDetial = (item) => {
     const { id, name } = collects.value.find((collect) => collect.id === item.id);
     activeCollect.value = { id, name };
     //对收藏夹下的文章列表进行请求
-    articleStore.getArticleListAction('', [...item.count] as any);
+    articleStore.refreshFirstPageAction({ idList: [...item.count] });
   } else {
     Msg.showInfo('该收藏夹还没有文章');
   }

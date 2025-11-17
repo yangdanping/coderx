@@ -19,7 +19,12 @@
           class="cover-uploader"
         >
           <template #tip>
-            <div class="tip">图片大小不能超过2MB(未手动上传则默认文章中第一次上传的图片作为封面)</div>
+            <div class="tip">
+              图片大小不能超过2MB<br />
+              <span style="color: #909399; font-size: 12px">
+                {{ isEdit ? '编辑时不上传新封面则保留原封面' : '未手动上传则使用第一张图片作为封面' }}
+              </span>
+            </div>
           </template>
           <img v-if="fileList.length" :src="fileList[0].url" class="cover" />
           <div class="uoload-icon">
@@ -39,9 +44,9 @@
 </template>
 
 <script lang="ts" setup>
-import useArticleStore from '@/stores/article';
+import useArticleStore from '@/stores/article.store';
 import { ElMessageBox } from 'element-plus';
-import { LocalCache, Msg, isEmptyObj } from '@/utils';
+import { LocalCache, Msg, isEmptyObj, extractImagesFromHtml } from '@/utils';
 const router = useRouter();
 const articleStore = useArticleStore();
 const { tags } = storeToRefs(articleStore);
@@ -69,28 +74,44 @@ const emit = defineEmits(['formSubmit', 'setCover']);
 
 onMounted(() => {
   articleStore.getTagsAction();
+
+  // 1. 检查是否有草稿（创建模式下的草稿）
   const draft = LocalCache.getCache('draft');
   if (draft) {
-    console.log('EditForm组件 修改已保存文章详情表单的草稿-------------------------', draft);
+    console.log('加载草稿:', draft);
     const { title, tags, fileList = [] } = draft;
-    form = reactive({ title, tags });
+    form.title = title;
+    form.tags = tags;
     if (fileList.length) {
-      //已上传的就是拼接了small,所以这边不用
       emit('setCover', { url: fileList[0].url, name: 'img' });
     }
-  } else if (isEmptyObj(editData)) {
-    console.log('EditForm组件 修改已上传文章详情表单-------------------------', editData);
+    return;
+  }
+
+  // 2. 编辑模式 - 加载已有文章数据
+  if (isEmptyObj(editData)) {
+    console.log('编辑模式 - 加载文章数据:', editData);
     const { title, tags, images } = editData;
-    if (images) {
+    form.title = title || '';
+
+    // 设置标签
+    if (tags && tags.length) {
+      tags.forEach((tag) => {
+        oldTags.value.push(tag.name);
+        form.tags.push(tag.name);
+      });
+    }
+
+    // 设置封面预览
+    if (images && images.length) {
       const url = images[0].url?.concat('?type=small');
       emit('setCover', { url, name: 'img' });
     }
-    form.title = title!;
-    tags?.forEach((tag) => oldTags.value.push(tag.name));
-    tags?.forEach((tag) => form.tags.push(tag.name));
-  } else {
-    console.log('EditForm组件 创建文章详情表单-------------------------');
+    return;
   }
+
+  // 3. 创建模式 - 新建文章
+  console.log('创建模式 - 新建文章');
 });
 
 const beforeCoverUpload = (file) => {
@@ -99,6 +120,7 @@ const beforeCoverUpload = (file) => {
   return isLt2M;
 };
 
+// 手动上传封面
 const coverUpLoad = (content) => {
   console.log('coverUpLoad', content.file);
   articleStore.uploadCoverAction(content.file).then((url: string) => {
@@ -118,7 +140,7 @@ const onSubmit = () => {
 
 const route = useRoute();
 const isEdit = computed(() => !!route.query.editArticleId);
-// 取消修改
+// 取消修改/创建
 const goBack = () => {
   ElMessageBox.confirm(`是否${isEdit.value ? '取消修改' : '退出并保存草稿'}`, '提示', {
     type: 'info',
@@ -128,22 +150,38 @@ const goBack = () => {
   })
     .then(() => {
       if (!isEdit.value) {
-        const draftObj = { ...form, draft: draft, fileList: fileList };
-        console.log('保存并退出文章编辑!!!!!!!!', draftObj);
+        // 创建模式：保存草稿
+        let draftFileList = fileList;
+
+        // 如果没有手动上传封面，从内容中提取第一张图片
+        if (!fileList.length && draft) {
+          const imageUrls = extractImagesFromHtml(draft);
+          if (imageUrls.length > 0) {
+            draftFileList = [{ url: imageUrls[0].concat('?type=small'), name: 'img' }];
+            console.log('从内容提取草稿封面:', imageUrls[0]);
+          }
+        }
+
+        const draftObj = { ...form, draft: draft, fileList: draftFileList };
+        console.log('保存草稿:', draftObj);
         LocalCache.setCache('draft', draftObj);
         Msg.showSuccess('已保存并退出文章编辑!');
         router.push('/article');
       } else {
-        articleStore.updateUploaded(0);
+        // 编辑模式：直接返回
+        console.log('取消修改');
+        // 清空手动上传的封面ID
+        articleStore.setManualCoverImgId(null);
         router.back();
       }
     })
     .catch((action) => {
       if (action === 'cancel' && !isEdit.value) {
-        console.log('取消编辑文章----------------------------------------');
+        // 不保存草稿，直接退出，清理孤儿图片
+        console.log('不保存草稿，直接退出');
         LocalCache.removeCache('draft');
         router.push('/article').then(() => {
-          articleStore.deletePictrueAction();
+          articleStore.deletePendingImagesAction();
         });
       }
     });

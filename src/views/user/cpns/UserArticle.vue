@@ -23,8 +23,8 @@
 import Page from '@/components/Page.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const { profile } = storeToRefs(userStore);
@@ -33,13 +33,13 @@ const { articles } = storeToRefs(articleStore);
 watch(
   () => profile.value.id,
   (newV) => {
-    articleStore.getArticleListAction(newV); //初始化时获取该用户发表过的文章
+    articleStore.refreshFirstPageAction({ userId: newV }); //初始化时获取该用户发表过的文章
   },
 );
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 
 // const changePage = () => userStore.getArticleListAction(profile.value.id);
-const changePage = () => articleStore.getArticleListAction(profile.value.id);
+const changePage = () => articleStore.getArticleListAction({ userId: profile.value.id });
 </script>
 
 <style lang="scss" scoped>

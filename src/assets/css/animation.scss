@@ -17,41 +17,22 @@
 @keyframes moveDown {
   0% {
     opacity: 0;
-    transform: translate(0, -300px);
+    transform: translate(0, -100px);
   }
-
-  40% {
-    opacity: 0.8;
-    transform: translate(0, 30px);
-  }
-
   100% {
     opacity: 1;
     transform: translate(0, 0);
   }
 }
 
-@keyframes titleDown {
+@keyframes boxDown {
   0% {
-    transform: translate(-50%, -50px);
-  }
-
-  40% {
-    transform: translate(-50%, 10px);
-  }
-
-  100% {
-    transform: translate(-50%, 0);
-  }
-}
-@keyframes titleFade {
-  0% {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-  100% {
     opacity: 0;
-    transform: translate(-50%, 0) scale(10);
+    transform: translate(-50%, -10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 

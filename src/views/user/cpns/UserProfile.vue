@@ -49,11 +49,11 @@ import { emitter, getImageUrl } from '@/utils';
 import Icon from '@/components/icon/Icon.vue';
 import type { IUserInfo } from '@/stores/types/user.result';
 
-import useRootStore from '@/stores';
-import useUserStore from '@/stores/user';
-import useArticleStore from '@/stores/article';
-import useCommentStore from '@/stores/comment';
-import useHistoryStore from '@/stores/history';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
+import useHistoryStore from '@/stores/history.store';
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
@@ -120,7 +120,7 @@ const tabClick = ({ paneName }) => {
   switch (paneName) {
     case '文章':
       userStore.getProfileAction(userId);
-      articleStore.getArticleListAction(userId);
+      articleStore.refreshFirstPageAction({ userId });
       break;
     case '评论':
       // userStore.getCommentAction(userId);

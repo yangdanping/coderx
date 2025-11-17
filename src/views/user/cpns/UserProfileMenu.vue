@@ -13,7 +13,8 @@
       <el-tab-pane label="关注" name="关注">
         <UserFollow />
       </el-tab-pane>
-      <el-tab-pane label="最近浏览" name="最近浏览">
+      <!-- 只有登录用户查看自己的空气才有 -->
+      <el-tab-pane label="最近浏览" name="最近浏览" v-if="isUser(profile.id)">
         <UserHistory />
       </el-tab-pane>
     </el-tabs>
@@ -21,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import useUserStore from '@/stores/user';
+import useUserStore from '@/stores/user.store';
 import UserArticle from './UserArticle.vue';
 import UserCollect from './UserCollect.vue';
 import UserComment from './UserComment.vue';
@@ -31,6 +32,7 @@ import { emitter } from '@/utils';
 
 const route = useRoute();
 const userStore = useUserStore();
+const { isUser, profile } = storeToRefs(userStore);
 const activeName = ref<any>('文章');
 const emit = defineEmits(['tabClick']);
 
@@ -44,6 +46,8 @@ onMounted(() => {
     activeName.value = tabName;
     if (tabName === '收藏') {
       userStore.getCollectAction(userStore.userInfo.id);
+    } else if (tabName === '最近浏览') {
+      console.log('最近浏览');
     }
   }
 });
