@@ -65,8 +65,6 @@ const {
 }>();
 let form = reactive({ title: '', tags: [] as any[] });
 
-const oldTags = ref<any[]>([]);
-
 const handleFileChange = (file, files) => {
   console.log('handleFileChange', file, files);
 };
@@ -96,10 +94,7 @@ onMounted(() => {
 
     // 设置标签
     if (tags && tags.length) {
-      tags.forEach((tag) => {
-        oldTags.value.push(tag.name);
-        form.tags.push(tag.name);
-      });
+      form.tags = tags.map((tag) => tag.name);
     }
 
     // 设置封面预览
@@ -133,7 +128,6 @@ const onSubmit = () => {
   const articleDraft = {
     title: form.title,
     tags: form.tags,
-    oldTags: oldTags.value,
   };
   emit('formSubmit', articleDraft);
 };
@@ -169,19 +163,23 @@ const goBack = () => {
         router.push('/article');
       } else {
         // 编辑模式：直接返回
-        console.log('取消修改');
+        console.log('取消修改，清理孤儿文件');
         // 清空手动上传的封面ID
         articleStore.setManualCoverImgId(null);
+        // 清理编辑过程中上传的孤儿图片和视频
+        articleStore.deletePendingImagesAction();
+        articleStore.deletePendingVideosAction();
         router.back();
       }
     })
     .catch((action) => {
       if (action === 'cancel' && !isEdit.value) {
-        // 不保存草稿，直接退出，清理孤儿图片
-        console.log('不保存草稿，直接退出');
+        // 不保存草稿，直接退出，清理孤儿图片和视频
+        console.log('不保存草稿，直接退出，清理所有孤儿文件');
         LocalCache.removeCache('draft');
         router.push('/article').then(() => {
           articleStore.deletePendingImagesAction();
+          articleStore.deletePendingVideosAction();
         });
       }
     });

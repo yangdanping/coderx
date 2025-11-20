@@ -15,11 +15,11 @@ import {
   getArticleLikedById,
 } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
-import { addImgForArticle, uploadImg, deleteImg, addVideoForArticle } from '@/service/file/file.request';
+import { addImgForArticle, uploadImg, deleteImg, addVideoForArticle, deleteVideo } from '@/service/file/file.request';
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useCommentStore from './comment.store';
-import { Msg, isArrEqual, isEmptyObj, extractImagesFromHtml, LocalCache } from '@/utils';
+import { Msg, isEmptyObj, extractImagesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
@@ -33,7 +33,8 @@ const useArticleStore = defineStore('article', {
     searchResults: [] as any[],
     manualCoverImgId: null as number | null, // 手动上传的封面图片ID
     pendingImageIds: [] as number[], // 待清理的图片ID（用于刷新页面时清理孤儿图片）
-    uploadedVideos: [] as number[], // 上传的视频ID数组
+    pendingVideoIds: [] as number[], // 待清理的视频ID（用于清理孤儿视频）
+    uploadedVideos: [] as number[], // 上传的视频ID数组（已弃用，使用pendingVideoIds代替）
   }),
   getters: {
     isAuthor() {
@@ -62,62 +63,6 @@ const useArticleStore = defineStore('article', {
     },
   },
   actions: {
-    updateArticleList(articles: IArticles) {
-      this.articles = articles;
-      console.log('updateArticleList', this.articles.result);
-    },
-    appendArticleList(articles: IArticles) {
-      const currentList = this.articles?.result ?? [];
-      const nextList = articles?.result ?? [];
-      const merged = [...currentList, ...nextList];
-      const dedup = Array.from(new Map(merged.map((it: any) => [it.id, it])).values());
-      this.articles = { result: dedup, total: articles?.total ?? this.articles?.total } as IArticles;
-    },
-    updateDetail(article: IArticle, isEditRefresh = false) {
-      this.article = article;
-    },
-    setManualCoverImgId(imgId: number | null) {
-      this.manualCoverImgId = imgId;
-      console.log('设置手动封面ID:', imgId);
-    },
-    addPendingImageId(imgId: number) {
-      this.pendingImageIds.push(imgId);
-      console.log('添加待清理图片ID:', imgId, '当前列表:', this.pendingImageIds);
-    },
-    clearPendingImageIds() {
-      this.pendingImageIds = [];
-      console.log('清空待清理图片ID列表');
-    },
-    updateUploadedVideos(videoId?: number) {
-      if (videoId) {
-        this.uploadedVideos.push(videoId);
-        console.log('添加视频ID到uploadedVideos:', videoId, this.uploadedVideos);
-      } else {
-        this.uploadedVideos.length && (this.uploadedVideos = []);
-        console.log('updateUploadedVideos已清0!!!!!!!!!!!!!!!!');
-      }
-    },
-    updateUserLikedId(userLikedArticleIdList) {
-      this.userLikedArticleIdList = userLikedArticleIdList;
-    },
-    updateArticleLikes(articleId, likes) {
-      // 更改列表中的likes
-      this.articles.result?.find((article) => {
-        if (article.id === articleId) {
-          article.likes = likes;
-        }
-      });
-      if (isEmptyObj(this.article)) {
-        this.article.likes = likes;
-      }
-    },
-    updateSearchResults(searchResults) {
-      this.searchResults = searchResults;
-      console.log('updateSearchResults', this.searchResults);
-    },
-    updateTag(tags: Itag[]) {
-      this.tags = tags;
-    },
     initArticle() {
       this.article = {};
       this.articles = {};
@@ -132,6 +77,25 @@ const useArticleStore = defineStore('article', {
       rootStore.changePageNum(1);
       return this.getArticleListAction({ ...extraParams, append: false });
     },
+    setManualCoverImgId(imgId: number | null) {
+      this.manualCoverImgId = imgId;
+      console.log('设置手动封面ID:', imgId);
+    },
+    addPendingImageId(imgId: number) {
+      this.pendingImageIds.push(imgId);
+      console.log('添加待清理图片ID:', imgId, '当前列表:', this.pendingImageIds);
+    },
+    addPendingVideoId(videoId: number) {
+      this.pendingVideoIds.push(videoId);
+      console.log('添加待清理视频ID:', videoId, '当前列表:', this.pendingVideoIds);
+    },
+    // 清空所有待清理的文件（封面、图片、视频）
+    clearAllPendingFiles() {
+      this.setManualCoverImgId(null);
+      this.pendingImageIds = [];
+      this.pendingVideoIds = [];
+      console.log('已清空所有待清理的文件（封面、图片、视频）');
+    },
     // 异步请求action---------------------------------------------------
     // async getArticleListAction(userId: number | '' = '', idList = [], keywords = '', append = false, loadingKey?: string) {
     async getArticleListAction(params: Record<string, any> = {}) {
@@ -144,7 +108,18 @@ const useArticleStore = defineStore('article', {
       console.log('getArticleListAction', paramsInfo);
       const res = await getList(paramsInfo, loadingKey); //获取文章列表信息以及文章数
       if (res.code === 0) {
-        append ? this.appendArticleList(res.data) : this.updateArticleList(res.data);
+        if (append) {
+          // 追加文章列表
+          const currentList = this.articles?.result ?? [];
+          const nextList = res.data?.result ?? [];
+          const merged = [...currentList, ...nextList];
+          const dedup = Array.from(new Map(merged.map((it: any) => [it.id, it])).values());
+          this.articles = { result: dedup, total: res.data?.total ?? this.articles?.total } as IArticles;
+        } else {
+          // 更新文章列表
+          this.articles = res.data;
+          console.log('updateArticleList', this.articles.result);
+        }
         useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
@@ -166,7 +141,7 @@ const useArticleStore = defineStore('article', {
         const { userInfo } = userStore;
         await userStore.getCollectAction(userInfo.id); //请求收藏夹
         const article: IArticle = res.data;
-        this.updateDetail(article, isEditRefresh);
+        this.article = article;
         // 确认文章有评论 且 非编辑时刷新的情况下,才去获取文章评论
         article.commentCount && !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
@@ -175,14 +150,18 @@ const useArticleStore = defineStore('article', {
     },
     async getTagsAction() {
       const res = await getTags();
-      res.code === 0 && this.updateTag(res.data);
+      if (res.code === 0) {
+        this.tags = res.data;
+      }
       console.log('getTagsAction');
     },
     async getUserLikedAction() {
       const { userInfo } = useUserStore();
       const res = await getLiked(userInfo.id); //获取当前用户的对所有文章的点赞信息
       console.log('getUserLikedAction', res);
-      res.code === 0 && this.updateUserLikedId(res.data.articleLiked);
+      if (res.code === 0) {
+        this.userLikedArticleIdList = res.data.articleLiked;
+      }
     },
     async createAction(payload) {
       const { title, content, tags } = payload;
@@ -225,69 +204,62 @@ const useArticleStore = defineStore('article', {
           } else {
             console.error(`文章 ${articleId} 图片关联失败:`, linkRes);
           }
-
-          // 清空手动封面ID
-          this.setManualCoverImgId(null);
         } else {
           console.log('没有图片需要关联');
         }
 
-        // 清空待清理图片列表（文章已保存）
-        this.clearPendingImageIds();
-
         // 关联视频到文章
-        // if (this.uploadedVideos.length) {
-        //   console.log(`文章 ${articleId} 已创建,要为该文章添加以下视频id:`, this.uploadedVideos);
-        //   const res = await addVideoForArticle(articleId, this.uploadedVideos);
-        //   if (res.code === 0) {
-        //     console.log(`文章 ${articleId} 成功添加 ${this.uploadedVideos.length} 个视频`);
-        //     Msg.showSuccess('视频关联成功');
-        //   } else {
-        //     console.error('关联视频失败:', res);
-        //     Msg.showFail('视频关联失败: ' + (res.msg || '未知错误'));
-        //   }
-        //   this.updateUploadedVideos(0); // 清空视频ID数组
-        // }
+        const videoUrls = extractVideosFromHtml(content);
+        console.log('从内容中提取到的视频:', videoUrls);
+
+        if (videoUrls.length > 0 || this.pendingVideoIds.length > 0) {
+          // 使用pendingVideoIds（已上传的视频ID列表）
+          const videoIds = this.pendingVideoIds;
+          console.log(`文章 ${articleId} 已创建,要为该文章添加以下视频id:`, videoIds);
+
+          if (videoIds.length > 0) {
+            const res = await addVideoForArticle(articleId, videoIds);
+            if (res.code === 0) {
+              console.log(`文章 ${articleId} 成功添加 ${videoIds.length} 个视频`);
+            } else {
+              console.error('关联视频失败:', res);
+              Msg.showFail('视频关联失败: ' + (res.msg || '未知错误'));
+            }
+          }
+        } else {
+          console.log('没有视频需要关联');
+        }
 
         if (tags.length) {
           const res = await changeTags(articleId, tags);
-          res.code === 0 && Msg.showSuccess('添加标签成功');
+          res.code === 0 && Msg.showSuccess('标签保存成功');
         }
 
         // 清除草稿
         LocalCache.removeCache('draft');
         console.log('已清除草稿');
 
-        router.replace(`/article/${articleId}`);
+        // 清空所有待清理的文件（封面、图片、视频）
+        this.clearAllPendingFiles();
+
         Msg.showSuccess('发布文章成功');
+        router.replace(`/article/${articleId}`);
       } else {
         Msg.showFail('发布文章失败');
       }
     },
-    async likeAction(articleId) {
-      const res1 = await likeArticle(articleId);
-      console.log('likeAction!!!!', res1);
-      res1.code === 0 ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
-      const res2 = await getArticleLikedById(articleId); //更新文章点赞
-      if (res2.code === 0) {
-        this.updateArticleLikes(articleId, res2.data.likes);
-        this.getUserLikedAction(); //更新用户点赞列表
-      }
-    },
     async updateAction(payload) {
       console.log('修改文章 updateAction', payload);
-      const { articleId, title, content, oldTags, tags } = payload;
+      const { articleId, title, content, tags } = payload;
 
-      // 修改标签
-      if (!isArrEqual(oldTags, tags)) {
-        console.log('标签有变化，需要修改');
-        const res = await changeTags(articleId, tags, true);
-        res.code === 0 && Msg.showSuccess('修改标签成功');
-      }
+      // 修改标签（统一处理，无需对比）
+      console.log('修改文章 updateAction tags=================', tags);
+      const res1 = await changeTags(articleId, tags);
+      res1.code === 0 && Msg.showSuccess('标签保存成功');
 
       // 修改文章内容
-      const res = await updateArticle({ articleId, title, content });
-      if (res.code === 0) {
+      const res2 = await updateArticle({ articleId, title, content });
+      if (res2.code === 0) {
         // 从HTML内容中提取新图片
         const imageUrls = extractImagesFromHtml(content);
         console.log('修改后内容中的图片:', imageUrls);
@@ -322,7 +294,6 @@ const useArticleStore = defineStore('article', {
 
           // 添加其他图片（避免重复添加封面）
           const coverUrl = images[0]?.url || null;
-          const coverId = images[0]?.id || null;
 
           for (let i = 0; i < imageUrls.length; i++) {
             const currentUrl = imageUrls[i];
@@ -338,30 +309,40 @@ const useArticleStore = defineStore('article', {
           console.log('准备更新关联的图片:', images);
           const linkRes = await addImgForArticle(articleId, images);
           linkRes.code === 0 && console.log(`文章 ${articleId} 成功更新图片关联`);
-
-          // 清空手动封面ID
-          this.setManualCoverImgId(null);
+        } else {
+          console.log('没有图片需要更新关联');
         }
 
-        // 清空待清理图片列表（文章已保存）
-        this.clearPendingImageIds();
+        // 关联视频到文章（包括新增和删除）
+        const videoUrls = extractVideosFromHtml(content);
+        console.log('修改后内容中的视频:', videoUrls);
 
-        // 若新增了视频
-        // if (this.uploadedVideos.length) {
-        //   console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id`, this.uploadedVideos);
-        //   const res = await addVideoForArticle(articleId, this.uploadedVideos);
-        //   if (res.code === 0) {
-        //     console.log(`id为${articleId}的文章成功添加${this.uploadedVideos.length}个视频`);
-        //     Msg.showSuccess('视频关联成功');
-        //   }
-        //   this.updateUploadedVideos(0); // 清空视频ID数组
-        // }
+        if (videoUrls.length > 0 || this.pendingVideoIds.length > 0) {
+          // 使用pendingVideoIds（本次编辑新上传的视频）
+          const videoIds = this.pendingVideoIds;
+          console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id:`, videoIds);
+
+          if (videoIds.length > 0) {
+            const res = await addVideoForArticle(articleId, videoIds);
+            if (res.code === 0) {
+              console.log(`id为${articleId}的文章成功添加${videoIds.length}个视频`);
+            } else {
+              console.error('关联视频失败:', res);
+              Msg.showFail('视频关联失败: ' + (res.msg || '未知错误'));
+            }
+          }
+        } else {
+          console.log('没有视频需要更新关联');
+        }
+
+        // 清空所有待清理的文件（封面、图片、视频）
+        this.clearAllPendingFiles();
 
         Msg.showSuccess('修改文章成功');
         router.push({ path: `/article/${articleId}` });
       } else {
         Msg.showFail('修改文章失败');
-        console.log(res);
+        console.log(res2);
       }
     },
     async removeAction(articleId) {
@@ -371,6 +352,30 @@ const useArticleStore = defineStore('article', {
         router.push({ path: `/article` });
       } else {
         Msg.showFail('删除文章失败');
+      }
+    },
+    async likeAction(articleId) {
+      const res = await likeArticle(articleId);
+      if (res.code === 0) {
+        // 根据返回的 liked 状态显示对应提示
+        res.data.liked ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
+        // 直接使用返回的点赞总数更新UI（不需要额外请求）
+        const newLikes = res.data.likes;
+        console.log('Store likeAction 收到新的点赞数:', newLikes);
+        // 更新列表中的点赞数
+        this.articles.result?.find((article) => {
+          if (article.id === articleId) {
+            article.likes = newLikes;
+          }
+        });
+        // 更新文章详情的点赞数
+        if (this.article && this.article.id === articleId) {
+          this.article.likes = newLikes;
+        }
+        // 更新用户点赞列表
+        this.getUserLikedAction();
+      } else {
+        Msg.showFail('操作失败，请重试');
       }
     },
     // 手动上传封面
@@ -387,14 +392,14 @@ const useArticleStore = defineStore('article', {
         Msg.showFail('封面上传失败');
       }
     },
-    // 清理孤儿图片
+    // 清理已上传的孤儿图片
     async deletePendingImagesAction() {
       if (this.pendingImageIds.length) {
         const imagesToDelete = this.pendingImageIds.map((id) => ({ id }));
-        console.log('清理孤儿图片:', imagesToDelete);
+        console.log('清理已上传的孤儿图片:', imagesToDelete);
         const res = await deleteImg(imagesToDelete);
         if (res.code === 0) {
-          this.clearPendingImageIds();
+          this.pendingImageIds = [];
           console.log('孤儿图片清理成功');
         } else {
           console.error('孤儿图片清理失败');
@@ -403,10 +408,26 @@ const useArticleStore = defineStore('article', {
         console.log('没有需要清理的孤儿图片');
       }
     },
+    // 清理已上传的孤儿视频
+    async deletePendingVideosAction() {
+      if (this.pendingVideoIds.length) {
+        console.log('清理已上传的孤儿视频:', this.pendingVideoIds);
+        const res = await deleteVideo(this.pendingVideoIds);
+        if (res.code === 0) {
+          this.pendingVideoIds = [];
+          console.log('孤儿视频清理成功');
+        } else {
+          console.error('孤儿视频清理失败');
+        }
+      } else {
+        console.log('没有需要清理的孤儿视频');
+      }
+    },
     async searchAction(keywords, loadingKey) {
       const res = await search(keywords, loadingKey);
       if (res.code === 0) {
-        this.updateSearchResults(res.data);
+        this.searchResults = res.data;
+        console.log('updateSearchResults', this.searchResults);
       }
     },
   },

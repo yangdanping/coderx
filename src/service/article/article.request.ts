@@ -74,10 +74,10 @@ export const getTags = (params?: IPage) => {
 };
 
 // 修改文章标签
-export const changeTags = (articleId: RouteParam, tags, hasOldTags: any = '') => {
-  console.log('changeTags!!!!!!!!!!!!!!!!!!!!!', articleId, tags);
+export const changeTags = (articleId: RouteParam, tags: string[]) => {
+  console.log('changeTags', articleId, tags);
   return myRequest.post<IResData>({
-    url: `${urlHead}/${articleId}/tag?hasOldTags=${hasOldTags}`,
+    url: `${urlHead}/${articleId}/tag`,
     data: { tags },
   });
 };

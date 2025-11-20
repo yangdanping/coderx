@@ -36,7 +36,6 @@ export default function init(app: App) {
       rootStore.$reset();
     }
     if (to.path.includes('article')) {
-      console.log('initArticle');
       articleStore.initArticle();
       commentStore.$reset();
     }

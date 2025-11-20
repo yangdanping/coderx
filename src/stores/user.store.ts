@@ -39,15 +39,6 @@ const useUserStore = defineStore('user', {
     },
   },
   actions: {
-    updateToken(token: string) {
-      this.token = token;
-    },
-    updateUserInfo(userInfo: IUserInfo) {
-      this.userInfo = userInfo;
-    },
-    updateProfile(profile: IUserInfo) {
-      this.profile = profile;
-    },
     updateOnlineUsers(userList) {
       // 将当前用户置顶
       (userList as any[]).find((user, index) => {
@@ -97,17 +88,6 @@ const useUserStore = defineStore('user', {
     initProfile() {
       this.profile = {};
     },
-    changeFollowInfo(followInfo) {
-      this.followInfo = followInfo;
-      const { follower } = followInfo;
-      // 若follower为null说明该用户无关注者(无粉丝),isFollowed设为false
-      this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
-      // bug问题可能出现在this.isFollowed不适用于列表中
-    },
-    changeCollect(payload) {
-      this.collects = payload;
-      console.log('changeCollect 收藏夹', this.collects);
-    },
     // changeComment(payload) {
     //   this.comments = payload;
     //   console.log('changeComment', this.comments);
@@ -136,9 +116,9 @@ const useUserStore = defineStore('user', {
         const res2 = await getUserInfoById(id);
         if (res2.code === 0) {
           const userInfo = res2.data;
-          this.updateUserInfo(userInfo);
+          this.userInfo = userInfo;
           LocalCache.setCache('userInfo', userInfo);
-          this.updateToken(token);
+          this.token = token;
           LocalCache.setCache('token', token); //注意拿到token第一时间先做缓存,然后就可以在axios实例拦截器中getCache了
           //   // 3.成功登录后刷新页面-----------------------------------------------------
           LocalCache.getCache('token') ? router.go(0) : Msg.showFail('请求登录用户信息失败'); //若是登录用户信息则不用再请求了
@@ -153,18 +133,17 @@ const useUserStore = defineStore('user', {
       console.log('followAction res', res);
       const queryId = !isFollowListItem ? userId : this.userInfo.id;
       if (res.code === 0) {
-        this.getFollowAction(queryId); //更新关注信息,默认更新的是被更新者的userId
         Msg.showSuccess('关注成功');
       } else {
-        this.getFollowAction(queryId); //更新关注信息
         Msg.showWarn('取关成功');
       }
+      this.getFollowAction(queryId); //更新关注信息
     },
     async getProfileAction(userId: RouteParam) {
       const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       if (res.code === 0) {
         console.log(res.data);
-        this.updateProfile(res.data);
+        this.profile = res.data;
       } else {
         Msg.showFail('请求用户信息失败');
       }
@@ -173,7 +152,8 @@ const useUserStore = defineStore('user', {
       console.log('getCollectAction userId', userId);
       const res = await getCollect(userId);
       if (res.code === 0) {
-        this.changeCollect(res.data);
+        this.collects = res.data;
+        console.log('changeCollect 收藏夹', this.collects);
       } else {
         Msg.showFail('获取用户收藏夹失败');
       }
@@ -205,7 +185,15 @@ const useUserStore = defineStore('user', {
       const res = await getFollow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
       // console.log('getFollowAction', res.data);
       // 若改用户中的follower的id中有当前登录用户的id,则isFollowed为true
-      res.code === 0 ? this.changeFollowInfo(res.data) : Msg.showFail('请求用户关注信息失败');
+      if (res.code === 0) {
+        const followInfo = res.data;
+        this.followInfo = followInfo;
+        const { follower } = followInfo;
+        // 若follower为null说明该用户无关注者(无粉丝),isFollowed设为false
+        this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
+      } else {
+        Msg.showFail('请求用户关注信息失败');
+      }
     },
     async uploadAvatarAction(payload) {
       const userId = this.userInfo.id;
@@ -216,7 +204,7 @@ const useUserStore = defineStore('user', {
         Msg.showSuccess('更换头像成功');
         const res = await getUserInfoById(userId);
         if (res.code === 0) {
-          this.updateUserInfo(res.data);
+          this.userInfo = res.data;
           LocalCache.setCache('userInfo', res.data);
           router.go(0);
         } else {

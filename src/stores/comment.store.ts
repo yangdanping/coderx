@@ -57,9 +57,6 @@ const useCommentStore = defineStore('comment', {
         console.log('对回复的回复--------------', this.replyInfo2);
       }
     },
-    updateUserLikedId(userLikedCommentIdList: number[]) {
-      this.userLikedCommentIdList = userLikedCommentIdList;
-    },
     updateArticleComment(upatedComment: IComment, prop: string) {
       const { id, cid, rid } = upatedComment;
       const commentType = !cid ? 'commentInfo' : cid && !rid ? 'replyInfo' : 'replyInfo2';
@@ -91,7 +88,9 @@ const useCommentStore = defineStore('comment', {
     async getUserLikedAction() {
       const userId = useUserStore().userInfo.id;
       const res = await getLiked(userId);
-      res.code === 0 && this.updateUserLikedId(res.data.commentLiked); //重新获取用户点赞过的评论id列表
+      if (res.code === 0) {
+        this.userLikedCommentIdList = res.data.commentLiked;
+      }
     },
     async commentAction(payload) {
       const { articleId, cid } = payload;
@@ -109,8 +108,17 @@ const useCommentStore = defineStore('comment', {
     async likeAction(comment, inArticle = true) {
       const { id } = comment;
       const res = await likeComment(id);
-      res.code === 0 ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
-      this.updateCommentByIdAction(id, 'likes', inArticle);
+      if (res.code === 0) {
+        // 根据返回的 liked 状态显示对应提示
+        res.data.liked ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
+        // 直接使用返回的点赞总数更新UI（不需要额外请求）
+        const upatedComment = { id, likes: res.data.likes };
+        inArticle ? this.updateArticleComment(upatedComment, 'likes') : this.updateUserComment(upatedComment, 'likes');
+        // 更新用户点赞列表
+        this.getUserLikedAction();
+      } else {
+        Msg.showFail('操作失败，请重试');
+      }
     },
     async updateCommentAction(payload) {
       const { commentId } = payload;
