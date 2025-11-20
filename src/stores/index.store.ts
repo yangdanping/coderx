@@ -41,11 +41,11 @@ const useRootStore = defineStore('root', {
       res.code && logOut(false);
     },
     async loadLoginAction() {
-      const { updateToken, updateUserInfo } = useUserStore();
+      const userStore = useUserStore();
       const token = LocalCache.getCache('token');
-      token && updateToken(token);
+      token && (userStore.token = token);
       const userInfo = LocalCache.getCache('userInfo');
-      userInfo && updateUserInfo(userInfo);
+      userInfo && (userStore.userInfo = userInfo);
     },
   },
 });

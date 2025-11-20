@@ -11,5 +11,21 @@ import bindImagesLayer from './bindImagesLayer';
 import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
 import extractImagesFromHtml from './extractImagesFromHtml';
+import extractVideosFromHtml from './extractVideosFromHtml';
 
-export { LocalCache, SessionCache, Msg, dateFormat, debounce, throttle, isEmptyObj, isArrEqual, getImageUrl, bindImagesLayer, codeHeightlight, emitter, extractImagesFromHtml };
+export {
+  LocalCache,
+  SessionCache,
+  Msg,
+  dateFormat,
+  debounce,
+  throttle,
+  isEmptyObj,
+  isArrEqual,
+  getImageUrl,
+  bindImagesLayer,
+  codeHeightlight,
+  emitter,
+  extractImagesFromHtml,
+  extractVideosFromHtml,
+};

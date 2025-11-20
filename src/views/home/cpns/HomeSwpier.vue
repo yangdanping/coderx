@@ -10,7 +10,7 @@
             </h2>
             <h3 class="title">{{ item.title }}</h3>
           </a>
-          <img class="cover" :src="item.image" alt="" loading="lazy" />
+          <img class="cover" :src="item.urlToImage" alt="" loading="lazy" />
         </div>
       </el-carousel-item>
     </el-carousel>

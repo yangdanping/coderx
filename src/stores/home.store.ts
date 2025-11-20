@@ -7,35 +7,32 @@ const useHomeStore = defineStore('home', {
     hotUsers: [] as any[],
   }),
   actions: {
-    updateNews(news: any[]) {
-      news.forEach((item, index) => {
-        // 除去没有封面的内容
-        if (!item.image) news.splice(index, 1);
-      });
-      this.news = news;
-      console.log('getNewsAction res', this.news);
-    },
     // 异步请求action---------------------------------------------------
     async getNewsAction() {
-      const news = LocalCache.getCache('news');
-      if (!news) {
+      let articles: any[] = [];
+      const cachedNews = LocalCache.getCache('news');
+
+      if (!cachedNews) {
         const res = await getNews();
-        console.log('重新获取新闻', res);
         if (res.articles.length) {
+          console.log('重新获取新闻', res.articles);
           LocalCache.setCache('news', res.articles);
-          this.updateNews(res.articles);
+          articles = res.articles;
         }
       } else {
-        console.log('拿到已有新闻', news);
-        this.updateNews(news);
+        console.log('拿到已有新闻', cachedNews);
+        articles = cachedNews;
       }
+
+      // 统一处理新闻列表：过滤掉没有封面的内容
+      this.news = articles.filter((item) => item.urlToImage);
     },
     async getHotUsersAction() {
       const res = await getHotUsers();
       if (res.code === 0) {
         this.hotUsers = res.data;
       }
-      console.log('getHotUsersAction res', this.hotUsers);
+      console.log('首页获得热门作者', this.hotUsers);
     },
   },
 });

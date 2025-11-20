@@ -23,6 +23,7 @@ import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
+
 const userStore = useUserStore();
 const rootStore = useRootStore();
 const commentStore = useCommentStore();
@@ -44,7 +45,7 @@ onMounted(() => {
 });
 
 const likeClick = (articleId) => {
-  console.log('likeClick', articleId);
+  console.log('detail-panel likeClick', articleId);
   if (token.value) {
     if (article.status) {
       Msg.showFail('文章已被封禁,不可点赞');
@@ -56,13 +57,11 @@ const likeClick = (articleId) => {
     rootStore.changeLoginDialog();
   }
 };
+
 const gotoComment = () => emitter.emit('gotoCom');
-// const handleShow = (e) => {
-//   if (!disabled.value) {
-//     userStore.getCollectAction(userInfo.value.id);
-//   }
-// };
+
 const handleHide = () => emitter.emit('hideCollect');
+
 const onClickOutside = () => {
   if (disabled.value && !token.value) {
     Msg.showInfo('请先登录');
@@ -75,10 +74,6 @@ const onClickOutside = () => {
 
 <style lang="scss" scoped>
 .detail-panel {
-  /* display: flex;
-  flex-direction: column;
-  align-items: left;
-  justify-content: space-around; */
   font-size: 30px;
   position: fixed;
   left: 2vw;

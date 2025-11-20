@@ -37,7 +37,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/news-api/': {
-        target: 'https://gnews.io/api/v4',
+        // target: 'https://gnews.io/api/v4',
+        target: 'https://newsapi.org/v2',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/news-api/, ''),
       },
