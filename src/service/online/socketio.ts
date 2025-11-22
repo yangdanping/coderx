@@ -47,8 +47,17 @@ class OnlineStatusService {
       });
     }
 
+    // 🟢【新增逻辑】自动适配跨设备访问
+    // 如果配置的是 localhost，但当前是通过 IP 访问的，则自动替换为当前 IP
+    // 这样在笔记本访问 http://192.168.3.96 时，会自动去连 192.168.3.96:8001
+    let connectionUrl = SOCKET_URL;
+    if (SOCKET_URL.includes('localhost') && window.location.hostname !== 'localhost') {
+      connectionUrl = SOCKET_URL.replace('localhost', window.location.hostname);
+      console.log(`🔄 检测到跨设备访问，自动修正 Socket 地址为: ${connectionUrl}`);
+    }
+
     // 创建 Socket.IO 连接(连接时已传递身份信息,后端通过io.on('connection')的回调,拿到socket.handshake.query,再解构拿到这些信息)
-    this.socket = io(SOCKET_URL, {
+    this.socket = io(connectionUrl, {
       query: {
         userName: isGuest ? '' : userInfo.name, // 游客不传用户名
         userId: isGuest ? '' : userInfo.id, // 游客不传用户 ID

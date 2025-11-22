@@ -1,6 +1,7 @@
 import { createPinia } from 'pinia';
 import router from '@/router';
 import { LocalCache } from '@/utils';
+import { VueQueryPlugin } from '@tanstack/vue-query';
 
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
@@ -17,7 +18,7 @@ import type { App } from 'vue';
 import useSocket from '@/service/socket';
 import initDirective from './directive';
 export default function init(app: App) {
-  app.use(createPinia()).use(router).use(VueDOMPurifyHTML).mount('#app');
+  app.use(createPinia()).use(router).use(VueDOMPurifyHTML).use(VueQueryPlugin).mount('#app');
   initDirective(app); // 初始化指令
   // 使用vue-dompurify-html既可以保留样式和防止xss攻击
   const rootStore = useRootStore();

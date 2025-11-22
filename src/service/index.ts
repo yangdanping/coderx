@@ -1,5 +1,5 @@
 // service统一的出口
-import { LocalCache, Msg } from '@/utils';
+import { LocalCache, Msg, recursiveReplace } from '@/utils';
 import MyRequest from '@/global/request';
 import { BASE_URL, NEWS_BASE_URL, TIME_OUT } from '@/global/request/config';
 import useUserStore from '@/stores/user.store';
@@ -28,6 +28,11 @@ const myRequest = new MyRequest({
     // ----------------------------
     resSuccess: (res) => {
       // console.log('响应成功拦截', res);
+      if (res && res.data) {
+        // 去除BASE_URL末尾可能的斜杠
+        const targetBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+        res.data = recursiveReplace(res.data, targetBaseUrl);
+      }
       return res;
     },
     resFail: (err) => {

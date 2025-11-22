@@ -3,12 +3,10 @@ import type { IResData } from '@/service/types';
 
 const urlHead = '/collect';
 
-export function getCollect(userId, pageNum = 0, pageSize = 10) {
-  const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
-  const limit = pageSize;
+export function getCollect(userId, pageNum = 1, pageSize = 10) {
   console.log('getCollect', userId);
   return myRequest.get<IResData>({
-    url: `${urlHead}/${userId}?offset=${offset}&limit=${limit}`,
+    url: `${urlHead}/${userId}?pageNum=${pageNum}&pageSize=${pageSize}`,
   });
 }
 

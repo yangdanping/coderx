@@ -15,6 +15,8 @@ export interface IResData<T = any> {
 export interface IPage {
   offset?: number;
   limit?: number;
+  pageNum?: number;
+  pageSize?: number;
 }
 
 export type RouteParam = RouteParamValue | RouteParamValue[];

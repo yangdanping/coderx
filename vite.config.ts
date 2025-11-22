@@ -32,7 +32,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
       },
       '/api': {
-        target: 'http://119.91.150.141:8000',
+        // target: 'http://119.91.150.141:8000',
+        target: 'http://8.138.223.188:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

@@ -102,9 +102,9 @@ const useArticleStore = defineStore('article', {
       console.log('getArticleListAction params', params);
       const { userId = '', idList = [], keywords = '', append = false, loadingKey = '' } = params;
       const { pageNum, pageSize, pageOrder, tagId } = useRootStore();
-      const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
-      const limit = pageSize;
-      const paramsInfo = { offset, limit, tagId, pageOrder, userId, idList, keywords };
+      // const offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
+      // const limit = pageSize;
+      const paramsInfo = { pageNum, pageSize, tagId, pageOrder, userId, idList, keywords };
       console.log('getArticleListAction', paramsInfo);
       const res = await getList(paramsInfo, loadingKey); //获取文章列表信息以及文章数
       if (res.code === 0) {
@@ -125,8 +125,8 @@ const useArticleStore = defineStore('article', {
         Msg.showFail('获取文章列表失败');
       }
     },
-    async getRecommendAction(offset = 0, limit = 10) {
-      const res = await getRecommend({ offset, limit });
+    async getRecommendAction(pageNum = 1, pageSize = 10) {
+      const res = await getRecommend({ pageNum, pageSize });
       res.code === 0 && (this.recommends = res.data);
       console.log('getRecommendAction res', this.recommends);
     },

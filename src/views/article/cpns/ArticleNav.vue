@@ -27,7 +27,7 @@ onMounted(() => {
     console.log('changeTagInList!!!!!!', id);
     activeId.value = id;
     rootStore.changeTag(id);
-    articleStore.refreshFirstPageAction();
+    // articleStore.refreshFirstPageAction(); // 移除旧逻辑
   });
   emitter.on('submitSearchValue', () => (activeId.value = '综合'));
 });
@@ -39,10 +39,10 @@ const handleClick = throttle(function (tab) {
   if (tab.paneName) {
     rootStore.$reset();
     rootStore.changeTag(tab.paneName === '综合' ? '' : tab.paneName);
-    articleStore.refreshFirstPageAction();
+    // articleStore.refreshFirstPageAction(); // 移除旧逻辑，由 ArticleList(最新版) 自动响应 tagId 变化
   } else {
     rootStore.$reset();
-    articleStore.refreshFirstPageAction();
+    // articleStore.refreshFirstPageAction(); // 移除旧逻辑
   }
   // 切换标签后回到列表顶部
   window.scrollTo(0, 0);

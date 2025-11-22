@@ -5,15 +5,15 @@ const urlHead = '/comment';
 
 export function getComment(data) {
   const { pageNum, pageSize, articleId = '', userId = '' } = data;
-  let offset = pageNum <= 1 ? 0 : (pageNum - 1) * pageSize;
-  let limit = pageSize;
+  let finalPageNum = pageNum;
+  let finalPageSize = pageSize;
   if (!userId) {
-    offset = 0;
-    limit = 100;
+    finalPageNum = 1;
+    finalPageSize = 100;
   }
-  console.log('getComment offset limit', offset, limit);
+  console.log('getComment params', finalPageNum, finalPageSize);
   return myRequest.get<IResData>({
-    url: `${urlHead}?offset=${offset}&limit=${limit}&articleId=${articleId}&userId=${userId}`,
+    url: `${urlHead}?pageNum=${finalPageNum}&pageSize=${finalPageSize}&articleId=${articleId}&userId=${userId}`,
   });
 }
 
