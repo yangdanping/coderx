@@ -28,7 +28,7 @@ const articleStore = useArticleStore();
 const { recommends = [] } = defineProps<{
   recommends?: any[];
 }>();
-const offset = ref(0);
+const pageNum = ref(1);
 const isRotating = ref(false);
 
 const refresh = throttle(function () {
@@ -40,9 +40,9 @@ const refresh = throttle(function () {
     isRotating.value = false;
   }, 800);
 
-  offset.value += 10;
-  if (offset.value > 20) offset.value = 0;
-  articleStore.getRecommendAction(offset.value);
+  pageNum.value += 1;
+  if (pageNum.value > 3) pageNum.value = 1;
+  articleStore.getRecommendAction(pageNum.value);
 }, 1000);
 
 const goToArticle = (item: any) => {

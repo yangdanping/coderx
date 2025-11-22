@@ -5,6 +5,7 @@
     </NavBar>
     <DetailContent :article="article" />
     <Comment :commentInfo="commentInfo" />
+    <AiAssistant :context="article?.content" />
   </div>
 </template>
 
@@ -13,6 +14,7 @@ import NavBar from '@/components/navbar/NavBar.vue';
 import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
 import Comment from './cpns/comment/Comment.vue';
+import AiAssistant from '@/components/AiAssistant.vue';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';

@@ -29,3 +29,6 @@ stats.html
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation
+*说明文档*/

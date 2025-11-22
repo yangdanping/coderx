@@ -5,12 +5,8 @@
       <ArticleNav :tags="tags" @changeTagInNav="changeTagInNav" />
     </nav>
     <div class="list-wrapper" :style="{ width: `${articleListWidth}px` }">
-      <ArticleList v-if="articles.result?.length" :articles="articles" @tabClick="tabClick" />
-      <div v-else-if="!noData" class="skeleton"><el-skeleton animated /></div>
-      <div v-else class="skeleton">
-        <h1 style="margin-bottom: 10px">{{ searchStr ? `"${searchStr}"相关内容` : '该专栏' }}暂无文章,快来发表第一篇吧~</h1>
-        <el-button @click="goEdit" type="primary" plain>发表第一篇</el-button>
-      </div>
+      <!-- 新架构：直接渲染 ArticleList，不再依赖 Store 数据控制显示 -->
+      <ArticleList @tabClick="tabClick" />
     </div>
     <div class="article-recommends">
       <ArticleRecommend v-if="showRecommend" :recommends="recommends" />
@@ -20,7 +16,7 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
-import ArticleList from './cpns/ArticleList2.vue';
+import ArticleList from './cpns/ArticleList.vue';
 import ArticleRecommend from './cpns/ArticleRecommend.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
 import { listWidth } from '@/global/constants/list-width';
@@ -53,12 +49,7 @@ onMounted(() => {
   console.log('当前页面是否有搜索内容', !!searchStr.value);
   articleStore.getTagsAction();
   articleStore.getRecommendAction();
-  if (!searchStr.value) {
-    articleStore.refreshFirstPageAction();
-  } else {
-    articleStore.refreshFirstPageAction({ keywords: searchStr.value });
-  }
-  setTimeout(() => (noData.value = !noData.value), 2000);
+  // 移除旧的 Store 请求逻辑，交由 ArticleList (最新版TanStack Query) 内部自动管理
   emitter.on('submitSearchValue', (value) => {
     searchValue.value = value;
   });
@@ -74,14 +65,8 @@ const changeTagInNav = () => {
 
 const tabClick = (order) => {
   console.log('article tabClick', order);
-  if (articles.value.total! > 1) {
-    if (searchStr.value) {
-      console.log('对搜索结果进行排序!', searchStr.value);
-      articleStore.refreshFirstPageAction({ keywords: searchStr.value as string });
-    } else {
-      articleStore.refreshFirstPageAction();
-    }
-  }
+  // 排序逻辑现已由 ArticleList(最新版) 内部的 pageOrder 响应式参数自动触发更新
+  // 这里仅保留日志，或者处理其他非列表相关的副作用
 };
 const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeLoginDialog());
 </script>

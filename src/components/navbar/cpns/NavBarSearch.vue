@@ -1,23 +1,27 @@
 <template>
-  <div class="search">
+  <div class="search" ref="containerRef">
     <el-input
-      ref="ElInputRef"
+      ref="inputRef"
       v-model="searchValue"
-      @input="debounceInput"
+      @focus="handleFocus"
       @keyup.enter="submitSearch"
+      @compositionstart="handleCompositionStart"
+      @compositionend="handleCompositionEnd"
       :style="{ width: widerStyle }"
       placeholder="Search CoderX"
       :prefix-icon="Search"
       clearable
       size="large"
     />
-    <el-card v-if="isShowResultCard" class="search-card" ref="ElCardRef" :style="{ width: widerStyle }">
-      <template v-if="searchHistory.length" #header>
+    <el-card v-if="shouldShowCard" class="search-card" :style="{ width: widerStyle }">
+      <!-- 搜索记录头部 -->
+      <template v-if="searchHistory.length && !searchValue" #header>
         <span class="header-title">搜索记录:</span>
-        <el-button v-if="searchHistory.length" type="text" size="small" @click="clearAllHistory" class="clear-btn"> 清空 </el-button>
+        <el-button type="text" size="small" @click="clearAllHistory" class="clear-btn"> 清空 </el-button>
       </template>
-      <!-- 搜索记录-------------------------------- -->
-      <div v-if="searchHistory.length" class="history-content">
+
+      <!-- 搜索记录列表 (仅在无搜索词时显示) -->
+      <div v-if="searchHistory.length && !searchValue" class="history-content">
         <div
           v-for="(item, index) in searchHistory"
           :key="index"
@@ -28,126 +32,126 @@
           @mouseleave="hoveredIndex = -1"
         >
           <span class="history-text">{{ item }}</span>
-          <el-icon class="delete-icon" v-show="hoveredIndex === index" @click.stop="removeHistoryItem(item)"> <Close /> </el-icon>
+          <el-icon class="delete-icon" v-show="hoveredIndex === index" @click.stop="removeHistoryItem(item)">
+            <Close />
+          </el-icon>
         </div>
       </div>
-      <!-- 搜索结果-------------------------------- -->
-      <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchResults.length && searchHistory.length }">
-        <template v-if="!isSearchLoading">
-          <template v-if="searchResults.length">
+
+      <!-- 搜索结果列表 -->
+      <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchResults?.length && searchHistory.length }">
+        <template v-if="!isLoading">
+          <template v-if="searchResults?.length">
             <div v-for="item in searchResults" :key="item.id" @click="goToArticle(item)" class="result-item-wrapper">
               <div class="search-item" v-html="highlightText(item.title, searchValue)"></div>
             </div>
           </template>
           <div v-else class="no-data-text">未搜索到相关内容</div>
         </template>
-        <div v-else class="loading" v-loading="isSearchLoading"></div>
+        <div v-else class="loading" v-loading="true"></div>
       </div>
     </el-card>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Search, Close } from '@element-plus/icons-vue';
-import { storeToRefs } from 'pinia';
-
-import useRootStore from '@/stores/index.store';
-import useArticleStore from '@/stores/article.store';
+import { useQuery } from '@tanstack/vue-query';
 import { debounce, emitter } from '@/utils';
 import LocalCache from '@/utils/LocalCache';
+import useRootStore from '@/stores/index.store';
+import useArticleStore from '@/stores/article.store';
+import { search } from '@/service/article/article.request';
 
-const rootStore = useRootStore();
-const articleStore = useArticleStore();
-const { searchResults } = storeToRefs(articleStore);
-
-import useLoadingStore from '@/stores/loading.store';
-const loadingKey = 'search';
-const loadingStore = useLoadingStore();
-const isSearchLoading = computed(() => loadingStore.isLoading(loadingKey));
-
-const ElInputRef = ref();
-const ElCardRef = ref();
+// 1. 状态定义
+const containerRef = ref<HTMLElement>();
+const inputRef = ref();
 const searchValue = ref('');
-const isShowResultCard = ref(false);
-// const showLoading = ref(false);
-const router = useRouter();
-const route = useRoute();
-
-// 搜索记录相关
+const debouncedSearchValue = ref(''); // 用于触发查询的防抖值
+const isFocused = ref(false);
 const searchHistory = ref<string[]>([]);
 const hoveredIndex = ref(-1);
+const isComposing = ref(false); // 追踪输入法状态
 
-const borderColors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#ff6b9d', '#9c27b0', '#00bcd4', '#ff9800', '#795548'];
-const getItemStyle = computed(() => {
-  return (index: number) => {
-    const colorIndex = index % borderColors.length;
-    const color = borderColors[colorIndex];
-    return { borderColor: color, color: color };
-  };
+const router = useRouter();
+const route = useRoute();
+const rootStore = useRootStore();
+const articleStore = useArticleStore();
+
+// 防抖更新查询参数
+const updateDebouncedValue = debounce(() => {
+  debouncedSearchValue.value = searchValue.value;
+}, 500);
+
+watch(searchValue, (newVal) => {
+  if (!newVal) {
+    debouncedSearchValue.value = '';
+  } else {
+    updateDebouncedValue();
+  }
 });
 
-const widerStyle = computed(() => {
-  return isShowResultCard.value ? '330px' : '240px';
+// 2. TanStack Query 替换原有的 Store/Loading 逻辑
+const { data: searchData, isLoading } = useQuery({
+  queryKey: ['search', debouncedSearchValue],
+  queryFn: () => search(debouncedSearchValue.value),
+  enabled: computed(() => !!debouncedSearchValue.value), // 只有当有搜索值时才查询
+  staleTime: 1000 * 60, // 1分钟缓存
+  select: (res) => res.data, // 只返回 data 部分
 });
 
-const windowHandleClick = (e) => {
-  // 检查点击的元素是否在搜索相关区域内
-  const inputEl = ElInputRef.value?.$el;
-  const searchResultBox = ElCardRef.value?.$el;
+const searchResults = computed(() => searchData.value || []);
 
-  const isClickInput = inputEl?.contains(e.target);
-  const isClickSearchResultBox = searchResultBox?.contains(e.target);
-  // 判断点击是否在搜索输入框区域
-  isShowResultCard.value = (isClickInput || isClickSearchResultBox) && (searchValue.value || searchHistory.value.length);
-  // console.log('isShowResultCard=========', isShowResultCard.value);
-};
-const typinglagTime = 500;
-
-onMounted(() => {
-  window.addEventListener('click', windowHandleClick, true);
-  // 组件挂载时加载搜索记录
-  loadSearchHistory();
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('click', windowHandleClick, true);
-});
-
-const submitSearch = () => {
-  if (searchValue.value) {
-    // 保存搜索记录
-    LocalCache.addSearchHistory(searchValue.value);
-    loadSearchHistory();
-    rootStore.changeTag('');
-    if (route.path !== '/article') {
-      const routeData = router.resolve({
-        path: '/article',
-        query: { searchValue: searchValue.value },
-      });
-      console.log('在其他页面,进行跳转,在跳转页面中请求', routeData);
-      window.open(routeData.href, '_blank');
-    } else {
-      console.log('在文章列表页面,直接在当前页面中请求');
-      articleStore.refreshFirstPageAction({ keywords: searchValue.value });
-    }
-    emitter.emit('submitSearchValue', searchValue.value);
+// 3. 显示逻辑优化
+// 点击外部隐藏逻辑
+const handleClickOutside = (event: MouseEvent) => {
+  if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
+    isFocused.value = false;
   }
 };
 
-const debounceInput = debounce(() => {
-  searchValue.value && articleStore.searchAction(searchValue.value, loadingKey);
-}, typinglagTime);
+const handleFocus = () => {
+  isFocused.value = true;
+};
 
-// 搜索记录相关方法
+// 处理macos系统输入法回车键提交搜索的问题
+const handleCompositionStart = () => (isComposing.value = true);
+
+const handleCompositionEnd = () => {
+  // 使用 setTimeout 延迟重置，确保 keyup.enter 事件能正确检测到输入法状态
+  // compositionend 和 keyup.enter 几乎同时触发，需要延迟一点点时间
+  setTimeout(() => (isComposing.value = false), 50);
+};
+
+// 控制卡片显示：(聚焦状态) && (有搜索内容 OR 有历史记录)
+const shouldShowCard = computed(() => {
+  const hasContent = !!searchValue.value || searchHistory.value.length > 0;
+  return isFocused.value && hasContent;
+});
+
+// 样式计算
+const widerStyle = computed(() => {
+  return shouldShowCard.value ? '330px' : '240px';
+});
+
+const borderColors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#ff6b9d', '#9c27b0', '#00bcd4', '#ff9800', '#795548'];
+const getItemStyle = (index: number) => {
+  const color = borderColors[index % borderColors.length];
+  return { borderColor: color, color: color };
+};
+
+// 4. 搜索记录管理
 const loadSearchHistory = () => {
   searchHistory.value = LocalCache.getSearchHistory();
 };
 
 const selectHistoryItem = (value: string) => {
   searchValue.value = value;
+  // 选中历史记录时，不仅赋值，通常也期望触发搜索或跳转
+  // 这里直接触发提交
   submitSearch();
-  articleStore.searchAction(searchValue.value, 'search');
 };
 
 const removeHistoryItem = (item: string) => {
@@ -160,47 +164,59 @@ const clearAllHistory = () => {
   loadSearchHistory();
 };
 
-const handleSearchResultClick = (title: string) => {
-  LocalCache.addSearchHistory(title);
+// 5. 提交搜索与跳转
+const submitSearch = () => {
+  if (isComposing.value) return;
+  if (!searchValue.value) return;
+
+  // 保存记录
+  LocalCache.addSearchHistory(searchValue.value);
   loadSearchHistory();
+
+  // 隐藏下拉 (失去焦点)
+  isFocused.value = false;
+  if (inputRef.value) inputRef.value.blur();
+
+  rootStore.changeTag('');
+
+  // 路由跳转逻辑
+  if (route.path !== '/article') {
+    const routeData = router.resolve({
+      path: '/article',
+      query: { searchValue: searchValue.value },
+    });
+    window.open(routeData.href, '_blank');
+  } else {
+    articleStore.refreshFirstPageAction({ keywords: searchValue.value });
+  }
+  emitter.emit('submitSearchValue', searchValue.value);
 };
 
-// 跳转到文章详情 - 使用路由跳转避免 localhost 域名问题
 const goToArticle = (item: any) => {
-  handleSearchResultClick(item.title);
+  // 记录点击历史
+  LocalCache.addSearchHistory(item.title);
+  loadSearchHistory();
+
   const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.id } });
   window.open(routeUrl.href, '_blank');
 };
 
-// 高亮匹配文本的函数
-const highlightText = computed(() => {
-  return (text: string, searchValue: string) => {
-    if (!searchValue || !text) return text;
-    // 简单的不区分大小写替换
-    const regex = new RegExp(searchValue, 'gi');
-    return text.replace(regex, '<strong>$&</strong>');
-  };
+// 6. 工具函数
+const highlightText = (text: string, keyword: string) => {
+  if (!keyword || !text) return text;
+  const regex = new RegExp(keyword, 'gi');
+  return text.replace(regex, '<strong>$&</strong>');
+};
+
+// 7. 生命周期
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+  loadSearchHistory();
 });
 
-watch(
-  () => searchValue.value,
-  (newV) => {
-    if (!newV) {
-      searchResults.value = []; //清空搜索结果
-      isShowResultCard.value = false;
-    } else {
-      isShowResultCard.value = true;
-    }
-  },
-);
-
-// 控制showLoading的出现-----------------------------
-// watch(
-//   () => searchResults.value,
-//   (newV) => {
-//     !newV.length && setTimeout(() => (showLoading.value = false), 2500);
-//   },
-// );
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -209,6 +225,7 @@ $searchWidth: 260px;
 .search {
   margin: 0 30px;
   position: relative;
+
   :deep(.el-input) {
     border-radius: 5px;
     transition: all 0.3s;
@@ -218,14 +235,17 @@ $searchWidth: 260px;
       border-radius: 5px;
     }
   }
+
   :deep(.el-card__body) {
     padding: 5px 10px;
   }
+
   :deep(.el-card__header) {
     padding: 5px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+
     .header-title {
       color: #ccc;
       font-size: 14px;
@@ -234,7 +254,6 @@ $searchWidth: 260px;
     .clear-btn {
       color: #409eff;
       padding: 0;
-
       &:hover {
         color: #66b1ff;
       }
@@ -248,17 +267,17 @@ $searchWidth: 260px;
     transition: all 0.3s;
     z-index: 99;
 
-    // 搜索记录面板样式
     .history-content {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       padding-bottom: 5pt;
+
       .history-item {
         position: relative;
         display: inline-flex;
         align-items: center;
-        max-width: 90px; // 原需求要求30px，但考虑用户体验，设置为130px以显示更多文本内容
+        max-width: 90px;
         padding: 4px 8px;
         border: 1px solid;
         border-radius: 4px;
@@ -330,6 +349,7 @@ $searchWidth: 260px;
           border-radius: 2px;
         }
       }
+
       .no-data-text {
         display: flex;
         justify-content: center;
@@ -344,7 +364,7 @@ $searchWidth: 260px;
         justify-content: center;
         align-items: center;
         width: 100%;
-        margin-top: 30px;
+        height: 60px; /* Fixed height for loading */
       }
     }
   }

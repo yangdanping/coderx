@@ -12,6 +12,7 @@ import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
 import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml from './extractVideosFromHtml';
+import recursiveReplace from './recursiveReplace';
 
 export {
   LocalCache,
@@ -28,4 +29,5 @@ export {
   emitter,
   extractImagesFromHtml,
   extractVideosFromHtml,
+  recursiveReplace,
 };
