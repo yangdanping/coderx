@@ -14,7 +14,7 @@ const useHomeStore = defineStore('home', {
 
       if (!cachedNews) {
         const res = await getNews();
-        if (res.articles.length) {
+        if (res?.articles.length) {
           console.log('重新获取新闻', res.articles);
           LocalCache.setCache('news', res.articles);
           articles = res.articles;
