@@ -87,7 +87,6 @@ declare module 'vue' {
     NavBarLeft: typeof import('./components/navbar/cpns/NavBarLeft.vue')['default']
     NavBarRight: typeof import('./components/navbar/cpns/NavBarRight.vue')['default']
     NavBarSearch: typeof import('./components/navbar/cpns/NavBarSearch.vue')['default']
-    NavBarSearch2: typeof import('./components/navbar/cpns/NavBarSearch.vue')['default']
     NavBarUser: typeof import('./components/navbar/cpns/NavBarUser.vue')['default']
     NavBarUserHistory: typeof import('./components/navbar/cpns/NavBarUserHistory.vue')['default']
     NavMenu: typeof import('./components/navbar/cpns/NavMenu.vue')['default']
