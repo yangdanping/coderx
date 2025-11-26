@@ -1,4 +1,5 @@
 <template>
+  <!-- ReplyItem只处理 Reply（二级/三级回复），与一级 Comment 做区分 -->
   <div class="reply-list-item">
     <Avatar :info="item.author" :size="35" />
     <div class="reply-box">
@@ -12,7 +13,7 @@
           </div>
         </div>
         <div class="floor">
-          <span>{{ item.createAt }}</span>
+          <span v-dateformat="item.createAt"></span>
         </div>
       </div>
       <div class="editor-content">
@@ -22,7 +23,7 @@
       <CommentForm v-if="replythis(item.id)" :commentId="commentId" :replyId="replyId" />
       <!-- <CommentChildReply :comment="item" /> -->
       <!-- 使用递归组件-------------------------------- -->
-      <CommentReply :comment="item" isReply />
+      <ReplyList :comment="item" isReply />
     </div>
     <CommentTools :editData="item.content" :commentId="item.id" :userId="item.author?.id" />
   </div>
@@ -32,11 +33,11 @@
 import { emitter } from '@/utils';
 import Avatar from '@/components/avatar/Avatar.vue';
 
-import CommentAction from '@/components/list/cpns/CommentAction.vue';
-import CommentForm from '../comment/CommentForm.vue';
-import CommentTools from '../comment/CommentTools.vue';
+import CommentAction from '@/components/list/cpns/CommentActionOld.vue';
+import CommentForm from './CommentFormOld.vue';
+import CommentTools from './CommentToolsOld.vue';
 // import CommentChildReply from '../comment-child-reply/CommentChildReply.vue';
-import CommentReply from './CommentReply.vue';
+import ReplyList from './ReplyListOld.vue';
 
 import type { IComment } from '@/stores/types/comment.result';
 

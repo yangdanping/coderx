@@ -21,13 +21,14 @@
 
 <script lang="ts" setup>
 import ListItem from '@/components/list/ListItem.vue';
-import CommentAction from '@/components/list/cpns/CommentAction.vue';
+import CommentAction from '@/components/list/cpns/CommentActionOld.vue';
+// import useCommentStore from '@/stores/comment.store.old';
 import useCommentStore from '@/stores/comment.store';
 import useUserStore from '@/stores/user.store';
 const router = useRouter();
 const userStore = useUserStore();
 const commentStore = useCommentStore();
-const { profile, comments } = storeToRefs(userStore);
+const { profile } = storeToRefs(userStore);
 const { userComments } = storeToRefs(useCommentStore());
 
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));

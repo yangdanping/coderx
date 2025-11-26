@@ -53,7 +53,9 @@
     .w-e-panel-content-color li,
     .w-e-modal .btn-close,
     .w-e-panel-content-table td,
-    .el-backtop {
+    .el-backtop, 
+    .connection-line,
+    .reply-item-wrapper {
       cursor: var(--pointerDefault) !important;
     }
   }

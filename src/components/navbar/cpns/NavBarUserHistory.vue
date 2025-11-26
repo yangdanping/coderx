@@ -147,6 +147,15 @@ const goToHistoryPage = () => {
         overflow-y: auto;
         overflow-x: hidden;
 
+        .empty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          font-size: 14px;
+          color: #999;
+        }
+
         .history-list {
           padding: 0 10px;
           /* padding-bottom: 10px; // 为查看更多按钮预留空间 */
