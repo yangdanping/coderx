@@ -15,10 +15,8 @@ declare module 'vue' {
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
-    CommentAction_: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentActionOld: typeof import('./components/list/cpns/CommentActionOld.vue')['default']
     CommentSvg: typeof import('./components/icon/cpns/CommentSvg.vue')['default']
-    copy: typeof import('./components/list/cpns/CommentAction.vue')['default']
     Editor: typeof import('./components/wang-editor/Editor.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
@@ -67,10 +65,8 @@ declare module 'vue' {
     IBack: typeof import('~icons/ep/back')['default']
     IClock: typeof import('~icons/ep/clock')['default']
     ICoin: typeof import('~icons/ep/coin')['default']
-    IComment: typeof import('~icons/ep/comment')['default']
     Icon: typeof import('./components/icon/Icon.vue')['default']
     ICoordinate: typeof import('~icons/ep/coordinate')['default']
-    IDCaret: typeof import('~icons/ep/d-caret')['default']
     IDelete: typeof import('~icons/ep/delete')['default']
     IEdit: typeof import('~icons/ep/edit')['default']
     IEditPen: typeof import('~icons/ep/edit-pen')['default']
@@ -78,8 +74,6 @@ declare module 'vue' {
     IMore: typeof import('~icons/ep/more')['default']
     IPlus: typeof import('~icons/ep/plus')['default']
     IRefresh: typeof import('~icons/ep/refresh')['default']
-    ISelect: typeof import('~icons/ep/select')['default']
-    ISelectOutline: typeof import('~icons/ep/select-outline')['default']
     ISuccessFilled: typeof import('~icons/ep/success-filled')['default']
     ISuitcase: typeof import('~icons/ep/suitcase')['default']
     ISwitchButton: typeof import('~icons/ep/switch-button')['default']
@@ -110,7 +104,6 @@ declare module 'vue' {
     ViewSvg: typeof import('./components/icon/cpns/ViewSvg.vue')['default']
   }
   export interface GlobalDirectives {
-    vInfiniteScroll: typeof import('element-plus/es')['ElInfiniteScroll']
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }
