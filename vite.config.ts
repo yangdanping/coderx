@@ -37,12 +37,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/news-api/': {
-        // target: 'https://gnews.io/api/v4',
-        target: 'https://newsapi.org/v2',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/news-api/, ''),
-      },
+      // '/news-api/': {
+      //   target: 'https://gnews.io/api/v4',
+      //   changeOrigin: true,
+      //   rewrite: (path) => path.replace(/^\/news-api/, ''),
+      // },
     },
   },
   plugins: [
