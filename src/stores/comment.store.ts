@@ -1,166 +1,129 @@
 import { defineStore } from 'pinia';
-import { getComment, addComment, updateComment, removeComment, addReply, likeComment, getCommentById } from '@/service/comment/comment.request';
-import { getLiked } from '@/service/user/user.request.js';
-import { Msg, emitter, dateFormat } from '@/utils';
+import { getUserCommentList, likeComment } from '@/service/comment/comment.request';
+import { getLiked } from '@/service/user/user.request';
+import useRootStore from '@/stores/index.store';
+import useUserStore from '@/stores/user.store';
+import { Msg } from '@/utils';
 
-import type { IComment } from './types/comment.result';
-import useUserStore from './user.store';
-import useRootStore from './index.store';
-
+/**
+ * 评论 Store
+ * 注意：主要的数据获取和操作逻辑已迁移到 composables/useCommentList.ts
+ * 此 Store 仅用于存储一些需要跨组件共享的状态
+ */
 const useCommentStore = defineStore('comment', {
   state: () => ({
-    commentInfo: [] as IComment[],
-    replyInfo: [] as IComment[],
-    replyInfo2: [] as IComment[],
-    userComments: [] as IComment[],
-    commentCount: 0,
-    userLikedCommentIdList: [] as number[], //该用户点赞过的评论id,通过computed计算是否有点赞
+    userComments: [], // 用户历史评论
+    userLikedCommentIdList: [] as number[], // 用户点赞过的评论ID列表
+    // 当前正在回复的评论ID（用于控制回复表单的显示）
+    activeReplyId: null as number | null,
+    // 当前正在编辑的评论ID
+    activeEditId: null as number | null,
   }),
   getters: {
+    // 判断某条评论是否被当前用户点赞
     isCommentUserLiked() {
       return (commentId) => {
         return this.userLikedCommentIdList.some((id) => id === commentId);
       };
     },
-    commentReply() {
-      return (comment: IComment) => this.replyInfo.filter((reply: IComment) => reply.cid === comment.id);
-    },
-    commentReply2() {
-      return (comment: IComment) => {
-        const arr: IComment[] = [];
-        const replyInfo2: IComment[] = this.replyInfo2
-          .filter((reply: IComment) => reply.rid === comment.id)
-          .map((reply: IComment) => {
-            const replyedObj = this.replyInfo2.find((item) => item.rid === reply.id);
-            if (replyedObj) {
-              arr.push(replyedObj);
-              reply.childReply = arr;
-            }
-            return reply;
-          });
-        return replyInfo2;
-      };
-    },
   },
   actions: {
-    getTotalCommentInfo(totalCommentInfo, isUser: boolean = false) {
-      this.commentCount = totalCommentInfo.length;
-      if (isUser) {
-        this.userComments = totalCommentInfo;
-        console.log('对用户评论的请求', this.userComments);
+    /**
+     * 设置当前正在回复的评论
+     */
+    setActiveReply(commentId: number | null) {
+      // 如果点击同一个，则关闭
+      if (this.activeReplyId === commentId) {
+        this.activeReplyId = null;
       } else {
-        this.commentInfo = totalCommentInfo.filter((comment) => !comment.cid); //对文章的普通评论
-        this.replyInfo = totalCommentInfo.filter((comment) => comment.cid && !comment.rid); //对评论的普通回复
-        this.replyInfo2 = totalCommentInfo.filter((comment) => comment.cid && comment.rid); //对回复的回复
-        console.log('对文章的普通评论--------------', this.commentInfo);
-        console.log('对评论的普通回复--------------', this.replyInfo);
-        console.log('对回复的回复--------------', this.replyInfo2);
+        this.activeReplyId = commentId;
+        // 打开回复时关闭编辑
+        this.activeEditId = null;
       }
     },
-    updateArticleComment(upatedComment: IComment, prop: string) {
-      const { id, cid, rid } = upatedComment;
-      const commentType = !cid ? 'commentInfo' : cid && !rid ? 'replyInfo' : 'replyInfo2';
-      this[commentType].find((comment) => {
-        if (comment.id === id) {
-          comment[prop] = upatedComment[prop];
-          return true; //中断
+    /**
+     * 设置当前正在编辑的评论
+     */
+    setActiveEdit(commentId: number | null) {
+      if (this.activeEditId === commentId) {
+        this.activeEditId = null;
+      } else {
+        this.activeEditId = commentId;
+        // 打开编辑时关闭回复
+        this.activeReplyId = null;
+      }
+    },
+    /**
+     * 关闭所有表单
+     */
+    closeAllForms() {
+      this.activeReplyId = null;
+      this.activeEditId = null;
+    },
+    /**
+     * 获取评论列表Action
+     * 目前主要用于获取用户历史评论
+     */
+    async getCommentAction(articleId = '', userId: number | string = '') {
+      // 1. 获取分页信息
+      const rootStore = useRootStore();
+      const { pageNum, pageSize } = rootStore;
+
+      // 2. 如果指定了 userId，获取用户历史评论
+      if (userId) {
+        const res = await getUserCommentList({
+          userId: Number(userId),
+          pageNum,
+          pageSize,
+        });
+
+        if (res.code === 0) {
+          this.userComments = res.data as any;
+          // 获取完评论列表后，如果用户已登录，获取用户的点赞列表
+          const userStore = useUserStore();
+          if (userStore.token) {
+            this.getUserLikedAction();
+          }
+        } else {
+          Msg.showFail('获取用户评论失败');
         }
-      });
+      }
     },
-    updateUserComment(upatedComment: IComment, prop: any) {
-      this.userComments.find((comment) => {
-        if (comment.id === upatedComment.id) {
-          comment[prop] = upatedComment[prop];
-          return true;
-        }
-      });
-    },
-    // 异步请求action---------------------------------------------------
-    async getCommentAction(articleId = '', userId = '') {
-      // 1.获取文章的评论列表信息
-      const { pageNum, pageSize } = useRootStore();
-      const data = { pageNum, pageSize, articleId, userId };
-      const res = await getComment(data);
-      res.code === 0 ? this.getTotalCommentInfo(res.data, !!userId) : Msg.showFail('获取文章评论失败');
-      // 2.若用户登录获取登录用户点赞过哪些评论
-      this.getUserLikedAction();
-    },
+    /**
+     * 获取用户点赞过的评论列表
+     */
     async getUserLikedAction() {
-      const userId = useUserStore().userInfo.id;
+      const userId = useUserStore().userInfo?.id;
       const res = await getLiked(userId);
       if (res.code === 0) {
-        this.userLikedCommentIdList = res.data.commentLiked;
+        this.userLikedCommentIdList = res.data.commentLiked || [];
       }
     },
-    async commentAction(payload) {
-      const { articleId, cid } = payload;
-      const isNormalComment = !cid;
-      const res = isNormalComment ? await addComment(payload) : await addReply(payload);
-      if (res.code === 0) {
-        emitter.emit('cleanContent');
-        emitter.emit('collapse', null); //关闭评论框
-        Msg.showSuccess('发表评论成功');
-        this.getCommentAction(articleId);
-      } else {
-        Msg.showFail('发表评论失败');
-      }
-    },
-    async likeAction(comment, inArticle = true) {
+    /**
+     * 点赞评论 Action
+     * @param comment 评论对象
+     * @param inArticle 是否在文章详情页（如果在文章页，可能需要更新文章维度的评论点赞信息，目前保留参数兼容性）
+     */
+    async likeAction(comment: any, inArticle = true) {
       const { id } = comment;
       const res = await likeComment(id);
+
       if (res.code === 0) {
-        // 根据返回的 liked 状态显示对应提示
-        res.data.liked ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
-        // 直接使用返回的点赞总数更新UI（不需要额外请求）
-        const upatedComment = { id, likes: res.data.likes };
-        inArticle ? this.updateArticleComment(upatedComment, 'likes') : this.updateUserComment(upatedComment, 'likes');
-        // 更新用户点赞列表
+        const { liked, likes } = res.data;
+        liked ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
+
+        // 1. 更新当前列表中的点赞数
+        const targetComment = this.userComments.find((c: any) => c.id === id);
+        if (targetComment) {
+          (targetComment as any).likes = likes;
+        }
+
+        // 2. 刷新用户点赞列表状态
         this.getUserLikedAction();
       } else {
         Msg.showFail('操作失败，请重试');
       }
     },
-    async updateCommentAction(payload) {
-      const { commentId } = payload;
-      const res1 = await updateComment(payload);
-      if (res1.code === 0) {
-        Msg.showSuccess('修改评论成功');
-        // this.getCommentAction(articleId); //重新获取评论数据
-        this.updateCommentByIdAction(commentId, 'content');
-      } else {
-        Msg.showFail('修改评论失败');
-      }
-    },
-    async removeCommentAction(payload) {
-      const { commentId, articleId } = payload;
-      const res1 = await removeComment(commentId);
-      if (res1.code === 0) {
-        Msg.showSuccess('删除评论成功');
-        this.getCommentAction(articleId); //重新获取评论数据
-      } else {
-        Msg.showFail('删除评论失败');
-      }
-    },
-    async updateCommentByIdAction(id, updateProp: string, inArticle = true) {
-      const res = await getCommentById(id);
-      if (res.code === 0) {
-        const upatedComment = res.data;
-        console.log('upatedComment', upatedComment);
-        inArticle ? this.updateArticleComment(upatedComment, updateProp) : this.updateUserComment(upatedComment, updateProp); //传入comment是为了判断类型
-        this.getUserLikedAction(); //更新用户点赞列表
-      }
-    },
-    // async likeAction(payload) {
-    //   const { articleId } = payload;
-    //   const res = await like(payload);
-    //   if (res.code === 0) {
-    //     this.getCommentAction(articleId);
-    //     Msg.showSuccess('点赞评论成功');
-    //   } else {
-    //     this.getCommentAction(articleId);
-    //     Msg.showSuccess('取消点赞成功');
-    //   }
-    // }
   },
 });
 

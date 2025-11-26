@@ -3,9 +3,9 @@
     <template v-if="!showOne">
       <template v-for="(item, index) in reply" :key="index">
         <!-- 前两条评论 -->
-        <template v-if="index < 2"><CommentReplyItem :item="item" :fatherComment="fatherComment(item)" /></template>
+        <template v-if="index < 2"><ReplyItem :item="item" :fatherComment="fatherComment(item)" /></template>
         <!-- 后面评论仅在展开后展示 -->
-        <template v-if="index >= 2 && collapse"><CommentReplyItem :item="item" :fatherComment="fatherComment(item)" /></template>
+        <template v-if="index >= 2 && collapse"><ReplyItem :item="item" :fatherComment="fatherComment(item)" /></template>
       </template>
       <!-- 展示折叠回复按钮---------------------------------------------------------------- -->
       <div v-if="reply.length > 2" @click="collapse = !collapse" class="collapse">
@@ -18,7 +18,7 @@
       </div>
     </template>
     <template v-else>
-      <CommentReplyItem :item="reply[0]" :fatherComment="fatherComment(reply[0])" />
+      <ReplyItem :item="reply[0]" :fatherComment="fatherComment(reply[0])" />
     </template>
     <!-- 展开线---------------------------------------------------- -->
     <template v-if="reply.length > 1">
@@ -32,11 +32,11 @@
 </template>
 
 <script lang="ts" setup>
-import CommentReplyItem from './CommentReplyItem.vue';
+import ReplyItem from './ReplyItemOld.vue';
 
-import useCommentStore from '@/stores/comment.store';
+import useCommentStore from '@/stores/comment.store.old';
 const commentStore = useCommentStore();
-const { commentReply, commentReply2 } = storeToRefs(commentStore);
+const { getRepliesForComment, getRepliesForReply } = storeToRefs(commentStore);
 
 import type { IComment } from '@/stores/types/comment.result';
 
@@ -58,9 +58,9 @@ const fatherComment = computed(() => {
 });
 const reply = computed(() => {
   if (!isReply) {
-    return commentReply.value(comment);
+    return getRepliesForComment.value(comment);
   } else {
-    return commentReply2.value(comment);
+    return getRepliesForReply.value(comment);
   }
 });
 const collapse = ref(false);

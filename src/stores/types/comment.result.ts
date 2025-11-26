@@ -1,7 +1,7 @@
 import type { IUserInfo } from '@/stores/types/user.result';
 import type { IArticle } from './article.result';
 
-export interface IComment {
+export interface ICommentOld {
   id?: number;
   userId?: number;
   articleId?: number;

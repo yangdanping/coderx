@@ -3,83 +3,173 @@ import type { IResData } from '@/service/types';
 
 const urlHead = '/comment';
 
-export function getComment(data) {
-  const { pageNum, pageSize, articleId = '', userId = '' } = data;
-  let finalPageNum = pageNum;
-  let finalPageSize = pageSize;
-  if (!userId) {
-    finalPageNum = 1;
-    finalPageSize = 100;
+// ==================== 类型定义 ====================
+
+/** 评论作者信息 */
+export interface ICommentAuthor {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+}
+
+/** 被回复的用户信息 */
+export interface IReplyTo {
+  id: number;
+  name: string;
+}
+
+/** 单条评论/回复 */
+export interface IComment {
+  id: number;
+  content: string;
+  status: number;
+  cid: number | null; // 父评论ID
+  rid: number | null; // 被回复的回复ID
+  articleId?: number;
+  createAt: string;
+  author: ICommentAuthor;
+  likes: number;
+  replyCount?: number; // 回复数（仅一级评论有）
+  replies?: IComment[]; // 回复预览（仅一级评论有）
+  replyTo?: IReplyTo | null; // 被回复的用户（仅回复有）
+}
+
+/** 一级评论列表响应 */
+export interface ICommentListResponse {
+  items: IComment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  totalCount: number;
+}
+
+/** 回复列表响应 */
+export interface IRepliesResponse {
+  items: IComment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  replyCount: number;
+}
+
+/** 新增评论响应 */
+export interface IAddCommentResponse {
+  comment: IComment;
+  totalCount: number;
+}
+
+/** 新增回复响应 */
+export interface IAddReplyResponse {
+  reply: IComment;
+  totalCount: number;
+}
+
+/** 删除评论响应 */
+export interface IDeleteCommentResponse {
+  deletedComment: IComment;
+  totalCount: number;
+}
+
+// ==================== 请求函数 ====================
+
+/**
+ * 获取一级评论列表（分页）
+ */
+export function getCommentList(params: { articleId: string; cursor?: string | null; limit?: number }) {
+  const { articleId, cursor, limit = 5 } = params;
+  let url = `${urlHead}?articleId=${articleId}&limit=${limit}`;
+  if (cursor) {
+    url += `&cursor=${encodeURIComponent(cursor)}`;
   }
-  console.log('getComment params', finalPageNum, finalPageSize);
-  return myRequest.get<IResData>({
-    url: `${urlHead}?pageNum=${finalPageNum}&pageSize=${finalPageSize}&articleId=${articleId}&userId=${userId}`,
+  return myRequest.get<IResData<ICommentListResponse>>({ url });
+}
+
+/**
+ * 获取用户历史评论列表（分页）
+ */
+export function getUserCommentList(params: { userId: number; pageNum: number; pageSize: number }) {
+  const { userId, pageNum, pageSize } = params;
+  return myRequest.get<IResData<IComment[]>>({
+    url: `${urlHead}?userId=${userId}&pageNum=${pageNum}&pageSize=${pageSize}`,
   });
 }
 
-export function updateComment(commentInfo) {
-  const { commentId, content } = commentInfo;
-  return myRequest.put<IResData>({
+/**
+ * 获取某条评论的回复列表（分页）
+ */
+export function getReplies(params: { commentId: number; cursor?: string | null; limit?: number }) {
+  const { commentId, cursor, limit = 10 } = params;
+  let url = `${urlHead}/${commentId}/replies?limit=${limit}`;
+  if (cursor) {
+    url += `&cursor=${encodeURIComponent(cursor)}`;
+  }
+  return myRequest.get<IResData<IRepliesResponse>>({ url });
+}
+
+/**
+ * 获取评论总数
+ */
+export function getCommentCount(articleId: string) {
+  return myRequest.get<IResData<{ totalCount: number }>>({
+    url: `${urlHead}/count?articleId=${articleId}`,
+  });
+}
+
+/**
+ * 获取单条评论
+ */
+export function getCommentById(commentId: number) {
+  return myRequest.get<IResData<IComment>>({
+    url: `${urlHead}/${commentId}`,
+  });
+}
+
+/**
+ * 新增一级评论
+ */
+export function addComment(data: { articleId: string; content: string }) {
+  return myRequest.post<IResData<IAddCommentResponse>>({
+    url: urlHead,
+    data,
+  });
+}
+
+/**
+ * 回复评论
+ * @param commentId 被回复的一级评论ID
+ * @param data.articleId 文章ID
+ * @param data.content 回复内容
+ * @param data.replyId 被回复的回复ID（如果是回复的回复）
+ */
+export function addReply(commentId: number, data: { articleId: string; content: string; replyId?: number }) {
+  return myRequest.post<IResData<IAddReplyResponse>>({
+    url: `${urlHead}/${commentId}/reply`,
+    data,
+  });
+}
+
+/**
+ * 点赞评论
+ */
+export function likeComment(commentId: number) {
+  return myRequest.post<IResData<{ liked: boolean; likes: number }>>({
+    url: `${urlHead}/${commentId}/like`,
+  });
+}
+
+/**
+ * 修改评论
+ */
+export function updateComment(commentId: number, content: string) {
+  return myRequest.put<IResData<IComment>>({
     url: `${urlHead}/${commentId}`,
     data: { content },
   });
 }
 
-export function removeComment(commentId) {
-  return myRequest.delete<IResData>({
-    url: `${urlHead}/${commentId}`,
-  });
-}
-
-export function addComment(commentInfo) {
-  const { articleId, content } = commentInfo;
-  return myRequest.post<IResData>({
-    url: `${urlHead}`,
-    data: { articleId, content },
-  });
-}
-
-export function addReply(replyInfo) {
-  const { articleId, content, cid, rid } = replyInfo;
-  const data: any = { articleId, content };
-  // 大前提:一定有articleId指明评论哪篇文章,一定有cid指明对哪条评论的回复
-  // 有rid,说明这次是对回复的回复
-  if (rid) {
-    data.replyId = cid;
-  }
-  const commentId = rid ?? cid;
-  console.log('addReply数据------------------ data', commentId, data);
-  return myRequest.post<IResData>({ url: `${urlHead}/${commentId}/reply`, data });
-}
-// export function addReply(replyInfo) {
-//   let url = '';
-//   let data = {};
-//   const { isReplyToComment, articleId, content, commentId, replyId } = replyInfo;
-//   if (isReplyToComment) {
-//     url = `${urlHead}/${commentId}/reply`;
-//     data = { articleId, content };
-//   } else {
-//     url = !replyId ? `/reply` : `/reply/${replyId}/reply`;
-//     data = { articleId, commentId, content };
-//   }
-//   console.log('addReply数据------------------', { url, data });
-//   return myRequest.post<IResData>({ url, data });
-// }
-
-// export function like(likeInfo) {
-//   const { commentId, replyId } = likeInfo;
-//   const url = commentId ? `${urlHead}/${commentId}/like` : `/reply/${replyId}/like`;
-//   return myRequest.post<IResData>({ url });
-// }
-
-export function likeComment(commentId) {
-  return myRequest.post<IResData>({
-    url: `${urlHead}/${commentId}/like`,
-  });
-}
-
-export function getCommentById(commentId) {
-  return myRequest.get<IResData>({
+/**
+ * 删除评论
+ */
+export function deleteComment(commentId: number) {
+  return myRequest.delete<IResData<IDeleteCommentResponse>>({
     url: `${urlHead}/${commentId}`,
   });
 }

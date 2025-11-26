@@ -2,8 +2,8 @@
   <div class="user-history">
     <div class="list-header">
       <h2>{{ sex }}的浏览记录({{ historyStore.total }})</h2>
-      <div class="header-actions">
-        <el-button v-if="selectedItems.length > 0" type="danger" size="small" @click="handleBatchDelete" :loading="batchDeleting"> 删除选中({{ selectedItems.length }}) </el-button>
+      <div class="header-actions" v-if="selectedItems.length > 0">
+        <el-button type="danger" size="small" @click="handleBatchDelete" :loading="batchDeleting"> 删除选中({{ selectedItems.length }}) </el-button>
         <el-button type="warning" size="small" @click="handleClearAll" :loading="historyStore.loading"> 清空全部记录 </el-button>
       </div>
     </div>

@@ -142,8 +142,8 @@ const useArticleStore = defineStore('article', {
         await userStore.getCollectAction(userInfo.id); //请求收藏夹
         const article: IArticle = res.data;
         this.article = article;
-        // 确认文章有评论 且 非编辑时刷新的情况下,才去获取文章评论
-        article.commentCount && !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
+        // V1: 旧版评论获取（已切换到 V2，由 Comment 组件通过 useCommentList 自动获取）
+        // article.commentCount && !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
       } else {
         Msg.showFail('获取文章详情失败');
       }

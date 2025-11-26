@@ -17,7 +17,6 @@ const useUserStore = defineStore('user', {
     userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
     profile: {} as IUserInfo, //其他用户信息,只有读权限
     followInfo: {} as IFollowInfo,
-    comments: [] as any[],
     collects: [] as any,
     onlineUsers: [] as any[],
     isFollowed: false, //仅用于一对一用户的判断
@@ -88,10 +87,6 @@ const useUserStore = defineStore('user', {
     initProfile() {
       this.profile = {};
     },
-    // changeComment(payload) {
-    //   this.comments = payload;
-    //   console.log('changeComment', this.comments);
-    // },
     // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
       console.log('registerAction', account);
