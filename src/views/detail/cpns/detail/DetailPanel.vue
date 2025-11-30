@@ -1,7 +1,7 @@
 <template>
   <div class="detail-panel">
     <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
-    <Icon type="comment" @click="gotoComment" :size="40" :label="commentCount" flex="column" />
+    <Icon type="comment" @click="gotoComment" :size="40" :label="article.commentCount" flex="column" />
     <Icon type="views" :size="40" :label="article.views" flex="column" />
     <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" :showLabel="false" />
     <el-popover :disabled="disabled" ref="popoverRef" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
@@ -22,15 +22,15 @@ import type { ElPopover } from 'element-plus';
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
-import useCommentStore from '@/stores/comment.store';
+// import useCommentStore from '@/stores/comment.store';
 
 const userStore = useUserStore();
 const rootStore = useRootStore();
-const commentStore = useCommentStore();
+// const commentStore = useCommentStore();
 const articleStore = useArticleStore();
 const { token } = storeToRefs(userStore);
 const { isArticleUserLiked, isArticleUserCollected } = storeToRefs(articleStore);
-const { commentCount } = storeToRefs(commentStore);
+// const { commentCount } = storeToRefs(commentStore);
 
 const buttonRef = ref();
 const popoverRef = ref();

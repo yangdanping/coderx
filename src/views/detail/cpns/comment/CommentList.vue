@@ -41,8 +41,11 @@ import { useCommentList, flattenComments, getTotalCount } from '@/composables/us
 import CommentListItem from './CommentListItem.vue';
 import { emitter } from '@/utils';
 import { useRoute } from 'vue-router';
+import useArticleStore from '@/stores/article.store';
 
 const route = useRoute();
+const articleStore = useArticleStore();
+const { article } = storeToRefs(articleStore);
 // 使用 composable 获取评论列表
 const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(route.params.articleId as string);
 
@@ -51,6 +54,14 @@ const comments = computed(() => flattenComments(data.value));
 
 // 计算属性：评论总数
 const totalCount = computed(() => getTotalCount(data.value));
+
+// 监听评论总数变化，并同步到 ArticleStore,为detail-panel所用
+watch(
+  () => totalCount.value,
+  (newCount) => {
+    article.value.commentCount = newCount;
+  },
+);
 
 // 滚动到评论区
 const listRef = ref<Element>();
