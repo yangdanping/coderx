@@ -26,7 +26,7 @@
       数据加载完了，但是结果为空
     -->
     <template v-else-if="isListEmpty">
-      <h2 class="msg">coderX还没有"{{ searchValue || currentTagName }}"的相关内容</h2>
+      <h2 class="no-data">coderX还没有"{{ searchValue || currentTagName }}"的相关内容</h2>
     </template>
 
     <!-- 
@@ -87,16 +87,11 @@ const searchValue = ref('');
 // 这里的 params 会被传入 useInfiniteQuery
 // 只要这里的属性发生变化，TanStack Query 会自动重置并重新请求
 const requestParams: Ref<IUseArticleListParams> | any = computed(() => {
-  console.log('requestParams 变更:', {
-    order: pageOrder.value,
-    tag: tagId.value,
-    keyword: searchValue.value,
-  });
   return {
     keywords: searchValue.value,
     pageOrder: pageOrder.value,
     tagId: tagId.value,
-    // 其他参数如 userId, tagId 等也可以加在这里
+    // 其他参数如 userId 等也可以加在这里
   };
 });
 
@@ -111,21 +106,16 @@ const {
   isError, // 是否出错
   error, // 错误对象
   refetch, // 手动重新加载函数
-} = useArticleList(requestParams);
+} = useArticleList(requestParams.value);
 
-watch(data, (newVal) => {
-  console.log('列表数据更新:', newVal?.pages[0]?.result?.length);
-});
-
-// 计算属性：判断列表是否为空
-// 如果数据加载完成了 (非 pending)，且第一页的结果为空，则视为空列表
+// 判断列表是否为空,如果数据加载完成了 (非 pending)，且第一页的结果为空，则视为空列表
 const isListEmpty = computed(() => {
   if (isPending.value) return false;
   const firstPage = data.value?.pages[0];
   return !firstPage?.result || firstPage.result.length === 0;
 });
 
-// 计算属性：获取当前选中的标签名称
+// 获取当前选中的标签名称
 const currentTagName = computed(() => {
   if (!tagId.value) return '';
   const targetTag = tags.value.find((tag) => tag.id === tagId.value);
@@ -145,21 +135,13 @@ onMounted(() => {
   observer = new IntersectionObserver(
     async (entries) => {
       const entry = entries[0];
-      console.log('IntersectionObserver触发:', {
-        isIntersecting: entry?.isIntersecting,
-        hasNextPage: hasNextPage.value,
-        isFetchingNextPage: isFetchingNextPage.value,
-      });
-
-      // 如果不可见，或者没有更多数据，或者正在加载中，则不触发
-      if (!entry?.isIntersecting) return;
-      if (!hasNextPage.value) return;
-      if (isFetchingNextPage.value) return;
-
-      console.log('满足条件，加载下一页...');
-      await fetchNextPage();
+      // ✅ 触发条件：元素可见 + 有更多数据 + 当前未在加载
+      const shouldFetchNextPage = entry.isIntersecting && hasNextPage.value && !isFetchingNextPage.value;
+      if (shouldFetchNextPage) {
+        await fetchNextPage();
+      }
     },
-    { rootMargin: '200px' }, // 增加预加载距离，提升体验
+    { threshold: 0.1 }, // 预加载距离
   );
 
   // 延迟启动观察
@@ -168,7 +150,7 @@ onMounted(() => {
   });
 });
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   observer?.disconnect();
   observer = null;
 });
@@ -202,7 +184,7 @@ const setOrder = throttle(function (order: string) {
   backdrop-filter: blur(10px);
   border-radius: 5px;
   animation: moveDown 0.5s forwards;
-  .msg {
+  .no-data {
     margin-top: 100px;
   }
   .result {

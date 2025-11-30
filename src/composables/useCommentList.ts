@@ -31,12 +31,12 @@ export const commentKeys = {
  * @param articleId 文章ID（响应式）
  * @param limit 每页数量，默认5
  */
-export function useCommentList(articleId: Ref<string>, limit = 5) {
+export function useCommentList(articleId: string, limit = 5) {
   return useInfiniteQuery({
-    queryKey: commentKeys.list(articleId.value),
+    queryKey: commentKeys.list(articleId),
     queryFn: async ({ pageParam }) => {
       const res = await getCommentList({
-        articleId: articleId.value,
+        articleId,
         cursor: pageParam as string | null,
         limit,
       });
@@ -46,7 +46,7 @@ export function useCommentList(articleId: Ref<string>, limit = 5) {
     getNextPageParam: (lastPage: ICommentListResponse) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    enabled: computed(() => !!articleId.value),
+    enabled: computed(() => !!articleId),
   });
 }
 
@@ -69,7 +69,7 @@ export function useReplyList(commentId: Ref<number>, limit = 10, enabled: Ref<bo
       });
       return res.data;
     },
-    initialPageParam: null as string | null,
+    initialPageParam: null as string | null, // 起始游标通常是 null 或空字符串,逻辑：第一页(cursor=null) -> 返回下一页游标(cursor="xyz") -> 请求下一页(cursor="xyz")...
     getNextPageParam: (lastPage: IRepliesResponse) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },

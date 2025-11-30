@@ -55,7 +55,8 @@
     .w-e-panel-content-table td,
     .el-backtop, 
     .connection-line,
-    .reply-item-wrapper {
+    .ai-assistant,.ai-trigger
+    .quoted-wrapper {
       cursor: var(--pointerDefault) !important;
     }
   }
@@ -63,6 +64,10 @@
   ::selection {
     background: #81c995;
     color: #fff;
+  }
+
+  .el-skeleton {
+    margin-top: 20px;
   }
 }
 

@@ -139,7 +139,7 @@ const useArticleStore = defineStore('article', {
       if (res.code === 0) {
         const userStore = useUserStore();
         const { userInfo } = userStore;
-        await userStore.getCollectAction(userInfo.id); //请求收藏夹
+        userInfo.id && (await userStore.getCollectAction(userInfo.id)); //请求收藏夹
         const article: IArticle = res.data;
         this.article = article;
         // V1: 旧版评论获取（已切换到 V2，由 Comment 组件通过 useCommentList 自动获取）

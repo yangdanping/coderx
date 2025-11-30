@@ -22,17 +22,7 @@
     </template>
     <DetailPanel :article="article" />
     <!-- 富文本图片-------------------------------------------------------- -->
-    <div class="img-preview" v-show="imgPreview.show">
-      <el-image
-        ref="imageRef"
-        :preview-src-list="imgPreview.imgs"
-        :src="imgPreview.imgs[imgPreview.index]"
-        :initial-index="imgPreview.index"
-        fit="cover"
-        hide-on-click-modal
-        @close="imgPreview.show = false"
-      ></el-image>
-    </div>
+    <el-image-viewer v-if="imgPreview.show" :url-list="imgPreview.imgs" :initial-index="imgPreview.index" @close="imgPreview.show = false" hide-on-click-modal />
   </div>
 </template>
 
@@ -40,18 +30,17 @@
 import Avatar from '@/components/avatar/Avatar.vue';
 import DetailPanel from './DetailPanel.vue';
 
-import type { ElImage } from 'element-plus';
+import { ElImageViewer } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
 import { codeHeightlight, bindImagesLayer } from '@/utils';
 const { article = {} } = defineProps<{
   article?: IArticle;
 }>();
-const imageRef = ref<InstanceType<typeof ElImage>>();
 const htmlContentRef = ref<null | HTMLElement>();
 
 const imgPreview = reactive({
   img: '',
-  imgs: [] as any[],
+  imgs: [] as string[],
   show: false,
   index: 0,
 });
@@ -89,19 +78,6 @@ watch(
       font-size: 50px;
       margin-bottom: 50px;
     }
-  }
-}
-
-.img-preview {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  backdrop-filter: blur(10px);
-  z-index: 999;
-  :deep(.el-image__preview) {
-    display: none;
   }
 }
 </style>

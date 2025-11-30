@@ -3,6 +3,7 @@
     <!-- 悬浮按钮 -->
     <div class="ai-trigger" @click="toggleOpen">
       <el-icon v-if="!isOpen"><ChatDotRound /></el-icon>
+      <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
       <el-icon v-else><Close /></el-icon>
       <span v-if="!isOpen" class="trigger-text">AI 助手</span>
     </div>
@@ -312,6 +313,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+$shadowColor: #a3dfd0;
 .ai-assistant {
   position: fixed;
   bottom: 20px;
@@ -322,26 +324,40 @@ onMounted(() => {
   align-items: flex-end;
 
   .ai-trigger {
-    width: 50px;
-    height: 50px;
+    width: auto;
+    min-width: 50px;
+    height: 40px;
+    padding: 0 15px;
     border-radius: 25px;
-    background-color: var(--el-color-primary);
-    color: white;
+    background-color: #fff;
+    color: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    transition: all 0.3s;
+    box-shadow:
+      0 0 0 2px $shadowColor,
+      0 0 8px 2px rgba($shadowColor, 0.6),
+      0 0 16px 4px rgba($shadowColor, 0.3),
+      0 0 24px 6px rgba($shadowColor, 0.1);
 
     &:hover {
       transform: scale(1.1);
+      box-shadow:
+        0 0 0 2px $shadowColor,
+        0 0 8px 8px rgba($shadowColor, 0.6),
+        0 0 16px 16px rgba($shadowColor, 0.3),
+        0 0 24px 32px rgba($shadowColor, 0.1);
     }
 
     .trigger-text {
-      display: none;
       margin-left: 5px;
       font-size: 14px;
+      font-weight: bold;
+      background: linear-gradient(to right, #00ffbb, #6ec2c4);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
   }
 
@@ -349,7 +365,7 @@ onMounted(() => {
     margin-bottom: 10px;
     width: 40px;
     height: 40px;
-    background-color: #909399;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .chat-window {
