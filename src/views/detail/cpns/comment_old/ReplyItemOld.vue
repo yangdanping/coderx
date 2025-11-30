@@ -46,8 +46,8 @@ const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
 
 const { item = {}, fatherComment = {} } = defineProps<{
-  item?: IComment;
-  fatherComment?: IComment;
+  item?: IComment | any;
+  fatherComment?: IComment | any;
 }>();
 
 const isReply = ref(false); //组件内部变量

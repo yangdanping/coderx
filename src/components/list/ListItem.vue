@@ -37,11 +37,7 @@ import type { IComment } from '@/stores/types/comment.result';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const {
-  item = {},
-  isComment = false,
-  showAvatar = true,
-} = defineProps<{
+const { isComment = false, showAvatar = true } = defineProps<{
   item: IArticle & IComment;
   isComment?: boolean;
   showAvatar?: boolean;
