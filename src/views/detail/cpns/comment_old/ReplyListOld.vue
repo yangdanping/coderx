@@ -38,10 +38,10 @@ import useCommentStore from '@/stores/comment.store.old';
 const commentStore = useCommentStore();
 const { getRepliesForComment, getRepliesForReply } = storeToRefs(commentStore);
 
-import type { IComment } from '@/stores/types/comment.result';
+import type { ICommentOld } from '@/stores/types/comment.result';
 
 const { comment = {}, isReply = false } = defineProps<{
-  comment?: IComment;
+  comment?: ICommentOld;
   isReply?: boolean;
 }>();
 

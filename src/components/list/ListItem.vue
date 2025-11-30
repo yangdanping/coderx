@@ -37,13 +37,27 @@ import type { IComment } from '@/stores/types/comment.result';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+
+/** 列表项数据类型 - 兼容文章和评论的通用属性 */
+interface IListItemData {
+  id?: number;
+  title?: string;
+  content?: string;
+  articleUrl?: string;
+  author?: { id?: number; name?: string; avatarUrl?: string | null };
+  cover?: string;
+  tags?: { name?: string }[];
+  createAt?: string;
+  article?: IArticle; // 评论关联的文章
+}
+
 const { isComment = false, showAvatar = true } = defineProps<{
-  item: IArticle & IComment;
+  item: IListItemData;
   isComment?: boolean;
   showAvatar?: boolean;
 }>();
 
-const goDetail = (item: IArticle & IComment) => {
+const goDetail = (item: IListItemData) => {
   const articleId = isComment ? item.article?.id : item.id;
   const routeUrl = router.resolve({ name: 'detail', params: { articleId } });
   window.open(routeUrl.href, '_blank'); // routeUrl.href 是相对路径article/:id

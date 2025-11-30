@@ -37,10 +37,10 @@ import useArticleStore from '@/stores/article.store';
 
 import { emitter } from '@/utils';
 
-import type { IComment } from '@/stores/types/comment.result';
+import type { ICommentOld } from '@/stores/types/comment.result';
 
 const { item, floor } = defineProps<{
-  item: IComment;
+  item: ICommentOld;
   floor?: number;
 }>();
 

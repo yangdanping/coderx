@@ -87,7 +87,7 @@ export interface ICommentOld {
   article?: IArticle;
   cover?: string;
   articleUrl?: string;
-  childReply?: IComment[];
+  childReply?: ICommentOld[];
   createAt?: string;
   updateAt?: string;
 }
