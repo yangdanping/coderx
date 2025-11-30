@@ -2,7 +2,7 @@
   <div class="comment-list">
     <span ref="listRef" class="comment-title">最新评论({{ totalCount }})</span>
 
-    <!-- 加载中 -->
+    <!-- 首次加载中(查询第一次执行，还没有任何缓存数据) -->
     <template v-if="isPending">
       <el-skeleton animated :count="3" />
     </template>
@@ -21,25 +21,18 @@
         <CommentListItem :item="item" :floor="comments.length - index" />
       </template>
 
-      <!-- 加载更多 -->
-      <div class="load-more" ref="loadMoreRef">
-        <template v-if="isFetchingNextPage">
-          <el-icon class="is-loading"><ILoading /></el-icon>
-          <span>加载中...</span>
-        </template>
-        <template v-else-if="hasNextPage">
-          <el-button @click="fetchNextPage()" type="primary" text>加载更多评论</el-button>
-        </template>
-        <template v-else>
-          <span class="no-more">没有更多评论了</span>
-        </template>
-      </div>
+      <!-- 底部加载状态 -->
+      <el-skeleton v-if="isFetchingNextPage" animated />
+      <div v-else-if="!hasNextPage" class="no-more">没有更多评论了</div>
     </template>
 
     <!-- 空状态 -->
     <template v-else>
-      <h1 class="skeleton">评论区暂时为空~发表你的第一条评论吧~</h1>
+      <h1 class="no-data">评论区暂时为空~发表你的第一条评论吧~</h1>
     </template>
+
+    <!-- 触底哨兵 - 移出条件块，确保始终存在于 DOM 中 -->
+    <div ref="loadMoreRef" class="load-more-sentinel"></div>
   </div>
 </template>
 
@@ -50,10 +43,8 @@ import { emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const articleId = computed(() => String(route.params.articleId || ''));
-
 // 使用 composable 获取评论列表
-const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(articleId);
+const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(route.params.articleId as string);
 
 // 计算属性：扁平化的评论列表
 const comments = computed(() => flattenComments(data.value));
@@ -63,48 +54,38 @@ const totalCount = computed(() => getTotalCount(data.value));
 
 // 滚动到评论区
 const listRef = ref<Element>();
-onMounted(() => {
-  emitter.on('gotoCom', () => {
-    listRef.value?.scrollIntoView({ behavior: 'smooth' });
-  });
-});
-onBeforeUnmount(() => {
-  emitter.off('gotoCom');
-});
 
 // 触底加载更多（Intersection Observer）
 const loadMoreRef = ref<Element>();
 let observer: IntersectionObserver | null = null;
 
-// 监听 loadMoreRef，当元素出现时创建 observer
-watch(
-  loadMoreRef,
-  (el) => {
-    // 清理旧的 observer
-    if (observer) {
-      observer.disconnect();
-    }
+onMounted(() => {
+  // 滚动事件监听
+  emitter.on('gotoCom', () => listRef.value?.scrollIntoView({ behavior: 'smooth' }));
 
-    if (el) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (entry.isIntersecting && hasNextPage.value && !isFetchingNextPage.value) {
-            fetchNextPage();
-          }
-        },
-        { threshold: 0.1 },
-      );
-      observer.observe(el);
-    }
-  },
-  { immediate: true },
-);
+  // 设置触底监听
+  observer = new IntersectionObserver(
+    async (entries) => {
+      const entry = entries[0];
+      // ✅ 触发条件：元素可见 + 有更多数据 + 当前未在加载
+      const shouldFetchNextPage = entry.isIntersecting && hasNextPage.value && !isFetchingNextPage.value;
+      if (shouldFetchNextPage) {
+        await fetchNextPage();
+      }
+    },
+    { threshold: 0.1 }, // 预加载距离
+  );
+
+  // 延迟启动观察
+  nextTick(() => {
+    if (loadMoreRef.value) observer?.observe(loadMoreRef.value);
+  });
+});
 
 onBeforeUnmount(() => {
-  if (observer) {
-    observer.disconnect();
-  }
+  emitter.off('gotoCom');
+  observer?.disconnect();
+  observer = null;
 });
 </script>
 
@@ -115,38 +96,37 @@ onBeforeUnmount(() => {
   margin-bottom: 300px;
   border-radius: 5px;
   padding: 10px;
-}
 
-.comment-title {
-  font-weight: 300;
-  font-size: 30px;
-  padding-top: var(--navbarHeight);
-}
+  .comment-title {
+    font-weight: 300;
+    font-size: 30px;
+    padding-top: var(--navbarHeight);
+  }
 
-.error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  gap: 10px;
-}
+  .error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 10px;
+  }
 
-.load-more {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  gap: 8px;
-}
+  .no-data {
+    text-align: center;
+    padding: 40px 0;
+    color: #666;
+  }
 
-.no-more {
-  color: #999;
-  font-size: 14px;
-}
+  .no-more {
+    text-align: center;
+    font-size: 14px;
+    padding: 20px;
+    color: #999;
+  }
 
-.skeleton {
-  text-align: center;
-  padding: 40px 0;
-  color: #666;
+  .load-more-sentinel {
+    height: 1px;
+    width: 100%;
+  }
 }
 </style>

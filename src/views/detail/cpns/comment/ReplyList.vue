@@ -12,9 +12,8 @@
           :class="{ 'is-highlighted': isHighlighted(reply.id) }"
           @mouseenter="handleMouseEnter(reply.id)"
           @mouseleave="handleMouseLeave"
-          @click.stop="handleItemClick(reply.id)"
         >
-          <ReplyItem :item="reply" :parentComment="comment" />
+          <ReplyItem :item="reply" :parentComment="comment" @scrollToParent="handleScrollToParent" />
         </div>
       </template>
     </div>
@@ -143,30 +142,27 @@ const highlightIds = computed(() => {
 
 const isHighlighted = (id: number) => highlightIds.value.has(id);
 
-// 事件处理
+// 事件处理（只有回复其他回复时才触发 hover，回复根评论不触发）
 const handleMouseEnter = (id: number) => {
-  hoverReplyId.value = id;
+  const reply = displayedReplies.value.find((r) => r.id === id);
+  // 只有 rid 有值（回复其他回复）时才设置 hover
+  if (reply?.rid) {
+    hoverReplyId.value = id;
+  }
 };
 
 const handleMouseLeave = () => {
   hoverReplyId.value = null;
 };
 
-const handleItemClick = (id: number) => {
-  if (activeReplyId.value === id) {
-    activeReplyId.value = null;
-    return;
-  }
-  activeReplyId.value = id;
-};
-
-// 全局点击清除
+// 全局点击清除 active 状态
 const globalClickListener = (e: MouseEvent) => {
   const target = e.target as HTMLElement;
-  const isInsideReply = target.closest('.reply-item-wrapper');
+  const isQuotedReply = target.closest('.quoted-reply');
   const isLine = target.closest('.connection-line');
 
-  if (!isInsideReply && !isLine) {
+  // 只有点击引用区域或连线时保持 active，其他地方点击清除
+  if (!isQuotedReply && !isLine) {
     activeReplyId.value = null;
   }
 };
@@ -218,17 +214,26 @@ const updateLinePosition = async () => {
 
 watch(currentFocusId, updateLinePosition);
 
-// 滚动到父元素
-const scrollToParent = () => {
-  const focusId = currentFocusId.value;
-  if (!focusId) return;
-  const reply = displayedReplies.value.find((r) => r.id === focusId);
+// 从 ReplyItem 触发的滚动到父元素事件
+const handleScrollToParent = (replyId: number) => {
+  // 设置 active 状态
+  activeReplyId.value = replyId;
+
+  // 查找被回复的评论
+  const reply = displayedReplies.value.find((r) => r.id === replyId);
   const parentId = reply?.rid;
 
   if (parentId) {
     const parentEl = itemRefs.get(parentId);
     parentEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+};
+
+// 点击连线时滚动到父元素
+const scrollToParent = () => {
+  const focusId = currentFocusId.value;
+  if (!focusId) return;
+  handleScrollToParent(focusId);
 };
 
 onMounted(() => {
@@ -286,7 +291,7 @@ onUnmounted(() => {
   width: 4px;
   background: linear-gradient(to top, #66b1ff 0%, #66b1ff 40%, rgba(255, 255, 255, 0.9) 50%, #66b1ff 60%, #66b1ff 100%);
   background-size: 100% 300%;
-  animation: flowing-light 1.5s linear infinite ;
+  animation: flowing-light 1.5s linear infinite;
   transition: all 0.2s ease;
   z-index: 100;
   cursor: pointer;
@@ -312,10 +317,9 @@ onUnmounted(() => {
   position: relative;
   border-radius: 4px;
   transition: all 0.3s ease;
-  cursor: pointer;
 
   &.is-highlighted {
-    &::after {
+    /* &::after {
       content: '';
       position: absolute;
       top: 0;
@@ -325,7 +329,7 @@ onUnmounted(() => {
       background-color: rgba(0, 0, 0, 0.05);
       border-radius: 4px;
       pointer-events: none;
-    }
+    } */
     &::before {
       content: '';
       position: absolute;

@@ -141,7 +141,7 @@ const clearResultAndBack = () => {
   showCheckBox.value = false;
   articles.value.result = [];
   manageArr.value.length && (manageArr.value = []);
-  userStore.getCollectAction(userStore.userInfo.id);
+  userInfo.value?.id && userStore.getCollectAction(userInfo.value?.id);
 };
 </script>
 

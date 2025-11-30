@@ -16,6 +16,7 @@ export interface ICommentAuthor {
 export interface IReplyTo {
   id: number;
   name: string;
+  content?: string; // 被回复的内容
 }
 
 /** 单条评论/回复 */
