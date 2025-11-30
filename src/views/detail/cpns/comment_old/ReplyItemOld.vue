@@ -39,15 +39,15 @@ import CommentTools from './CommentToolsOld.vue';
 // import CommentChildReply from '../comment-child-reply/CommentChildReply.vue';
 import ReplyList from './ReplyListOld.vue';
 
-import type { IComment } from '@/stores/types/comment.result';
+import type { ICommentOld } from '@/stores/types/comment.result';
 
 import useArticleStore from '@/stores/article.store';
 const articleStore = useArticleStore();
 const { isAuthor } = storeToRefs(articleStore);
 
 const { item = {}, fatherComment = {} } = defineProps<{
-  item?: IComment | any;
-  fatherComment?: IComment | any;
+  item?: ICommentOld;
+  fatherComment?: ICommentOld;
 }>();
 
 const isReply = ref(false); //组件内部变量

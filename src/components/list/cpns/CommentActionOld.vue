@@ -30,11 +30,11 @@ const { token } = storeToRefs(userStore);
 const { article } = storeToRefs(articleStore);
 const { isCommentUserLiked } = storeToRefs(commentStore);
 
-import type { IComment } from '@/stores/types/comment.result';
+import type { ICommentOld } from '@/stores/types/comment.result';
 
 const { inArticle = true, comment } = defineProps<{
   inArticle?: boolean;
-  comment: IComment;
+  comment: ICommentOld;
 }>();
 
 const wantReply = (comment) => {
