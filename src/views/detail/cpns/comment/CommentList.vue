@@ -79,7 +79,7 @@ onMounted(() => {
     async (entries) => {
       const entry = entries[0];
       // ✅ 触发条件：元素可见 + 有更多数据 + 当前未在加载
-      const shouldFetchNextPage = entry.isIntersecting && hasNextPage.value && !isFetchingNextPage.value;
+      const shouldFetchNextPage = entry?.isIntersecting && hasNextPage.value && !isFetchingNextPage.value;
       if (shouldFetchNextPage) {
         await fetchNextPage();
       }
