@@ -1,8 +1,15 @@
-import { io } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
 import { LocalCache, SessionCache } from '@/utils';
 import useUserStore from '@/stores/user.store';
-import type { DisconnectDescription, Socket } from 'socket.io-client/build/esm/socket';
+
+type DisconnectDescription =
+  | Error
+  | {
+      description: string;
+      context?: unknown;
+    };
+
 export default function useSocket(state?: any) {
   const userStore = useUserStore();
   const socket = io(SOCKET_URL, {
