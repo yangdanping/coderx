@@ -26,7 +26,7 @@
               </span>
             </div>
           </template>
-          <img v-if="fileList.length" :src="fileList[0].url" class="cover" />
+          <img v-if="fileList.length" :src="fileList[0]?.url" class="cover" />
           <div class="uoload-icon">
             <el-icon><IPlus /></el-icon>
           </div>
@@ -99,7 +99,7 @@ onMounted(() => {
 
     // 设置封面预览
     if (images && images.length) {
-      const url = images[0].url?.concat('?type=small');
+      const url = images[0]?.url?.concat('?type=small');
       emit('setCover', { url, name: 'img' });
     }
     return;
@@ -151,7 +151,7 @@ const goBack = () => {
         if (!fileList.length && draft) {
           const imageUrls = extractImagesFromHtml(draft);
           if (imageUrls.length > 0) {
-            draftFileList = [{ url: imageUrls[0].concat('?type=small'), name: 'img' }];
+            draftFileList = [{ url: imageUrls[0]?.concat('?type=small'), name: 'img' }];
             console.log('从内容提取草稿封面:', imageUrls[0]);
           }
         }

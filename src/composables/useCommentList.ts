@@ -274,7 +274,7 @@ export function flattenComments(data: { pages: ICommentListResponse[] } | undefi
  */
 export function getTotalCount(data: { pages: ICommentListResponse[] } | undefined): number {
   if (!data?.pages || data.pages.length === 0) return 0;
-  return data.pages[0].totalCount;
+  return data.pages[0]?.totalCount || 0;
 }
 
 /**

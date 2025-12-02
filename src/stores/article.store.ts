@@ -298,7 +298,7 @@ const useArticleStore = defineStore('article', {
           for (let i = 0; i < imageUrls.length; i++) {
             const currentUrl = imageUrls[i];
             // 跳过已经作为封面的图片（URL匹配）
-            if (coverUrl && currentUrl.includes(coverUrl)) {
+            if (coverUrl && currentUrl?.includes(coverUrl)) {
               continue;
             }
             // 如果手动上传的封面也在内容中，跳过（ID匹配）
