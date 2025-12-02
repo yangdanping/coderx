@@ -81,6 +81,7 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-var-requires': 'off',
       '@typescript-eslint/comma-dangle': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       // 允许非空断言可选链
       '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
     },
