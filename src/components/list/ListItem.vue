@@ -125,13 +125,14 @@ const goTag = throttle(function (tag) {
     padding-bottom: 10px;
     cursor: pointer;
     .content {
-      flex: 1 1 auto;
+      flex: 1;
       margin-top: 5px;
       .title,
       .abstract {
         width: 600px;
+        padding-bottom: 5px;
         white-space: nowrap;
-        overflow: hidden;
+        overflow-x: hidden;
         text-overflow: ellipsis;
       }
       .abstract {

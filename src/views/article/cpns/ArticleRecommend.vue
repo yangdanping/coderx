@@ -9,7 +9,7 @@
     <ul>
       <li v-for="item in recommends" :key="item.id">
         <Icon v-if="item.views > 20" type="fire" :showLabel="false" color="red" />
-        <a @click="goToArticle(item)" style="cursor: pointer">
+        <a @click="goToArticle(item)">
           {{ item.title }}
         </a>
       </li>
@@ -73,17 +73,21 @@ const goToArticle = (item: any) => {
   li {
     display: flex;
     align-items: center;
+    justify-content: start;
+    gap: 2px;
     list-style: none;
-    padding-bottom: 10px;
     border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
     margin-bottom: 10px;
     width: 300px;
   }
   a {
     white-space: nowrap;
     overflow: hidden;
+    padding: 2px 0;
     text-overflow: ellipsis;
-    display: inline;
+
+    /* padding-bottom: 2px; */
     &:hover {
       color: #409eff;
     }

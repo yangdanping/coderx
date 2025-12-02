@@ -1,6 +1,17 @@
 <template>
   <div class="edit">
-    <Editor :editData="editData" @update:content="(content) => (preview = content)" />
+    <!-- <Editor :editData="editData" @update:content="(content) => (preview = content)" /> -->
+    <Suspense>
+      <template #default>
+        <Editor :editData="editData" @update:content="(content) => (preview = content)" />
+      </template>
+      <template #fallback>
+        <div class="editor-loading">
+          <i-loading class="loading-icon" />
+          <span>编辑器加载中...</span>
+        </div>
+      </template>
+    </Suspense>
     <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
@@ -10,7 +21,9 @@
 
 <script lang="ts" setup>
 import { Menu, Memo } from '@element-plus/icons-vue';
-import Editor from '@/components/wang-editor/Editor.vue';
+// import Editor from '@/components/wang-editor/Editor.vue';
+// 动态加载 wangeditor 编辑器组件，减少首屏 JS 体积（约 791KB）
+const Editor = defineAsyncComponent(() => import('@/components/wang-editor/Editor.vue'));
 import EditForm from './cpns/EditForm.vue';
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
@@ -108,6 +121,31 @@ const formSubmit = (editData: any) => {
   :deep(.el-drawer) {
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(1px);
+  }
+
+  .editor-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #909399;
+    font-size: 14px;
+    gap: 12px;
+
+    .loading-icon {
+      font-size: 32px;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 }
 </style>
