@@ -38,11 +38,11 @@ const myRequest = new MyRequest({
     resFail: (err) => {
       // console.log('响应失败拦截');
       const { msg, code } = err.response.data;
-      Msg.showFail(`server error:${msg} code:${code}`);
       if (code === 401) {
-        Msg.showFail(`已过期,请重新登登录`);
-        const userStore = useUserStore();
-        userStore.logOut();
+        Msg.showWarn(`已过期,请重新登登录`);
+        useUserStore().logOut();
+      } else {
+        Msg.showFail(`server error:${msg} code:${code}`);
       }
       return err;
     },

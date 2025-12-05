@@ -19,6 +19,7 @@ import { addImgForArticle, uploadImg, deleteImg, addVideoForArticle, deleteVideo
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useCommentStore from './comment.store';
+import useHistoryStore from './history.store';
 import { Msg, isEmptyObj, extractImagesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
 
 import type { RouteParam } from '@/service/types';
@@ -38,7 +39,9 @@ const useArticleStore = defineStore('article', {
   }),
   getters: {
     isAuthor() {
-      return (userId?: number) => (this.article.author ? this.article.author.id === userId : false);
+      return (currentUserId) => {
+        return this.article.author ? this.article.author.id === currentUserId : false;
+      };
     },
     isArticleUserLiked() {
       return (articleId) => {
@@ -139,7 +142,10 @@ const useArticleStore = defineStore('article', {
       if (res.code === 0) {
         const userStore = useUserStore();
         const { userInfo } = userStore;
-        userInfo.id && (await userStore.getCollectAction(userInfo.id)); //请求收藏夹
+        if (userInfo.id) {
+          await userStore.getCollectAction(userInfo.id); //请求收藏夹
+          await useHistoryStore().addHistoryAction(articleId); // 添加浏览记录(会验证token)
+        }
         const article: IArticle = res.data;
         this.article = article;
         // V1: 旧版评论获取（已切换到 V2，由 Comment 组件通过 useCommentList 自动获取）
@@ -150,10 +156,7 @@ const useArticleStore = defineStore('article', {
     },
     async getTagsAction() {
       const res = await getTags();
-      if (res.code === 0) {
-        this.tags = res.data;
-      }
-      console.log('getTagsAction');
+      res.code === 0 && (this.tags = res.data);
     },
     async getUserLikedAction() {
       const { userInfo } = useUserStore();
@@ -423,13 +426,13 @@ const useArticleStore = defineStore('article', {
         console.log('没有需要清理的孤儿视频');
       }
     },
-    async searchAction(keywords, loadingKey) {
-      const res = await search(keywords, loadingKey);
-      if (res.code === 0) {
-        this.searchResults = res.data;
-        console.log('updateSearchResults', this.searchResults);
-      }
-    },
+    // async searchAction(keywords, loadingKey) {
+    //   const res = await search(keywords, loadingKey);
+    //   if (res.code === 0) {
+    //     this.searchResults = res.data;
+    //     console.log('updateSearchResults', this.searchResults);
+    //   }
+    // },
   },
 });
 

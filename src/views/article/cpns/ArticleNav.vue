@@ -33,7 +33,7 @@ onMounted(() => {
 });
 const emit = defineEmits(['changeTagInNav']);
 const handleClick = throttle(function (tab) {
-  console.log('更换标签!!!!', tab.paneName);
+  console.log('changeTagInNav', tab.paneName);
   emitter.emit('changeTagInNav');
   emit('changeTagInNav');
   if (tab.paneName) {

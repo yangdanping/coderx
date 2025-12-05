@@ -47,7 +47,7 @@ const likeClick = (articleId) => {
     }
   } else {
     Msg.showInfo('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   }
 };
 </script>

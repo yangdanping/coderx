@@ -9,6 +9,7 @@ import type { IAccount } from '@/service/user/user.types';
 import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
 import useArticleStore from './article.store';
+import useRootStore from './index.store';
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -48,7 +49,8 @@ const useUserStore = defineStore('user', {
       this.onlineUsers = userList;
       console.log('当前在线用户列表', this.onlineUsers);
     },
-    logOut(refresh = true) {
+    // 除非用户主动退出登录,否则默认不刷新页面,默认弹出登录框
+    logOut(refresh = false) {
       // 1. 断开在线连接
       // 动态导入以避免循环依赖，支持可插拔切换
       try {
@@ -81,8 +83,12 @@ const useUserStore = defineStore('user', {
       LocalCache.removeCache('userInfo');
       LocalCache.removeCache('socketUser'); // 清理遗留缓存（如果存在）
 
-      // 3. 刷新页面
-      refresh && router.go(0);
+      // 3. 刷新页面或直接弹出登录框
+      if (refresh) {
+        router.go(0);
+      } else {
+        useRootStore().toggleLoginDialog();
+      }
     },
     initProfile() {
       this.profile = {};
@@ -115,7 +121,7 @@ const useUserStore = defineStore('user', {
           LocalCache.setCache('userInfo', userInfo);
           this.token = token;
           LocalCache.setCache('token', token); //注意拿到token第一时间先做缓存,然后就可以在axios实例拦截器中getCache了
-          //   // 3.成功登录后刷新页面-----------------------------------------------------
+          // 3.成功登录后刷新页面-----------------------------------------------------
           LocalCache.getCache('token') ? router.go(0) : Msg.showFail('请求登录用户信息失败'); //若是登录用户信息则不用再请求了
         }
       } else {

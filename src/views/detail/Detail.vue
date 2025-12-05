@@ -22,29 +22,22 @@ import DetailContent from './cpns/detail/DetailContent.vue';
 // V2: 新版评论组件
 import Comment from './cpns/comment/Comment.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
-
-import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
-// V1: 旧版评论 store
-// import useCommentStore from '@/stores/comment.store';
-import useHistoryStore from '@/stores/history.store';
-
+import useUserStore from '@/stores/user.store';
 const route = useRoute();
 const articleStore = useArticleStore();
+const userStore = useUserStore();
+const { userInfo } = storeToRefs(userStore);
+// V1: 旧版评论 store
+// import useCommentStore from '@/stores/comment.store';
+
 // V1: 旧版评论 store
 // const commentStore = useCommentStore();
-const { article, isAuthor } = storeToRefs(articleStore);
 // V1: 旧版评论数据
 // const { commentInfo } = storeToRefs(commentStore);
-const { userInfo } = storeToRefs(useUserStore());
-const historyStore = useHistoryStore();
-const userStore = useUserStore();
-const { token } = storeToRefs(userStore);
-
+const { article, isAuthor } = storeToRefs(articleStore);
 onMounted(() => {
-  console.log('onMounted articleStore.getDetailAction', route.params.articleId);
   articleStore.getDetailAction(route.params.articleId);
-  token.value && historyStore.addHistoryAction(route.params.articleId);
 });
 </script>
 

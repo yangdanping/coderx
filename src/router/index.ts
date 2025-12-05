@@ -32,7 +32,7 @@ const routes: RouteRecordRaw[] = [
   {
     name: 'edit',
     path: '/edit',
-    meta: { title: '写文章' },
+    meta: { title: '写文章', requiresAuth: true }, // 需要登录才能访问
     component: () => import('@/views/edit/Edit.vue'),
   },
   {

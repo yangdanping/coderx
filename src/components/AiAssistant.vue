@@ -267,6 +267,12 @@ watch(
 
 // 检查 AI 服务状态
 const checkAIServiceStatus = async () => {
+  // 由于原生 fetch 不支持 timeout配置,所以使用 AbortController 配合 setTimeout 实现 5 秒超时控制
+  // 1. 创建控制器
+  const controller = new AbortController();
+  // 2. 创建定时器,5秒后自动取消请求
+  const timer = setTimeout(() => controller.abort(), 5000); // 5秒超时自动取消
+
   try {
     aiServiceStatus.value = 'checking';
     const headers: Record<string, string> = {};
@@ -278,6 +284,7 @@ const checkAIServiceStatus = async () => {
     const res = await fetch(`${BASE_URL}/ai/health`, {
       method: 'GET',
       headers,
+      signal: controller.signal,
     });
 
     if (res.ok) {
@@ -303,6 +310,8 @@ const checkAIServiceStatus = async () => {
   } catch (error) {
     aiServiceStatus.value = 'offline';
     console.warn('AI service health check failed:', error);
+  } finally {
+    clearTimeout(timer); // 放到这里，无论成功失败都会清除定时器
   }
 };
 

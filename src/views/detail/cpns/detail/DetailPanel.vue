@@ -54,7 +54,7 @@ const likeClick = (articleId) => {
     }
   } else {
     Msg.showInfo('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   }
 };
 
@@ -65,7 +65,7 @@ const handleHide = () => emitter.emit('hideCollect');
 const onClickOutside = () => {
   if (disabled.value && !token.value) {
     Msg.showInfo('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   } else {
     unref(popoverRef)?.popperRef?.delayHide?.();
   }
