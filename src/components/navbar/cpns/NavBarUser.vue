@@ -77,7 +77,7 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
 };
 
 const logOut = () => {
-  userStore.logOut();
+  userStore.logOut(true); // 用户主动退出登录,刷新页面
 };
 </script>
 

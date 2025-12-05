@@ -25,7 +25,7 @@ onMounted(() => {
 });
 
 const hindDialog = () => {
-  rootStore.changeLoginDialog();
+  rootStore.toggleLoginDialog();
 };
 </script>
 

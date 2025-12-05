@@ -48,7 +48,7 @@ const follow = () => {
     userStore.followAction(profile.id, isFollowListItem);
   } else {
     Msg.showFail('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   }
 };
 </script>

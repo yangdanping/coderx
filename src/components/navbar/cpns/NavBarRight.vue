@@ -24,7 +24,7 @@ const { token } = storeToRefs(useUserStore());
 
 const changeDialog = () => {
   console.log('open Dialog');
-  rootStore.changeLoginDialog();
+  rootStore.toggleLoginDialog();
 };
 </script>
 

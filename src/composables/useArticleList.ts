@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/vue-query';
 import { getList } from '@/service/article/article.request';
+import { unref } from 'vue';
 import type { Ref } from 'vue';
 import type { IArticleList } from '@/service/article/article.types';
 
@@ -28,15 +29,16 @@ export interface IUseArticleListParams extends Omit<IArticleList, 'pageNum' | 'p
 // 无感切换：如果切走再切回来（在一定时间内），组件会直接渲染缓存的数据，而不是像以前那样必须显示 Skeleton 骨架屏等待 Loading。
 // Stale-While-Revalidate：它采用“先显示旧数据，后台静默更新”的策略，体验比单纯的“清空 -> Loading -> 显示”要流畅得多。
 // 这个 queryKey 就是缓存的"钥匙"
-export function useArticleList(params: IUseArticleListParams) {
+export function useArticleList(params: Ref<IUseArticleListParams> | IUseArticleListParams) {
   // 使用 useInfiniteQuery 处理无限滚动逻辑
   return useInfiniteQuery({
     queryKey: ['articles', params],
     // 2. Query Function (查询函数)
     // 接收 pageParam（当前页码），调用实际的 Service 层接口
     queryFn: async ({ pageParam = 1 }) => {
+      const currentParams = unref(params);
       // 清理参数中的 undefined/null/空字符串，避免 URL 过长或参数混乱
-      const cleanParams = Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== ''));
+      const cleanParams = Object.fromEntries(Object.entries(currentParams).filter(([_, v]) => v !== undefined && v !== null && v !== ''));
 
       // 这里执行原本 Store 里的参数组装逻辑
       const res = await getList({
@@ -47,7 +49,7 @@ export function useArticleList(params: IUseArticleListParams) {
         idList: [],
         ...cleanParams,
         pageNum: pageParam as number,
-        pageSize: params.pageSize || 10, // 默认 pageSize
+        pageSize: currentParams.pageSize || 10, // 默认 pageSize
       });
 
       // 注意：这里直接返回 data，不需要像 Store 那样手动拼接数组

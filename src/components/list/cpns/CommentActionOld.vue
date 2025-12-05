@@ -42,7 +42,7 @@ const wantReply = (comment) => {
     emitter.emit('collapse', comment); //commentId非常重要,控制编辑器的切换
   } else {
     Msg.showInfo('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   }
 };
 
@@ -52,7 +52,7 @@ const likeComment = (comment) => {
     commentStore.likeAction(comment, inArticle);
   } else {
     Msg.showInfo('请先登录');
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
   }
 };
 </script>

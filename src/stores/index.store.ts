@@ -12,7 +12,7 @@ const useRootStore = defineStore('root', {
     windowInfo: {} as any,
   }),
   actions: {
-    changeLoginDialog() {
+    toggleLoginDialog() {
       this.showLoginDialog = !this.showLoginDialog;
     },
     changePageNum(pageNum: number) {
@@ -34,11 +34,25 @@ const useRootStore = defineStore('root', {
       });
     },
     // 异步请求action---------------------------------------------------
-    async checkAuthAction() {
-      const res = await checkAuth();
-      const { logOut } = useUserStore();
-      console.log('checkAuthAction res', res.code === 0 ? '验证通过' : '验证失败');
-      res.code && logOut(false);
+    /**
+     * 验证token有效性
+     * @returns 验证是否通过
+     */
+    async checkAuthAction(): Promise<boolean> {
+      try {
+        const res = await checkAuth();
+        console.log('checkAuthAction res-----------------', res);
+        if (res?.code !== 0) {
+          // 针对 Token 过期 ,Axios 的响应拦截器（src/service/index.ts 中的 resFail）会在 这里checkAuth 返回结果之前执行
+          // useUserStore().logOut();
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error('Token验证请求失败:', error);
+        // 网络错误时不强制登出,返回true允许继续使用
+        return true;
+      }
     },
     async loadLoginAction() {
       const userStore = useUserStore();

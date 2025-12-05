@@ -96,7 +96,7 @@ watch(searchValue, (newVal) => {
 // 2. TanStack Query 替换原有的 Store/Loading 逻辑
 const { data: searchData, isLoading } = useQuery({
   queryKey: ['search', debouncedSearchValue],
-  queryFn: () => search(debouncedSearchValue.value),
+  queryFn: ({ signal }) => search(debouncedSearchValue.value, signal),
   enabled: computed(() => !!debouncedSearchValue.value), // 只有当有搜索值时才查询
   staleTime: 1000 * 60, // 1分钟缓存
   select: (res) => res.data, // 只返回 data 部分

@@ -47,7 +47,7 @@ const likeMutation = useLikeComment(articleId, parentId);
 const handleLike = () => {
   // 检查是否登录
   if (!userStore.token) {
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
     return;
   }
 
@@ -58,7 +58,7 @@ const handleLike = () => {
 const handleReply = () => {
   // 检查是否登录
   if (!userStore.token) {
-    rootStore.changeLoginDialog();
+    rootStore.toggleLoginDialog();
     return;
   }
 

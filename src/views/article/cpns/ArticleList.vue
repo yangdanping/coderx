@@ -106,7 +106,7 @@ const {
   isError, // 是否出错
   error, // 错误对象
   refetch, // 手动重新加载函数
-} = useArticleList(requestParams.value);
+} = useArticleList(requestParams);
 
 // 判断列表是否为空,如果数据加载完成了 (非 pending)，且第一页的结果为空，则视为空列表
 const isListEmpty = computed(() => {

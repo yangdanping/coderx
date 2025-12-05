@@ -109,7 +109,7 @@ const userSex = computed(() => getImageUrl('user', `${profile.sex === '女' ? 'f
 const route = useRoute();
 
 const updateProfile = () => {
-  rootStore.changeLoginDialog();
+  rootStore.toggleLoginDialog();
   emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile))); //深拷贝
 };
 

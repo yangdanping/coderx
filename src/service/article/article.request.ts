@@ -83,10 +83,11 @@ export const changeTags = (articleId: RouteParam, tags: string[]) => {
 };
 
 // 搜索文章
-export const search = (keywords: string, loadingKey?: string) => {
+// export const search = (keywords: string, loadingKey?: string, ) => {
+export const search = (keywords: string, signal?: AbortSignal) => {
   return myRequest.get<IResData>({
     url: `${urlHead}/search?keywords=${keywords}`,
-    loadingKey,
+    signal,
   });
 };
 

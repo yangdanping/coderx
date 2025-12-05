@@ -68,7 +68,7 @@ const tabClick = (order) => {
   // 排序逻辑现已由 ArticleList(最新版) 内部的 pageOrder 响应式参数自动触发更新
   // 这里仅保留日志，或者处理其他非列表相关的副作用
 };
-const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.changeLoginDialog());
+const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.toggleLoginDialog());
 </script>
 
 <style lang="scss" scoped>
