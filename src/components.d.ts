@@ -99,6 +99,8 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     ScrollView: typeof import('./components/scroll-view/ScrollView.vue')['default']
     StarSvg: typeof import('./components/icon/cpns/StarSvg.vue')['default']
+    ThinkingShimmer: typeof import('./components/icon/cpns/ThinkingShimmer.vue')['default']
+    ThinkingWave: typeof import('./components/icon/cpns/ThinkingWave.vue')['default']
     UserDialog: typeof import('./components/user/UserDialog.vue')['default']
     ViewSvg: typeof import('./components/icon/cpns/ViewSvg.vue')['default']
   }

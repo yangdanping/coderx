@@ -27,7 +27,7 @@
         </div>
       </div>
 
-      <div class="messages-container" ref="messagesContainer">
+      <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
         <div v-if="messages.length === 0" class="welcome-message">
           <p>你好！我是你的 AI 编程助手。</p>
           <p>你可以问我关于这篇文章的问题，或者让我解释代码。</p>
@@ -45,8 +45,25 @@
 
         <div v-if="isThinking" class="message assistant">
           <div class="avatar"><el-avatar :size="30" :icon="Service" /></div>
-          <div class="content"><div class="bubble loading">Thinking...</div></div>
+          <div class="content">
+            <div class="bubble loading">
+              <!-- V1: 文字流光效果 -->
+              <div v-if="loadingStyle === 'shimmer'" class="thinking-content">
+                <ThinkingShimmer :width="100" :height="20" text="Thinking..." color="#909399" shimmerColor="#fff" />
+              </div>
+
+              <!-- V2: 动态波形效果 -->
+              <div v-else class="thinking-content">
+                <ThinkingWave :width="60" :height="20" color="#409eff" />
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- 回到底部按钮 -->
+      <div class="scroll-bottom-btn" v-show="showScrollToBottom" @click="scrollToBottomSmooth">
+        <el-icon><ArrowDown /></el-icon>
       </div>
 
       <form @submit.prevent="handleSubmit" class="input-area">
@@ -64,13 +81,15 @@
 import { ref, nextTick, watch, computed, onMounted } from 'vue';
 import { Chat } from '@ai-sdk/vue'; // 使用新的 Chat 类
 import { DefaultChatTransport } from 'ai'; // 引入 DefaultChatTransport
-import { ChatDotRound, Close, UserFilled, Service } from '@element-plus/icons-vue';
+import { ChatDotRound, Close, UserFilled, Service, ArrowDown } from '@element-plus/icons-vue';
 import useUserStore from '@/stores/user.store';
 import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
 import { ElMessage } from 'element-plus';
-import { LocalCache } from '@/utils';
+import { LocalCache, throttle, throttleByRaf } from '@/utils';
+import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
+import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 
 const props = defineProps<{
   context?: string; // 可选：传入文章内容作为上下文
@@ -81,6 +100,9 @@ const messagesContainer = ref<HTMLElement | null>(null);
 const { userInfo, token } = storeToRefs(useUserStore());
 const input = ref('');
 const aiServiceStatus = ref<'online' | 'offline' | 'checking'>('checking');
+const showScrollToBottom = ref(false);
+// 切换 Loading 动画风格: 'wave' | 'shimmer'
+const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
 // 初始化 Markdown 解析器
 const md = new MarkdownIt({
@@ -242,6 +264,22 @@ const onEnter = (e: KeyboardEvent | any) => {
   }
 };
 
+const scrollToBottomSmooth = async () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({
+      top: messagesContainer.value.scrollHeight,
+      behavior: 'smooth',
+    });
+  }
+};
+
+const handleScroll = throttleByRaf(() => {
+  if (!messagesContainer.value) return;
+  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value;
+  // 如果距离底部超过 100px，显示按钮
+  showScrollToBottom.value = scrollHeight - scrollTop - clientHeight > 100;
+});
+
 const scrollToBottom = async () => {
   await nextTick();
   if (messagesContainer.value) {
@@ -387,6 +425,7 @@ $shadowColor: #a3dfd0;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid #eee;
+    position: relative; // 确保绝对定位的子元素相对于此定位
 
     .chat-header {
       padding: 15px;
@@ -497,6 +536,17 @@ $shadowColor: #a3dfd0;
               border-radius: 3px;
               font-family: monospace;
             }
+
+            &.loading {
+              padding: 8px 12px;
+
+              .thinking-content {
+                display: flex;
+                align-items: center;
+                color: #909399;
+                font-size: 13px;
+              }
+            }
           }
         }
 
@@ -530,6 +580,29 @@ $shadowColor: #a3dfd0;
       padding: 10px;
       border-top: 1px solid #eee;
       background: white;
+    }
+
+    .scroll-bottom-btn {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 30px;
+      height: 30px;
+      background-color: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--el-color-primary);
+      z-index: 10;
+      border: 1px solid #eee;
+
+      &:hover {
+        background-color: #f5f7fa;
+      }
     }
   }
 }

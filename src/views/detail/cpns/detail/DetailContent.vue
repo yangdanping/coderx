@@ -33,10 +33,36 @@ import DetailPanel from './DetailPanel.vue';
 import { ElImageViewer } from 'element-plus';
 import type { IArticle } from '@/stores/types/article.result';
 import { codeHeightlight, bindImagesLayer } from '@/utils';
+import { render, h, nextTick } from 'vue';
+import { CopyButton } from './CopyButton';
 const { article = {} } = defineProps<{
   article?: IArticle;
 }>();
 const htmlContentRef = ref<null | HTMLElement>();
+
+// 挂载复制按钮
+const mountCopyButtons = () => {
+  if (!htmlContentRef.value) return;
+  // 查找所有 pre 标签
+  const pres = htmlContentRef.value.querySelectorAll('pre');
+  pres.forEach((pre) => {
+    // 避免重复挂载
+    if (pre.querySelector('.code-copy-btn')) return;
+
+    // 设置相对定位
+    pre.style.position = 'relative';
+
+    // 获取代码文本
+    const text = pre.innerText || pre.textContent || '';
+
+    // 创建容器
+    const container = document.createElement('div');
+    pre.appendChild(container);
+
+    // 渲染组件
+    render(h(CopyButton, { text }), container);
+  });
+};
 
 const imgPreview = reactive({
   img: '',
@@ -48,9 +74,22 @@ const imgPreview = reactive({
 watch(
   () => htmlContentRef.value,
   (newV) => {
-    newV && bindImagesLayer(newV, imgPreview); //图片放大
-    newV && codeHeightlight(newV); //代码高亮
+    if (newV) {
+      const el = newV as HTMLElement;
+      bindImagesLayer(el, imgPreview); //图片放大
+      codeHeightlight(el); //代码高亮
+    }
   },
+);
+
+watch(
+  () => [htmlContentRef.value, article.content],
+  ([el]) => {
+    if (el) {
+      nextTick(mountCopyButtons); // 挂载复制按钮
+    }
+  },
+  { immediate: true },
 );
 </script>
 
@@ -78,6 +117,55 @@ watch(
       font-size: 50px;
       margin-bottom: 50px;
     }
+  }
+}
+
+:deep(pre) {
+  &:hover .code-copy-btn {
+    display: flex;
+  }
+}
+
+:deep(.code-copy-btn) {
+  display: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  align-items: center;
+  cursor: pointer;
+  background-color: var(--el-bg-color-overlay, #ffffff);
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  border-radius: 4px;
+  padding: 4px 8px;
+  transition: all 0.3s;
+  z-index: 10;
+
+  &:hover {
+    background-color: var(--el-fill-color-light, #f5f7fa);
+    svg {
+      color: var(--el-color-primary, #409eff);
+    }
+  }
+
+  svg {
+    font-size: 16px;
+    color: var(--el-text-color-secondary, #909399);
+  }
+}
+
+:deep(.copy-text) {
+  font-size: 12px;
+  margin-right: 6px;
+  color: var(--el-color-success, #67c23a);
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>

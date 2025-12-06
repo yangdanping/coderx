@@ -14,6 +14,8 @@ import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml from './extractVideosFromHtml';
 import recursiveReplace from './recursiveReplace';
 
+import throttleByRaf from './throttleByRaf';
+
 export {
   LocalCache,
   SessionCache,
@@ -21,6 +23,7 @@ export {
   dateFormat,
   debounce,
   throttle,
+  throttleByRaf,
   isEmptyObj,
   isArrEqual,
   getImageUrl,
