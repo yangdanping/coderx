@@ -37,6 +37,13 @@ const useUserStore = defineStore('user', {
     followCount() {
       return (type: string) => this.followInfo[type]?.length ?? 0;
     },
+    userOnlineStatus() {
+      return (userName: string | undefined) => {
+        if (!userName) return { type: 'info', msg: '离线' } as const;
+        const user = this.onlineUsers.find((user) => user.userName === userName);
+        return user?.status === 'online' ? ({ type: 'success', msg: '在线' } as const) : ({ type: 'info', msg: '离线' } as const);
+      };
+    },
   },
   actions: {
     updateOnlineUsers(userList) {

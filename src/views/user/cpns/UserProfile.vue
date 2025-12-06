@@ -11,7 +11,7 @@
               <el-icon @click="updateProfile" class="edit" size="30" color="#999"> <IEdit /> </el-icon>
             </el-tooltip>
           </template>
-          <el-tag size="small" effect="plain" :type="onlineStatus(profile.name).type">{{ onlineStatus(profile.name).msg }}</el-tag>
+          <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
         </div>
         <template v-for="info in infos" :key="info.label">
           <div class="profile-item-other">
@@ -59,7 +59,7 @@ const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
-const { isFollowed, followCount, isUser, onlineUsers } = storeToRefs(userStore);
+const { isFollowed, followCount, isUser, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
 
 const { profile = {} } = defineProps<{
   profile: IUserInfo;
@@ -94,16 +94,7 @@ const goFollowTab = (subTabName: string) => {
   console.log('goFollowTab subTabName', subTabName);
   emitter.emit('changeFollowTab', subTabName); //在UserProfileMenu中改变大Tab,在UserFollow中改变小Tab
 };
-const onlineStatus = computed<any>(() => {
-  return (userName) => {
-    const user = onlineUsers.value.find((user) => user.userName === userName);
-    if (user && !user?.status) {
-      return { type: 'success', msg: '在线' };
-    } else {
-      return { type: 'info', msg: '离线' };
-    }
-  };
-});
+
 const userSex = computed(() => getImageUrl('user', `${profile.sex === '女' ? 'female' : 'male'}-icon`));
 
 const route = useRoute();

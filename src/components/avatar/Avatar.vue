@@ -3,7 +3,7 @@
     <el-popover popper-class="user-popover" :width="`calc(200px + ${nameCount}em)`" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
         <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" :class="{ 'online-border': isOnline }" />
-        <el-tag size="small" effect="plain" :type="onlineStatus(info.name).type">{{ onlineStatus(info.name).msg }}</el-tag>
+        <el-tag size="small" effect="plain" :type="userOnlineStatus(info.name).type">{{ userOnlineStatus(info.name).msg }}</el-tag>
         <div class="user-info">
           <div class="info1">
             <h2>{{ info.name }}</h2>
@@ -37,7 +37,7 @@ import useUserStore from '@/stores/user.store';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { followCount, isFollowed, isUser, onlineUsers } = storeToRefs(userStore);
+const { followCount, isFollowed, isUser, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
 
 const {
   info = {},
@@ -57,12 +57,7 @@ const nameCount = computed(() => {
 
 const avatarUrl = computed(() => info.avatarUrl ?? getImageUrl('user', 'avatar'));
 const userSex = computed(() => getImageUrl('user', `${info.sex === '女' ? 'female' : 'male'}-icon`));
-const onlineStatus = computed<any>(() => {
-  return (userName: string) => {
-    const user = onlineUsers.value.find((user) => user.userName === userName);
-    return user?.status === 'online' ? { type: 'success', msg: '在线' } : { type: 'info', msg: '离线' };
-  };
-});
+
 const isOnline = computed(() => {
   const user = onlineUsers.value.find((user) => user.userName === info.name);
   return user?.status === 'online';
