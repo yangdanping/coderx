@@ -156,12 +156,11 @@ const useUserStore = defineStore('user', {
         Msg.showFail('请求用户信息失败');
       }
     },
-    async getCollectAction(userId) {
-      console.log('getCollectAction userId', userId);
+    async getCollectAction(userId?: number) {
       const res = await getCollect(userId);
       if (res.code === 0) {
         this.collects = res.data;
-        console.log('changeCollect 收藏夹', this.collects);
+        console.log('该用户的收藏夹', this.collects);
       } else {
         Msg.showFail('获取用户收藏夹失败');
       }
