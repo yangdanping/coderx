@@ -37,7 +37,22 @@ class MyRequest {
   // 构造方法
   constructor(config: MyRequestConfig) {
     // 1.创建axios实例 --> (一切的起点,非常重要,我们之前用axios本质上是用axios对象的一个实例)
-    this.instance = axios.create(config);
+    // 优化: 利用 Axios 原生支持的 paramsSerializer 统一处理参数序列化
+    this.instance = axios.create({
+      ...config,
+      paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        for (const key in params) {
+          const value = params[key];
+          // 过滤掉 null 和 undefined
+          if (value !== null && value !== undefined) {
+            // 关键逻辑：对象/数组转 JSON 字符串，保持与后端约定的格式
+            searchParams.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+          }
+        }
+        return searchParams.toString();
+      },
+    });
     // 2.保存基本信息 --> 把别人传进来所有拦截器函数保存到interceptors属性中
     this.interceptors = config.interceptors;
     this.showLoading = config.showLoading ?? DEAFULT_LOADING; //默认情况下显示Loading,当某个请求不希望有Loading是就可以在该请求单独配置showLoading:false
@@ -141,32 +156,8 @@ class MyRequest {
 
   //get是调用request的,但同时明确请求方式为GET,下面同理
   get<T = any>(config: MyRequestConfig<T>): Promise<T> {
-    // 处理params参数，将其拼接到URL上
-    let finalUrl = config.url || '';
-
-    if (config.params && typeof config.params === 'object') {
-      // 将params对象转换为URL参数字符串
-      const searchParams = new URLSearchParams();
-
-      Object.entries(config.params).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          const isObject = Array.isArray(value) || typeof value === 'object'; // 数组和对象类型使用JSON.stringify进行序列化
-          searchParams.append(key, isObject ? JSON.stringify(value) : String(value));
-        }
-      });
-
-      const queryString = searchParams.toString();
-      if (queryString) {
-        // 检查URL是否已经包含查询参数
-        const separator = finalUrl.includes('?') ? '&' : '?';
-        finalUrl = `${finalUrl}${separator}${queryString}`;
-      }
-    }
-
-    // 创建新的config，移除params并使用拼接后的URL
-    const { params, ...restConfig } = config;
-
-    return this.request<T>({ ...restConfig, url: finalUrl, method: 'GET' });
+    // 优化: 不再需要手动拼接 URL，Axios 会自动调用我们配置的 paramsSerializer
+    return this.request<T>({ ...config, method: 'GET' });
   }
   post<T = any>(config: MyRequestConfig<T>): Promise<T> {
     return this.request<T>({ ...config, method: 'POST' });
