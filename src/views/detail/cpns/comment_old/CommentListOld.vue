@@ -24,7 +24,7 @@ onMounted(() => {
     listRef.value?.scrollIntoView({ behavior: 'smooth' });
   });
 });
-onBeforeUnmount(() => {
+onUnmounted(() => {
   emitter.off('gotoCom');
 });
 </script>

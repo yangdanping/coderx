@@ -168,6 +168,7 @@ const chat = new Chat({
 
 // 将 chat.messages 转换为响应式数据
 // 注意：Chat 类的 messages getter 访问了内部的 ref，所以 computed 可以追踪
+// 复习:computed回调什么时候执行? --> 仅会在其响应式依赖更新时才重新计算 或 读取到了该计算属性 且 当前计算属性是脏数据(缓存过时的数据,源码默认第一次就是脏数据) 时,其回调参会执行
 const messages: any = computed(() => chat.messages);
 const isLoading = computed(() => chat.status === 'streaming' || chat.status === 'submitted');
 // "Thinking..." 显示逻辑优化：

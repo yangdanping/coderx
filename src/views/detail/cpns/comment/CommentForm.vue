@@ -97,7 +97,7 @@ onMounted(() => {
   });
 });
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   emitter.off('cleanContent');
 });
 </script>
@@ -142,4 +142,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

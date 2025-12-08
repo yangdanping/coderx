@@ -150,7 +150,7 @@ onMounted(() => {
   });
 });
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   observer?.disconnect();
   observer = null;
 });
