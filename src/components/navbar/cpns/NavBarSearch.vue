@@ -55,7 +55,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Search, Close } from '@element-plus/icons-vue';
 import { useQuery } from '@tanstack/vue-query';
@@ -214,7 +213,7 @@ onMounted(() => {
   loadSearchHistory();
 });
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 </script>

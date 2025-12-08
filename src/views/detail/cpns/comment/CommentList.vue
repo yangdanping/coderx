@@ -93,7 +93,7 @@ onMounted(() => {
   });
 });
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   emitter.off('gotoCom');
   observer?.disconnect();
   observer = null;
