@@ -101,11 +101,14 @@ export function useUserLikedComments() {
   // 提取点赞的评论ID列表
   const likedCommentIds = computed(() => {
     const pages = query.data.value?.pages || [];
-    return pages.flatMap((page) => page.commentLiked || []);
+    // return pages.flatMap((page) => page.commentLiked || []);
+    const ids = pages.flatMap((page) => page.commentLiked || []);
+    return new Set(ids);
   });
 
   // 判断某条评论是否被点赞
-  const isLiked = (commentId: number) => likedCommentIds.value.includes(commentId);
+  // const isLiked = (commentId: number) => likedCommentIds.value.includes(commentId);
+  const isLiked = (commentId: number) => likedCommentIds.value.has(commentId);
 
   return {
     ...query,

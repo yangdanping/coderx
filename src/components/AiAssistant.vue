@@ -33,7 +33,7 @@
           <p>你可以问我关于这篇文章的问题，或者让我解释代码。</p>
         </div>
 
-        <div v-for="(m, index) in messages" :key="m.id || index" class="message" :class="m.role" v-show="getMessageText(m) || (m.role === 'assistant' && !isThinking)">
+        <div v-for="(m, index) in displayMessages" :key="m.id || index" class="message" :class="m.role">
           <div class="avatar">
             <el-avatar :size="30" :icon="m.role === 'user' ? UserFilled : Service" :src="m.role === 'user' ? userInfo.avatarUrl : ''" />
           </div>
@@ -115,7 +115,7 @@ const renderMarkdown = (text: string) => {
   return md.render(text);
 };
 
-// 从消息中提取文本内容
+// 从消息中提取文本内容,从后端返回给我的AI SDK v2 的消息格式中,提取真正要渲染的文本
 const getMessageText = (message: any) => {
   // 如果有 content 字段，直接返回
   if (message.content) {
@@ -179,12 +179,21 @@ const isThinking = computed(() => {
   if (chat.status === 'streaming') {
     const lastMessage = messages.value[messages.value.length - 1];
     const content = getMessageText(lastMessage);
+    console.log('正在流式接收并提取内容', content);
     // 如果最后一条是助手消息且内容为空，说明还在等待首字生成
     if (lastMessage?.role === 'assistant' && !content) {
       return true;
     }
   }
   return false;
+});
+
+// 过滤消息列表，替代 template 中的 v-if/v-show 逻辑
+const displayMessages = computed(() => {
+  return messages.value.filter((m: any) => {
+    // 显示条件：有内容 OR (是助手消息 AND 不在思考中)
+    return getMessageText(m) || (m.role === 'assistant' && !isThinking.value);
+  });
 });
 
 watch(
