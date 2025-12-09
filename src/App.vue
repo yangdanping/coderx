@@ -13,8 +13,8 @@ import { LocalCache } from '@/utils';
 // - Socket.IO 版本：自动重连、跨浏览器兼容
 // - WebSocket 版本：原生 API、无依赖
 // - 全部注释：禁用在线状态功能
-import useOnlineStatus from '@/service/online/socketio'; // Socket.IO 版本（推荐）
-// import useOnlineStatus from '@/service/online/websocket'; // WebSocket 版本
+import onlineStatusService from '@/service/online/socketio'; // Socket.IO 版本（推荐）
+// import onlineStatusService from '@/service/online/websocket'; // WebSocket 版本
 // ===============================================
 
 /**
@@ -41,7 +41,7 @@ onMounted(() => {
   }
 
   // 建立连接（前端服务会自动判断是否为游客）
-  useOnlineStatus.connect();
+  onlineStatusService.connect();
 
   // 监听标签页/浏览器关闭事件，断开连接
   window.addEventListener('beforeunload', handleBeforeUnload);
@@ -52,7 +52,7 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload);
 
   // 组件销毁时断开连接
-  useOnlineStatus.disconnect();
+  onlineStatusService.disconnect();
 });
 
 /**
@@ -60,7 +60,7 @@ onUnmounted(() => {
  */
 function handleBeforeUnload() {
   console.log('标签页即将关闭，正在断开在线连接...');
-  useOnlineStatus.disconnect();
+  onlineStatusService.disconnect();
 }
 </script>
 
