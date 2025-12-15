@@ -35,6 +35,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true, //支持跨域
           rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
         },
+        '/dev-laptop-api': {
+          target: 'http://100.107.181.55:8000', //接口的前缀
+          changeOrigin: true, //支持跨域
+          rewrite: (path) => path.replace(/^\/dev-laptop-api/, ''), //重写路径
+        },
         '/api': {
           // target: 'http://119.91.150.141:8000',
           target: 'http://8.138.223.188:8000',
