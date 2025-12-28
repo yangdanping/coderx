@@ -8,7 +8,7 @@
         <template v-for="item in articles.result" :key="item.id">
           <ListItem :item="item">
             <template #action>
-              <ArticleAction :article="item" />
+              <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
             </template>
           </ListItem>
         </template>
@@ -23,12 +23,19 @@
 import Page from '@/components/Page.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
+import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const { profile } = storeToRefs(userStore);
 const { articles } = storeToRefs(articleStore);
+
+// 用户点赞状态
+const { isLiked } = useUserLikedArticles();
+
+// 点赞操作
+const { mutate: likeArticle } = useLikeArticle();
 
 watch(
   () => profile.value.id,

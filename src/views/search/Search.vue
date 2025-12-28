@@ -35,7 +35,7 @@
             <template v-for="item in page.result" :key="item.id">
               <ListItem :item="item">
                 <template #action>
-                  <ArticleAction :article="item" />
+                  <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
                 </template>
               </ListItem>
             </template>
@@ -57,7 +57,7 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
-import { useArticleList } from '@/composables/useArticleList';
+import { useArticleList, useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { throttle } from '@/utils';
 import type { IUseArticleListParams } from '@/composables/useArticleList';
 
@@ -75,6 +75,12 @@ const requestParams = computed<IUseArticleListParams>(() => ({
 
 // 调用 useArticleList hook
 const { data, fetchNextPage, hasNextPage, isPending, isFetchingNextPage, isError, error, refetch } = useArticleList(requestParams);
+
+// 用户点赞状态
+const { isLiked } = useUserLikedArticles();
+
+// 点赞操作
+const { mutate: likeArticle } = useLikeArticle(requestParams);
 
 // 计算总数
 const totalCount = computed(() => data.value?.pages[0]?.total ?? 0);

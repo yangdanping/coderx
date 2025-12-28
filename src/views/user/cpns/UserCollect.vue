@@ -52,7 +52,7 @@
                 <input name="one" type="checkbox" :value="item.id" v-model="manageArr" @change="handleCheckbox" />
               </template>
               <template #action>
-                <ArticleAction :article="item" />
+                <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
               </template>
             </ListItem>
           </template>
@@ -70,6 +70,7 @@
 import DetailCollect from '@/views/detail/cpns/detail/DetailCollect.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
+import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { Msg, emitter } from '@/utils';
 import { Plus, Setting } from '@element-plus/icons-vue';
 
@@ -80,6 +81,13 @@ const articleStore = useArticleStore();
 
 const { userInfo, profile, collects, isUser } = storeToRefs(userStore);
 const { articles } = storeToRefs(articleStore);
+
+// 用户点赞状态
+const { isLiked } = useUserLikedArticles();
+
+// 点赞操作
+const { mutate: likeArticle } = useLikeArticle();
+
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 const dialogVisible = ref(false);
 const showSetup = ref(false);
