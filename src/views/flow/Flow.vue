@@ -1,8 +1,5 @@
 <template>
   <div class="flow">
-    <!-- 顶部导航栏 -->
-    <NavBar />
-
     <div class="flow-container">
       <div class="flow-header">
         <h1>Flow</h1>
@@ -30,7 +27,6 @@
 </template>
 
 <script lang="ts" setup>
-import NavBar from '@/components/navbar/NavBar.vue';
 import OnlineUserCard from '@/components/OnlineUserCard.vue';
 import useUserStore from '@/stores/user.store';
 
