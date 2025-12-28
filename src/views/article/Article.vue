@@ -2,14 +2,13 @@
   <div class="article">
     <NavBar />
     <nav class="article-nav" v-if="tags.length">
-      <ArticleNav :tags="tags" @changeTagInNav="changeTagInNav" />
+      <ArticleNav :tags="tags" />
     </nav>
-    <div class="list-wrapper" :style="{ width: `${articleListWidth}px` }">
-      <!-- 新架构：直接渲染 ArticleList，不再依赖 Store 数据控制显示 -->
-      <ArticleList @tabClick="tabClick" />
+    <div class="list-wrapper">
+      <ArticleList />
     </div>
     <div class="article-recommends">
-      <ArticleRecommend v-if="showRecommend" :recommends="recommends" />
+      <ArticleRecommend v-show="toggleRec" :recommends="recommends" />
     </div>
   </div>
 </template>
@@ -19,56 +18,20 @@ import NavBar from '@/components/navbar/NavBar.vue';
 import ArticleList from './cpns/ArticleList.vue';
 import ArticleRecommend from './cpns/ArticleRecommend.vue';
 import ArticleNav from './cpns/ArticleNav.vue';
-import { listWidth } from '@/global/constants/list-width';
-import { emitter } from '@/utils';
-
 import useRootStore from '@/stores/index.store';
-import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
-const router = useRouter();
-const route = useRoute();
 const rootStore = useRootStore();
-const userStore = useUserStore();
 const articleStore = useArticleStore();
-const { articles, recommends, tags } = storeToRefs(articleStore);
-const { token } = storeToRefs(userStore);
-const { windowInfo } = storeToRefs(rootStore);
+const { recommends, tags } = storeToRefs(articleStore);
+const { isSmallScreen } = storeToRefs(rootStore);
 
-const noData = ref(false);
-const articleListWidth = ref(listWidth);
-const showRecommend = ref(true);
-watch(
-  () => windowInfo.value,
-  (newV) => (showRecommend.value = newV.width < 1100 ? false : true),
-);
+// toggle左侧推荐文章可见性
+const toggleRec = computed(() => !isSmallScreen.value);
 
-const searchValue = ref<any>('');
-const querySearch = computed(() => route.query.searchValue);
-const searchStr = computed(() => querySearch.value ?? searchValue.value); //用于请求和展示
 onMounted(() => {
-  console.log('当前页面是否有搜索内容', !!searchStr.value);
   articleStore.getTagsAction();
   articleStore.getRecommendAction();
-  // 移除旧的 Store 请求逻辑，交由 ArticleList (最新版TanStack Query) 内部自动管理
-  emitter.on('submitSearchValue', (value) => {
-    searchValue.value = value;
-  });
 });
-
-const changeTagInNav = () => {
-  if (noData.value) {
-    noData.value = false;
-    setTimeout(() => (noData.value = !noData.value), 2000);
-  }
-  searchValue.value && (searchValue.value = '');
-};
-
-const tabClick = (order) => {
-  console.log('article tabClick', order);
-  // 排序逻辑现已由 ArticleList(最新版) 内部的 pageOrder 响应式参数自动触发更新
-  // 这里仅保留日志，或者处理其他非列表相关的副作用
-};
-const goEdit = () => (token ? router.push({ path: '/edit' }) : rootStore.toggleLoginDialog());
 </script>
 
 <style lang="scss" scoped>
@@ -76,25 +39,58 @@ $paddingTop: 60px;
 .article {
   display: flex;
   justify-content: center;
-  padding: 0 350px;
+  gap: 20px;
+  margin: 0 auto;
+
   .article-nav,
   .article-recommends {
     position: sticky;
     top: calc($paddingTop * 2);
-    padding-top: $paddingTop;
     height: 100%;
   }
+
   .list-wrapper {
     padding-top: 20px;
-    flex: 1;
-    margin: 0 60px;
+  }
 
-    .skeleton {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 814px;
+  /**
+   * 响应式布局总结：
+   * 1. 大中型屏幕 (max-width: 1200px):
+   *    - 页面布局从水平 (flex-row) 切换为垂直 (flex-column) 排布。
+   *    - 导航栏 (article-nav) 取消粘滞定位 (sticky)，改为占满宽度且居中对齐。
+   *    - 内容列表区域 (list-wrapper) 占满 100% 宽度，不再受限。
+   *    - 注意：侧边推荐位 (article-recommends) 通过 computed 逻辑在小屏下被完全隐藏。
+   * 2. 小型屏幕/移动端 (max-width: 768px):
+   *    - 列表容器增加左右内边距 (10px)，防止文字紧贴屏幕边缘。
+   */
+
+  // 中屏适配 (平板或窄屏桌面)
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; // 确保内容从顶部开始排列，防止标签"掉下来"
+    gap: 0;
+
+    .article-nav {
+      position: sticky;
+      top: var(--navbarHeight);
+      z-index: 999;
+      width: 100%;
+      padding-top: 0;
+      flex-shrink: 0;
+    }
+
+    .list-wrapper {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  // 小屏/移动端适配
+  @media (max-width: 768px) {
+    .list-wrapper {
+      padding-left: 10px;
+      padding-right: 10px;
     }
   }
 }

@@ -1,11 +1,11 @@
 <template>
-  <div class="forum">
+  <div class="flow">
     <!-- 顶部导航栏 -->
     <NavBar />
 
-    <div class="forum-container">
-      <div class="forum-header">
-        <h1>在线用户论坛</h1>
+    <div class="flow-container">
+      <div class="flow-header">
+        <h1>Flow</h1>
         <p class="subtitle">实时查看在线用户，基于 Socket.IO 实现</p>
         <div class="online-count">
           <el-tag type="success" size="large"> 当前在线: {{ onlineUsers.length }} 人 </el-tag>
@@ -38,7 +38,7 @@ const userStore = useUserStore();
 const { onlineUsers } = storeToRefs(userStore);
 
 /**
- * 论坛页面 - 在线用户展示
+ * Flow页面 - 在线用户展示
  *
  * 职责：
  * - 展示在线用户列表（数据来自 userStore.onlineUsers）
@@ -47,25 +47,24 @@ const { onlineUsers } = storeToRefs(userStore);
  * 说明：
  * - 在线状态由 App.vue 全局管理
  * - 此页面只负责展示数据
- * - Socket 连接在登录后自动建立，不依赖用户是否访问论坛页面
+ * - Socket 连接在登录后自动建立，不依赖用户是否访问"Flow"页面
  */
 </script>
 
 <style lang="scss" scoped>
-.forum {
-  .forum-container {
+.flow {
+  .flow-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 40px 20px;
 
-    .forum-header {
+    .flow-header {
       text-align: center;
       margin-bottom: 40px;
 
       h1 {
         font-size: 36px;
         font-weight: bold;
-        color: var(--fontColor);
         margin: 0 0 16px 0;
       }
 

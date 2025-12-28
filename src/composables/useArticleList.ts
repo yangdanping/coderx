@@ -1,14 +1,26 @@
-import { useInfiniteQuery } from '@tanstack/vue-query';
-import { getList } from '@/service/article/article.request';
-import { unref } from 'vue';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
+import { getList, likeArticle } from '@/service/article/article.request';
+import { getLiked } from '@/service/user/user.request';
+import { unref, computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import type { IArticleList } from '@/service/article/article.types';
+import type { RouteParam } from '@/service/types';
 
-// 定义参数类型，继承自原有的请求参数类型
+import useUserStore from '@/stores/user.store';
+import { Msg } from '@/utils';
+
+// 定义参数类型，继承自原有的请求参数类型（所有属性可选）
 // 注意：这里不需要包含 offset/limit/pageNum，因为这些由 useInfiniteQuery 内部管理
-export interface IUseArticleListParams extends Omit<IArticleList, 'pageNum' | 'pageSize'> {
+export interface IUseArticleListParams extends Partial<Omit<IArticleList, 'pageNum' | 'pageSize'>> {
   pageSize?: number;
 }
+
+// ==================== Query Keys ====================
+export const articleKeys = {
+  all: ['articles'] as const,
+  list: (params: any) => [...articleKeys.all, 'list', params] as const,
+  userLiked: (userId: number) => [...articleKeys.all, 'userLiked', userId] as const,
+};
 
 /**
  * Composable: 文章列表逻辑封装
@@ -32,7 +44,7 @@ export interface IUseArticleListParams extends Omit<IArticleList, 'pageNum' | 'p
 export function useArticleList(params: Ref<IUseArticleListParams> | IUseArticleListParams) {
   // 使用 useInfiniteQuery 处理无限滚动逻辑
   return useInfiniteQuery({
-    queryKey: ['articles', params],
+    queryKey: computed(() => articleKeys.list(unref(params))),
     // 2. Query Function (查询函数)
     // 接收 pageParam（当前页码），调用实际的 Service 层接口
     queryFn: async ({ pageParam = 1 }) => {
@@ -77,6 +89,76 @@ export function useArticleList(params: Ref<IUseArticleListParams> | IUseArticleL
 
       // 否则，下一页页码 = 当前页数 + 1 (假设从1开始)
       return allPages.length + 1;
+    },
+  });
+}
+
+// ==================== 用户点赞列表 ====================
+
+/**
+ * 获取当前用户点赞过的文章ID列表
+ */
+export function useUserLikedArticles() {
+  const userStore = useUserStore();
+  const userId = computed(() => userStore.userInfo?.id);
+
+  const query = useInfiniteQuery({
+    queryKey: computed(() => articleKeys.userLiked(userId.value || 0)),
+    queryFn: async () => {
+      if (!userId.value) return { articleLiked: [] };
+      const res = await getLiked(userId.value);
+      return res.data;
+    },
+    initialPageParam: null,
+    getNextPageParam: () => undefined, // 不分页
+    enabled: computed(() => !!userId.value),
+  });
+
+  // 提取点赞的文章ID列表
+  const likedArticleIds = computed(() => {
+    const pages = query.data.value?.pages || [];
+    const ids = pages.flatMap((page) => page.articleLiked || []);
+    return new Set(ids);
+  });
+
+  // 判断某篇文章是否被点赞
+  const isLiked = (articleId: number) => likedArticleIds.value.has(articleId);
+
+  return {
+    ...query,
+    likedArticleIds,
+    isLiked,
+  };
+}
+
+// ==================== Mutations ====================
+
+/**
+ * 点赞文章
+ * @param params 查询参数（用于刷新文章列表）
+ */
+export function useLikeArticle(params?: Ref<IUseArticleListParams> | IUseArticleListParams) {
+  const queryClient = useQueryClient();
+  const userStore = useUserStore();
+
+  return useMutation({
+    mutationFn: (articleId: RouteParam) => likeArticle(articleId),
+    onSuccess: (res) => {
+      const { liked, likes } = res.data;
+      liked ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
+
+      // 更新用户点赞列表
+      if (userStore.userInfo?.id) {
+        queryClient.invalidateQueries({ queryKey: articleKeys.userLiked(userStore.userInfo.id) });
+      }
+
+      // 刷新文章列表（如果提供了查询参数）
+      if (params) {
+        queryClient.invalidateQueries({ queryKey: articleKeys.list(unref(params)) });
+      }
+    },
+    onError: () => {
+      Msg.showFail('操作失败，请重试');
     },
   });
 }

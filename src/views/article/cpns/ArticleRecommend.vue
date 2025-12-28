@@ -1,7 +1,7 @@
 <template>
   <div class="recommends">
     <h2 class="title">
-      推荐文章
+      <span>推荐文章</span>
       <el-tooltip effect="dark" content="换一批" placement="top">
         <el-icon @click="refresh" :class="{ rotating: isRotating }"><IRefresh /></el-icon>
       </el-tooltip>
@@ -58,8 +58,8 @@ const goToArticle = (item: any) => {
   .title {
     display: flex;
     align-items: center;
-    color: var(--fontColor);
     margin-bottom: 10px;
+    gap: 4px;
 
     .el-icon {
       cursor: pointer;

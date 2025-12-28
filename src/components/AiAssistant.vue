@@ -26,7 +26,6 @@
           </el-tooltip>
         </div>
       </div>
-
       <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
         <div v-if="messages.length === 0" class="welcome-message">
           <p>你好！我是你的 AI 编程助手。</p>

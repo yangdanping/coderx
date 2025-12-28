@@ -1,12 +1,22 @@
 <template>
   <div class="app">
     <RouterView class="router-view" />
-    <el-backtop :right="100" :bottom="100" :style="{ color: '#81c995' }" />
+    <el-backtop v-bind="backTopPosition" :style="{ color: '#81c995' }" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { LocalCache } from '@/utils';
+import useRootStore from '@/stores/index.store';
+const rootStore = useRootStore();
+const { windowInfo, isSmallScreen } = storeToRefs(rootStore);
+
+const backTopPosition = computed(() => {
+  return {
+    right: isSmallScreen.value ? Number(windowInfo.value.width / 2) : Number(100),
+    bottom: 20,
+  };
+});
 
 // ============== 🔌 在线状态功能开关 ==============
 // 根据需要切换或注释掉任意一行即可：

@@ -85,9 +85,8 @@ const goToUserProfile = () => {
       text-align: center;
       .name {
         margin: 0 0 8px 0;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 500;
-        color: var(--fontColor);
       }
     }
   }

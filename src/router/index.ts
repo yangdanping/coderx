@@ -17,10 +17,16 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/article/Article.vue'),
   },
   {
-    name: 'forum',
-    path: '/forum',
-    meta: { title: '论坛' },
-    component: () => import('@/views/forum/Forum.vue'),
+    name: 'search',
+    path: '/search',
+    meta: { title: '搜索' },
+    component: () => import('@/views/search/Search.vue'),
+  },
+  {
+    name: 'flow',
+    path: '/flow',
+    meta: { title: 'Flow' },
+    component: () => import('@/views/flow/Flow.vue'),
   },
   {
     name: 'detail',

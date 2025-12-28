@@ -14,13 +14,16 @@ const route = useRoute();
 const userStore = useUserStore();
 const { profile } = storeToRefs(userStore);
 
-onMounted(() => getData(route.params.userId));
+onMounted(() => {
+  console.log('route.params-----', route.params);
+  getData(route.params.userId);
+});
 
 watch(
   () => route.params.userId,
-  (newUserId) => {
-    console.log('watch newUserId', newUserId);
-    getData(newUserId);
+  (newV) => {
+    console.log('watch newUserId', newV);
+    getData(newV);
   },
 );
 
@@ -39,6 +42,5 @@ const getData = (userId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--fontColor);
 }
 </style>

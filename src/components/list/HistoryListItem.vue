@@ -72,7 +72,6 @@ const handleDelete = async (articleId: any) => {
   margin: 10px 0;
   border-radius: 5px;
   transition: all 0.3s;
-  color: var(--fontColor);
 
   &:hover {
     transform: scale(1.005);
@@ -92,7 +91,6 @@ const handleDelete = async (articleId: any) => {
 
       .author-name {
         font-weight: 500;
-        color: var(--fontColor);
       }
 
       .create-time {
@@ -116,15 +114,10 @@ const handleDelete = async (articleId: any) => {
         margin: 0;
         font-size: 16px;
         font-weight: 500;
-        color: var(--fontColor);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 600px;
-
-        &:hover {
-          color: #007bff;
-        }
       }
     }
 

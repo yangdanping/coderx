@@ -29,6 +29,7 @@ const handleClick = (tab, event) => {
   display: flex;
   justify-content: space-between;
   width: 100%;
+  // font-family: 'SmileySans', sans-serif;
   .el-tabs {
     flex: 1;
     margin-left: 70px;

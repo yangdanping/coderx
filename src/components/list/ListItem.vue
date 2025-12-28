@@ -23,8 +23,6 @@
           <slot name="multiple-action"></slot>
         </div>
       </div>
-      <!-- <img v-if="item.cover" class="cover" :src="item.cover" loading="lazy" />
-      <div v-else class="cover"></div> -->
     </a>
   </div>
 </template>
@@ -63,9 +61,7 @@ const goDetail = (item: IListItemData) => {
   window.open(routeUrl.href, '_blank'); // routeUrl.href 是相对路径article/:id
   // 当在 http://192.168.3.96:8080/article 访问id为123的文章时 会打开 http://192.168.3.96:8080/article/123
 };
-const goTag = throttle(function (tag) {
-  emitter.emit('changeTagInList', tag);
-}, 300);
+const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
 </script>
 
 <style lang="scss" scoped>
@@ -73,10 +69,19 @@ const goTag = throttle(function (tag) {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 10px 10px 0 10px;
+  padding: 30px 10px 0;
   margin-bottom: 10px;
-  color: var(--fontColor);
   z-index: 99;
+  // 防止内容溢出
+  overflow: hidden;
+  box-sizing: border-box;
+
+  // ~ ："兄弟选择器" ,作用是：匹配后面跟随的所有同级（兄弟）元素
+  // & ~ & ：匹配后面跟随的所有同级（兄弟）元素,一般用于重置后续项,也是目前css"模拟 :first-of-class"方案
+  // 等价于 .list-item ~ .list-item { ... }
+  & ~ & {
+    padding-top: 10px;
+  }
 
   .checkbox {
     position: absolute;
@@ -105,6 +110,8 @@ const goTag = throttle(function (tag) {
   .author {
     display: flex;
     align-items: center;
+    flex-wrap: wrap; // 允许标签换行
+    gap: 6px 0; // 换行时的垂直间距
     span {
       margin-right: 10px;
     }
@@ -124,19 +131,26 @@ const goTag = throttle(function (tag) {
     border-bottom: 1px solid #e5e6eb;
     padding-bottom: 10px;
     cursor: pointer;
+    // 防止溢出
+    min-width: 0;
+
     .content {
       flex: 1;
       margin-top: 5px;
+      // 🌟关键：允许内容收缩
+      min-width: 0;
+      overflow: hidden;
+
       .title,
       .abstract {
-        width: 600px;
+        // 改为 100% 宽度自适应容器，而非固定 clamp
+        width: 100%;
         padding-bottom: 5px;
         white-space: nowrap;
-        overflow-x: hidden;
+        overflow: hidden;
         text-overflow: ellipsis;
       }
       .abstract {
-        /* width: 30%; */
         color: #999;
       }
     }
@@ -150,6 +164,7 @@ const goTag = throttle(function (tag) {
       margin-left: 24px;
       overflow: hidden;
       cursor: pointer;
+
       img {
         object-fit: cover; //保持原来宽高比,遮盖整个区域
         width: 100%;
@@ -161,6 +176,51 @@ const goTag = throttle(function (tag) {
         top: 50%;
         transform: translateY(-50%);
         z-index: 100;
+      }
+    }
+  }
+
+  /**
+   * 响应式布局总结：
+   * 1. 平板端 (max-width: 768px): 
+   *    - 缩小封面图尺寸 (120x75)，减小左间距，释放空间给文字。
+   * 2. 移动端 (max-width: 480px): 
+   *    - 隐藏封面图，让文字内容占据 100% 宽度。
+   *    - 减小整体内边距 (padding) 和外边距 (margin)，适配窄屏。
+   *    - 调小标题、摘要和作者信息的字体大小，优化阅读体验。
+   *    - 调整作者信息间距。
+   */
+
+  // 平板端
+  @media (max-width: 768px) {
+    .content-wrapper .cover {
+      width: 120px;
+      height: 75px;
+      margin-left: 16px;
+    }
+  }
+
+  // 移动端
+  @media (max-width: 480px) {
+    padding: 20px 8px 0;
+    margin-bottom: 8px;
+
+    .author .author-info {
+      margin-left: 10px;
+      font-size: 13px;
+    }
+
+    .content-wrapper {
+      .content {
+        .title {
+          font-size: 16px;
+        }
+        .abstract {
+          font-size: 13px;
+        }
+      }
+      .cover {
+        display: none;
       }
     }
   }

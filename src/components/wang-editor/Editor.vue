@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
 import { Memo } from '@element-plus/icons-vue';
-import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
+import { Editor, Toolbar } from '@wangeditor-next/editor-for-vue';
 import { LocalCache, isEmptyObj, emitter } from '@/utils';
 import { useEditorConfig } from './config';
 import { DomEditor } from '@wangeditor/editor';

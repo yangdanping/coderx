@@ -1,9 +1,8 @@
 <template>
   <div class="right">
-    <NavBarSearch />
-
+    <slot name="right"></slot>
     <template v-if="!token">
-      <el-button @click="changeDialog" class="register-btn">Hello CoderX</el-button>
+      <el-button @click="changeDialog" class="register-btn"><span>Hello Coder</span> <span class="x">X</span></el-button>
     </template>
     <template v-else>
       <NavBarUser />
@@ -15,7 +14,6 @@
 <script lang="ts" setup>
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
-import NavBarSearch from './NavBarSearch.vue';
 
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
@@ -32,37 +30,54 @@ const changeDialog = () => {
 .right {
   display: flex;
   align-items: center;
+  gap: 40px;
   height: 100%;
-  width: 100px;
-  margin-right: 300px;
+  margin-right: 20px;
   .register-btn {
     position: relative;
-    color: #fff;
-    /* font-size: 16px; */
-    background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
-    background-size: 400%;
+    height: 36px;
+    // color: #fff;
+    // background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
+    // background-size: 400%;
     transition: all 0.3s;
     z-index: 1;
+    .x {
+      background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   }
-  .register-btn::before {
-    content: '';
-    position: absolute;
-    left: -5px;
-    right: -5px;
-    top: -5px;
-    bottom: -5px;
-    background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
-    background-size: 400%;
-    filter: blur(15px);
-    z-index: -1;
-  }
-  .register-btn:hover {
-    text-shadow: 0px 2px 10px rgb(255, 255, 255);
-    animation: flow 3s infinite;
-    transform: scale(1.2);
+  // .register-btn::before {
+  //   content: '';
+  //   position: absolute;
+  //   left: -5px;
+  //   right: -5px;
+  //   top: -5px;
+  //   bottom: -5px;
+  //   background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
+  //   background-size: 400%;
+  //   filter: blur(15px);
+  //   z-index: -1;
+  // }
+  // .register-btn:hover {
+  //   text-shadow: 0px 2px 10px rgb(255, 255, 255);
+  //   animation: flow 3s infinite;
+  //   transform: scale(1.2);
 
-    &::before {
-      animation: flow 3s infinite;
+  //   &::before {
+  //     animation: flow 3s infinite;
+  //   }
+  // }
+}
+
+// 移动端响应式样式
+@media (max-width: 768px) {
+  .right {
+    // margin-right: 30px;
+    .register-btn {
+      font-size: 14px;
+      padding: 8px 12px;
     }
   }
 }

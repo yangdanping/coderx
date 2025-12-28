@@ -13,7 +13,7 @@
       clearable
       size="large"
     />
-    <el-card v-if="shouldShowCard" class="search-card" :style="{ width: widerStyle }">
+    <el-card v-show="showCardWithDelay" class="search-card" :style="{ width: widerStyle }">
       <!-- 搜索记录头部 -->
       <template v-if="searchHistory.length && !searchValue" #header>
         <span class="header-title">搜索记录:</span>
@@ -58,10 +58,9 @@
 import { useRouter, useRoute } from 'vue-router';
 import { Search, Close } from '@element-plus/icons-vue';
 import { useQuery } from '@tanstack/vue-query';
-import { debounce, emitter } from '@/utils';
+import { debounce } from '@/utils';
 import LocalCache from '@/utils/LocalCache';
 import useRootStore from '@/stores/index.store';
-import useArticleStore from '@/stores/article.store';
 import { search } from '@/service/article/article.request';
 
 // 1. 状态定义
@@ -74,10 +73,21 @@ const searchHistory = ref<string[]>([]);
 const hoveredIndex = ref(-1);
 const isComposing = ref(false); // 追踪输入法状态
 
+const rootStore = useRootStore();
+const { isSmallScreen } = storeToRefs(rootStore);
 const router = useRouter();
 const route = useRoute();
-const rootStore = useRootStore();
-const articleStore = useArticleStore();
+
+// 从 URL 同步搜索词到输入框（当在 /search 页面时）
+watch(
+  () => route.query.q,
+  (newQ) => {
+    if (route.path === '/search' && newQ) {
+      searchValue.value = newQ as string;
+    }
+  },
+  { immediate: true },
+);
 
 // 防抖更新查询参数
 const updateDebouncedValue = debounce(() => {
@@ -121,7 +131,7 @@ const handleCompositionStart = () => (isComposing.value = true);
 const handleCompositionEnd = () => {
   // 使用 setTimeout 延迟重置，确保 keyup.enter 事件能正确检测到输入法状态
   // compositionend 和 keyup.enter 几乎同时触发，需要延迟一点点时间
-  setTimeout(() => (isComposing.value = false), 50);
+  setTimeout(() => (isComposing.value = false), 100);
 };
 
 // 控制卡片显示：(聚焦状态) && (有搜索内容 OR 有历史记录)
@@ -130,9 +140,48 @@ const shouldShowCard = computed(() => {
   return isFocused.value && hasContent;
 });
 
+/**
+ * 卡片显示延迟控制
+ * 目的：让卡片在 input 宽度变化完成后再出现，实现流畅的动画效果
+ *
+ * showCardWithDelay: 控制卡片最终是否显示（响应式，用于模板渲染）
+ * showCardTimer: 延迟定时器 ID（普通变量，不需要响应式）
+ *   - 不用 ref() 的原因：
+ *     1. 只用于存储定时器 ID，清除定时器时使用
+ *     2. 不需要在模板中使用，不需要触发视图更新
+ *     3. 使用普通变量更轻量，避免响应式系统的性能开销
+ */
+const showCardWithDelay = ref(false);
+let showCardTimer: number | null = null;
+
+watch(shouldShowCard, (newVal) => {
+  if (newVal) {
+    // 显示逻辑：小屏幕立即显示，大屏幕延迟 300ms（等待 input 宽度过渡完成）
+    if (isSmallScreen.value) {
+      showCardWithDelay.value = true;
+    } else {
+      showCardTimer = window.setTimeout(() => {
+        showCardWithDelay.value = true;
+      }, 300);
+    }
+  } else {
+    // 隐藏逻辑：无论屏幕大小，都立即隐藏并清除待执行的定时器
+    if (showCardTimer) {
+      clearTimeout(showCardTimer);
+      showCardTimer = null;
+    }
+    showCardWithDelay.value = false;
+  }
+});
+
 // 样式计算
 const widerStyle = computed(() => {
-  return shouldShowCard.value ? '330px' : '240px';
+  const baseWidth = 240;
+  if (!isSmallScreen.value) {
+    return shouldShowCard.value ? baseWidth + 100 + 'px' : baseWidth + 'px';
+  } else {
+    return '100%';
+  }
 });
 
 const borderColors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#ff6b9d', '#9c27b0', '#00bcd4', '#ff9800', '#795548'];
@@ -178,17 +227,8 @@ const submitSearch = () => {
 
   rootStore.changeTag('');
 
-  // 路由跳转逻辑
-  if (route.path !== '/article') {
-    const routeData = router.resolve({
-      path: '/article',
-      query: { searchValue: searchValue.value },
-    });
-    window.open(routeData.href, '_blank');
-  } else {
-    articleStore.refreshFirstPageAction({ keywords: searchValue.value });
-  }
-  emitter.emit('submitSearchValue', searchValue.value);
+  // 统一跳转到 /search?q=xxx（单页面路由切换）
+  router.push({ path: '/search', query: { q: searchValue.value } });
 };
 
 const goToArticle = (item: any) => {
@@ -215,19 +255,21 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  if (showCardTimer) {
+    clearTimeout(showCardTimer);
+  }
 });
 </script>
 
 <style lang="scss" scoped>
-$searchWidth: 260px;
+$searchWidth: 100%;
 
 .search {
-  margin: 0 30px;
   position: relative;
 
   :deep(.el-input) {
     border-radius: 5px;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     height: 36px;
     width: $searchWidth;
     .el-input__wrapper {
@@ -263,9 +305,8 @@ $searchWidth: 260px;
     position: absolute;
     top: 39px;
     width: $searchWidth;
-    transition: all 0.3s;
-    z-index: 99;
-
+    z-index: 999;
+    animation: boxDownSimple 0.3s;
     .history-content {
       display: flex;
       flex-wrap: wrap;
@@ -365,6 +406,15 @@ $searchWidth: 260px;
         width: 100%;
         height: 60px; /* Fixed height for loading */
       }
+    }
+  }
+}
+
+// 移动端响应式样式
+@media (max-width: 768px) {
+  .search {
+    :deep(.el-input) {
+      width: 180px;
     }
   }
 }
