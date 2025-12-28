@@ -54,7 +54,7 @@
 
 // 定义混合指令
 @mixin customCSS {
-  font-size: 18px;
+  font-size: 16px;
   blockquote,
   p {
     line-height: 1.5;
@@ -99,7 +99,7 @@
     word-break: normal;
     word-spacing: normal;
     hyphens: none;
-    font-size: 18px;
+    font-size: 16px;
     background-color: transparent;
   }
   &.preview-content {

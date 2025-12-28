@@ -1,7 +1,7 @@
 <template>
   <div class="nav-bar-user">
     <div class="user-avatar" @mouseenter="toggle(true)" @mouseleave="toggle(false)">
-      <Avatar :info="userInfo" disabled :size="50"></Avatar>
+      <Avatar :info="userInfo" disabled :size="avatarSize"></Avatar>
       <div class="box" v-if="isShow">
         <div class="user-info">
           <div class="following btn" @click="goProfile('关注', 'following')">
@@ -39,22 +39,25 @@
 import Avatar from '@/components/avatar/Avatar.vue';
 
 import useUserStore from '@/stores/user.store';
+import useRootStore from '@/stores/index.store';
 import { debounce } from '@/utils';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const { userInfo, followCount } = storeToRefs(userStore);
-
+const rootStore = useRootStore();
+const { isSmallScreen } = storeToRefs(rootStore);
 const isShow = ref(false);
 const toggle = debounce(function (toggle) {
   isShow.value = toggle;
   userStore.getFollowAction(userInfo.value.id);
 }, 200);
 
-const goEdit = () => {
-  console.log('goEdit');
-  router.push('/edit');
-};
+const goEdit = () => router.push('/edit');
+
+const avatarSize = computed(() => {
+  return isSmallScreen.value ? 30 : 40;
+});
 
 const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   console.log('goProfile', route.path, tabName, subTabName);
@@ -85,7 +88,7 @@ const logOut = () => {
 .nav-bar-user {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   .user-avatar {
     position: relative;
 
@@ -93,7 +96,7 @@ const logOut = () => {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      bottom: -250px;
+      top: 58px;
       width: 150px;
       background-color: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);

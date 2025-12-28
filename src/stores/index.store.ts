@@ -9,8 +9,18 @@ const useRootStore = defineStore('root', {
     pageSize: 10 as number,
     pageOrder: 'date',
     tagId: '' as number | '',
-    windowInfo: {} as any,
+    windowInfo: {
+      width: 0,
+      height: 0,
+    } as { width: number; height: number },
   }),
+  getters: {
+    // 当 width 为 0（未初始化）时，默认按大屏处理
+    isSmallScreen: (state) => {
+      const width = state.windowInfo.width;
+      return width !== 0 && width < 1200;
+    },
+  },
   actions: {
     toggleLoginDialog() {
       this.showLoginDialog = !this.showLoginDialog;
@@ -27,9 +37,12 @@ const useRootStore = defineStore('root', {
     changeTag(tagId) {
       this.tagId = tagId;
     },
-    changeWindowInfo() {
+    getWindowInfo() {
+      // 立即获取当前窗口尺寸
+      this.windowInfo = { width: window.innerWidth, height: window.innerHeight };
+      // 然后监听窗口变化
       window.addEventListener('resize', () => {
-        const windowInfo = { width: window.innerWidth, hight: window.innerHeight };
+        const windowInfo = { width: window.innerWidth, height: window.innerHeight };
         this.windowInfo = windowInfo;
       });
     },

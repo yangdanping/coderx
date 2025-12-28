@@ -21,12 +21,12 @@ import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 const { profile, followInfo } = storeToRefs(userStore);
 
-const followType = ref<any>('following'); //默认显示关注者
+const followType = ref<any>('following@'); //默认显示关注者
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 const route = useRoute();
 
 onMounted(() => {
-  emitter.on('changeFollowTab', (subTabName) => {
+  emitter.on('changeFollowTab ', (subTabName) => {
     followType.value = subTabName;
   });
   const { tabName, subTabName } = route.query;
