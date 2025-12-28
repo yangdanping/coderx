@@ -1,15 +1,26 @@
 <template>
   <div class="app">
+    <!-- 除了编辑页面，其他页面都显示导航栏 -->
+    <NavBar v-if="showNavBar" />
     <RouterView class="router-view" />
     <el-backtop v-bind="backTopPosition" :style="{ color: '#81c995' }" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import NavBar from '@/components/navbar/NavBar.vue';
 import { LocalCache } from '@/utils';
 import useRootStore from '@/stores/index.store';
 const rootStore = useRootStore();
 const { windowInfo, isSmallScreen } = storeToRefs(rootStore);
+
+// 根据路由判断是否显示导航栏
+// - 编辑页面：完全不需要导航栏
+// - 详情页面：使用自定义导航栏（插槽），不显示默认导航栏
+const route = useRoute();
+const showNavBar = computed(() => {
+  return route.name !== 'edit' && !route.meta.customNavBar;
+});
 
 const backTopPosition = computed(() => {
   return {

@@ -1,12 +1,10 @@
 <template>
   <div class="user">
-    <NavBar />
     <UserProfile :profile="profile" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import NavBar from '@/components/navbar/NavBar.vue';
 import UserProfile from './cpns/UserProfile.vue';
 
 import useUserStore from '@/stores/user.store';

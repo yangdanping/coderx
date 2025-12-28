@@ -1,6 +1,5 @@
 <template>
   <div class="search-page">
-    <NavBar />
     <div class="search-container">
       <!-- 搜索结果统计 -->
       <div v-if="keywords && !isPending" class="search-stats">
@@ -54,7 +53,6 @@
 </template>
 
 <script lang="ts" setup>
-import NavBar from '@/components/navbar/NavBar.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import { useArticleList, useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
