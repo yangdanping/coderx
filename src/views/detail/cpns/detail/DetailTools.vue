@@ -80,6 +80,7 @@ const submitReport = ({ reportOptions, otherReport }) => {
 .detail-tool {
   display: flex;
   align-items: center;
+  margin-top: 5px;
   .el-icon-back,
   .el-icon-edit,
   .el-icon-warning,
@@ -95,14 +96,10 @@ const submitReport = ({ reportOptions, otherReport }) => {
     transform: translate(-6px, 0);
   }
   .el-icon-back {
-    font-size: 40px;
+    font-size: 36px;
   }
-  .el-icon-edit {
-    font-size: 30px;
-  }
-  .el-icon-delete {
-    font-size: 30px;
-  }
+  .el-icon-edit,
+  .el-icon-delete,
   .el-icon-warning {
     font-size: 30px;
   }

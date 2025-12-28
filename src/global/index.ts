@@ -51,7 +51,7 @@ export default function init(app: App) {
   const commentStore = useCommentStore();
 
   rootStore.loadLoginAction();
-  rootStore.changeWindowInfo();
+  rootStore.getWindowInfo();
 
   // 路由前置守卫 (使用async支持等待异步验证)
   router.beforeEach(async (to, from) => {
@@ -84,7 +84,12 @@ export default function init(app: App) {
 
     // 3. 其他路由逻辑
     if (from.path !== to.path) {
-      rootStore.$reset();
+      // 不要使用 $reset()，它会重置 windowInfo 导致布局问题
+      // 只重置分页和排序相关的字段
+      rootStore.changePageNum(1);
+      rootStore.changePageSize(10);
+      rootStore.changePageOrder('date');
+      rootStore.changeTag('');
     }
     if (to.path.includes('article')) {
       articleStore.initArticle();

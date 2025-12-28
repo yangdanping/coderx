@@ -60,22 +60,27 @@ $TitleSize: 2em;
 
 .home {
   > .content {
-    max-width: 1432px;
-    padding: 0 10px;
+    max-width: 80%;
     margin: 0 auto;
 
     .title {
       display: flex;
       flex-direction: column;
       padding: 150px 0;
-      font-size: 79px;
+      /* 
+         clamp(min, preferred, max) 函数用于设置响应式字体大小
+         - min: 40px (最小值，防止在小屏幕下文字过小)
+         - preferred: 10vw (首选值，10vw 表示屏幕宽度的 10%，实现随屏幕宽度动态缩放)
+         - max: 70px (最大值，防止在大屏幕下文字过大)
+      */
+      font-size: clamp(40px, 10vw, 70px);
       user-select: none;
-      color: var(--fontColor);
       transition: all 0.5s;
 
       .title-line-1 {
         -webkit-animation: tracking-in-expand 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) both;
         animation: tracking-in-expand 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+        // font-family: 'MapleMono', sans-serif;
       }
       .title-line-2 {
         line-height: $TitleSize;
@@ -85,8 +90,9 @@ $TitleSize: 2em;
       .isLast:after {
         content: 'X';
         font-style: oblique;
+        // font-family: 'SmileySans', italic;
         padding-right: 30px;
-        background: linear-gradient(to right, rgb(255, 128, 128), rgb(96, 239, 177));
+        background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
@@ -97,7 +103,12 @@ $TitleSize: 2em;
       height: 500px;
       display: flex;
       flex-direction: column;
-      font-size: 30px;
+      font-family: 'MapleMono', sans-serif;
+      /* 
+         同样使用 clamp() 实现 brief 部分的响应式字体
+         - 最小值 16px，理想值 4vw (屏幕宽度的 4%)，最大值 30px
+      */
+      font-size: clamp(16px, 4vw, 30px);
       justify-content: center;
       align-items: center;
       color: #5f5f5f;
@@ -106,23 +117,23 @@ $TitleSize: 2em;
         transition: all 0.3s;
       }
     }
+  }
 
-    @media screen and (max-width: 880px) {
-      .title {
-        font-size: 70px;
-      }
-      .brief {
-        font-size: 25px;
-      }
+  /* @media screen and (max-width: 880px) {
+    .title {
+      font-size: 70px;
     }
-    @media screen and (max-width: 630px) {
-      .title {
-        font-size: 40px;
-      }
-      .brief {
-        font-size: 18px;
-      }
+    .brief {
+      font-size: 25px;
     }
   }
+  @media screen and (max-width: 630px) {
+    .title {
+      font-size: 40px;
+    }
+    .brief {
+      font-size: 16px;
+    }
+  } */
 }
 </style>

@@ -1,3 +1,11 @@
+// 全局防止横向滚动条（移动端适配）
+// 注意：使用 clip 而非 hidden，因为 hidden 会导致 position: sticky 失效
+html,
+body {
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
 body,
 h1,
 h2,
@@ -8,6 +16,13 @@ li {
   padding: 0;
   margin: 0;
 }
+
+// 所有元素默认 border-box
+// *,
+// *::before,
+// *::after {
+//   box-sizing: border-box;
+// }
 
 a {
   text-decoration: none;

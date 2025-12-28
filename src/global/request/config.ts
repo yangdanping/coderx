@@ -1,4 +1,4 @@
-const TIME_OUT = 10000;
+const TIME_OUT = 100000;
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 // const NEWS_BASE_URL = `https://newsapi.org/v2`;

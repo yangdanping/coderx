@@ -9,6 +9,7 @@ import IconsResolver from 'unplugin-icons/resolver';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteCompression from 'vite-plugin-compression';
+import pxtorem from 'postcss-pxtorem';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
@@ -25,6 +26,24 @@ export default defineConfig(({ mode }) => {
     },
     esbuild: {
       drop: mode === 'production' ? ['console', 'debugger'] : [],
+    },
+    // 🎯 CSS 配置：PostCSS pxtorem 自动转换
+    css: {
+      postcss: {
+        plugins: [
+          pxtorem({
+            rootValue: 16, // 根元素字体大小基准值（与设计稿对应）
+            propList: ['*'], // 所有属性都进行转换
+            selectorBlackList: [
+              'el-', // Element Plus 组件不转换
+              'w-e-', // WangEditor 组件不转换
+            ],
+            exclude: /node_modules/i, // 排除 node_modules 目录
+            mediaQuery: false, // 是否允许在媒体查询中转换 px
+            minPixelValue: 1, // 小于1px的值不转换
+          }),
+        ],
+      },
     },
     server: {
       port: 8080,

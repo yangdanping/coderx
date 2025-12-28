@@ -131,7 +131,10 @@ const useArticleStore = defineStore('article', {
     async getRecommendAction(pageNum = 1, pageSize = 10) {
       const res = await getRecommend({ pageNum, pageSize });
       res.code === 0 && (this.recommends = res.data);
-      console.log('getRecommendAction res', this.recommends);
+    },
+    async getTagsAction() {
+      const res = await getTags();
+      res.code === 0 && (this.tags = res.data);
     },
     async getDetailAction(articleId?: RouteParam, isEditRefresh = false) {
       if (!isEditRefresh) {
@@ -153,10 +156,6 @@ const useArticleStore = defineStore('article', {
       } else {
         Msg.showFail('获取文章详情失败');
       }
-    },
-    async getTagsAction() {
-      const res = await getTags();
-      res.code === 0 && (this.tags = res.data);
     },
     async getUserLikedAction() {
       const { userInfo } = useUserStore();

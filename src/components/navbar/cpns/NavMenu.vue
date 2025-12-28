@@ -3,7 +3,7 @@
     <div class="menu">
       <a
         class="menu-item"
-        :class="{ active: activeRoute === item.path }"
+        :class="{ active: activeRoute === item.path, 'special-flow': item.name === 'Flow' }"
         v-for="item in menus"
         @click.prevent="handleSelect(item.path)"
         :href="item.path"
@@ -25,7 +25,7 @@ const route = useRoute();
 const menus = ref([
   { name: '首页', path: '/' },
   { name: '专栏', path: '/article' },
-  { name: '论坛', path: '/forum' },
+  { name: 'Flow', path: '/flow' },
   // { name: '写文章', path: '/edit' },
   // { name: '个人空间', path: '/user' }
 ]);
@@ -51,25 +51,39 @@ const handleSelect = (key: string) => {
 }
 .nav-menu {
   user-select: none;
-  color: var(--fontColor);
+  // font-family: 'SmileySans', sans-serif;
+  // letter-spacing: 0.1em;
+  font-size: 22px;
   .menu {
     display: flex;
-    font-size: 22px;
-    margin-left: 60px;
+    margin-left: 30px;
     .menu-item {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 80px;
-      padding: 0 10px;
+      padding: 0 20px;
       height: var(--navbarHeight);
       &:hover {
-        color: #81c995;
+        // color: #81c995;
         cursor: pointer;
+        opacity: 0.8;
       }
       &.active {
         border-bottom: 2px solid #81c995;
         color: #81c995;
+      }
+      &.special-flow {
+        font-family: 'MapleMono', sans-serif;
+        font-weight: 600;
+        background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+
+        // &.active {
+        //   border-bottom: 2px solid #81c995;
+        // }
       }
     }
   }
