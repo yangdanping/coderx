@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <NavBar />
     <div class="content">
       <div class="title">
         <div class="title-line-1">Welcome to</div>
@@ -21,7 +20,6 @@
 </template>
 
 <script lang="ts" setup>
-import NavBar from '@/components/navbar/NavBar.vue';
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeSwpier from './cpns/HomeSwpier.vue';
 import useHomeStore from '@/stores/home.store';

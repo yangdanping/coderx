@@ -1,6 +1,5 @@
 <template>
   <div class="article">
-    <NavBar />
     <nav class="article-nav" v-if="tags.length">
       <ArticleNav :tags="tags" />
     </nav>
@@ -14,7 +13,6 @@
 </template>
 
 <script lang="ts" setup>
-import NavBar from '@/components/navbar/NavBar.vue';
 import ArticleList from './cpns/ArticleList.vue';
 import ArticleRecommend from './cpns/ArticleRecommend.vue';
 import ArticleNav from './cpns/ArticleNav.vue';

@@ -1,6 +1,19 @@
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
+/**
+ * 路由配置
+ *
+ * meta 字段说明：
+ * - title: 页面标题
+ * - requiresAuth: 是否需要登录才能访问
+ * - customNavBar: 是否使用自定义导航栏（设为 true 时，App.vue 中的全局 NavBar 不会显示）
+ *
+ * NavBar 显示规则（在 App.vue 中控制）：
+ * - 编辑页面（edit）：不显示导航栏
+ * - 详情页面（detail）：使用页面内自定义的 NavBar（带插槽），全局 NavBar 不显示
+ * - 其他页面：显示全局 NavBar
+ */
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -32,7 +45,7 @@ const routes: RouteRecordRaw[] = [
     name: 'detail',
     path: '/article/:articleId',
     props: true,
-    meta: { title: '文章详情' },
+    meta: { title: '文章详情', customNavBar: true }, // 标记为使用自定义 NavBar
     component: () => import('@/views/detail/Detail.vue'),
   },
   {
