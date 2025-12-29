@@ -4,13 +4,25 @@
  *
  * @param data 需要处理的数据 (string | array | object)
  * @param targetUrl 替换后的目标字符串 (通常是当前的 BASE_URL)
- * @param sourceStr 被替换的源字符串 (默认为 'http://localhost:8000')
+ * @param sourceStr 被替换的源字符串，支持字符串或字符串数组
  * @returns 处理后的数据
  */
-export default function recursiveReplace(data: any, targetUrl: string, sourceStr: string = 'http://localhost:8000'): any {
+export default function recursiveReplace(data: any, targetUrl: string, sourceStr: string | string[] = 'http://localhost:8000'): any {
   // 1. 字符串类型：直接检查并替换
   if (typeof data === 'string') {
-    // 性能优化：简单判断包含关系，避免无意义的正则/replaceAll开销
+    // 支持多个源地址（数组）
+    if (Array.isArray(sourceStr)) {
+      let result = data;
+      // 依次替换所有源地址（只遍历字符串一次，只在包含时才替换）
+      for (const source of sourceStr) {
+        if (result.includes(source)) {
+          result = result.replaceAll(source, targetUrl);
+        }
+      }
+      return result;
+    }
+
+    // 单个源地址（向后兼容）
     if (data.includes(sourceStr)) {
       return data.replaceAll(sourceStr, targetUrl);
     }

@@ -31,7 +31,14 @@ const myRequest = new MyRequest({
       if (res && res.data) {
         // 去除BASE_URL末尾可能的斜杠
         const targetBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-        res.data = recursiveReplace(res.data, targetBaseUrl);
+
+        // 🚀 一次性替换多个可能的源地址（只遍历一次数据结构，性能优化）
+        // 替换顺序：从具体到通用，避免误替换
+        res.data = recursiveReplace(res.data, targetBaseUrl, [
+          'http://8.138.223.188:8000', // 生产环境（带端口）
+          'http://8.138.223.188', // 生产环境（不带端口）
+          'http://localhost:8000', // 开发环境
+        ]);
       }
       return res;
     },
