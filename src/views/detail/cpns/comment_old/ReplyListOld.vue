@@ -10,10 +10,10 @@
       <!-- 展示折叠回复按钮---------------------------------------------------------------- -->
       <div v-if="reply.length > 2" @click="collapse = !collapse" class="collapse">
         <template v-if="!collapse">
-          <span>查看更多回复</span><el-icon><IArrowDown /> </el-icon>
+          <span>查看更多回复</span><el-icon><ChevronDown /> </el-icon>
         </template>
         <template v-else>
-          <span>收起回复</span><el-icon><IArrowUp /> </el-icon>
+          <span>收起回复</span><el-icon><ChevronUp /> </el-icon>
         </template>
       </div>
     </template>
@@ -24,7 +24,7 @@
     <template v-if="reply.length > 1">
       <el-tooltip class="item" effect="dark" :content="`${showOne ? '展开' : '折叠'}评论`" placement="left">
         <span class="line" @click="showOne = !showOne">
-          <el-icon v-show="showOne" class="icon"><IDCaret /></el-icon>
+          <el-icon v-show="showOne" class="icon"><ChevronsUpDown /></el-icon>
         </span>
       </el-tooltip>
     </template>
@@ -39,6 +39,7 @@ const commentStore = useCommentStore();
 const { getRepliesForComment, getRepliesForReply } = storeToRefs(commentStore);
 
 import type { ICommentOld } from '@/stores/types/comment.result';
+import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-vue-next';
 
 const { comment = {}, isReply = false } = defineProps<{
   comment?: ICommentOld;

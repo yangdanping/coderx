@@ -3,7 +3,7 @@
     <h2 class="title">
       <span>推荐文章</span>
       <el-tooltip effect="dark" content="换一批" placement="top">
-        <el-icon @click="refresh" :class="{ rotating: isRotating }"><IRefresh /></el-icon>
+        <el-icon @click="refresh" :class="{ rotating: isRotating }"><RefreshCcw /></el-icon>
       </el-tooltip>
     </h2>
     <ul>
@@ -22,6 +22,7 @@ import Icon from '@/components/icon/Icon.vue';
 import { throttle } from '@/utils';
 import useArticleStore from '@/stores/article.store';
 import { useRouter } from 'vue-router';
+import { RefreshCcw } from 'lucide-vue-next';
 
 const router = useRouter();
 const articleStore = useArticleStore();

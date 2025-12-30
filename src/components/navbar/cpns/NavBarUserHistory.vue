@@ -1,11 +1,11 @@
 <template>
   <div class="history-icon" @mouseenter="toggle(true)" @mouseleave="toggle(false)">
-    <el-icon class="clock-icon"><IClock /></el-icon>
+    <el-icon class="clock-icon"><Clock /></el-icon>
     <div class="history-box" v-show="isShow">
       <div class="panel-history">
         <div class="history-header">
           <div class="history-title">
-            <el-icon><IClock /></el-icon>
+            <el-icon><Clock /></el-icon>
             <span>浏览记录</span>
           </div>
         </div>
@@ -16,7 +16,7 @@
             </template>
           </div>
           <div v-if="!historyStore.historyList.length" class="empty">
-            <el-icon><IWarning /></el-icon>
+            <el-icon><AlertTriangle /></el-icon>
             <span>暂无浏览记录</span>
           </div>
         </div>
@@ -32,6 +32,7 @@ import NavBarUserHistoryItem from './NavBarUserHistoryItem.vue';
 import useHistoryStore from '@/stores/history.store';
 import useUserStore from '@/stores/user.store';
 import { debounce } from '@/utils';
+import { Clock, AlertTriangle } from 'lucide-vue-next';
 
 const router = useRouter();
 const userStore = useUserStore();

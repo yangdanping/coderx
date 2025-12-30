@@ -8,7 +8,7 @@
           <img :src="userSex" alt="" />
           <template v-if="isUser(profile.id)">
             <el-tooltip effect="dark" content="修改个人信息" placement="bottom">
-              <el-icon @click="updateProfile" class="edit" size="30" color="#999"> <IEdit /> </el-icon>
+              <el-icon @click="updateProfile" class="edit" size="30" color="#999"> <Edit /> </el-icon>
             </el-tooltip>
           </template>
           <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
@@ -47,6 +47,7 @@ import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
 import { emitter, getImageUrl } from '@/utils';
 import Icon from '@/components/icon/Icon.vue';
+import { Edit } from 'lucide-vue-next';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 import useRootStore from '@/stores/index.store';

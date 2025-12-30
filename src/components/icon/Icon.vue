@@ -1,32 +1,32 @@
 <template>
   <div class="icon" :class="{ column: flex === 'column' }" @mouseenter="toggleHover(true)" @mouseleave="toggleHover(false)">
     <template v-if="type === 'views'">
-      <ViewSvg :size="size" :color="color" />
+      <Eye :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'like'">
-      <LikeSvg :size="size" :color="color" />
+      <ThumbsUp :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'comment'">
-      <CommentSvg :size="size - 2" :color="color" />
+      <MessageSquare :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'star'">
-      <StarSvg :size="size" :color="color" />
+      <Star :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'fire'">
-      <FireSvg :size="size" :color="color" />
+      <Flame :size="iconSize" :color="color" />
     </template>
     <!-- 用户信息icon -->
     <template v-else-if="type === 'coin'">
-      <el-icon :color="color"><ICoin /></el-icon>
+      <Coins :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'suitcase'">
-      <el-icon :color="color"><ISuitcase /></el-icon>
+      <Briefcase :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'coordinate'">
-      <el-icon :color="color"><ICoordinate /></el-icon>
+      <MapPin :size="iconSize" :color="color" />
     </template>
     <template v-else-if="type === 'takeaway-box'">
-      <el-icon :color="color"><ITakeawayBox /></el-icon>
+      <Mail :size="iconSize" :color="color" />
     </template>
     <span v-if="showLabel" :style="{ color }">{{ label ?? 0 }}</span>
   </div>
@@ -34,11 +34,9 @@
 
 <script lang="ts" setup>
 import { activeColor, defaultColor } from '@/global/constants/color';
-import ViewSvg from './cpns/ViewSvg.vue';
-import LikeSvg from './cpns/LikeSvg.vue';
-import CommentSvg from './cpns/CommentSvg.vue';
-import StarSvg from './cpns/StarSvg.vue';
-import FireSvg from './cpns/FireSvg.vue';
+import { Eye, ThumbsUp, MessageSquare, Star, Flame, Coins, Briefcase, MapPin, Mail } from 'lucide-vue-next';
+import useRootStore from '@/stores/index.store';
+import { storeToRefs } from 'pinia';
 
 type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire' | profileIconType;
 
@@ -52,6 +50,7 @@ const {
   color: propColor = '',
   flex = 'row',
   showLabel = true,
+  responsive = true,
 } = defineProps<{
   type: IconType;
   isActive?: boolean;
@@ -60,7 +59,25 @@ const {
   color?: string;
   flex?: 'row' | 'column';
   showLabel?: boolean;
+  responsive?: boolean;
 }>();
+
+const rootStore = useRootStore();
+const { isSmallScreen } = storeToRefs(rootStore);
+
+// 根据屏幕尺寸动态调整图标大小
+const iconSize = computed(() => {
+  // 如果不启用响应式，直接返回原始尺寸
+  if (responsive === false) {
+    return size;
+  }
+  const baseSize = isSmallScreen.value ? 16 : size;
+  // comment 类型的图标需要特殊处理，保持 size - 2 的逻辑
+  if (type === 'comment') {
+    return baseSize - 2;
+  }
+  return baseSize;
+});
 
 const color = computed(() => {
   if (propColor) {
@@ -83,6 +100,13 @@ const toggleHover = (toggle: boolean) => {
   display: flex;
   align-items: center;
   flex-direction: row;
+  gap: 5px;
+
+  span {
+    position: relative;
+    top: 1px;
+    line-height: 1;
+  }
 }
 
 .icon.column {
