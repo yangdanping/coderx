@@ -23,26 +23,26 @@
       <template v-if="!isExpanded">
         <span class="expand-btn" @click="expandReplies">
           查看更多 {{ remainingCount }} 条回复
-          <el-icon><IArrowDown /></el-icon>
+          <el-icon><ChevronDown /></el-icon>
         </span>
       </template>
       <template v-else>
         <!-- 加载更多回复 -->
         <template v-if="isFetchingNextPage">
-          <el-icon class="is-loading"><ILoading /></el-icon>
+          <el-icon class="is-loading"><Loader2 /></el-icon>
           <span>加载中...</span>
         </template>
         <template v-else-if="hasNextPage">
           <span class="expand-btn" @click="fetchNextPage()">
             加载更多回复
-            <el-icon><IArrowDown /></el-icon>
+            <el-icon><ChevronDown /></el-icon>
           </span>
         </template>
 
         <!-- 折叠按钮 -->
         <span class="collapse-btn" @click="collapseReplies">
           收起回复
-          <el-icon><IArrowUp /></el-icon>
+          <el-icon><ChevronUp /></el-icon>
         </span>
       </template>
     </div>
@@ -54,6 +54,7 @@ import ReplyItem from './ReplyItem.vue';
 import { useReplyList, flattenReplies } from '@/composables/useCommentList';
 import type { IComment } from '@/service/comment/comment.request';
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, type CSSProperties } from 'vue';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-vue-next';
 
 const props = defineProps<{
   comment: IComment;

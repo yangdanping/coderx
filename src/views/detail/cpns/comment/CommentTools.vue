@@ -1,19 +1,19 @@
 <template>
   <div class="comment-tools">
     <el-dropdown trigger="click" @command="handleCommand">
-      <el-icon style="cursor: pointer" size="20px"><IMore /></el-icon>
+      <el-icon style="cursor: pointer" size="20px"><MoreHorizontal /></el-icon>
       <template #dropdown>
         <el-dropdown-menu v-if="isOwner">
           <el-dropdown-item command="edit">
-            <el-icon size="20px"><IEdit /></el-icon>
+            <el-icon size="20px"><Edit /></el-icon>
           </el-dropdown-item>
           <el-dropdown-item command="remove">
-            <el-icon size="20px"><IDelete /></el-icon>
+            <el-icon size="20px"><Trash2 /></el-icon>
           </el-dropdown-item>
         </el-dropdown-menu>
         <el-dropdown-menu v-else>
           <el-dropdown-item command="report">
-            <el-icon size="20px"><IWarning /></el-icon>
+            <el-icon size="20px"><AlertTriangle /></el-icon>
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
@@ -36,6 +36,7 @@ import { Msg } from '@/utils';
 import Editor from '@/components/wang-editor/Editor.vue';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 import { useRoute } from 'vue-router';
+import { MoreHorizontal, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
 
 import useUserStore from '@/stores/user.store';
 import { useUpdateComment, useDeleteComment } from '@/composables/useCommentList';

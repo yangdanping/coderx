@@ -3,7 +3,7 @@
     <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #ccc" />
     <Editor
       v-if="isComment"
-      :style="{ height, 'overflow-y': 'hidden' }"
+      :style="{ height, 'overflow-y': height === 'auto' ? 'visible' : 'hidden' }"
       v-model="valueHtml"
       :defaultConfig="editorConfig"
       @onChange="handleChanged"
@@ -136,5 +136,18 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
+}
+
+/* 优化移动端工具栏排版 */
+:deep(.w-e-toolbar) {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  /* 隐藏滚动条但保留功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+:deep(.w-e-toolbar)::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 </style>

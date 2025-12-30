@@ -2,25 +2,25 @@
   <div class="detail-tool">
     <el-tooltip class="item" effect="dark" content="返回文章列表" placement="bottom">
       <i class="el-icon-back" @click="goBack">
-        <el-icon><IBack /></el-icon>
+        <el-icon><ArrowLeft /></el-icon>
       </i>
     </el-tooltip>
     <template v-if="token && isAuthor">
       <el-tooltip class="item" effect="dark" content="修改我的文章" placement="bottom">
         <i class="el-icon-edit" @click="goEdit">
-          <el-icon><IEdit /></el-icon>
+          <el-icon><Edit /></el-icon>
         </i>
       </el-tooltip>
       <el-tooltip class="item" effect="dark" content="删除我的文章" placement="bottom">
         <i class="el-icon-delete" @click="remove">
-          <el-icon><IDelete /></el-icon>
+          <el-icon><Trash2 /></el-icon>
         </i>
       </el-tooltip>
     </template>
     <template v-else-if="token">
       <el-tooltip class="item" effect="dark" content="举报文章" placement="bottom">
         <i class="el-icon-warning" @click="isShowReport = true">
-          <el-icon><IWarning /></el-icon>
+          <el-icon><AlertTriangle /></el-icon>
         </i>
       </el-tooltip>
     </template>
@@ -32,6 +32,7 @@
 import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
+import { ArrowLeft, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
 
 import type { IArticle } from '@/stores/types/article.result';
 import useUserStore from '@/stores/user.store';

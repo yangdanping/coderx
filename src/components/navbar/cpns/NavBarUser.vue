@@ -16,17 +16,17 @@
         <div class="panel-default">
           <div class="btn1">
             <el-button type="success" class="editbtn" @click="goEdit" plain>
-              <el-icon><IEditPen /></el-icon>写文章
+              <el-icon><PenSquare /></el-icon>写文章
             </el-button>
           </div>
           <div class="btn2">
             <el-button @click="goProfile()" type="primary" plain>
-              <el-icon><ICoordinate /></el-icon>我的空间
+              <el-icon><MapPin /></el-icon>我的空间
             </el-button>
           </div>
           <div class="btn3">
             <el-button @click="logOut" type="danger" plain>
-              <el-icon><ISwitchButton /></el-icon>退出登录
+              <el-icon><LogOut /></el-icon>退出登录
             </el-button>
           </div>
         </div>
@@ -41,6 +41,7 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 import { debounce } from '@/utils';
+import { PenSquare, MapPin, LogOut } from 'lucide-vue-next';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();

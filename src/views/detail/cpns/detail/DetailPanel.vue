@@ -1,9 +1,9 @@
 <template>
   <div class="detail-panel">
-    <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="40" flex="column" />
-    <Icon type="comment" @click="gotoComment" :size="40" :label="article.commentCount" flex="column" />
-    <Icon type="views" :size="40" :label="article.views" flex="column" />
-    <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="40" ref="buttonRef" @click="onClickOutside" flex="column" :showLabel="false" />
+    <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="30" flex="column" :responsive="false" />
+    <Icon type="comment" @click="gotoComment" :size="30" :label="article.commentCount" flex="column" :responsive="false" />
+    <Icon type="views" :size="30" :label="article.views" flex="column" :responsive="false" />
+    <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="30" ref="buttonRef" @click="onClickOutside" flex="column" :showLabel="false" :responsive="false" />
     <el-popover :disabled="disabled" ref="popoverRef" @after-leave="handleHide" :virtual-ref="buttonRef" trigger="click" width="400" virtual-triggering placement="right">
       <DetailCollect />
     </el-popover>
@@ -77,10 +77,12 @@ const onClickOutside = () => {
   font-size: 30px;
   position: fixed;
   left: 2vw;
-  top: 240px;
-  > div {
-    cursor: pointer;
-    margin-top: 5px;
-  }
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
 }
 </style>

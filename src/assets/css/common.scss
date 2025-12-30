@@ -99,16 +99,22 @@ hr {
 
 ::-webkit-scrollbar {
   /*width: 0;宽度为0隐藏*/
-  width: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
   height: 50px;
-  background: #42b983; //滚动条颜色
+  background: transparent; // 默认透明
 }
+
+/* 只有当鼠标悬停在滚动区域时才显示滚动条 */
+:hover::-webkit-scrollbar-thumb {
+  background: #81c995;
+}
+
 ::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  background: #eee; //滚动条背景色
+  display: none; // 移除凹槽
+  background: transparent;
 }
