@@ -13,7 +13,7 @@
       </div>
       <div class="actions">
         <el-button type="danger" size="small" circle plain @click.stop="handleDelete(item.articleId)" :loading="deletingItems.includes(item.articleId)">
-          <el-icon><Delete /></el-icon>
+          <el-icon><Trash2 /></el-icon>
         </el-button>
       </div>
     </a>
@@ -22,10 +22,9 @@
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
-import { Delete } from '@element-plus/icons-vue';
+import { Trash2 } from 'lucide-vue-next';
 import { ElMessageBox } from 'element-plus';
 import useHistoryStore from '@/stores/history.store';
-import type { IArticle } from '@/stores/types/article.result';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

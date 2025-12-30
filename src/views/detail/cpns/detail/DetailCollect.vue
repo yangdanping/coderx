@@ -3,7 +3,7 @@
     <div class="title">
       <h2>添加到收藏夹</h2>
       <el-tooltip effect="dark" content="查看我的收藏" placement="top">
-        <el-icon class="btn" @click="goProfile" size="23" color="#999" style="cursor: pointer"> <IArrowRightBold /> </el-icon>
+        <el-icon class="btn" @click="goProfile" size="23" color="#999" style="cursor: pointer"> <ArrowRight /> </el-icon>
       </el-tooltip>
     </div>
     <div class="collect-list">
@@ -14,7 +14,7 @@
             <div v-if="item.count" class="count">{{ item.count.length }}</div>
           </div>
           <i v-if="isCollected(item.count)">
-            <el-icon size="22px" color="#81c995"><ISuccessFilled /></el-icon>
+            <el-icon size="22px" color="#81c995"><CheckCircle2 /></el-icon>
           </i>
           <!-- <i v-if="isCollected(item.count)" class="el-icon-success" style="color: #81c995; font-size: 22px"></i> -->
         </div>
@@ -38,7 +38,7 @@
 
 <script lang="ts" setup>
 import { emitter } from '@/utils';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, ArrowRight, CheckCircle2 } from 'lucide-vue-next';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';

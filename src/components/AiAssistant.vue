@@ -2,9 +2,9 @@
   <div class="ai-assistant" :class="{ 'is-open': isOpen }">
     <!-- 悬浮按钮 -->
     <div class="ai-trigger" @click="toggleOpen">
-      <el-icon v-if="!isOpen"><ChatDotRound /></el-icon>
+      <el-icon v-if="!isOpen"><MessageCircle /></el-icon>
       <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
-      <el-icon v-else><Close /></el-icon>
+      <el-icon v-else><X /></el-icon>
       <span v-if="!isOpen" class="trigger-text">AI 助手</span>
     </div>
 
@@ -34,7 +34,7 @@
 
         <div v-for="(m, index) in displayMessages" :key="m.id || index" class="message" :class="m.role">
           <div class="avatar">
-            <el-avatar :size="30" :icon="m.role === 'user' ? UserFilled : Service" :src="m.role === 'user' ? userInfo.avatarUrl : ''" />
+            <el-avatar :size="30" :icon="m.role === 'user' ? User : Bot" :src="m.role === 'user' ? userInfo.avatarUrl : ''" />
           </div>
           <div class="content">
             <!-- V2 中 message.parts 是数组，需要找到 type="text" 的 part -->
@@ -43,7 +43,7 @@
         </div>
 
         <div v-if="isThinking" class="message assistant">
-          <div class="avatar"><el-avatar :size="30" :icon="Service" /></div>
+          <div class="avatar"><el-avatar :size="30" :icon="Bot" /></div>
           <div class="content">
             <div class="bubble loading">
               <!-- V1: 文字流光效果 -->
@@ -80,7 +80,7 @@
 import { ref, nextTick, watch, computed, onMounted } from 'vue';
 import { Chat } from '@ai-sdk/vue'; // 使用新的 Chat 类
 import { DefaultChatTransport } from 'ai'; // 引入 DefaultChatTransport
-import { ChatDotRound, Close, UserFilled, Service, ArrowDown } from '@element-plus/icons-vue';
+import { MessageCircle, X, User, Bot, ArrowDown } from 'lucide-vue-next';
 import useUserStore from '@/stores/user.store';
 import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';

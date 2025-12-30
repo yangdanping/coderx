@@ -6,7 +6,7 @@
         <div class="item">
           <a class="disc" :href="item.url" target="_blank">
             <h2 class="author">
-              来源: {{ item.source.name }} <el-icon size="40px"><IArrowRight /></el-icon>
+              来源: {{ item.source.name }} <el-icon size="40px"><ChevronRight /></el-icon>
             </h2>
             <h3 class="title">{{ item.title }}</h3>
           </a>
@@ -18,6 +18,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronRight } from 'lucide-vue-next';
 const { news = [] } = defineProps<{
   news?: any[];
 }>();

@@ -28,7 +28,7 @@
           </template>
           <img v-if="fileList.length" :src="fileList[0]?.url" class="cover" />
           <div class="uoload-icon">
-            <el-icon><IPlus /></el-icon>
+            <el-icon><Plus /></el-icon>
           </div>
         </el-upload>
       </el-form-item>
@@ -47,6 +47,7 @@
 import useArticleStore from '@/stores/article.store';
 import { ElMessageBox } from 'element-plus';
 import { LocalCache, Msg, isEmptyObj, extractImagesFromHtml } from '@/utils';
+import { Plus } from 'lucide-vue-next';
 const router = useRouter();
 const articleStore = useArticleStore();
 const { tags } = storeToRefs(articleStore);

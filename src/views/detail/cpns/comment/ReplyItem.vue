@@ -22,7 +22,7 @@
             <!-- 引用头部 -->
             <div class="quoted-header">
               <span class="quoted-author">{{ replyToName }} 回复:</span>
-              <el-icon class="goto-icon"><IBack /></el-icon>
+              <el-icon class="goto-icon"><CornerDownRight /></el-icon>
             </div>
             <!-- 引用内容 -->
             <div ref="quotedBodyRef" class="quoted-body" :class="{ 'is-collapsed': isCollapsed && needsCollapse }">
@@ -66,6 +66,7 @@ import useCommentStore from '@/stores/comment.store';
 
 import type { IComment } from '@/service/comment/comment.request';
 import { ref, computed, onMounted, nextTick } from 'vue';
+import { CornerDownRight } from 'lucide-vue-next';
 
 const COLLAPSE_HEIGHT = 150; // 折叠阈值（px）
 

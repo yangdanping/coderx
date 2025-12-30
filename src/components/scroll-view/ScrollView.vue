@@ -1,10 +1,10 @@
 <template>
   <div class="scroll-view-wrapper">
     <div v-if="showLeft" class="control left" @click="controlbtnClick(false)">
-      <el-icon><IArrowLeft /> </el-icon>
+      <el-icon><ChevronLeft /> </el-icon>
     </div>
     <div v-if="showRight" class="control right" @click="controlbtnClick(true)">
-      <el-icon><IArrowRight /> </el-icon>
+      <el-icon><ChevronRight /> </el-icon>
     </div>
     <div class="scroll">
       <div class="scroll-content" ref="scrollContentRef">
@@ -15,6 +15,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 const { data = [] } = defineProps<{
   data?: any[];
 }>();

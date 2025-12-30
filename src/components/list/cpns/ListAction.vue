@@ -21,7 +21,6 @@ const { isComment = false } = defineProps<{
     margin-top: 5px;
 
     span {
-      margin-left: 4px;
       color: var(--fc);
     }
   }

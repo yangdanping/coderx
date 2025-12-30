@@ -33,7 +33,7 @@
         >
           <span class="history-text">{{ item }}</span>
           <el-icon class="delete-icon" v-show="hoveredIndex === index" @click.stop="removeHistoryItem(item)">
-            <Close />
+            <X />
           </el-icon>
         </div>
       </div>
@@ -56,7 +56,7 @@
 
 <script lang="ts" setup>
 import { useRouter, useRoute } from 'vue-router';
-import { Search, Close } from '@element-plus/icons-vue';
+import { Search, X } from 'lucide-vue-next';
 import { useQuery } from '@tanstack/vue-query';
 import { debounce } from '@/utils';
 import LocalCache from '@/utils/LocalCache';

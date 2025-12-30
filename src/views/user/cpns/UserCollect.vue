@@ -3,7 +3,7 @@
     <div class="list-header">
       <div v-if="articles.result?.length">
         <h2>
-          <el-icon class="back" @click="clearResultAndBack"><IBack /></el-icon>收藏夹"{{ activeCollect.name }}"下的文章({{ articles.result?.length }})
+          <el-icon class="back" @click="clearResultAndBack"><ChevronLeft /></el-icon>收藏夹"{{ activeCollect.name }}"下的文章({{ articles.result?.length }})
         </h2>
       </div>
       <div v-else>
@@ -17,7 +17,7 @@
         </template>
         <template v-else>
           <el-tooltip effect="dark" content="批量操作" placement="right">
-            <el-button @click="handleCollect" :icon="Setting" circle></el-button>
+            <el-button @click="handleCollect" :icon="Settings" circle></el-button>
           </el-tooltip>
         </template>
       </div>
@@ -72,7 +72,7 @@ import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { Msg, emitter } from '@/utils';
-import { Plus, Setting } from '@element-plus/icons-vue';
+import { Plus, Settings, ChevronLeft } from 'lucide-vue-next';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';

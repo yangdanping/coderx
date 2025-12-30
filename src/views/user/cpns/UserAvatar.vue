@@ -3,7 +3,7 @@
     <el-upload action="avatar" :http-request="avatarUpLoad as UploadRequestHandler" :before-upload="beforeAvatarUpload" :disabled="!isUser(info.id)" :show-file-list="false">
       <Avatar :info="info" :size="200" showSet disabled>
         <template #icon>
-          <el-icon><IEdit /></el-icon>
+          <el-icon><Edit /></el-icon>
         </template>
       </Avatar>
     </el-upload>
@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 import { Msg } from '@/utils';
+import { Edit } from 'lucide-vue-next';
 
 import type { UploadRequestHandler } from 'element-plus';
 import type { IUserInfo } from '@/stores/types/user.result';

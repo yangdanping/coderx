@@ -2,11 +2,11 @@
   <div class="comment-form" :class="{ 'is-reply': isReply }">
     <Avatar v-if="!isReply" :info="userInfo" />
     <div class="input">
-      <Editor @update:content="(valueHtml) => (content = valueHtml)" isComment mode="simple" :height="isReply ? '100px' : '150px'" />
+      <Editor @update:content="(valueHtml) => (content = valueHtml)" isComment mode="simple" height="auto" />
       <div class="input-action">
         <el-button v-if="isReply" @click="handleCancel" type="default" size="small">取消</el-button>
-        <el-button :disabled="isSubmitting" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
-          {{ isSubmitting ? '提交中' : isReply ? '回复' : '发表评论' }}
+        <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
+          {{ isSubmitting ? '提交中' : isReply ? '回复' : '发送' }}
         </el-button>
       </div>
     </div>
@@ -106,39 +106,52 @@ onUnmounted(() => {
 .comment-form {
   display: flex;
   justify-content: center;
+  gap: 20px;
   margin-bottom: 80px;
-
-  &.is-reply {
-    margin-bottom: 10px;
-    margin-top: 10px;
-  }
 
   .input {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 50%;
-    margin-left: 30px;
+    width: clamp(400px, 50vw, 1150px);
 
     .input-action {
       position: absolute;
-      bottom: -50px;
-      left: 0;
+      bottom: 10px;
+      right: 20px;
       display: flex;
       gap: 8px;
     }
   }
 
-  &.is-reply .input {
-    width: 100%;
-    margin-left: 0;
+  &.is-reply {
+    margin-bottom: 10px;
+    margin-top: 10px;
+    .input {
+      width: 100%;
+      margin-left: 0;
 
-    .input-action {
-      position: relative;
-      bottom: auto;
-      margin-top: 8px;
-      justify-content: flex-end;
+      .input-action {
+        position: relative;
+        bottom: auto;
+        margin-top: 8px;
+        justify-content: flex-end;
+        right: auto;
+      }
     }
+  }
+
+  // 避免内容被按钮遮挡
+  :deep(.w-e-text-container) {
+    min-height: 150px;
+    max-height: 250px;
+    overflow-y: overlay;
+    padding-bottom: 40px;
+  }
+
+  &.is-reply :deep(.w-e-text-container) {
+    min-height: 100px;
+    max-height: 200px;
   }
 }
 </style>
