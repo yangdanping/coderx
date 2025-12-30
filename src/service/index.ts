@@ -35,8 +35,13 @@ const myRequest = new MyRequest({
         // 🚀 一次性替换多个可能的源地址（只遍历一次数据结构，性能优化）
         // 替换顺序：从具体到通用，避免误替换
         res.data = recursiveReplace(res.data, targetBaseUrl, [
+          // 阿里云 Ubuntu服务器
           'http://8.138.223.188:8000', // 生产环境（带端口）
           'http://8.138.223.188', // 生产环境（不带端口）
+          // AWS Debian服务器
+          'http://95.40.29.75:8000', // 生产环境（带端口）
+          'http://95.40.29.75', // 生产环境（不带端口）
+          // 本地开发环境
           'http://localhost:8000', // 开发环境
         ]);
       }
