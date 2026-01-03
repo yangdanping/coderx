@@ -17,7 +17,7 @@
         <p class="abstract">{{ item.content }}</p>
         <slot name="action"></slot>
       </div>
-      <div class="cover">
+      <div class="cover" role="button">
         <img v-if="item.cover" :src="item.cover" loading="lazy" />
         <div class="multiple-action">
           <slot name="multiple-action"></slot>

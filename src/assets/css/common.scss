@@ -45,11 +45,6 @@
 
     button,
     a,
-    .btn,
-    .icon,
-    .cover,
-    [class$='-action'] .item,
-    [class$='-list'] .item,
     .el-avatar,
     .el-tabs__item,
     .el-tag,
@@ -66,16 +61,16 @@
     // checkbox
     .el-checkbox,
     .el-checkbox .el-checkbox__input,
-    // 编辑器
+    // 编辑器 (第三方组件，难以手动添加 role="button")
     .w-e-panel-content-emotion li,
     .w-e-select-list li,
     .w-e-panel-content-color li,
     .w-e-modal .btn-close,
     .w-e-panel-content-table td,
-    .el-backtop, 
-    .connection-line,
-    .ai-assistant,.ai-trigger
-    .quoted-wrapper {
+    .el-backtop,
+    // 优化：项目自定义组件直接在 元素 上使用 role="button"
+    // 这样无需在此处频繁手动添加类名，同时也增加了语义化
+    [role='button'] {
       cursor: var(--pointerDefault) !important;
     }
   }

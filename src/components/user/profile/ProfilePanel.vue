@@ -3,11 +3,11 @@
     <div v-if="active === 0" class="sex-info">
       <h2>您的性别</h2>
       <div class="sex-select">
-        <div @click="handleSelect('男')" class="icon" :class="{ active: form.sex === '男' }">
+        <div @click="handleSelect('男')" class="icon" role="button" :class="{ active: form.sex === '男' }">
           <h1>男</h1>
           <img src="@/assets/img/user/male.svg" alt="" />
         </div>
-        <div @click="handleSelect('女')" class="icon" :class="{ active: form.sex === '女' }">
+        <div @click="handleSelect('女')" class="icon" role="button" :class="{ active: form.sex === '女' }">
           <h1>女</h1>
           <img src="@/assets/img/user/female.svg" alt="" />
         </div>

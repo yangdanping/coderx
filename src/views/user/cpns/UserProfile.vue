@@ -23,11 +23,11 @@
       </div>
       <div class="profile-right">
         <div>
-          <div class="btn" @click="goFollowTab('following')">
+          <div class="btn" role="button" @click="goFollowTab('following')">
             <div>关注数</div>
             <div>{{ followCount('following') }}</div>
           </div>
-          <div class="btn" @click="goFollowTab('follower')">
+          <div class="btn" role="button" @click="goFollowTab('follower')">
             <div>粉丝数</div>
             <div>{{ followCount('follower') }}</div>
           </div>

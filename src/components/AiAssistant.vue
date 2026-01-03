@@ -1,7 +1,7 @@
 <template>
-  <div class="ai-assistant" :class="{ 'is-open': isOpen }">
+  <div class="ai-assistant" role="button" :class="{ 'is-open': isOpen }">
     <!-- 悬浮按钮 -->
-    <div class="ai-trigger" @click="toggleOpen">
+    <div class="ai-trigger" role="button" @click="toggleOpen">
       <el-icon v-if="!isOpen"><MessageCircle /></el-icon>
       <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
       <el-icon v-else><X /></el-icon>
@@ -61,7 +61,7 @@
       </div>
 
       <!-- 回到底部按钮 -->
-      <div class="scroll-bottom-btn" v-show="showScrollToBottom" @click="scrollToBottomSmooth">
+      <div class="scroll-bottom-btn" role="button" v-show="showScrollToBottom" @click="scrollToBottomSmooth">
         <el-icon><ArrowDown /></el-icon>
       </div>
 

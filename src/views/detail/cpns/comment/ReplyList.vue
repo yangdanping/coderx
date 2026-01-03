@@ -2,7 +2,7 @@
   <div class="reply-list" v-if="hasReplies">
     <div class="reply-list-container">
       <!-- 连线 -->
-      <div v-show="isLineVisible" class="connection-line" :style="lineStyle" @click="scrollToParent"></div>
+      <div v-show="isLineVisible" class="connection-line" role="button" :style="lineStyle" @click="scrollToParent"></div>
 
       <!-- 预览回复（默认显示前2条） -->
       <template v-for="reply in displayedReplies" :key="reply.id">
