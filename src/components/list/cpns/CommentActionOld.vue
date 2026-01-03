@@ -2,10 +2,10 @@
   <ListAction isComment>
     <template #comment>
       <ul class="comment-action">
-        <li class="item like" @click.stop.prevent="likeComment(comment)">
+        <li class="item like" role="button" @click.stop.prevent="likeComment(comment)">
           <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ? comment.likes : '点赞'" />
         </li>
-        <li class="item comment" @click="wantReply(comment)">
+        <li class="item comment" role="button" @click="wantReply(comment)">
           <Icon type="comment" label="回复" />
         </li>
       </ul>

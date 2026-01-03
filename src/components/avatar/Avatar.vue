@@ -11,8 +11,8 @@
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
-            <span class="btn" @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
-            <span class="btn" @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
+            <span class="btn" role="button" @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
+            <span class="btn" role="button" @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
           </div>
         </div>
       </div>

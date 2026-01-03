@@ -2,13 +2,13 @@
   <ListAction>
     <template #article>
       <ul class="article-action">
-        <li class="item view">
+        <li class="item view" role="button">
           <Icon type="views" :label="article.views" />
         </li>
-        <li class="item like" @click.stop.prevent="article.id && likeClick(article.id)">
+        <li class="item like" role="button" @click.stop.prevent="article.id && likeClick(article.id)">
           <Icon type="like" :isActive="article.id ? isLiked(article.id) : false" :label="article.likes" />
         </li>
-        <li class="item comment">
+        <li class="item comment" role="button">
           <Icon type="comment" :label="article.commentCount" />
         </li>
       </ul>

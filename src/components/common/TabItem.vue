@@ -1,6 +1,7 @@
 <template>
   <div
     class="tab-item"
+    role="button"
     :class="{
       'is-active': isActive,
       vertical: direction === 'vertical',

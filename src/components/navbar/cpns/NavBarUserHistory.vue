@@ -20,7 +20,7 @@
             <span>暂无浏览记录</span>
           </div>
         </div>
-        <div class="full-history-btn" v-if="historyStore.historyList.length > 5" @click="goToHistoryPage">查看更多</div>
+        <div class="full-history-btn" role="button" v-if="historyStore.historyList.length > 5" @click="goToHistoryPage">查看更多</div>
       </div>
     </div>
   </div>

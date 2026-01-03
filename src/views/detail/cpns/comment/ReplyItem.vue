@@ -18,7 +18,7 @@
       <!-- 被引用的回复内容 (QuotedReply) -->
       <div v-if="quotedContent" class="quoted-reply">
         <el-tooltip effect="dark" content="转到回复位置" placement="top">
-          <div class="quoted-wrapper" @click.stop="handleScrollToParent">
+          <div class="quoted-wrapper" role="button" @click.stop="handleScrollToParent">
             <!-- 引用头部 -->
             <div class="quoted-header">
               <span class="quoted-author">{{ replyToName }} 回复:</span>

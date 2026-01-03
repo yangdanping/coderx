@@ -60,8 +60,9 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/dev-laptop-api/, ''), //重写路径
         },
         '/api': {
-          // target: 'http://119.91.150.141:8000',
-          target: 'http://8.138.223.188:8000',
+          // target: 'http://119.91.150.141:8000', // 腾讯云（已下线）
+          // target: 'http://8.138.223.188:8000', // 阿里云（已下线）
+          target: 'http://95.40.29.75:8000', // AWS Debian（当前使用）
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },

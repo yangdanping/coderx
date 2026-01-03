@@ -1,5 +1,5 @@
 <template>
-  <div class="icon" :class="{ column: flex === 'column' }" @mouseenter="toggleHover(true)" @mouseleave="toggleHover(false)">
+  <div class="icon" role="button" :class="{ column: flex === 'column' }" @mouseenter="toggleHover(true)" @mouseleave="toggleHover(false)">
     <template v-if="type === 'views'">
       <Eye :size="iconSize" :color="color" />
     </template>

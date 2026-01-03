@@ -50,11 +50,20 @@ const myRequest = new MyRequest({
     resFail: (err) => {
       // console.log('响应失败拦截');
       const { msg, code } = err.response.data;
+
+      // 🔧 开发调试：在控制台打印关键错误信息
+      console.error(`❌ [API Error] ${err.config?.method?.toUpperCase()} ${err.config?.url} → ${code}: ${msg}`);
+
+      // 🎯 UI 提示：根据错误类型显示不同信息
       if (code === 401) {
-        Msg.showWarn(`已过期,请重新登登录`);
+        Msg.showWarn(`已过期,请重新登录`);
         useUserStore().logOut();
       } else {
-        Msg.showFail(`server error:${msg} code:${code}`);
+        // 开发环境：显示详细错误（msg 可能包含 [DEV] 前缀）
+        // 生产环境：显示通用错误
+        const isDev = msg?.startsWith('[DEV]');
+        const displayMsg = isDev ? msg : '操作失败，请稍后重试';
+        Msg.showFail(displayMsg);
       }
       return err;
     },

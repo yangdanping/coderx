@@ -36,7 +36,7 @@
       <template v-if="collects.length">
         <div v-if="!articles.result?.length" class="collect-list">
           <template v-for="item in collects" :key="item.id">
-            <div class="item">
+            <div class="item" role="button">
               <div class="collect-name" @click="goCollectDetial(item)">
                 <div>{{ item.name }}</div>
                 <div v-if="item.count" class="count">{{ item.count.length }}</div>
