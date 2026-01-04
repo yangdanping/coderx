@@ -73,21 +73,3 @@ export interface IDeleteCommentResponse {
   deletedComment: IComment;
   totalCount: number;
 }
-
-export interface ICommentOld {
-  id?: number;
-  userId?: number;
-  articleId?: number;
-  content?: string;
-  status?: string;
-  rid?: number;
-  cid?: number; //被回复的评论id
-  likes?: number;
-  author?: IUserInfo;
-  article?: IArticle;
-  cover?: string;
-  articleUrl?: string;
-  childReply?: ICommentOld[];
-  createAt?: string;
-  updateAt?: string;
-}

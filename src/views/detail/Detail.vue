@@ -4,10 +4,6 @@
       <template #center> <DetailTools :article="article" :isAuthor="isAuthor(userInfo.id)" /></template>
     </NavBar>
     <DetailContent :article="article" />
-    <!-- 评论系统：可通过 COMMENT_VERSION 切换版本 -->
-    <!-- V1: 旧版评论组件 -->
-    <!-- <CommentOld :commentInfo="commentInfo" /> -->
-    <!-- V2: 新版评论组件（使用 TanStack Query 实现分页加载） -->
     <Comment />
     <AiAssistant :context="article?.content" />
   </div>
@@ -17,9 +13,6 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
-// V1: 旧版评论组件
-// import CommentOld from './cpns/comment_old/CommentOld.vue';
-// V2: 新版评论组件
 import Comment from './cpns/comment/Comment.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 import useArticleStore from '@/stores/article.store';

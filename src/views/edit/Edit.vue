@@ -3,7 +3,7 @@
     <!-- <Editor :editData="editData" @update:content="(content) => (preview = content)" /> -->
     <Suspense>
       <template #default>
-        <Editor :editData="editData" @update:content="(content) => (preview = content)" />
+        <ArticleEditor :editData="editData" @update:content="(content) => (preview = content)" />
       </template>
       <template #fallback>
         <div class="editor-loading">
@@ -21,9 +21,9 @@
 
 <script lang="ts" setup>
 import { Menu, Memo } from '@element-plus/icons-vue';
-// import Editor from '@/components/wang-editor/Editor.vue';
+// import ArticleEditor from '@/components/wang-editor/ArticleEditor.vue';
 // 动态加载 wangeditor 编辑器组件，减少首屏 JS 体积（约 791KB）
-const Editor = defineAsyncComponent(() => import('@/components/wang-editor/Editor.vue'));
+const ArticleEditor = defineAsyncComponent(() => import('@/components/wang-editor/ArticleEditor.vue'));
 import EditForm from './cpns/EditForm.vue';
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 

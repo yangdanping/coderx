@@ -21,7 +21,7 @@
 
     <!-- 编辑对话框 -->
     <el-dialog width="50%" title="修改我的评论" v-model="isShowEdit" append-to-body destroy-on-close center>
-      <Editor @update:content="(valueHtml) => (editContent = valueHtml)" :editComment="comment.content" isComment mode="simple" height="150px" />
+      <CommentEditor @update:content="(valueHtml) => (editContent = valueHtml)" :editComment="comment.content" mode="simple" height="150px" />
       <el-button @click="submitEdit" :loading="isUpdating" type="primary" style="margin-top: 10px">修改</el-button>
     </el-dialog>
 
@@ -33,7 +33,7 @@
 <script lang="ts" setup>
 import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
-import Editor from '@/components/wang-editor/Editor.vue';
+import CommentEditor from '@/components/wang-editor-comment/CommentEditor.vue';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 import { useRoute } from 'vue-router';
 import { MoreHorizontal, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
