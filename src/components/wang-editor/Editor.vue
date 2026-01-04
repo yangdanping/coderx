@@ -139,15 +139,16 @@ onUnmounted(() => {
 }
 
 /* 优化移动端工具栏排版 */
-:deep(.w-e-toolbar) {
+/* 注意：以下样式会导致工具栏下拉菜单（如标题、字号）无法显示 */
+/* 原因：overflow-x: auto 会导致溢出内容被隐藏，而下拉菜单通常是绝对定位且超出父容器的 */
+/* :deep(.w-e-toolbar) {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
-  /* 隐藏滚动条但保留功能 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
 :deep(.w-e-toolbar)::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
+  display: none; 
+} */
 </style>
