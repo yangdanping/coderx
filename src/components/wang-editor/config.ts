@@ -7,14 +7,34 @@ import type { IToolbarConfig, IEditorConfig } from '@wangeditor/editor';
 type InsertFnType = (url: string, alt: string, href: string) => void;
 type VideoInsertFnType = (url: string, poster?: string) => void;
 
-export const useEditorConfig = () => {
-  const articleStore = useArticleStore();
-
-  // 配置
+/**
+ * 基础编辑器配置（公共部分）
+ * 返回最基础的工具栏和编辑器配置，不包含图片/视频上传逻辑
+ */
+export const useBaseEditorConfig = () => {
   const toolbarConfig: Partial<IToolbarConfig & any> = {};
   const editorConfig: Partial<IEditorConfig & any> = {
     placeholder: '请输入内容...',
+    MENU_CONF: {},
+  };
+
+  return [toolbarConfig, editorConfig] as const;
+};
+
+/**
+ * 文章编辑器配置（完整功能）
+ * 包含图片上传、视频上传等完整功能，用于文章发布场景
+ */
+export const useArticleEditorConfig = () => {
+  const articleStore = useArticleStore();
+  const [toolbarConfig, baseEditorConfig] = useBaseEditorConfig();
+
+  // 在基础配置上扩展文章编辑器特有的配置
+  const editorConfig: Partial<IEditorConfig & any> = {
+    ...baseEditorConfig,
     MENU_CONF: {
+      ...baseEditorConfig.MENU_CONF,
+
       // 图片上传配置
       uploadImage: {
         // 自定义上传
@@ -121,5 +141,5 @@ export const useEditorConfig = () => {
     },
   };
 
-  return [toolbarConfig, editorConfig];
+  return [toolbarConfig, editorConfig] as const;
 };

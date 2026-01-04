@@ -2,7 +2,7 @@
   <div class="comment-form" :class="{ 'is-reply': isReply }">
     <Avatar v-if="!isReply" :info="userInfo" />
     <div class="input">
-      <Editor @update:content="(valueHtml) => (content = valueHtml)" isComment mode="simple" height="auto" />
+      <CommentEditor @update:content="(valueHtml) => (content = valueHtml)" mode="simple" height="auto" />
       <div class="input-action">
         <el-button v-if="isReply" @click="handleCancel" type="default" size="small">取消</el-button>
         <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
-import Editor from '@/components/wang-editor/Editor.vue';
+import CommentEditor from '@/components/wang-editor-comment/CommentEditor.vue';
 import { Msg, emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 

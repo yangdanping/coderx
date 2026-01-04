@@ -13,9 +13,11 @@ declare module 'vue' {
   export interface GlobalComponents {
     AiAssistant: typeof import('./components/AiAssistant.vue')['default']
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
+    ArticleEditor: typeof import('./components/wang-editor/ArticleEditor.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentActionOld: typeof import('./components/list/cpns/CommentActionOld.vue')['default']
+    CommentEditor: typeof import('./components/wang-editor-comment/CommentEditor.vue')['default']
     CommentSvg: typeof import('./components/icon/cpns/CommentSvg.vue')['default']
     Editor: typeof import('./components/wang-editor/Editor.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
