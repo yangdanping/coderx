@@ -21,8 +21,8 @@
 
 <script lang="ts" setup>
 import ListItem from '@/components/list/ListItem.vue';
-import CommentAction from '@/components/list/cpns/CommentActionOld.vue';
 // import useCommentStore from '@/stores/comment.store.old';
+import CommentAction from '@/components/list/cpns/CommentAction.vue';
 import useCommentStore from '@/stores/comment.store';
 import useUserStore from '@/stores/user.store';
 const router = useRouter();
