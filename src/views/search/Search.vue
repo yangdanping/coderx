@@ -26,8 +26,8 @@
         <!-- 状态四：有数据 -->
         <template v-else>
           <div class="list-order">
-          <div class="btn" role="button" @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
-          <div class="btn" role="button" @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
+            <div class="btn" role="button" @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
+            <div class="btn" role="button" @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
           </div>
 
           <template v-for="(page, pageIndex) in data?.pages" :key="pageIndex">
