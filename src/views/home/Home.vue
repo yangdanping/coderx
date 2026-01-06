@@ -45,7 +45,7 @@ onMounted(() => {
       clearInterval(timer.value);
     }
     line2Str.value = str;
-  }, 300);
+  }, 200);
   homeStore.getNewsAction();
   homeStore.getHotUsersAction();
 });
@@ -76,8 +76,8 @@ $TitleSize: 2em;
       transition: all 0.5s;
 
       .title-line-1 {
-        -webkit-animation: tracking-in-expand 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-        animation: tracking-in-expand 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+        -webkit-animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+        animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
         // font-family: 'MapleMono', sans-serif;
       }
       .title-line-2 {
@@ -88,8 +88,9 @@ $TitleSize: 2em;
       .isLast:after {
         content: 'X';
         font-style: oblique;
-        // font-family: 'SmileySans', italic;
         padding-right: 30px;
+        padding-left: 10px;
+        margin-left: -5px;
         background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
         -webkit-background-clip: text;
         background-clip: text;
