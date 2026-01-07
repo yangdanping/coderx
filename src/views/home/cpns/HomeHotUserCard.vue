@@ -47,7 +47,7 @@ const { item = {} } = defineProps<{
     top: 0;
     height: 100%;
     width: 100%;
-    z-index: -1;
+    z-index: var(--z-below);
     transition: all 0.3s;
     overflow: hidden;
     border-radius: 8px;

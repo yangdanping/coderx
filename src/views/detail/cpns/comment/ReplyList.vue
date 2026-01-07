@@ -294,7 +294,7 @@ onUnmounted(() => {
   background-size: 100% 300%;
   animation: flowing-light 1.5s linear infinite;
   transition: all 0.2s ease;
-  z-index: 100;
+  z-index: var(--z-elevated);
   cursor: pointer;
 
   &:hover {

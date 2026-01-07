@@ -54,6 +54,7 @@ const changePage = () => articleStore.getArticleListAction({ userId: profile.val
   .list-header {
     border-bottom: 1px solid #ccc;
     padding-bottom: 10px;
+    padding-left: 10px;
   }
   .list {
     padding: 0 20px;

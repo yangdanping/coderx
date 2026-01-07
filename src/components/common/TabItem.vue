@@ -23,16 +23,10 @@
 <script lang="ts" setup>
 import { inject, computed } from 'vue';
 
-const props = defineProps({
-  name: {
-    type: [String, Number],
-    required: true,
-  },
-  label: {
-    type: String,
-    default: '',
-  },
-});
+const { name, label = '' } = defineProps<{
+  name: string | number;
+  label?: string;
+}>();
 
 // Type the injected context
 interface TabsContext {
@@ -47,11 +41,11 @@ if (!tabsContext) {
   throw new Error('TabItem must be used within Tabs component');
 }
 
-const isActive = computed(() => tabsContext.activeValue.value === props.name);
+const isActive = computed(() => tabsContext.activeValue.value === name);
 const direction = computed(() => tabsContext.direction.value);
 
 const handleClick = () => {
-  tabsContext.handleTabClick(props.name);
+  tabsContext.handleTabClick(name);
 };
 </script>
 

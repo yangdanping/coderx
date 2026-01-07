@@ -75,7 +75,7 @@ const goToUserProfile = () => {
 
   .card-content {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-above);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -100,7 +100,7 @@ const goToUserProfile = () => {
     top: 0;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: var(--z-base);
     transition: all 0.3s;
     border-radius: 8px;
   }

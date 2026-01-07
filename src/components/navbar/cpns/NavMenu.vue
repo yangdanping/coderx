@@ -30,9 +30,13 @@ const menus = ref([
   // { name: '个人空间', path: '/user' }
 ]);
 const activeRoute = ref('/');
-onMounted(() => {
-  activeRoute.value = route.path;
-});
+watch(
+  () => route.path,
+  (newPath) => {
+    activeRoute.value = newPath;
+  },
+  { immediate: true },
+);
 const handleSelect = (key: string) => {
   activeRoute.value = key;
   if (key === '/article' && route.query.searchValue) {

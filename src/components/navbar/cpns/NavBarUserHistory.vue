@@ -87,7 +87,7 @@ const goToHistoryPage = () => {
     backdrop-filter: blur(10px);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 999;
+    z-index: var(--z-navbar-popup);
     animation: boxDown 0.3s forwards;
     .panel-history {
       width: 100%;

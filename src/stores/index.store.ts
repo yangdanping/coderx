@@ -37,6 +37,13 @@ const useRootStore = defineStore('root', {
     changeTag(tagId) {
       this.tagId = tagId;
     },
+    // 重置分页参数，避免重置 windowInfo 导致布局闪烁
+    resetPagination() {
+      this.pageNum = 1;
+      this.pageSize = 10;
+      this.pageOrder = 'date';
+      this.tagId = '';
+    },
     getWindowInfo() {
       // 立即获取当前窗口尺寸
       this.windowInfo = { width: window.innerWidth, height: window.innerHeight };

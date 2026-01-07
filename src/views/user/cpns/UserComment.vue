@@ -42,6 +42,7 @@ const changePage = () => commentStore.getCommentAction('', profile.value.id as a
   .list-header {
     border-bottom: 1px solid #ccc;
     padding-bottom: 10px;
+    padding-left: 10px;
   }
 
   .list {
