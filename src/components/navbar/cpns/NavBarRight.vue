@@ -39,6 +39,8 @@ const changeDialog = () => {
     // background-size: 400%;
     transition: all 0.3s;
     .x {
+      font-style: oblique;
+      padding-right: 2px;
       background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
