@@ -305,7 +305,7 @@ $searchWidth: 100%;
     position: absolute;
     top: 39px;
     width: $searchWidth;
-    z-index: 999;
+    z-index: var(--z-navbar-popup);
     animation: boxDownSimple 0.3s;
     .history-content {
       display: flex;
@@ -345,7 +345,7 @@ $searchWidth: 100%;
           justify-content: center;
           font-size: 10px;
           cursor: pointer;
-          z-index: 1;
+          z-index: var(--z-above);
 
           &:hover {
             background: #f78989;

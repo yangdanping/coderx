@@ -5,20 +5,11 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  text: {
-    type: String,
-    default: 'Thinking...',
-  },
-  color: {
-    type: String,
-    default: '#909399', // 基础文字颜色
-  },
-  shimmerColor: {
-    type: String,
-    default: '#409eff', // 流光颜色
-  },
-});
+defineProps<{
+  text?: string;
+  color?: string;
+  shimmerColor?: string;
+}>();
 </script>
 
 <style scoped lang="scss">

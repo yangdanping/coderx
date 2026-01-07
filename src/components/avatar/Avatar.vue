@@ -108,17 +108,20 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
 <style lang="scss" scoped>
 .avatar {
   position: relative;
+  display: inline-flex; // 使用 inline-flex 确保容器尺寸紧贴内部内容(el-avatar), 从而使绝对定位的遮罩层能正确覆盖
+
   outline: none;
   border-radius: 50%;
-  /* z-index: 99; */
   .avatar-icon {
     position: absolute;
     top: 0;
-    text-align: center;
-    line-height: 200px;
-    font-size: 50px;
-    width: 200px;
-    height: 200px;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 30px;
     background: rgba(0, 0, 0, 0.2);
     color: #fff;
     border-radius: 50%;

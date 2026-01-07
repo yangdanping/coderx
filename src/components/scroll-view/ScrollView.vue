@@ -80,7 +80,7 @@ const controlbtnClick = (isRright: boolean) => {
     background: #fff;
     box-shadow: 0px 1px 1px 1px rgba(0, 0, 0, 0.1);
     transition: box-shadow 200ms ease;
-    z-index: 999;
+    z-index: var(--z-sticky);
     &:hover {
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }

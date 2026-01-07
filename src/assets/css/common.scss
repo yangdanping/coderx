@@ -38,6 +38,27 @@
   --lightpurple: #3d147f;
   --brightpurple: #8400ff;
   --pink: #ff034a;
+
+  /* ========== Z-Index 层级系统 ========== */
+  /* 基础层级：页面内普通元素 */
+  --z-below: -1; /* 背景装饰元素 */
+  --z-base: 0; /* 默认层级 */
+  --z-above: 1; /* 略高于默认 */
+  --z-content: 10; /* 内容层 */
+  --z-elevated: 100; /* 提升层 */
+
+  /* Sticky 层级：页面内固定元素 */
+  --z-sticky: 600; /* sticky 定位的页面元素 */
+
+  /* 导航层级：固定定位的全局导航 */
+  --z-navbar: 900; /* 导航栏主体（需高于 sticky 以确保弹出内容不被遮盖）*/
+
+  /* 弹出层级：从导航栏触发的弹出内容（继承 navbar 的层叠上下文）*/
+  --z-navbar-popup: 1000; /* 导航栏弹出层（用户卡片、历史记录、搜索框等）*/
+
+  /* 模态层级：全局悬浮组件 */
+  --z-modal: 2000; /* 模态框、AI助手等 */
+
   color: var(--fontColor);
   // 悬停只在非触摸设备上可见
   @media (hover: hover) and (pointer: fine) {

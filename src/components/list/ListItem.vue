@@ -71,7 +71,7 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
   flex-direction: column;
   padding: 30px 10px 0;
   margin-bottom: 10px;
-  z-index: 99;
+  z-index: var(--z-elevated);
   // 防止内容溢出
   overflow: hidden;
   box-sizing: border-box;
@@ -95,7 +95,7 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
     position: absolute;
     left: 0px;
     bottom: 0px;
-    z-index: 0;
+    z-index: var(--z-base);
     height: 1.5px;
     width: 100%;
     background: linear-gradient(90deg, #43c3ff, #afffe3);
@@ -175,7 +175,6 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
         right: 5px;
         top: 50%;
         transform: translateY(-50%);
-        z-index: 100;
       }
     }
   }

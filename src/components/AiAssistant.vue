@@ -374,7 +374,7 @@ $shadowColor: #a3dfd0;
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 2000;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -606,7 +606,7 @@ $shadowColor: #a3dfd0;
       justify-content: center;
       cursor: pointer;
       color: var(--el-color-primary);
-      z-index: 10;
+      z-index: var(--z-content);
       border: 1px solid #eee;
 
       &:hover {

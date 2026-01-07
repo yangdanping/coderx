@@ -11,14 +11,6 @@
   >
     <div class="tabs-content" ref="contentRef">
       <slot></slot>
-      <!-- Active bar for horizontal/vertical indication could be complex with variable widths. 
-           For now, let TabItem handle its own active style or implement a shared active bar if requested.
-           El-tabs has an active bar. The user screenshot implies a simple highlight or bottom border.
-           Let's stick to TabItem styling for simplicity unless an animated bar is needed. 
-           Ref: "User wants native html encapsulation... ArticleNav.vue default vertical... small screen top mode" 
-           The original had an active-bar but also simple active styles.
-           I'll pass the active state down.
-      -->
     </div>
   </div>
 </template>
@@ -26,16 +18,10 @@
 <script lang="ts" setup>
 import { ref, provide, watch, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps({
-  modelValue: {
-    type: [String, Number],
-    required: true,
-  },
-  direction: {
-    type: String,
-    default: 'vertical', // 'vertical' | 'horizontal'
-  },
-});
+const props = defineProps<{
+  modelValue: string | number;
+  direction?: string;
+}>();
 
 const emit = defineEmits(['update:modelValue', 'tab-click']);
 

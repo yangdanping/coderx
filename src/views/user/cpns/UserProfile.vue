@@ -1,125 +1,172 @@
 <template>
-  <div class="user-profile">
-    <div class="profile-header">
-      <UserAvatar :info="profile" />
-      <div class="profile-info">
-        <div class="profile-item-1">
-          <span class="name">{{ profile.name }}</span>
-          <img :src="userSex" alt="" />
-          <template v-if="isUser(profile.id)">
-            <el-tooltip effect="dark" content="修改个人信息" placement="bottom">
-              <el-icon @click="updateProfile" class="edit" size="30" color="#999"> <Edit /> </el-icon>
-            </el-tooltip>
-          </template>
-          <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
-        </div>
-        <template v-for="info in infos" :key="info.label">
-          <div class="profile-item-other">
-            <Icon :type="info.icon" :showLabel="false" />
-            <span class="label">{{ info.label }}:</span>
-            <span class="value">{{ info.value }}</span>
-          </div>
-        </template>
-      </div>
-      <div class="profile-right">
-        <div>
-          <div class="btn" role="button" @click="goFollowTab('following')">
-            <div>关注数</div>
-            <div>{{ followCount('following') }}</div>
-          </div>
-          <div class="btn" role="button" @click="goFollowTab('follower')">
-            <div>粉丝数</div>
-            <div>{{ followCount('follower') }}</div>
+  <div class="user-profile" :class="{ 'is-mobile': isSmallScreen }">
+    <aside class="profile-sidebar" :class="{ 'sticky-header': isSmallScreen }">
+      <div class="profile-card">
+        <div class="card-header">
+          <UserAvatar :info="profile" :size="isSmallScreen ? 70 : 100" />
+          <div class="mobile-header-right" v-if="isSmallScreen">
+            <div class="name-row">
+              <span class="name">{{ profile.name }}</span>
+              <img :src="userSex" class="gender-icon" alt="" />
+              <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
+            </div>
+
+            <div class="stats-mobile">
+              <div class="stat-item" @click="goFollowTab('following')">
+                <span class="count">{{ followCount('following') }}</span>
+                <span class="label">关注</span>
+              </div>
+              <div class="stat-item" @click="goFollowTab('follower')">
+                <span class="count">{{ followCount('follower') }}</span>
+                <span class="label">粉丝</span>
+              </div>
+            </div>
+
+            <div class="actions-mobile">
+              <el-button v-if="isUser(profile.id)" class="edit-btn" size="small" @click="updateProfile">编辑资料</el-button>
+              <FollowButton v-else :isFollowed="isFollowed" :profile="profile" width="auto" size="small" />
+            </div>
           </div>
         </div>
-        <FollowButton :isFollowed="isFollowed" :profile="profile" />
+
+        <!-- Mobile Info Details -->
+        <div class="mobile-info-details" v-if="isSmallScreen">
+          <span v-for="(info, index) in infos" :key="info.label"> {{ info.value }}<span v-if="index < infos.length - 1" class="separator">·</span> </span>
+        </div>
+
+        <div class="profile-info">
+          <div class="name-row" v-if="!isSmallScreen">
+            <span class="name">{{ profile.name }}</span>
+            <img :src="userSex" class="gender-icon" alt="" />
+            <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
+          </div>
+
+          <!-- Desktop Stats -->
+          <div class="stats-desktop" v-if="!isSmallScreen">
+            <div class="stat-item" @click="goFollowTab('following')">
+              <span class="label">关注</span>
+              <span class="count">{{ followCount('following') }}</span>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-item" @click="goFollowTab('follower')">
+              <span class="label">粉丝</span>
+              <span class="count">{{ followCount('follower') }}</span>
+            </div>
+          </div>
+
+          <!-- Desktop Info Details -->
+          <div class="info-details" v-if="!isSmallScreen">
+            <template v-for="info in infos" :key="info.label">
+              <div class="info-item">
+                <Icon :type="info.icon" :showLabel="false" />
+                <span class="value">{{ info.value }}</span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="actions" v-if="!isSmallScreen">
+            <template v-if="isUser(profile.id)">
+              <el-button class="edit-btn" @click="updateProfile">编辑资料</el-button>
+            </template>
+            <FollowButton v-else :isFollowed="isFollowed" :profile="profile" />
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="profile-main">
-      <UserProfileMenu @tabClick="tabClick" />
-    </div>
+
+      <!-- Navigation Tabs -->
+      <div class="profile-tabs">
+        <Tabs v-model="activeTab" :direction="isSmallScreen ? 'horizontal' : 'vertical'" @tab-click="handleTabClick">
+          <TabItem name="文章" label="文章" />
+          <TabItem name="评论" label="评论" />
+          <TabItem name="收藏" label="收藏" />
+          <TabItem name="关注" label="关注" />
+          <TabItem v-if="isUser(profile.id)" name="最近浏览" label="最近浏览" />
+        </Tabs>
+      </div>
+    </aside>
+
+    <main class="profile-content">
+      <UserProfileMenu :activeName="activeTab" />
+    </main>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { emitter, getImageUrl } from '@/utils';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
-import { emitter, getImageUrl } from '@/utils';
 import Icon from '@/components/icon/Icon.vue';
-import { Edit } from 'lucide-vue-next';
-import type { IUserInfo } from '@/stores/types/user.result';
+import Tabs from '@/components/common/Tabs.vue';
+import TabItem from '@/components/common/TabItem.vue';
 
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import useHistoryStore from '@/stores/history.store';
+import type { IUserInfo } from '@/stores/types/user.result';
+
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
-const { isFollowed, followCount, isUser, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
+
+const { isFollowed, followCount, isUser, userOnlineStatus } = storeToRefs(userStore);
+const { isSmallScreen } = storeToRefs(rootStore);
 
 const { profile = {} } = defineProps<{
   profile: IUserInfo;
 }>();
 
+const activeTab = ref('文章');
+const route = useRoute();
+
 const infos = computed(() => {
   return [
-    {
-      label: '年龄',
-      value: profile.age ?? '无',
-      icon: 'coin',
-    },
-    {
-      label: '职业',
-      value: profile.career ?? 'Coder',
-      icon: 'suitcase',
-    },
-    {
-      label: '居住地',
-      value: profile.address ?? 'CoderX星球',
-      icon: 'coordinate',
-    },
-    {
-      label: '邮箱',
-      value: profile.email ?? '无',
-      icon: 'takeaway-box',
-    },
+    { label: '年龄', value: profile.age ?? '无', icon: 'coin' },
+    { label: '职业', value: profile.career ?? 'Coder', icon: 'suitcase' },
+    { label: '居住地', value: profile.address ?? 'CoderX星球', icon: 'coordinate' },
+    { label: '邮箱', value: profile.email ?? '无', icon: 'takeaway-box' },
   ] as any[];
 });
 
-const goFollowTab = (subTabName: string) => {
-  console.log('goFollowTab subTabName', subTabName);
-  emitter.emit('changeFollowTab', subTabName); //在UserProfileMenu中改变大Tab,在UserFollow中改变小Tab
-};
-
 const userSex = computed(() => getImageUrl('user', `${profile.sex === '女' ? 'female' : 'male'}-icon`));
 
-const route = useRoute();
+const goFollowTab = (subTabName: string) => {
+  activeTab.value = '关注';
+  // Emit event for UserFollow component (if it listens) to switch sub-tab
+  // We need to ensure the tab switch happens first
+  setTimeout(() => {
+    emitter.emit('changeFollowTab', subTabName);
+  }, 0);
+};
 
 const updateProfile = () => {
   rootStore.toggleLoginDialog();
-  emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile))); //深拷贝
+  emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile)));
 };
 
-const tabClick = ({ paneName }) => {
-  const userId = route.params.userId as any;
-  rootStore.$reset(); //初始化分页数据
-  console.log('tabClick', userId, paneName);
-  switch (paneName) {
+// Data fetching logic based on tab
+const fetchTabData = (tabName: string, userId: any) => {
+  rootStore.resetPagination(); // Reset pagination without affecting windowInfo
+  const uid = Number(userId);
+  switch (tabName) {
     case '文章':
       userStore.getProfileAction(userId);
       articleStore.refreshFirstPageAction({ userId });
       break;
     case '评论':
-      // userStore.getCommentAction(userId);
       commentStore.getCommentAction('', userId);
       break;
     case '收藏':
-      userStore.getCollectAction(userId);
+      // Ensure we pass number if expected, or rely on store handling
+      userStore.getCollectAction(isNaN(uid) ? userId : uid);
       useArticleStore().initArticle();
       break;
     case '关注':
@@ -130,94 +177,245 @@ const tabClick = ({ paneName }) => {
       historyStore.resetHistory();
       historyStore.getHistoryAction(true);
       break;
-    default:
-      break;
   }
 };
+
+const handleTabClick = (name: string) => {
+  fetchTabData(name, route.params.userId);
+};
+
+// Initialize from URL
+onMounted(() => {
+  const tabName = route.query.tabName as string;
+  if (tabName) {
+    activeTab.value = tabName;
+    if (tabName === '收藏') {
+      userStore.getCollectAction(userStore.userInfo.id);
+    } else if (tabName === '最近浏览') {
+      // ...
+    }
+  }
+
+  // Also listen for event to change tab from outside (if needed)
+  emitter.on('changeFollowTab', () => {
+    activeTab.value = '关注';
+  });
+});
+
+// Reset to '文章' when switching users
+watch(
+  () => route.params.userId,
+  (newId) => {
+    if (newId) {
+      activeTab.value = '文章';
+      fetchTabData('文章', newId);
+    }
+  },
+);
 </script>
 
 <style lang="scss" scoped>
 .user-profile {
-  margin-top: 80px;
-  // height: 100vh;//高度是个坑!!!不要设置高度!!!
+  display: flex;
+  gap: 20px;
   width: 75%;
-  .profile-header,
-  .profile-main {
-    display: flex;
+  margin: 80px auto 0;
+  min-height: 80vh;
+
+  &.is-mobile {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 0;
+    gap: 0;
   }
-  .profile-header {
-    position: relative;
+}
+
+.profile-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  &.sticky-header {
+    position: sticky;
+    top: var(--navbarHeight, 60px);
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 10px 15px 0;
+    gap: 10px;
+    z-index: var(--z-sticky);
+
+    .profile-card {
+      margin-bottom: 0;
+    }
+  }
+
+  .profile-card {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+
+    .card-header {
+      display: flex;
+      align-items: flex-start; // Align top
+      gap: 15px;
+
+      .mobile-header-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .name-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap; // Allow wrapping if name is long
+          .name {
+            font-size: 18px;
+            font-weight: bold;
+          }
+          .gender-icon {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .stats-mobile {
+          display: flex;
+          gap: 20px; // Spacing between Following and Followers
+
+          .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            cursor: pointer;
+
+            .count {
+              font-weight: bold;
+              font-size: 14px;
+              color: #333;
+            }
+            .label {
+              font-size: 12px;
+              color: #666;
+            }
+          }
+        }
+
+        .actions-mobile {
+          margin-top: 2px;
+          width: fit-content; // Auto width
+
+          .edit-btn {
+            width: auto; // Auto width
+          }
+        }
+      }
+    }
+
+    .mobile-info-details {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.4;
+
+      .separator {
+        margin: 0 6px;
+        color: #ddd;
+      }
+    }
 
     .profile-info {
-      flex: 1;
+      margin-top: 15px;
       display: flex;
       flex-direction: column;
-      margin: 0 0 0 30px;
-      .profile-item-1 {
+      gap: 10px;
+
+      .name-row {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
+        gap: 8px;
         .name {
-          font-weight: 700;
-          font-size: 35px;
+          font-size: 20px;
+          font-weight: bold;
         }
-        .edit {
-          cursor: pointer;
-          margin-top: 5px;
+        .gender-icon {
+          width: 18px;
+          height: 18px;
         }
       }
 
-      .profile-item-other {
+      .stats-desktop {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
-        font-size: 16px;
-        gap: 3px;
-      }
-    }
-    .profile-right {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      > div {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        cursor: pointer;
+        gap: 15px;
+        margin: 5px 0;
 
-        > div:first-of-type {
-          border-right: 1px solid #ccc;
-        }
-        > div {
+        .stat-item {
           display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-between;
-          padding: 10px;
-          font-size: 22px;
+          gap: 5px;
+          cursor: pointer;
           &:hover {
-            color: #409eff;
+            color: var(--el-color-primary);
           }
-
-          > div:last-of-type {
-            font-size: 30px;
+          .label {
+            color: #666;
+          }
+          .count {
+            font-weight: bold;
           }
         }
+
+        .divider {
+          width: 1px;
+          height: 12px;
+          background: #ccc;
+        }
       }
-      .el-button {
-        width: 100%;
-        font-size: 20px;
+
+      .info-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #666;
+          font-size: 14px;
+        }
+      }
+
+      .actions {
+        margin-top: 10px;
+        .edit-btn {
+          width: 100%;
+        }
+        .edit-icon {
+          cursor: pointer;
+          position: absolute;
+          top: 10px;
+          right: 10px;
+        }
       }
     }
   }
-  .profile-main {
-    margin-top: 60px;
-    display: flex;
-    justify-content: center;
+
+  // Mobile specific adjustments for header layout
+  &.sticky-header {
+    // Clean up or overrides if needed
+    padding-bottom: 10px;
+    padding-left: 10px; // Add some bottom padding
   }
+}
+
+.profile-content {
+  flex: 1;
+  min-width: 0; // Prevent flex overflow
+  // padding-bottom: 20px;
 }
 </style>

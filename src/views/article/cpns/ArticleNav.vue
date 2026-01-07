@@ -14,38 +14,20 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { emitter, throttle } from '@/utils';
-import useArticleStore from '@/stores/article.store';
 import useRootStore from '@/stores/index.store';
 import Tabs from '@/components/common/Tabs.vue';
 import TabItem from '@/components/common/TabItem.vue';
 
 const props = defineProps<{
-  tags?: any[]; // Using any[] to match usage in Article.vue, essentially Itag[]
+  tags?: any[];
 }>();
 
 const rootStore = useRootStore();
-const articleStore = useArticleStore();
 const { isSmallScreen } = storeToRefs(rootStore);
 
 const activeId = ref<string | number>('综合');
 const navRef = ref<HTMLElement | null>(null);
-
-// Direction logic
 const tabDirection = computed(() => (isSmallScreen.value ? 'horizontal' : 'vertical'));
-
-// Update CSS variable for ArticleList to know the nav height
-const updateNavHeightVar = () => {
-  if (isSmallScreen.value && navRef.value) {
-    // 使用 offsetHeight 获取包含 padding/border 的完整高度
-    const height = navRef.value.offsetHeight;
-    document.documentElement.style.setProperty('--article-nav-height', `${height}px`);
-  } else {
-    document.documentElement.style.setProperty('--article-nav-height', '0px');
-  }
-};
-
-let resizeObserver: ResizeObserver | null = null;
-
 onMounted(() => {
   emitter.on('changeTagInList', (tag: any) => {
     activeId.value = tag.id;
@@ -64,7 +46,7 @@ onMounted(() => {
   // Initial check
   updateNavHeightVar();
 });
-
+let resizeObserver: ResizeObserver | null = null;
 onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
@@ -72,6 +54,17 @@ onUnmounted(() => {
   }
   document.documentElement.style.removeProperty('--article-nav-height');
 });
+
+// Update CSS variable for ArticleList to know the nav height
+const updateNavHeightVar = () => {
+  if (isSmallScreen.value && navRef.value) {
+    // 使用 offsetHeight 获取包含 padding/border 的完整高度
+    const height = navRef.value.offsetHeight;
+    document.documentElement.style.setProperty('--article-nav-height', `${height}px`);
+  } else {
+    document.documentElement.style.setProperty('--article-nav-height', '0px');
+  }
+};
 
 const handleClick = throttle(function (name: string | number) {
   if (name) {
@@ -94,7 +87,6 @@ const handleClick = throttle(function (name: string | number) {
   &.is-sticky {
     /* position: sticky;  Moved to Article.vue */
     /* top: var(--navbarHeight); */
-    /* z-index: 999; */
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);

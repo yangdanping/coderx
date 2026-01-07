@@ -5,20 +5,30 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps({
-  width: {
-    type: Number,
-    default: 60,
-  },
-  height: {
-    type: Number,
-    default: 30,
-  },
-  color: {
-    type: String,
-    default: '#409eff', // Element Plus Primary Color
-  },
-});
+// const props = defineProps({
+//   width: {
+//     type: Number,
+//     default: 60,
+//   },
+//   height: {
+//     type: Number,
+//     default: 30,
+//   },
+//   color: {
+//     type: String,
+//     default: '#409eff', // Element Plus Primary Color
+//   },
+// });
+
+const {
+  width = 60,
+  height = 30,
+  color = '#409eff',
+} = defineProps<{
+  width?: number;
+  height?: number;
+  color?: string;
+}>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 let animationId: number | null = null;
@@ -36,18 +46,18 @@ const draw = () => {
   if (!ctx) return;
 
   // 清空画布
-  ctx.clearRect(0, 0, props.width, props.height);
+  ctx.clearRect(0, 0, width, height);
 
   // 绘制参数
-  const centerY = props.height / 2;
+  const centerY = height / 2;
 
   ctx.beginPath();
-  ctx.strokeStyle = props.color;
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
 
   // 绘制正弦波
   // y = A * sin(ωx + φ) + k
-  for (let x = 0; x < props.width; x++) {
+  for (let x = 0; x < width; x++) {
     // 核心公式：利用 phase 让波浪动起来
     const y = centerY + Math.sin(x * frequency + phase) * amplitude;
 
@@ -62,8 +72,8 @@ const draw = () => {
 
   // 绘制第二条波浪（稍微错开一点，增加动感）
   ctx.beginPath();
-  ctx.strokeStyle = adjustColorOpacity(props.color, 0.5);
-  for (let x = 0; x < props.width; x++) {
+  ctx.strokeStyle = adjustColorOpacity(color, 0.5);
+  for (let x = 0; x < width; x++) {
     const y = centerY + Math.sin(x * frequency + phase + 2) * (amplitude - 2);
     if (x === 0) {
       ctx.moveTo(x, y);

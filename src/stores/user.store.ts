@@ -17,7 +17,8 @@ const useUserStore = defineStore('user', {
     token: '',
     userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
     profile: {} as IUserInfo, //其他用户信息,只有读权限
-    followInfo: {} as IFollowInfo,
+    followInfo: {} as IFollowInfo, // 当前查看的用户详情的关注/粉丝列表
+    myFollowInfo: {} as IFollowInfo, // 登录用户的关注/粉丝列表(用于NavBarUser等组件展示)
     collects: [] as any,
     onlineUsers: [] as any[],
     isFollowed: false, //仅用于一对一用户的判断
@@ -36,6 +37,9 @@ const useUserStore = defineStore('user', {
     },
     followCount() {
       return (type: string) => this.followInfo[type]?.length ?? 0;
+    },
+    myFollowCount() {
+      return (type: string) => this.myFollowInfo[type]?.length ?? 0;
     },
     userOnlineStatus() {
       return (userName: string | undefined) => {
@@ -200,6 +204,16 @@ const useUserStore = defineStore('user', {
         this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
       } else {
         Msg.showFail('请求用户关注信息失败');
+      }
+    },
+    async getMyFollowAction(userId) {
+      // 专门获取登录用户的关注信息，不影响 viewing profile 的数据
+      const res = await getFollow(userId);
+      if (res.code === 0) {
+        this.myFollowInfo = res.data;
+      } else {
+        // 静默失败或轻提示，避免hover时频繁报错干扰
+        console.warn('请求登录用户关注信息失败');
       }
     },
     async uploadAvatarAction(payload) {

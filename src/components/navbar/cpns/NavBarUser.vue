@@ -5,11 +5,11 @@
       <div class="box" v-if="isShow">
         <div class="user-info">
           <div class="following btn" @click="goProfile('关注', 'following')">
-            <div>{{ followCount('following') }}</div>
+            <div>{{ myFollowCount('following') }}</div>
             <div>关注</div>
           </div>
           <div class="follower btn" @click="goProfile('关注', 'follower')">
-            <div>{{ followCount('follower') }}</div>
+            <div>{{ myFollowCount('follower') }}</div>
             <div>粉丝</div>
           </div>
         </div>
@@ -45,13 +45,13 @@ import { PenSquare, MapPin, LogOut } from 'lucide-vue-next';
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { userInfo, followCount } = storeToRefs(userStore);
+const { userInfo, myFollowCount } = storeToRefs(userStore);
 const rootStore = useRootStore();
 const { isSmallScreen } = storeToRefs(rootStore);
 const isShow = ref(false);
 const toggle = debounce(function (toggle) {
   isShow.value = toggle;
-  userStore.getFollowAction(userInfo.value.id);
+  userStore.getMyFollowAction(userInfo.value.id);
 }, 200);
 
 const goEdit = () => router.push('/edit');
@@ -92,6 +92,7 @@ const logOut = () => {
   justify-content: center;
   .user-avatar {
     position: relative;
+    z-index: var(--z-navbar-popup);
 
     .box {
       position: absolute;
@@ -177,10 +178,11 @@ const logOut = () => {
     :deep(.avatar) {
       transition: transform 0.3s;
     }
+
     &:hover {
       :deep(.avatar) {
         transform: scale(1.8) translate(0, 15px);
-        z-index: 99;
+        z-index: calc(var(--z-navbar-popup) + 1);
       }
     }
   }

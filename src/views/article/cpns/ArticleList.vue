@@ -195,7 +195,7 @@ const setOrder = throttle(function (order: string) {
     gap: 10px;
     width: 100%;
     background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
-    z-index: 999;
+    z-index: var(--z-sticky);
     .btn {
       display: flex;
       background-color: rgba(255, 255, 255, 0.5);

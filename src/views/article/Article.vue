@@ -72,7 +72,7 @@ $paddingTop: 60px;
     .article-nav {
       position: sticky;
       top: var(--navbarHeight);
-      z-index: 999;
+      z-index: var(--z-sticky);
       width: 100%;
       padding-top: 0;
       flex-shrink: 0;

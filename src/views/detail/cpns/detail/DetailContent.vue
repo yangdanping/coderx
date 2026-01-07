@@ -138,7 +138,7 @@ watch(
   border-radius: 4px;
   padding: 4px 8px;
   transition: all 0.3s;
-  z-index: 10;
+  z-index: var(--z-content);
 
   &:hover {
     background-color: var(--el-fill-color-light, #f5f7fa);

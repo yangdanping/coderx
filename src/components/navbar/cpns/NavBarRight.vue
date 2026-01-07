@@ -1,13 +1,11 @@
 <template>
   <div class="right">
-    <slot name="right"></slot>
-    <template v-if="!token">
-      <el-button @click="changeDialog" class="register-btn"><span>Hello Coder</span> <span class="x">X</span></el-button>
-    </template>
-    <template v-else>
+    <slot name="right"> </slot>
+    <template v-if="token">
       <NavBarUser />
       <NavBarUserHistory />
     </template>
+    <el-button @click="changeDialog" class="register-btn" v-else><span>Hello Coder</span> <span class="x">X</span></el-button>
   </div>
 </template>
 
@@ -15,8 +13,8 @@
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
 
-import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
+import useRootStore from '@/stores/index.store';
 const rootStore = useRootStore();
 const { token } = storeToRefs(useUserStore());
 
@@ -40,7 +38,6 @@ const changeDialog = () => {
     // background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
     // background-size: 400%;
     transition: all 0.3s;
-    z-index: 1;
     .x {
       background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
       -webkit-background-clip: text;
