@@ -4,14 +4,15 @@
     <UserComment v-if="activeName === '评论'" />
     <UserCollect v-if="activeName === '收藏'" />
     <UserFollow v-if="activeName === '关注'" />
-    <!-- 只有登录用户才可以 -->
-    <UserHistory v-if="activeName === '最近浏览' && isUser(profile.id)" />
+    <!-- 只有登录用户才可以查看自己的浏览历史 -->
+    <UserHistory v-if="activeName === '最近浏览' && isMe" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { storeToRefs } from 'pinia';
 import useUserStore from '@/stores/user.store';
+import { useAuth } from '@/composables/useAuth';
 import UserArticle from './UserArticle.vue';
 import UserCollect from './UserCollect.vue';
 import UserComment from './UserComment.vue';
@@ -23,7 +24,11 @@ const props = defineProps<{
 }>();
 
 const userStore = useUserStore();
-const { isUser, profile } = storeToRefs(userStore);
+const { isCurrentUser } = useAuth();
+const { profile } = storeToRefs(userStore);
+
+// 判断是否为当前登录用户（用于控制"最近浏览"组件显示）
+const isMe = computed(() => isCurrentUser(profile.value.id));
 </script>
 
 <style lang="scss" scoped>

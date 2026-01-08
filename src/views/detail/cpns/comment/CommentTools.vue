@@ -40,6 +40,7 @@ import { MoreHorizontal, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
 
 import useUserStore from '@/stores/user.store';
 import { useUpdateComment, useDeleteComment } from '@/composables/useCommentList';
+import { useAuth } from '@/composables/useAuth';
 
 import type { IComment } from '@/service/comment/comment.request';
 
@@ -50,12 +51,13 @@ const props = defineProps<{
 
 const route = useRoute();
 const userStore = useUserStore();
+const { isCurrentUser } = useAuth();
 
 const articleId = computed(() => String(route.params.articleId || ''));
 const parentId = computed(() => props.parentCommentId);
 
-// 是否为评论所有者
-const isOwner = computed(() => userStore.isUser(props.comment.author?.id));
+// 是否为评论所有者（判断当前登录用户是否为该评论的作者）
+const isOwner = computed(() => isCurrentUser(props.comment.author?.id));
 
 // 状态
 const isShowEdit = ref(false);

@@ -10,7 +10,7 @@
         <h2>{{ sex }}的收藏({{ collects.length }})</h2>
       </div>
       <div class="btn">
-        <template v-if="isUser(profile.id) && !showSetup">
+        <template v-if="isMe && !showSetup">
           <el-tooltip effect="dark" content="添加收藏夹" placement="right">
             <el-button @click="dialogVisible = true" :icon="Plus" circle></el-button>
           </el-tooltip>
@@ -76,11 +76,17 @@ import { Plus, Settings, ChevronLeft } from 'lucide-vue-next';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
+import { useAuth } from '@/composables/useAuth';
+
 const userStore = useUserStore();
 const articleStore = useArticleStore();
+const { isCurrentUser } = useAuth();
 
-const { userInfo, profile, collects, isUser } = storeToRefs(userStore);
+const { userInfo, profile, collects } = storeToRefs(userStore);
 const { articles } = storeToRefs(articleStore);
+
+// 判断是否为当前登录用户（用于控制收藏夹操作权限）
+const isMe = computed(() => isCurrentUser(profile.value.id));
 
 // 用户点赞状态
 const { isLiked } = useUserLikedArticles();
