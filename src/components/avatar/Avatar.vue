@@ -23,7 +23,7 @@
         <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" :class="{ 'online-border': isOnline }" />
       </template>
     </el-popover>
-    <div class="avatar-icon" v-if="showSet && isUser(info.id)"><slot name="icon"></slot></div>
+    <div class="avatar-icon" v-if="showSet && isMe"><slot name="icon"></slot></div>
   </div>
 </template>
 
@@ -34,10 +34,13 @@ import { debounce, getImageUrl } from '@/utils';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 import useUserStore from '@/stores/user.store';
+import { useAuth } from '@/composables/useAuth';
+
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
-const { followCount, isFollowed, isUser, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
+const { isCurrentUser } = useAuth();
+const { followCount, isFollowed, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
 
 const {
   info = {},
@@ -50,6 +53,10 @@ const {
   showSet?: boolean;
   disabled?: boolean;
 }>();
+
+// 判断是否为当前登录用户（用于控制头像编辑图标显示）
+const isMe = computed(() => isCurrentUser(info.id));
+
 const nameCount = computed(() => {
   let count = info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
   return count > 0 ? count + 1 : 0;

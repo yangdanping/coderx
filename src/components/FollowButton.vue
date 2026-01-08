@@ -1,6 +1,6 @@
 <template>
   <el-button
-    v-if="!isUser(profile.id)"
+    v-if="!isMe"
     :style="{ width }"
     @click.stop="follow"
     @mouseenter="ToggleUnFollow(true)"
@@ -15,6 +15,7 @@
 <script lang="ts" setup>
 import { Msg } from '@/utils';
 import { Plus } from '@element-plus/icons-vue';
+import { useAuth } from '@/composables/useAuth';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
@@ -22,7 +23,8 @@ import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 const rootStore = useRootStore();
 const userStore = useUserStore();
-const { isUser, token } = storeToRefs(userStore);
+const { isCurrentUser } = useAuth();
+const { token } = storeToRefs(userStore);
 
 const {
   profile = {},
@@ -36,6 +38,9 @@ const {
   isFollowListItem?: boolean;
   width?: string;
 }>();
+
+// 判断是否为当前登录用户（用于控制关注按钮显示）
+const isMe = computed(() => isCurrentUser(profile.id));
 const isWantToUnFollowed = ref(false);
 const ToggleUnFollow = (toggle: boolean) => {
   if (isFollowed) {

@@ -24,9 +24,6 @@ const useUserStore = defineStore('user', {
     isFollowed: false, //仅用于一对一用户的判断
   }),
   getters: {
-    isUser() {
-      return (userId) => this.token && userId === this.userInfo.id; //判断是否是当前已登陆用户
-    },
     isUserFollowed() {
       return (userId, type: string) => {
         // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id

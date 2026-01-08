@@ -23,7 +23,7 @@
             </div>
 
             <div class="actions-mobile">
-              <el-button v-if="isUser(profile.id)" class="edit-btn" size="small" @click="updateProfile">编辑资料</el-button>
+              <el-button v-if="isMe" class="edit-btn" size="small" @click="updateProfile">编辑资料</el-button>
               <FollowButton v-else :isFollowed="isFollowed" :profile="profile" width="auto" size="small" />
             </div>
           </div>
@@ -66,7 +66,7 @@
 
           <!-- Action Buttons -->
           <div class="actions" v-if="!isSmallScreen">
-            <template v-if="isUser(profile.id)">
+            <template v-if="isMe">
               <el-button class="edit-btn" @click="updateProfile">编辑资料</el-button>
             </template>
             <FollowButton v-else :isFollowed="isFollowed" :profile="profile" />
@@ -81,7 +81,7 @@
           <TabItem name="评论" label="评论" />
           <TabItem name="收藏" label="收藏" />
           <TabItem name="关注" label="关注" />
-          <TabItem v-if="isUser(profile.id)" name="最近浏览" label="最近浏览" />
+          <TabItem v-if="isMe" name="最近浏览" label="最近浏览" />
         </Tabs>
       </div>
     </aside>
@@ -109,6 +109,7 @@ import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import useHistoryStore from '@/stores/history.store';
+import { useAuth } from '@/composables/useAuth';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 const rootStore = useRootStore();
@@ -116,13 +117,17 @@ const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
+const { isCurrentUser } = useAuth();
 
-const { isFollowed, followCount, isUser, userOnlineStatus } = storeToRefs(userStore);
+const { isFollowed, followCount, userOnlineStatus } = storeToRefs(userStore);
 const { isSmallScreen } = storeToRefs(rootStore);
 
 const { profile = {} } = defineProps<{
   profile: IUserInfo;
 }>();
+
+// 判断是否为当前登录用户（用于控制编辑资料按钮和"最近浏览"标签显示）
+const isMe = computed(() => isCurrentUser(profile.id));
 
 const activeTab = ref('文章');
 const route = useRoute();
