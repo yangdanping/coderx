@@ -75,10 +75,6 @@ watch(
   { deep: true },
 );
 
-const handleCreated = (editor) => {
-  editorRef.value = editor;
-  const toolbar = DomEditor.getToolbar(editor);
-};
 const handleChanged = (editor: any) => {
   if (editor.isEmpty()) {
     valueHtml.value = '';
@@ -96,7 +92,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .article-editor-container {
   border: 1px solid #ccc;
-  
+
   .preview {
     border-left: 1px solid #ccc;
     overflow: auto;
@@ -106,7 +102,7 @@ onUnmounted(() => {
     display: inline-block;
     vertical-align: top;
   }
-  
+
   .show-preview-btn {
     position: fixed;
     bottom: 0;

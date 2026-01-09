@@ -134,3 +134,37 @@ hr {
   display: none; // 移除凹槽
   background: transparent;
 }
+
+html {
+  scroll-behavior: smooth;
+  /* Ensure anchor targets are not hidden behind fixed navbar */
+  scroll-padding-top: calc(var(--navbarHeight) + 20px);
+}
+
+/* Header Anchor Styles - similar to Vue docs */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  position: relative;
+  &:hover .header-anchor {
+    opacity: 1;
+  }
+}
+
+.header-anchor {
+  float: left;
+  margin-left: -0.8em;
+  padding-right: 0.2em;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: var(--green);
+  text-decoration: none;
+  font-weight: normal;
+
+  &:hover {
+    color: var(--green);
+  }
+}

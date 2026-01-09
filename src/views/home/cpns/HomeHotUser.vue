@@ -1,6 +1,9 @@
 <template>
-  <div class="home-hot-user">
-    <h1>热门作者</h1>
+  <div class="home-hot-user" id="hot-authors">
+    <h1 role="button" @click="handleAnchorClick">
+      热门作者
+      <a href="#hot-authors" class="header-anchor" @click.stop>#</a>
+    </h1>
     <div class="scroll-user">
       <ScrollView :data="hotUsers">
         <template #scrollItems="slotProps">
@@ -18,6 +21,10 @@ import ScrollView from '@/components/scroll-view/ScrollView.vue';
 const { hotUsers = [] } = defineProps<{
   hotUsers: any[];
 }>();
+
+const handleAnchorClick = () => {
+  window.location.hash = 'hot-authors';
+};
 </script>
 
 <style lang="scss" scoped>
