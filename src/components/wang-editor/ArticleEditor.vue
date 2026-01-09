@@ -44,18 +44,23 @@ const {
 const valueHtml = ref('');
 const isShowPreviw = ref(LocalCache.getCache('isShowPreviw') ?? true);
 onMounted(() => {
-  console.log('LocalCache.getCache', LocalCache.getCache('isShowPreviw'));
-  console.log('ArticleEditor onMounted', LocalCache.getCache('draft'), editData);
   nextTick(() => {
     const draft = LocalCache.getCache('draft');
-    const isDraft = !!draft && !isEmptyObj(editData);
-    if (isDraft) {
+    const isEditMode = !isEmptyObj(editData);
+
+    if (isEditMode && draft) {
+      // 编辑模式 + 有草稿：优先使用草稿（用户可能编辑了但未提交）
       valueHtml.value = draft.draft;
-      console.log('ArticleEditor组件 修改已保存文章内容的草稿-------------------------------', valueHtml.value);
-    } else if (isEmptyObj(editData)) {
-      valueHtml.value = editData?.content ?? '';
+    } else if (isEditMode) {
+      // 编辑模式 + 无草稿：使用原文章内容
+      valueHtml.value = editData.content ?? '';
+    } else if (draft) {
+      // 创建模式 + 有草稿：恢复草稿（修复：原逻辑遗漏了此场景）
+      valueHtml.value = draft.draft;
     }
+    // 创建模式 + 无草稿：保持空白（valueHtml 默认值为 ''）
   });
+
   emitter.on('cleanContent', () => (valueHtml.value = ''));
   emitter.on('updateEditorContent', (content) => {
     valueHtml.value = content as any;

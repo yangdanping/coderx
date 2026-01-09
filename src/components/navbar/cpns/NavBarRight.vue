@@ -1,7 +1,7 @@
 <template>
   <div class="right">
     <slot name="right"> </slot>
-    <template v-if="token">
+    <template v-if="isMe">
       <NavBarUser />
       <NavBarUserHistory />
     </template>
@@ -12,11 +12,13 @@
 <script lang="ts" setup>
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
-
+import { useAuth } from '@/composables/useAuth';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 const rootStore = useRootStore();
-const { token } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { isCurrentUser } = useAuth();
+const isMe = computed(() => isCurrentUser(userStore.userInfo.id));
 
 const changeDialog = () => {
   console.log('open Dialog');
