@@ -6,10 +6,14 @@ import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { LocalCache, Msg, emitter, dateFormat } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
-import type { IUserInfo, IFollowInfo } from '@/stores/types/user.result';
+import type { IUserInfo, IFollowInfo, ICacheEntry } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
 import useArticleStore from './article.store';
 import useRootStore from './index.store';
+
+// 缓存过期时间：30秒内重复 hover 同一用户不会重新请求
+const CACHE_TTL = 30 * 1000;
+
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -17,23 +21,74 @@ const useUserStore = defineStore('user', {
     token: '',
     userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
     profile: {} as IUserInfo, //其他用户信息,只有读权限
-    followInfo: {} as IFollowInfo, // 当前查看的用户详情的关注/粉丝列表
+    // ============ 关注信息缓存 Map ============
+    // 使用 Map 按 userId 分别存储每个用户的关注信息，避免 hover 不同用户时状态互相覆盖
+    followInfoCache: new Map<number, ICacheEntry<IFollowInfo>>(),
+    // 记录正在请求中的 userId，防止同一用户并发重复请求
+    pendingFollowRequests: new Set<number>(),
     myFollowInfo: {} as IFollowInfo, // 登录用户的关注/粉丝列表(用于NavBarUser等组件展示)
     collects: [] as any,
     onlineUsers: [] as any[],
-    isFollowed: false, //仅用于一对一用户的判断
   }),
   getters: {
-    isUserFollowed() {
-      return (userId, type: string) => {
-        // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
-        // 若type是关注者,则直接查看用户的关注者中是否有该id
-        const followType = type === 'follower' ? 'following' : type;
-        return !!this.followInfo[followType]?.some((item) => item.id === userId);
+    // ============ 按 userId 获取关注信息（解决状态闪烁问题）============
+    // 从缓存 Map 中获取指定用户的关注信息
+    getFollowInfoById(): (userId: number) => IFollowInfo | null {
+      return (userId: number) => {
+        const cached = this.followInfoCache.get(userId);
+        // 返回缓存数据（不检查过期，过期逻辑在请求时处理）
+        return cached?.data ?? null;
       };
     },
-    followCount() {
-      return (type: string) => this.followInfo[type]?.length ?? 0;
+    // 判断当前登录用户是否关注了指定用户（用于 Avatar hover 弹窗）
+    isFollowedById(): (targetUserId: number) => boolean {
+      return (targetUserId: number) => {
+        const info = this.followInfoCache.get(targetUserId)?.data;
+        // 如果目标用户的粉丝列表中包含当前登录用户的 id，则表示已关注
+        return info?.follower?.some((item) => item.id === this.userInfo.id) ?? false;
+      };
+    },
+    // 获取指定用户的关注数/粉丝数（用于 Avatar hover 弹窗）
+    followCountById(): (userId: number, type: 'following' | 'follower') => number {
+      return (userId: number, type: 'following' | 'follower') => {
+        const info = this.followInfoCache.get(userId)?.data;
+        return info?.[type]?.length ?? 0;
+      };
+    },
+    // ============ 原有 getters（用于 UserFollow 列表页）============
+    // 用于 UserFollowItem 判断列表中每个用户是否被关注
+    isUserFollowed(): (userId: number, type: string) => boolean {
+      return (userId: number, type: string) => {
+        // 获取当前查看的用户详情页的关注信息
+        const profileId = this.profile?.id;
+        if (!profileId) return false;
+        const info = this.followInfoCache.get(profileId)?.data;
+        // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
+        const followType = type === 'follower' ? 'following' : type;
+        return !!info?.[followType]?.some((item) => item.id === userId);
+      };
+    },
+    // 获取当前查看的用户详情页的关注数/粉丝数
+    followCount(): (type: string) => number {
+      return (type: string) => {
+        const profileId = this.profile?.id;
+        if (!profileId) return 0;
+        const info = this.followInfoCache.get(profileId)?.data;
+        return info?.[type]?.length ?? 0;
+      };
+    },
+    // 获取当前查看的用户详情页的关注信息（用于 UserFollow 列表）
+    followInfo(): IFollowInfo {
+      const profileId = this.profile?.id;
+      if (!profileId) return {} as IFollowInfo;
+      return this.followInfoCache.get(profileId)?.data ?? ({} as IFollowInfo);
+    },
+    // 判断当前登录用户是否关注了当前查看的用户详情页用户
+    isFollowed(): boolean {
+      const profileId = this.profile?.id;
+      if (!profileId) return false;
+      const info = this.followInfoCache.get(profileId)?.data;
+      return info?.follower?.some((item) => item.id === this.userInfo.id) ?? false;
     },
     myFollowCount() {
       return (type: string) => this.myFollowInfo[type]?.length ?? 0;
@@ -146,7 +201,10 @@ const useUserStore = defineStore('user', {
       } else {
         Msg.showWarn('取关成功');
       }
-      this.getFollowAction(queryId); //更新关注信息
+      // 关注/取关后使相关用户的缓存失效，强制下次请求刷新
+      this.invalidateFollowCache(userId);
+      this.invalidateFollowCache(queryId);
+      this.getFollowAction(queryId, true); //更新关注信息，强制刷新
     },
     async getProfileAction(userId: RouteParam) {
       const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
@@ -188,20 +246,61 @@ const useUserStore = defineStore('user', {
         this.getCollectAction(userId);
       }
     },
-    async getFollowAction(userId) {
-      console.log('getFollowAction', userId);
-      const res = await getFollow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
-      // console.log('getFollowAction', res.data);
-      // 若改用户中的follower的id中有当前登录用户的id,则isFollowed为true
-      if (res.code === 0) {
-        const followInfo = res.data;
-        this.followInfo = followInfo;
-        const { follower } = followInfo;
-        // 若follower为null说明该用户无关注者(无粉丝),isFollowed设为false
-        this.isFollowed = follower ? follower.some((item) => item.id === this.userInfo.id) : false;
-      } else {
-        Msg.showFail('请求用户关注信息失败');
+    /**
+     * 获取用户关注信息（带缓存）
+     * @param userId - 目标用户 ID
+     * @param forceRefresh - 是否强制刷新（跳过缓存检查）
+     */
+    async getFollowAction(userId: number, forceRefresh = false) {
+      console.log('getFollowAction', userId, { forceRefresh });
+
+      // ============ 步骤1：检查缓存是否有效 ============
+      if (!forceRefresh) {
+        const cached = this.followInfoCache.get(userId);
+        const now = Date.now();
+        // 如果缓存存在且未过期（在 CACHE_TTL 时间内），直接使用缓存数据
+        if (cached && now - cached.timestamp < CACHE_TTL) {
+          console.log('使用缓存的关注信息', userId);
+          return; // 缓存有效，无需请求
+        }
       }
+
+      // ============ 步骤2：防止并发重复请求 ============
+      // 如果同一个用户的请求正在进行中，跳过本次请求
+      if (this.pendingFollowRequests.has(userId)) {
+        console.log('请求进行中，跳过重复请求', userId);
+        return;
+      }
+
+      // ============ 步骤3：发起网络请求 ============
+      // 标记该用户正在请求中
+      this.pendingFollowRequests.add(userId);
+
+      try {
+        const res = await getFollow(userId);
+        if (res.code === 0) {
+          const followInfo = res.data;
+          // 将数据存入缓存 Map，同时记录时间戳
+          this.followInfoCache.set(userId, {
+            data: followInfo,
+            timestamp: Date.now(),
+          });
+          console.log('关注信息已缓存', userId);
+        } else {
+          Msg.showFail('请求用户关注信息失败');
+        }
+      } finally {
+        // 无论成功失败，都移除"请求中"标记
+        this.pendingFollowRequests.delete(userId);
+      }
+    },
+    /**
+     * 使指定用户的关注信息缓存失效
+     * 用于关注/取关操作后强制刷新数据
+     */
+    invalidateFollowCache(userId: number) {
+      this.followInfoCache.delete(userId);
+      console.log('缓存已失效', userId);
     },
     async getMyFollowAction(userId) {
       // 专门获取登录用户的关注信息，不影响 viewing profile 的数据

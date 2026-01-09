@@ -11,13 +11,13 @@
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
-            <span class="btn" role="button" @click="goProfile('关注', 'following')">关注:{{ followCount('following') }}</span>
-            <span class="btn" role="button" @click="goProfile('关注', 'follower')">粉丝:{{ followCount('follower') }}</span>
+            <span class="btn" role="button" @click="goProfile('关注', 'following')">关注:{{ followCountById(info.id, 'following') }}</span>
+            <span class="btn" role="button" @click="goProfile('关注', 'follower')">粉丝:{{ followCountById(info.id, 'follower') }}</span>
           </div>
         </div>
       </div>
       <div class="follow">
-        <FollowButton :isFollowed="isFollowed" :profile="info" />
+        <FollowButton :isFollowed="isFollowedById(info.id)" :profile="info" />
       </div>
       <template #reference>
         <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" :class="{ 'online-border': isOnline }" />
@@ -40,7 +40,8 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const { isCurrentUser } = useAuth();
-const { followCount, isFollowed, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
+// 使用按 userId 获取的 getters，避免 hover 不同用户时状态互相覆盖
+const { isFollowedById, followCountById, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
 
 const {
   info = {},
