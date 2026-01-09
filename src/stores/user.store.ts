@@ -33,32 +33,36 @@ const useUserStore = defineStore('user', {
   getters: {
     // ============ 按 userId 获取关注信息（解决状态闪烁问题）============
     // 从缓存 Map 中获取指定用户的关注信息
-    getFollowInfoById(): (userId: number) => IFollowInfo | null {
-      return (userId: number) => {
+    getFollowInfoById(): (userId: number | undefined) => IFollowInfo | null {
+      return (userId: number | undefined) => {
+        if (userId === undefined) return null;
         const cached = this.followInfoCache.get(userId);
         // 返回缓存数据（不检查过期，过期逻辑在请求时处理）
         return cached?.data ?? null;
       };
     },
     // 判断当前登录用户是否关注了指定用户（用于 Avatar hover 弹窗）
-    isFollowedById(): (targetUserId: number) => boolean {
-      return (targetUserId: number) => {
+    isFollowedById(): (targetUserId: number | undefined) => boolean {
+      return (targetUserId: number | undefined) => {
+        if (targetUserId === undefined) return false;
         const info = this.followInfoCache.get(targetUserId)?.data;
         // 如果目标用户的粉丝列表中包含当前登录用户的 id，则表示已关注
         return info?.follower?.some((item) => item.id === this.userInfo.id) ?? false;
       };
     },
     // 获取指定用户的关注数/粉丝数（用于 Avatar hover 弹窗）
-    followCountById(): (userId: number, type: 'following' | 'follower') => number {
-      return (userId: number, type: 'following' | 'follower') => {
+    followCountById(): (userId: number | undefined, type: 'following' | 'follower') => number {
+      return (userId: number | undefined, type: 'following' | 'follower') => {
+        if (userId === undefined) return 0;
         const info = this.followInfoCache.get(userId)?.data;
         return info?.[type]?.length ?? 0;
       };
     },
-    // ============ 原有 getters（用于 UserFollow 列表页）============
+    // ============ 原原有 getters（用于 UserFollow 列表页）============
     // 用于 UserFollowItem 判断列表中每个用户是否被关注
-    isUserFollowed(): (userId: number, type: string) => boolean {
-      return (userId: number, type: string) => {
+    isUserFollowed(): (userId: number | undefined, type: string) => boolean {
+      return (userId: number | undefined, type: string) => {
+        if (userId === undefined) return false;
         // 获取当前查看的用户详情页的关注信息
         const profileId = this.profile?.id;
         if (!profileId) return false;

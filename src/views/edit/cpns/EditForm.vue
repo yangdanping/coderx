@@ -157,7 +157,14 @@ const goBack = () => {
           }
         }
 
-        const draftObj = { ...form, draft: draft, fileList: draftFileList };
+        // 保存草稿时同时保存已上传文件的 ID，防止被定时任务误清理
+        const draftObj = {
+          ...form,
+          draft: draft,
+          fileList: draftFileList,
+          pendingImageIds: [...articleStore.pendingImageIds],
+          pendingVideoIds: [...articleStore.pendingVideoIds],
+        };
         console.log('保存草稿:', draftObj);
         LocalCache.setCache('draft', draftObj);
         Msg.showSuccess('已保存并退出文章编辑!');

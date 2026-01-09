@@ -50,6 +50,15 @@ onMounted(() => {
     }
   } else {
     console.log('创建模式');
+    // 恢复草稿中的文件 ID，防止刷新后丢失关联（否则定时任务会误清理这些文件）
+    const draft = LocalCache.getCache('draft');
+    if (draft?.pendingImageIds?.length || draft?.pendingVideoIds?.length) {
+      // 先清空再恢复，避免刷新页面时重复添加
+      articleStore.clearAllPendingFiles();
+      draft.pendingImageIds?.forEach((id: number) => articleStore.addPendingImageId(id));
+      draft.pendingVideoIds?.forEach((id: number) => articleStore.addPendingVideoId(id));
+      console.log('从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
+    }
   }
   // 监听页面刷新/关闭，显示提示
   window.addEventListener('beforeunload', handleBeforeUnload);
