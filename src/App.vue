@@ -24,7 +24,7 @@ const showNavBar = computed(() => {
 
 const backTopPosition = computed(() => {
   return {
-    right: isSmallScreen.value ? Number(windowInfo.value.width / 2) : Number(100),
+    right: isSmallScreen.value ? Number(windowInfo.value.width / 2) : Number(130),
     bottom: 20,
   };
 });
