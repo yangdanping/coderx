@@ -17,7 +17,7 @@
       </el-col>
     </el-row>
     <el-tooltip class="item" effect="dark" :content="`${isShowPreviw ? '关闭' : '打开'}预览`" placement="top">
-      <el-button v-if="route.path.includes('edit')" class="show-preview-btn" @click="togglePreview" :icon="Memo"></el-button>
+      <el-button v-if="route.path.includes('edit')" @click="togglePreview" :icon="Memo" class="show-preview-btn"></el-button>
     </el-tooltip>
   </div>
 </template>
@@ -27,7 +27,6 @@ import { Memo } from '@element-plus/icons-vue';
 import { Editor, Toolbar } from '@wangeditor-next/editor-for-vue';
 import { LocalCache, isEmptyObj, emitter } from '@/utils';
 import { useArticleEditorConfig } from './config';
-import { DomEditor } from '@wangeditor/editor';
 const editorRef = shallowRef();
 const [toolbarConfig, editorConfig] = useArticleEditorConfig();
 const route = useRoute();

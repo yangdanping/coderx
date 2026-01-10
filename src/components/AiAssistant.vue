@@ -528,22 +528,73 @@ $shadowColor: #a3dfd0;
             // Markdown 样式微调
             :deep(p) {
               margin: 0 0 8px 0;
+              line-height: 1.6;
               &:last-child {
                 margin-bottom: 0;
               }
             }
+            :deep(ul), :deep(ol) {
+              margin: 0 0 8px 0;
+              padding-left: 20px; /* 给列表增加左内边距，防止贴边 */
+            }
+            :deep(li) {
+              margin-bottom: 4px;
+              line-height: 1.6;
+              /* list-style-position: outside; // 默认就是 outside，确保在 padding 区域显示圆点 */
+            }
+            :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
+              margin: 12px 0 8px 0;
+              font-weight: 600;
+              line-height: 1.4;
+            }
+            :deep(h1) { font-size: 1.4em; }
+            :deep(h2) { font-size: 1.3em; }
+            :deep(h3) { font-size: 1.2em; }
+            :deep(h4) { font-size: 1.1em; }
+
+            :deep(a) {
+              color: var(--el-color-primary);
+              text-decoration: none;
+              &:hover {
+                text-decoration: underline;
+              }
+            }
+            :deep(blockquote) {
+              margin: 8px 0;
+              padding: 4px 10px;
+              border-left: 3px solid #dcdfe6;
+              color: #606266;
+              background-color: #f2f3f5;
+              border-radius: 0 4px 4px 0;
+            }
             :deep(pre) {
               background: #2d2d2d;
-              color: #ccc;
-              padding: 10px;
-              border-radius: 4px;
+              color: #e6e6e6;
+              padding: 12px;
+              border-radius: 6px;
               overflow-x: auto;
+              margin: 8px 0;
+              font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+              font-size: 13px;
+              line-height: 1.5;
             }
             :deep(code) {
-              background: rgba(0, 0, 0, 0.05);
-              padding: 2px 4px;
-              border-radius: 3px;
-              font-family: monospace;
+              /* 行内代码样式 */
+              background-color: #f0f2f5;
+              color: #c0392b;
+              padding: 2px 5px;
+              border-radius: 4px;
+              font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+              font-size: 0.9em;
+              margin: 0 2px;
+            }
+            :deep(pre code) {
+              /* 代码块内的 code 标签复位 */
+              background-color: transparent;
+              color: inherit;
+              padding: 0;
+              margin: 0;
+              border-radius: 0;
             }
 
             &.loading {
