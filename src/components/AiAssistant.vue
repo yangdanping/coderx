@@ -533,7 +533,8 @@ $shadowColor: #a3dfd0;
                 margin-bottom: 0;
               }
             }
-            :deep(ul), :deep(ol) {
+            :deep(ul),
+            :deep(ol) {
               margin: 0 0 8px 0;
               padding-left: 20px; /* 给列表增加左内边距，防止贴边 */
             }
@@ -542,15 +543,26 @@ $shadowColor: #a3dfd0;
               line-height: 1.6;
               /* list-style-position: outside; // 默认就是 outside，确保在 padding 区域显示圆点 */
             }
-            :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
+            :deep(h1),
+            :deep(h2),
+            :deep(h3),
+            :deep(h4) {
               margin: 12px 0 8px 0;
               font-weight: 600;
               line-height: 1.4;
             }
-            :deep(h1) { font-size: 1.4em; }
-            :deep(h2) { font-size: 1.3em; }
-            :deep(h3) { font-size: 1.2em; }
-            :deep(h4) { font-size: 1.1em; }
+            :deep(h1) {
+              font-size: 1.4em;
+            }
+            :deep(h2) {
+              font-size: 1.3em;
+            }
+            :deep(h3) {
+              font-size: 1.2em;
+            }
+            :deep(h4) {
+              font-size: 1.1em;
+            }
 
             :deep(a) {
               color: var(--el-color-primary);
