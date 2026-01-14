@@ -66,7 +66,7 @@ const handleClick = () => {
 
     &:hover {
       background-color: rgba(0, 0, 0, 0.05);
-      color: #409eff;
+      // color: #409eff;
     }
 
     &.is-active {

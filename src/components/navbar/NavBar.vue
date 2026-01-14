@@ -27,7 +27,8 @@
       </NavBarRight>
     </div>
   </header>
-  <UserDialog />
+  <LoginDialog />
+  <ProfileDialog />
 </template>
 
 <script lang="ts" setup>
@@ -35,7 +36,8 @@ import NavBarLeft from './cpns/NavBarLeft.vue';
 import NavBarRight from './cpns/NavBarRight.vue';
 import NavMenu from './cpns/NavMenu.vue';
 import NavBarSearch from './cpns/NavBarSearch.vue';
-import UserDialog from '../user/UserDialog.vue';
+import LoginDialog from '../user/login/LoginDialog.vue';
+import ProfileDialog from '../user/profile/ProfileDialog.vue';
 import useRootStore from '@/stores/index.store';
 import { ArrowLeft } from 'lucide-vue-next';
 

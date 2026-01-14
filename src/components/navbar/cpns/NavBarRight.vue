@@ -43,7 +43,7 @@ const changeDialog = () => {
     .x {
       font-style: oblique;
       padding-right: 2px;
-      background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+      background-image: var(--xfontStyle);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
