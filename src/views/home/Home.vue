@@ -91,7 +91,7 @@ $TitleSize: 2em;
         padding-right: 30px;
         padding-left: 10px;
         margin-left: -5px;
-        background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+        background-image: var(--xfontStyle);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;

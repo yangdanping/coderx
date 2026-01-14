@@ -5,6 +5,8 @@ import useUserStore from '@/stores/user.store';
 const useRootStore = defineStore('root', {
   state: () => ({
     showLoginDialog: false as boolean, //多个组件都有可能使用该参数,所以放到store中
+    showProfileDialog: false as boolean, //个人资料对话框显示状态
+    profileEditForm: {} as any, //个人资料编辑表单数据
     pageNum: 1 as number,
     pageSize: 10 as number,
     pageOrder: 'date',
@@ -24,6 +26,12 @@ const useRootStore = defineStore('root', {
   actions: {
     toggleLoginDialog() {
       this.showLoginDialog = !this.showLoginDialog;
+    },
+    toggleProfileDialog() {
+      this.showProfileDialog = !this.showProfileDialog;
+    },
+    setProfileEditForm(form: any) {
+      this.profileEditForm = form;
     },
     changePageNum(pageNum: number) {
       this.pageNum = pageNum;

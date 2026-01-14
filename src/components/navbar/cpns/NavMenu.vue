@@ -80,7 +80,7 @@ const handleSelect = (key: string) => {
       &.special-flow {
         font-family: 'MapleMono', sans-serif;
         font-weight: 600;
-        background-image: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+        background-image: var(--xfontStyle);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;

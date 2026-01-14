@@ -1,17 +1,29 @@
 <template>
   <div class="register-account">
-    <el-form :rules="rules" :model="form" status-icon ref="registerForm" label-width="100px">
-      <el-form-item label="用户名" prop="name">
-        <el-input v-model.trim="form.name" @keyup.enter="focusNext1" :prefix-icon="User" clearable></el-input>
+    <el-form :rules="rules" :model="form" status-icon ref="registerForm">
+      <el-form-item prop="name">
+        <el-input v-model.trim="form.name" placeholder="用户名" @keyup.enter="focusNext1" clearable>
+          <template #prefix>
+            <User :size="16" />
+          </template>
+        </el-input>
       </el-form-item>
-      <el-form-item label="密码" prop="password">
-        <el-input v-model.trim="form.password" clearable show-password ref="nextRef1" @keyup.enter="focusNext2" type="password" :prefix-icon="Lock"></el-input>
+      <el-form-item prop="password">
+        <el-input v-model.trim="form.password" placeholder="密码" clearable show-password ref="nextRef1" @keyup.enter="focusNext2" type="password">
+          <template #prefix>
+            <Lock :size="16" />
+          </template>
+        </el-input>
       </el-form-item>
-      <el-form-item label="确认密码" prop="confirm">
-        <el-input v-model.trim="form.confirm" clearable show-password ref="nextRef2" @keyup.enter="register" type="password" :prefix-icon="Lock"></el-input>
+      <el-form-item prop="confirm">
+        <el-input v-model.trim="form.confirm" placeholder="确认密码" clearable show-password ref="nextRef2" @keyup.enter="register" type="password">
+          <template #prefix>
+            <ShieldCheck :size="16" />
+          </template>
+        </el-input>
       </el-form-item>
       <el-form-item class="btn-box">
-        <el-button type="primary" @click="register">注册并登录</el-button>
+        <el-button class="register-btn" @click="register">注册</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -19,7 +31,7 @@
 
 <script lang="ts" setup>
 import { Msg } from '@/utils';
-import { User, Lock } from '@element-plus/icons-vue';
+import { User, Lock, ShieldCheck } from 'lucide-vue-next';
 
 import type { ElForm, ElInput } from 'element-plus';
 
@@ -54,25 +66,86 @@ const focusNext2 = () => nextRef2.value?.focus();
 </script>
 
 <style lang="scss" scoped>
+$height: 42px;
 .register-account {
-  margin-top: 40px;
-  .el-form {
+  :deep(.el-form) {
+    .el-form-item {
+      margin-bottom: 24px;
+    }
+
+    // 移除 label 样式
+    .el-form-item__label {
+      display: none;
+    }
+
     .el-input {
       width: 100%;
+      height: $height;
+
+      .el-input__wrapper {
+        border: 1px solid #e0e0e0;
+        padding: 10px 14px;
+        box-shadow: none;
+        &.is-focus {
+          background-color: #fff;
+          border-color: #409eff;
+          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+        }
+      }
+
+      .el-input__inner {
+        color: #2c3e50;
+        font-size: 15px;
+        font-weight: 400;
+
+        &::placeholder {
+          color: #909399;
+          font-weight: 400;
+        }
+      }
+
+      // 清除和密码显示图标样式
+      .el-input__suffix {
+        .el-input__icon {
+          color: #909399;
+          font-size: 16px;
+        }
+      }
+
+      .el-input__prefix {
+        color: #909399;
+        display: flex;
+        align-items: center;
+      }
     }
-    .el-form-item {
-      margin-bottom: 30px;
-    }
-    :deep(.el-form-item__label) {
-      font-size: 17px;
-    }
+
+    // 按钮样式 - 与 input 统一
     .btn-box {
-      position: relative;
-      .el-button {
-        position: absolute;
-        width: 60%;
-        left: 50%;
-        transform: translateX(-50%);
+      margin-top: 24px;
+      margin-bottom: 0;
+
+      .register-btn {
+        width: 100%;
+        height: $height;
+        background: #409eff;
+        color: #ffffff;
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+
+        &:hover {
+          background: #66b1ff;
+          box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
+        }
       }
     }
   }

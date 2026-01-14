@@ -26,6 +26,7 @@ declare module '@vue/runtime-core' {
     ElTabs: (typeof import('element-plus/es'))['ElTabs'];
     ElTooltip: (typeof import('element-plus/es'))['ElTooltip'];
     LoginAccount: (typeof import('./src/components/user/login/LoginAccount.vue'))['default'];
+    LoginDialog: (typeof import('./src/components/user/login/LoginDialog.vue'))['default'];
     LoginPanel: (typeof import('./src/components/user/login/LoginPanel.vue'))['default'];
     NavBar: (typeof import('./src/components/navbar/NavBar.vue'))['default'];
     NavBarCenter: (typeof import('./src/components/navbar/cpns/NavBarCenter.vue'))['default'];
@@ -34,9 +35,10 @@ declare module '@vue/runtime-core' {
     NavBarRight: (typeof import('./src/components/navbar/cpns/NavBarRight.vue'))['default'];
     NavBarUser: (typeof import('./src/components/navbar/cpns/NavBarUser.vue'))['default'];
     NavMenu: (typeof import('./src/components/navbar/cpns/NavMenu.vue'))['default'];
+    ProfileDialog: (typeof import('./src/components/user/profile/ProfileDialog.vue'))['default'];
+    ProfilePanel: (typeof import('./src/components/user/profile/ProfilePanel.vue'))['default'];
     RegisterAccount: (typeof import('./src/components/user/login/RegisterAccount.vue'))['default'];
     RouterLink: (typeof import('vue-router'))['RouterLink'];
     RouterView: (typeof import('vue-router'))['RouterView'];
-    UserDialog: (typeof import('./src/components/user/UserDialog.vue'))['default'];
   }
 }

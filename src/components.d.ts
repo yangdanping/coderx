@@ -59,6 +59,7 @@ declare module 'vue' {
     ListAction: typeof import('./components/list/cpns/ListAction.vue')['default']
     ListItem: typeof import('./components/list/ListItem.vue')['default']
     LoginAccount: typeof import('./components/user/login/LoginAccount.vue')['default']
+    LoginDialog: typeof import('./components/user/login/LoginDialog.vue')['default']
     LoginPanel: typeof import('./components/user/login/LoginPanel.vue')['default']
     NavBar: typeof import('./components/navbar/NavBar.vue')['default']
     NavBarLeft: typeof import('./components/navbar/cpns/NavBarLeft.vue')['default']
@@ -70,6 +71,7 @@ declare module 'vue' {
     NavMenu: typeof import('./components/navbar/cpns/NavMenu.vue')['default']
     OnlineUserCard: typeof import('./components/OnlineUserCard.vue')['default']
     Page: typeof import('./components/Page.vue')['default']
+    ProfileDialog: typeof import('./components/user/profile/ProfileDialog.vue')['default']
     ProfilePanel: typeof import('./components/user/profile/ProfilePanel.vue')['default']
     RegisterAccount: typeof import('./components/user/login/RegisterAccount.vue')['default']
     ReportDialog: typeof import('./components/dialog/ReportDialog.vue')['default']
@@ -80,7 +82,6 @@ declare module 'vue' {
     Tabs: typeof import('./components/common/Tabs.vue')['default']
     ThinkingShimmer: typeof import('./components/icon/cpns/ThinkingShimmer.vue')['default']
     ThinkingWave: typeof import('./components/icon/cpns/ThinkingWave.vue')['default']
-    UserDialog: typeof import('./components/user/UserDialog.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
