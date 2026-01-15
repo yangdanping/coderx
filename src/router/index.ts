@@ -61,6 +61,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/User.vue'),
   },
   {
+    name: 'oauth-callback',
+    path: '/oauth/callback',
+    meta: { title: 'OAuth 登录' },
+    component: () => import('@/views/oauth/OAuthCallback.vue'),
+  },
+  {
     name: 'notfound',
     path: '/:pathMatch(.*)',
     component: () => import('@/views/NotFount.vue'),
