@@ -24,9 +24,10 @@ export const getTiptapExtensions = () => {
     // Markdown 支持
     Markdown.configure({
       // 配置 Markdown 转换选项
-      html: true, // 允许 HTML 标签
-      linkify: true, // 自动识别链接
-      breaks: true, // 换行符转为 <br>
+      markedOptions: {
+        gfm: true, // 启用 GitHub Flavored Markdown
+        breaks: true, // 换行符转为 <br>
+      },
     }),
 
     // 图片扩展
