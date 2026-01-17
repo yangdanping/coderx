@@ -1,6 +1,6 @@
 # coderx
 
-coderx 技术图文分析类论坛
+coderx 技术相关图文分享类论坛
 
 This template should help get you started developing with Vue 3 in Vite.
 

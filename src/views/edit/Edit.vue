@@ -1,9 +1,9 @@
 <template>
   <div class="edit">
-    <!-- <Editor :editData="editData" @update:content="(content) => (preview = content)" /> -->
+    <!-- 使用 EditorSwitch 支持 1.0/2.0 版本切换 -->
     <Suspense>
       <template #default>
-        <ArticleEditor :editData="editData" @update:content="(content) => (preview = content)" />
+        <EditorSwitch :editData="editData" :version="editorVersion" @update:content="(content) => (preview = content)" />
       </template>
       <template #fallback>
         <div class="editor-loading">
@@ -20,17 +20,21 @@
 </template>
 
 <script lang="ts" setup>
-import { Menu, Memo } from '@element-plus/icons-vue';
-// import ArticleEditor from '@/components/wang-editor/ArticleEditor.vue';
-// 动态加载 wangeditor 编辑器组件，减少首屏 JS 体积（约 791KB）
-const ArticleEditor = defineAsyncComponent(() => import('@/components/wang-editor/ArticleEditor.vue'));
+import { Menu } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
+// 使用 EditorSwitch 组件支持编辑器版本切换
+const EditorSwitch = defineAsyncComponent(() => import('@/components/editor/EditorSwitch.vue'));
 import EditForm from './cpns/EditForm.vue';
+
+// 编辑器版本：开发环境默认 2.0（Tiptap），生产环境默认 1.0（wangeditor）
+const editorVersion = ref<'1.0' | '2.0'>(import.meta.env.DEV ? '2.0' : '1.0');
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
 import useArticleStore from '@/stores/article.store';
 import type { UploadProps, UploadUserFile } from 'element-plus';
 
 const route = useRoute();
+const router = useRouter();
 const articleStore = useArticleStore();
 const { article } = storeToRefs(articleStore);
 const isEdit = computed(() => !!route.query.editArticleId);
@@ -43,9 +47,9 @@ const isSubmitting = ref(false); // 标记是否正在提交，用于避免提�
 // 通过路由是否传入待修改文章的id来判断是创建还是修改
 onMounted(() => {
   if (isEdit.value) {
-    console.log('编辑模式 - 文章ID:', route.query.editArticleId);
+    console.log('编辑模式 - 文章ID:', route.query.editArticleId,editData.value);
     // 刷新后editData消失，重新获取
-    if (!isEmptyObj(editData.value)) {
+    if (isEmptyObj(editData.value)) {
       articleStore.getDetailAction(route.query.editArticleId as any, true);
     }
   } else {
@@ -62,10 +66,13 @@ onMounted(() => {
   }
   // 监听页面刷新/关闭，显示提示
   window.addEventListener('beforeunload', handleBeforeUnload);
+  // 监听 Ctrl+Q 快捷键
+  window.addEventListener('keydown', handleKeyDown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload);
+  window.removeEventListener('keydown', handleKeyDown);
 });
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -79,9 +86,40 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   }
 };
 
+// 快捷键监听
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Ctrl+Q (Mac 和 Windows 都使用 Ctrl)
+  if (event.ctrlKey && event.key === 'q') {
+    event.preventDefault(); // 阻止浏览器默认行为（如关闭窗口）
+    handleExitEdit();
+  }
+};
+
+// 退出修改
+const handleExitEdit = async () => {
+  // 如果有未保存的内容，显示确认对话框
+  if ((preview.value || isEdit.value) && !isSubmitting.value) {
+    try {
+      await ElMessageBox.confirm('是否取消修改', '提示', {
+        confirmButtonText: '取消修改',
+        cancelButtonText: '再想想',
+        type: 'warning',
+      });
+      // 用户确认后返回上一页
+      router.back();
+    } catch {
+      // 用户取消操作，不做任何处理
+    }
+  } else {
+    // 没有内容，直接返回
+    router.back();
+  }
+};
+
 watch(
   () => article.value,
   (newV) => {
+    console.log('[Edit.vue] article watch 触发:', { hasContent: !!newV?.content, contentLength: newV?.content?.length });
     emitter.emit('updateEditorContent', newV.content);
   },
 );
