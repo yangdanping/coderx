@@ -1,58 +1,53 @@
 <template>
   <div class="article-editor-container">
-    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #ccc" />
-    <el-row>
-      <el-col :span="isShowPreviw ? 12 : 24">
-        <Editor
-          :style="{ height, 'overflow-y': 'hidden' }"
-          v-model="valueHtml"
-          :defaultConfig="editorConfig"
-          @onChange="handleChanged"
-          @onCreated="(editor) => (editorRef = editor)"
-          :mode="mode"
-        />
-      </el-col>
-      <el-col :span="12" class="preview">
-        <div class="editor-content-view preview-content" v-dompurify-html="valueHtml"></div>
-      </el-col>
-    </el-row>
-    <el-tooltip class="item" effect="dark" :content="`${isShowPreviw ? '关闭' : '打开'}预览`" placement="top">
-      <el-button v-if="route.path.includes('edit')" @click="togglePreview" :icon="Memo" class="show-preview-btn"></el-button>
-    </el-tooltip>
+    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="props.mode" style="border-bottom: 1px solid #ccc" />
+    <Editor
+      :style="{ height: props.height, 'overflow-y': 'hidden' }"
+      v-model="valueHtml"
+      :defaultConfig="editorConfig"
+      @onChange="handleChanged"
+      @onCreated="(editor) => (editorRef = editor)"
+      :mode="props.mode"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Memo } from '@element-plus/icons-vue';
 import { Editor, Toolbar } from '@wangeditor-next/editor-for-vue';
 import { LocalCache, isEmptyObj, emitter } from '@/utils';
 import { useArticleEditorConfig } from './config';
 const editorRef = shallowRef();
 const [toolbarConfig, editorConfig] = useArticleEditorConfig();
-const route = useRoute();
 import type { IArticle } from '@/stores/types/article.result';
-const {
-  editData = {},
-  mode = 'default',
-  height = '100vh',
-} = defineProps<{
-  editData?: IArticle;
-  mode?: 'default' | 'simple';
-  height?: number | string;
-}>();
+
+// 注意：不要解构 props，否则会失去响应式
+const props = withDefaults(
+  defineProps<{
+    editData?: IArticle;
+    mode?: 'default' | 'simple';
+    height?: number | string;
+  }>(),
+  {
+    editData: () => ({}) as IArticle,
+    mode: 'default',
+    height: '100vh',
+  }
+);
+
 const valueHtml = ref('');
-const isShowPreviw = ref(LocalCache.getCache('isShowPreviw') ?? true);
 onMounted(() => {
   nextTick(() => {
     const draft = LocalCache.getCache('draft');
-    const isEditMode = !isEmptyObj(editData);
+    const isEditMode = !isEmptyObj(props.editData);
+
+    console.log('[WangEditor] onMounted:', { isEditMode, hasContent: !!props.editData?.content, hasDraft: !!draft });
 
     if (isEditMode && draft) {
       // 编辑模式 + 有草稿：优先使用草稿（用户可能编辑了但未提交）
       valueHtml.value = draft.draft;
     } else if (isEditMode) {
       // 编辑模式 + 无草稿：使用原文章内容
-      valueHtml.value = editData.content ?? '';
+      valueHtml.value = props.editData?.content ?? '';
     } else if (draft) {
       // 创建模式 + 有草稿：恢复草稿（修复：原逻辑遗漏了此场景）
       valueHtml.value = draft.draft;
@@ -62,13 +57,10 @@ onMounted(() => {
 
   emitter.on('cleanContent', () => (valueHtml.value = ''));
   emitter.on('updateEditorContent', (content) => {
+    console.log('[WangEditor] updateEditorContent 事件:', { contentLength: (content as string)?.length });
     valueHtml.value = content as any;
   });
 });
-const togglePreview = () => {
-  isShowPreviw.value = !isShowPreviw.value;
-  LocalCache.setCache('isShowPreviw', isShowPreviw.value);
-};
 const emit = defineEmits(['update:content']);
 //监听editor数据变化
 watch(
@@ -77,6 +69,25 @@ watch(
     emit('update:content', newV);
   },
   { deep: true },
+);
+
+// 监听 editData.content 变化，解决异步加载时序问题
+watch(
+  () => props.editData?.content,
+  (newContent) => {
+    console.log('[WangEditor] watch 触发:', {
+      hasContent: !!newContent,
+      contentLength: newContent?.length,
+      currentValueHtml: valueHtml.value?.length,
+    });
+    // 只要有新内容且当前内容为空，就设置内容
+    // 不再依赖 isEmptyObj 判断，因为 Proxy 对象可能导致误判
+    if (newContent && !valueHtml.value) {
+      console.log('[WangEditor] 设置编辑器内容');
+      valueHtml.value = newContent;
+    }
+  },
+  { immediate: true }
 );
 
 const handleChanged = (editor: any) => {
@@ -96,22 +107,5 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .article-editor-container {
   border: 1px solid #ccc;
-
-  .preview {
-    border-left: 1px solid #ccc;
-    overflow: auto;
-    background: #fafff3;
-    height: 100vh;
-    word-wrap: break-word;
-    display: inline-block;
-    vertical-align: top;
-  }
-
-  .show-preview-btn {
-    position: fixed;
-    bottom: 0;
-    right: 10px;
-    opacity: 0.5;
-  }
 }
 </style>

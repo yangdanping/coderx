@@ -1,0 +1,272 @@
+/**
+ * Tiptap 编辑器样式
+ * 与现有 editor.scss 风格保持一致
+ */
+
+// 编辑器容器
+.tiptap-editor-container {
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+
+// 编辑区域
+.tiptap-editor-content {
+  padding: 16px;
+  height: 100%;
+  overflow-y: auto;
+
+  // 聚焦时的轮廓
+  &:focus-within {
+    outline: none;
+  }
+
+  // ProseMirror 编辑器核心样式
+  .ProseMirror {
+    outline: none;
+    min-height: calc(100vh - 150px); // 减去工具栏和版本切换的高度
+
+    // 占位符样式
+    > p.is-editor-empty:first-child::before {
+      content: attr(data-placeholder);
+      float: left;
+      color: #adb5bd;
+      pointer-events: none;
+      height: 0;
+    }
+
+    // 段落样式
+    p {
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+
+    // 标题样式
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.4;
+      margin: 20px 0 10px;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 2em;
+    }
+    h2 {
+      font-size: 1.5em;
+    }
+    h3 {
+      font-size: 1.25em;
+    }
+    h4 {
+      font-size: 1em;
+    }
+
+    // 引用块
+    blockquote {
+      border-left: 4px solid #d0e5f2;
+      padding: 10px 16px;
+      margin: 16px 0;
+      background-color: #f9f9f9;
+      color: #666;
+
+      p {
+        margin: 0;
+      }
+    }
+
+    // 代码块
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      border-radius: 4px;
+      padding: 16px;
+      margin: 16px 0;
+      overflow-x: auto;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+
+      code {
+        background: none;
+        padding: 0;
+        border-radius: 0;
+        color: inherit;
+      }
+    }
+
+    // 行内代码
+    code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.9em;
+      color: #e83e8c;
+    }
+
+    // 列表
+    ul,
+    ol {
+      padding-left: 24px;
+      margin: 10px 0;
+
+      li {
+        margin: 4px 0;
+        line-height: 1.6;
+
+        p {
+          margin: 0;
+        }
+      }
+    }
+
+    ul {
+      list-style-type: disc;
+
+      ul {
+        list-style-type: circle;
+
+        ul {
+          list-style-type: square;
+        }
+      }
+    }
+
+    ol {
+      list-style-type: decimal;
+    }
+
+    // 链接
+    a {
+      color: #409eff;
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    // 图片
+    // 使用 inline-block 保证图片可以横向排列（与详情页显示一致）
+    // 同时保留块级元素的特性（可设置宽高、margin 等）
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 4px;
+      vertical-align: top; // 对齐方式，避免底部出现间隙
+
+      &.ProseMirror-selectednode {
+        outline: 2px solid #409eff;
+        outline-offset: 2px;
+      }
+    }
+
+    // 视频
+    video {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 16px 0;
+      display: block;
+      background: #000;
+
+      &:focus {
+        outline: 2px solid #409eff;
+        outline-offset: 2px;
+      }
+    }
+
+    // 水平分割线
+    hr {
+      border: none;
+      border-top: 2px solid #e0e0e0;
+      margin: 24px 0;
+    }
+
+    // 表格（如果启用）
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0;
+
+      th,
+      td {
+        border: 1px solid #dcdfe6;
+        padding: 8px 12px;
+        text-align: left;
+      }
+
+      th {
+        background: #f5f7fa;
+        font-weight: 600;
+      }
+    }
+
+    // 粗体、斜体等
+    strong {
+      font-weight: 600;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    u {
+      text-decoration: underline;
+    }
+
+    s {
+      text-decoration: line-through;
+    }
+  }
+}
+
+// BubbleMenu 样式（选中文字时的浮动菜单）
+.tiptap-bubble-menu {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+
+  .el-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .tiptap-editor-content {
+    padding: 12px;
+    min-height: 200px;
+
+    .ProseMirror {
+      font-size: 15px;
+
+      h1 {
+        font-size: 1.75em;
+      }
+      h2 {
+        font-size: 1.4em;
+      }
+      h3 {
+        font-size: 1.2em;
+      }
+
+      pre {
+        padding: 12px;
+        font-size: 13px;
+      }
+    }
+  }
+}

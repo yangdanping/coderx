@@ -1,0 +1,270 @@
+<template>
+  <div class="tiptap-editor-container">
+    <!-- 工具栏 -->
+    <TiptapToolbar :editor="editor" :outputMode="outputMode" @update:outputMode="outputMode = $event" />
+
+    <!-- 编辑区域 -->
+    <EditorContent
+      :editor="editor"
+      class="tiptap-editor-content"
+      :class="{ 'is-dragging': isDragging }"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    />
+
+    <!-- BubbleMenu：选中文字时显示 -->
+    <BubbleMenu :editor="(editor as any)" :tippy-options="{ duration: 100 }" v-if="editor" class="tiptap-bubble-menu">
+      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" @click="editor.chain().focus().toggleBold().run()">
+        加粗
+      </el-button>
+      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" @click="editor.chain().focus().toggleItalic().run()">
+        斜体
+      </el-button>
+      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" @click="handleBubbleLink"> 链接 </el-button>
+    </BubbleMenu>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { useEditor, EditorContent } from '@tiptap/vue-3'
+// Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
+import { BubbleMenu } from '@tiptap/vue-3/menus'
+import TiptapToolbar from './TiptapToolbar.vue'
+import { getTiptapExtensions } from './config'
+import { LocalCache, isEmptyObj, emitter, Msg } from '@/utils'
+import type { IArticle } from '@/stores/types/article.result'
+
+// 引入样式
+import './styles/tiptap.scss'
+
+// Markdown storage 类型（使用 unknown 避免类型冲突）
+interface MarkdownStorageType {
+  getMarkdown?: () => string
+}
+
+const props = withDefaults(
+  defineProps<{
+    editData?: IArticle
+    mode?: 'default' | 'simple'
+    height?: string
+  }>(),
+  {
+    editData: () => ({}) as IArticle,
+    mode: 'default',
+    height: '100vh',
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'update:content', content: string): void
+}>()
+
+// 输出模式：html 或 markdown
+const outputMode = ref<'html' | 'markdown'>('html')
+
+// 拖拽状态管理
+const isDragging = ref(false)
+
+// 获取 Markdown 内容的辅助函数
+const getMarkdownContent = (editorInstance: ReturnType<typeof useEditor>['value']) => {
+  if (!editorInstance) return ''
+  // 使用 unknown 中转避免类型冲突
+  const storage = editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined
+  return storage?.getMarkdown?.() ?? ''
+}
+
+// 创建编辑器实例
+const editor = useEditor({
+  extensions: getTiptapExtensions(),
+  content: '',
+  autofocus: false,
+  onUpdate: ({ editor: editorInstance }) => {
+    // 根据输出模式获取内容
+    const content =
+      outputMode.value === 'markdown'
+        ? ((editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined)?.getMarkdown?.() ?? '')
+        : editorInstance.getHTML()
+    emit('update:content', content || '')
+  },
+})
+
+// 初始化内容
+onMounted(() => {
+  nextTick(() => {
+    if (!editor.value) return
+
+    const draft = LocalCache.getCache('draft')
+    const isEditMode = !isEmptyObj(props.editData)
+
+    let initialContent = ''
+
+    if (isEditMode && draft) {
+      // 编辑模式 + 有草稿：优先使用草稿
+      initialContent = draft.draft
+    } else if (isEditMode) {
+      // 编辑模式 + 无草稿：使用原文章内容
+      initialContent = props.editData?.content ?? ''
+    } else if (draft) {
+      // 创建模式 + 有草稿：恢复草稿
+      initialContent = draft.draft
+    }
+
+    if (initialContent) {
+      editor.value.chain().setContent(initialContent).run()
+    }
+  })
+})
+
+// 监听事件总线
+onMounted(() => {
+  // 清空内容事件
+  emitter.on('cleanContent', () => {
+    editor.value?.chain().clearContent().run()
+  })
+
+  // 更新内容事件（用于编辑模式下从 store 获取内容）
+  emitter.on('updateEditorContent', (content) => {
+    if (editor.value && content) {
+      editor.value.chain().setContent(content as string).run()
+    }
+  })
+})
+
+// 监听 editData.content 变化，解决异步加载时序问题
+// 同时监听 editor 和 editData.content，确保两者都准备好后才设置内容
+watch(
+  [() => editor.value, () => props.editData?.content],
+  ([editorInstance, newContent]) => {
+    console.log('[TiptapEditor] watch 触发:', {
+      hasEditor: !!editorInstance,
+      hasContent: !!newContent,
+      contentLength: newContent?.length,
+    })
+    // 只要编辑器已初始化且有新内容，就设置内容
+    // 不再依赖 isEmptyObj 判断，因为 Proxy 对象可能导致误判
+    if (editorInstance && newContent) {
+      const currentContent = editorInstance.getHTML()
+      // 避免重复设置相同内容（防止覆盖用户输入）
+      // 注意：空编辑器的 HTML 是 '<p></p>'
+      const isEmpty = currentContent === '<p></p>' || currentContent === ''
+      if (isEmpty || currentContent !== newContent) {
+        console.log('[TiptapEditor] 设置编辑器内容')
+        editorInstance.chain().setContent(newContent).run()
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// BubbleMenu 链接处理
+const handleBubbleLink = () => {
+  const previousUrl = editor.value?.getAttributes('link').href
+  const url = window.prompt('请输入链接地址', previousUrl)
+
+  if (url === null) {
+    return // 用户取消
+  }
+
+  if (url === '') {
+    editor.value?.chain().focus().extendMarkRange('link').unsetLink().run()
+  } else {
+    editor.value?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+  }
+}
+
+// 拖拽事件处理
+const handleDragEnter = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  isDragging.value = true
+}
+
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+const handleDragLeave = (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  // 只有离开编辑器容器时才取消高亮
+  if (e.target === e.currentTarget) {
+    isDragging.value = false
+  }
+}
+
+const handleDrop = async (e: DragEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+  isDragging.value = false
+
+  const files = e.dataTransfer?.files
+  if (!files || files.length === 0) return
+
+  // 过滤出图片文件
+  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+
+  if (imageFiles.length === 0) {
+    Msg.showWarn('请拖入图片文件')
+    return
+  }
+
+  // 串行上传所有图片，确保按顺序插入
+  for (const file of imageFiles) {
+    editor.value?.commands.uploadImage(file)
+    // 等待当前图片上传完成
+    const storage = editor.value?.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } }
+    const promise = storage?.imageUpload?.getUploadPromise?.(file)
+    if (promise) {
+      await promise
+    }
+  }
+}
+
+// 暴露方法供外部调用
+defineExpose({
+  // 获取 HTML 内容
+  getHTML: () => editor.value?.getHTML() ?? '',
+  // 获取 Markdown 内容
+  getMarkdown: () => getMarkdownContent(editor.value),
+  // 获取 JSON 内容
+  getJSON: () => editor.value?.getJSON(),
+  // 设置内容
+  setContent: (content: string) => editor.value?.chain().setContent(content).run(),
+  // 获取编辑器实例
+  getEditor: () => editor.value,
+})
+
+// 组件销毁时清理
+onBeforeUnmount(() => {
+  emitter.off('cleanContent')
+  emitter.off('updateEditorContent')
+  editor.value?.destroy()
+})
+</script>
+
+<style lang="scss" scoped>
+// 组件特有样式（全局样式在 ./styles/tiptap.scss）
+.tiptap-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #ccc;
+}
+
+.tiptap-editor-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; // 关键：让 flex 子元素能正确收缩
+  transition: all 0.2s ease;
+
+  &.is-dragging {
+    border: 2px dashed #409eff;
+    background-color: rgba(64, 158, 255, 0.05);
+    // 添加内边距避免内容被边框遮挡
+    padding: 8px;
+  }
+}
+</style>
