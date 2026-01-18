@@ -14,21 +14,21 @@
           </div>
         </div>
         <div class="panel-default">
-          <div class="btn1">
-            <el-button type="success" class="editbtn" @click="goEdit" plain>
-              <el-icon><PenSquare /></el-icon>写文章
-            </el-button>
-          </div>
-          <div class="btn2">
-            <el-button @click="goProfile()" type="primary" plain>
-              <el-icon><MapPin /></el-icon>我的空间
-            </el-button>
-          </div>
-          <div class="btn3">
-            <el-button @click="logOut" type="danger" plain>
-              <el-icon><LogOut /></el-icon>退出登录
-            </el-button>
-          </div>
+          <el-button @click="goEdit" type="success" plain>
+            <div class="btn-content">
+              <el-icon> <PenSquare /> </el-icon><span>写文章</span>
+            </div>
+          </el-button>
+          <el-button @click="goProfile()" type="primary" plain>
+            <div class="btn-content">
+              <el-icon> <MapPin /> </el-icon><span>我的空间</span>
+            </div>
+          </el-button>
+          <el-button @click="logOut" type="danger" plain>
+            <div class="btn-content">
+              <el-icon> <LogOut /> </el-icon><span>退出登录</span>
+            </div>
+          </el-button>
         </div>
       </div>
     </div>
@@ -90,6 +90,7 @@ const logOut = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+
   .user-avatar {
     position: relative;
     z-index: var(--z-navbar-popup);
@@ -118,24 +119,29 @@ const logOut = () => {
         margin-top: 20px;
         font-size: 20px;
         font-weight: 100;
+
         > div {
           display: flex;
           flex-direction: column;
           align-items: center;
           cursor: pointer;
           transition: all 0.3s;
+
           > div:first-of-type {
             font-size: 25px;
             font-weight: 400;
           }
+
           &:hover {
             color: #409eff;
           }
         }
+
         .following {
           border-right: 2px solid #ccc;
           padding-right: 10px;
         }
+
         .follower {
           padding-left: 10px;
         }
@@ -143,32 +149,33 @@ const logOut = () => {
 
       .panel-default {
         display: flex;
-        flex-direction: column;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+        flex-direction: column;
         width: 100%;
         margin-top: 10px;
         transition: all 0.3s ease-in-out;
         transform: translateX(0);
         opacity: 1;
 
-        [class^='btn'] {
+        .el-button {
+          display: flex;
+          justify-content: center;
+          align-items: center;
           width: 100%;
+          transition: all 0.3s;
           margin-top: 10px;
-          .el-button {
-            width: 100%;
-            transition: all 0.3s;
+          margin-left: 0;
+
+          .btn-content {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 6px;
-            &:hover {
-              transform: translateY(-2px);
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            .el-icon {
-              font-size: 14px;
-            }
+            justify-content: flex-start;
+            width: 85px;
+          }
+
+          .el-icon {
+            font-size: 14px;
           }
         }
       }
@@ -185,16 +192,6 @@ const logOut = () => {
         z-index: calc(var(--z-navbar-popup) + 1);
       }
     }
-  }
-
-  .el-icon-message {
-    font-size: 30px;
-    margin: 7px 10px 0 10px;
-    cursor: pointer;
-  }
-  .editbtn {
-    margin-right: 10px;
-    padding: 0 25px;
   }
 }
 </style>
