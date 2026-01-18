@@ -1,9 +1,12 @@
 <template>
   <div class="home">
     <div class="content">
-      <div class="title">
-        <div class="title-line-1">Welcome to</div>
-        <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
+      <div class="title-section">
+        <div class="title">
+          <div class="title-line-1">Welcome to</div>
+          <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
+        </div>
+        <CodeSpotlight class="code-spotlight" />
       </div>
       <hr />
       <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
@@ -22,6 +25,7 @@
 <script lang="ts" setup>
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeSwpier from './cpns/HomeSwpier.vue';
+import CodeSpotlight from '@/components/canvas/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
 const counter = ref(1);
 const line2 = ref('Coder');
@@ -61,40 +65,67 @@ $TitleSize: 2em;
     max-width: 80%;
     margin: 0 auto;
 
-    .title {
+    .title-section {
       display: flex;
-      flex-direction: column;
-      padding: 150px 0;
-      /* 
-         clamp(min, preferred, max) 函数用于设置响应式字体大小
-         - min: 40px (最小值，防止在小屏幕下文字过小)
-         - preferred: 10vw (首选值，10vw 表示屏幕宽度的 10%，实现随屏幕宽度动态缩放)
-         - max: 70px (最大值，防止在大屏幕下文字过大)
-      */
-      font-size: clamp(40px, 10vw, 70px);
-      user-select: none;
-      transition: all 0.5s;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 100px 0;
 
-      .title-line-1 {
-        -webkit-animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-        animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-        // font-family: 'MapleMono', sans-serif;
+      .title {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        /* 
+           clamp(min, preferred, max) 函数用于设置响应式字体大小
+           - min: 40px (最小值，防止在小屏幕下文字过小)
+           - preferred: 10vw (首选值，10vw 表示屏幕宽度的 10%，实现随屏幕宽度动态缩放)
+           - max: 70px (最大值，防止在大屏幕下文字过大)
+        */
+        font-size: clamp(40px, 10vw, 70px);
+        user-select: none;
+        transition: all 0.5s;
+
+        .title-line-1 {
+          -webkit-animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+          animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+          // font-family: 'MapleMono', sans-serif;
+        }
+        .title-line-2 {
+          line-height: $TitleSize;
+          height: $TitleSize;
+          font-size: $TitleSize;
+        }
+        .isLast:after {
+          content: 'X';
+          font-style: oblique;
+          padding-right: 30px;
+          padding-left: 10px;
+          margin-left: -5px;
+          background-image: var(--xfontStyle);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
       }
-      .title-line-2 {
-        line-height: $TitleSize;
-        height: $TitleSize;
-        font-size: $TitleSize;
+
+      .code-spotlight {
+        flex: 1;
+        min-width: 300px;
+        height: 380px;
+        max-width: 800px;
       }
-      .isLast:after {
-        content: 'X';
-        font-style: oblique;
-        padding-right: 30px;
-        padding-left: 10px;
-        margin-left: -5px;
-        background-image: var(--xfontStyle);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+
+      // 响应式：小屏幕时堆叠显示
+      @media screen and (max-width: 900px) {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .code-spotlight {
+          width: 100%;
+          max-width: none;
+          min-width: auto;
+        }
       }
     }
 

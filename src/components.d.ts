@@ -15,6 +15,7 @@ declare module 'vue' {
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
     ArticleEditor: typeof import('./components/wang-editor/ArticleEditor.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
+    CodeSpotlight: typeof import('./components/canvas/CodeSpotlight.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentEditor: typeof import('./components/wang-editor-comment/CommentEditor.vue')['default']
     EditorSwitch: typeof import('./components/editor/EditorSwitch.vue')['default']
