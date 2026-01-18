@@ -9,7 +9,11 @@
     </div>
 
     <!-- 聊天窗口 -->
-    <div class="chat-window" v-show="isOpen">
+    <div class="chat-window" v-show="isOpen" :style="chatWindowStyle" ref="chatWindowRef">
+      <!-- 调整大小的手柄 -->
+      <div class="resize-handle resize-handle-left" @mousedown="startResize('left', $event)"></div>
+      <div class="resize-handle resize-handle-top" @mousedown="startResize('top', $event)"></div>
+      <div class="resize-handle resize-handle-corner" @mousedown="startResize('corner', $event)"></div>
       <div class="chat-header">
         <div class="header-left">
           <h3>CoderX AI 助手</h3>
@@ -77,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch, computed, onMounted } from 'vue';
+import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue';
 import { Chat } from '@ai-sdk/vue'; // 使用新的 Chat 类
 import { DefaultChatTransport } from 'ai'; // 引入 DefaultChatTransport
 import { MessageCircle, X, User, Bot, ArrowDown } from 'lucide-vue-next';
@@ -96,12 +100,115 @@ const props = defineProps<{
 
 const isOpen = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
+const chatWindowRef = ref<HTMLElement | null>(null);
 const { userInfo, token } = storeToRefs(useUserStore());
 const input = ref('');
 const aiServiceStatus = ref<'online' | 'offline' | 'checking'>('checking');
 const showScrollToBottom = ref(false);
 // 切换 Loading 动画风格: 'wave' | 'shimmer'
 const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
+
+// ============ 可调整大小功能 ============
+const MIN_WIDTH = 300;
+const MAX_WIDTH = 600;
+const MIN_HEIGHT = 400;
+const MAX_HEIGHT = 700;
+const DEFAULT_WIDTH = 350;
+const DEFAULT_HEIGHT = 500;
+
+// 从 localStorage 读取保存的尺寸
+const getSavedSize = () => {
+  try {
+    const saved = LocalCache.getCache('aiChatWindowSize');
+    if (saved && saved.width && saved.height) {
+      return {
+        width: Math.min(Math.max(saved.width, MIN_WIDTH), MAX_WIDTH),
+        height: Math.min(Math.max(saved.height, MIN_HEIGHT), MAX_HEIGHT),
+      };
+    }
+  } catch (e) {
+    console.warn('Failed to load saved chat window size');
+  }
+  return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+};
+
+const savedSize = getSavedSize();
+const chatWidth = ref(savedSize.width);
+const chatHeight = ref(savedSize.height);
+const isResizing = ref(false);
+const resizeDirection = ref<'left' | 'top' | 'corner' | null>(null);
+const startX = ref(0);
+const startY = ref(0);
+const startWidth = ref(0);
+const startHeight = ref(0);
+
+// 聊天窗口动态样式
+const chatWindowStyle = computed(() => ({
+  width: `${chatWidth.value}px`,
+  height: `${chatHeight.value}px`,
+}));
+
+// 保存尺寸到 localStorage
+const saveSize = () => {
+  LocalCache.setCache('aiChatWindowSize', {
+    width: chatWidth.value,
+    height: chatHeight.value,
+  });
+};
+
+// 开始调整大小
+const startResize = (direction: 'left' | 'top' | 'corner', e: MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  isResizing.value = true;
+  resizeDirection.value = direction;
+  startX.value = e.clientX;
+  startY.value = e.clientY;
+  startWidth.value = chatWidth.value;
+  startHeight.value = chatHeight.value;
+
+  document.addEventListener('mousemove', handleResize);
+  document.addEventListener('mouseup', stopResize);
+  document.body.style.cursor = direction === 'corner' ? 'nwse-resize' : direction === 'left' ? 'ew-resize' : 'ns-resize';
+  document.body.style.userSelect = 'none';
+};
+
+// 处理调整大小
+const handleResize = (e: MouseEvent) => {
+  if (!isResizing.value) return;
+
+  const deltaX = startX.value - e.clientX; // 左侧拖动，鼠标向左移动 deltaX 为正
+  const deltaY = startY.value - e.clientY; // 顶部拖动，鼠标向上移动 deltaY 为正
+
+  if (resizeDirection.value === 'left' || resizeDirection.value === 'corner') {
+    const newWidth = startWidth.value + deltaX;
+    chatWidth.value = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
+  }
+
+  if (resizeDirection.value === 'top' || resizeDirection.value === 'corner') {
+    const newHeight = startHeight.value + deltaY;
+    chatHeight.value = Math.min(Math.max(newHeight, MIN_HEIGHT), MAX_HEIGHT);
+  }
+};
+
+// 停止调整大小
+const stopResize = () => {
+  if (isResizing.value) {
+    isResizing.value = false;
+    resizeDirection.value = null;
+    document.removeEventListener('mousemove', handleResize);
+    document.removeEventListener('mouseup', stopResize);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    saveSize();
+  }
+};
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleResize);
+  document.removeEventListener('mouseup', stopResize);
+});
 
 // 初始化 Markdown 解析器
 const md = new MarkdownIt({
@@ -394,7 +501,7 @@ $shadowColor: #a3dfd0;
     box-shadow:
       0 0 0 2px $shadowColor,
       0 0 8px 2px rgba($shadowColor, 0.6),
-      0 0 16px 4px rgba($shadowColor, 0.3),
+      0 0 16px 4px rgba($shadowColor, 0.1),
       0 0 24px 6px rgba($shadowColor, 0.1);
 
     &:hover {
@@ -402,7 +509,7 @@ $shadowColor: #a3dfd0;
       box-shadow:
         0 0 0 2px $shadowColor,
         0 0 8px 8px rgba($shadowColor, 0.6),
-        0 0 16px 16px rgba($shadowColor, 0.3),
+        0 0 16px 16px rgba($shadowColor, 0.1),
         0 0 24px 32px rgba($shadowColor, 0.1);
     }
 
@@ -425,8 +532,6 @@ $shadowColor: #a3dfd0;
   }
 
   .chat-window {
-    width: 350px;
-    height: 500px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
@@ -435,6 +540,73 @@ $shadowColor: #a3dfd0;
     overflow: hidden;
     border: 1px solid #eee;
     position: relative; // 确保绝对定位的子元素相对于此定位
+
+    // 调整大小手柄 - 左侧
+    .resize-handle-left {
+      position: absolute;
+      left: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 6px;
+      cursor: ew-resize;
+      z-index: 10;
+      background: transparent;
+      transition: background-color 0.2s;
+
+      &:hover,
+      &:active {
+        background: linear-gradient(to right, rgba(var(--el-color-primary-rgb), 0.1), transparent);
+      }
+    }
+
+    // 调整大小手柄 - 顶部
+    .resize-handle-top {
+      position: absolute;
+      top: 0;
+      left: 20px;
+      right: 20px;
+      height: 6px;
+      cursor: ns-resize;
+      z-index: 10;
+      background: transparent;
+      transition: background-color 0.2s;
+
+      &:hover,
+      &:active {
+        background: linear-gradient(to bottom, rgba(var(--el-color-primary-rgb), 0.1), transparent);
+      }
+    }
+
+    // 调整大小手柄 - 左上角
+    .resize-handle-corner {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 16px;
+      height: 16px;
+      cursor: nwse-resize;
+      z-index: 11;
+      background: transparent;
+      border-radius: 12px 0 0 0;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 8px;
+        height: 8px;
+        border-left: 2px solid transparent;
+        border-top: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      &:hover::before,
+      &:active::before {
+        border-left-color: var(--el-color-primary);
+        border-top-color: var(--el-color-primary);
+      }
+    }
 
     .chat-header {
       padding: 15px;
@@ -610,13 +782,58 @@ $shadowColor: #a3dfd0;
             }
 
             &.loading {
+              position: relative;
               padding: 8px 12px;
+              background: transparent;
+              border: none;
+              z-index: 0;
+              overflow: hidden;
+              border-radius: 10px;
+
+              // 流光边框 - 旋转的渐变背景
+              &::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 200%;
+                height: 200%;
+                background: conic-gradient(from 0deg, transparent 0deg 60deg, #00ffbb 90deg, #6ec2c4 120deg, #a3dfd0 150deg, transparent 180deg 360deg);
+                transform: translate(-50%, -50%);
+                animation: rotate-border 2s linear infinite;
+                z-index: -2;
+                border-radius: 10px;
+              }
+
+              // 内部遮罩 - 白色背景覆盖中心
+              &::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                right: 2px;
+                bottom: 2px;
+                background: white;
+                border-radius: 8px;
+                z-index: -1;
+              }
 
               .thinking-content {
                 display: flex;
                 align-items: center;
                 color: #909399;
                 font-size: 13px;
+                position: relative;
+                z-index: 1;
+              }
+            }
+
+            @keyframes rotate-border {
+              0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+              }
+              100% {
+                transform: translate(-50%, -50%) rotate(360deg);
               }
             }
           }
