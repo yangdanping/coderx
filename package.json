@@ -15,7 +15,7 @@
   "dependencies": {
     "@ai-sdk/vue": "^3.0.39",
     "@element-plus/icons-vue": "^2.3.2",
-    "@tanstack/vue-query": "^5.92.7",
+    "@tanstack/vue-query": "^5.92.8",
     "@tiptap/core": "^3.15.3",
     "@tiptap/extension-image": "^3.15.3",
     "@tiptap/extension-link": "^3.15.3",

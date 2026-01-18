@@ -15,13 +15,12 @@
     <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
-    <el-button class="submit-btn" @click="drawer = true" :icon="Menu">提交</el-button>
+    <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Menu } from '@element-plus/icons-vue';
-import { ElMessageBox } from 'element-plus';
+import { Check } from 'lucide-vue-next';
 // 使用 EditorSwitch 组件支持编辑器版本切换
 const EditorSwitch = defineAsyncComponent(() => import('@/components/editor/EditorSwitch.vue'));
 import EditForm from './cpns/EditForm.vue';
@@ -47,7 +46,7 @@ const isSubmitting = ref(false); // 标记是否正在提交，用于避免提�
 // 通过路由是否传入待修改文章的id来判断是创建还是修改
 onMounted(() => {
   if (isEdit.value) {
-    console.log('编辑模式 - 文章ID:', route.query.editArticleId,editData.value);
+    console.log('编辑模式 - 文章ID:', route.query.editArticleId, editData.value);
     // 刷新后editData消失，重新获取
     if (isEmptyObj(editData.value)) {
       articleStore.getDetailAction(route.query.editArticleId as any, true);
@@ -88,10 +87,10 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 
 // 快捷键监听
 const handleKeyDown = (event: KeyboardEvent) => {
-  // Ctrl+Q (Mac 和 Windows 都使用 Ctrl)
+  // Ctrl+Q (Mac 和 Windows 都使用 Ctrl) - toggle 侧栏显示
   if (event.ctrlKey && event.key === 'q') {
     event.preventDefault(); // 阻止浏览器默认行为（如关闭窗口）
-    handleExitEdit();
+    drawer.value = !drawer.value;
   }
 };
 
