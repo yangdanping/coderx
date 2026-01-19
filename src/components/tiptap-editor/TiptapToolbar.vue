@@ -3,45 +3,25 @@
     <!-- 格式化按钮组 -->
     <div class="toolbar-group">
       <el-tooltip :content="`加粗 (${shortcuts.bold})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('bold') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleBold().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('bold') ? 'primary' : ''" @click="editor?.chain().focus().toggleBold().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon">B</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`斜体 (${shortcuts.italic})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('italic') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleItalic().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('italic') ? 'primary' : ''" @click="editor?.chain().focus().toggleItalic().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon italic">I</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`下划线 (${shortcuts.underline})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('underline') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleUnderline().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('underline') ? 'primary' : ''" @click="editor?.chain().focus().toggleUnderline().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon underline">U</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="删除线" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('strike') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleStrike().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('strike') ? 'primary' : ''" @click="editor?.chain().focus().toggleStrike().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon strike">S</span>
         </el-button>
       </el-tooltip>
@@ -82,45 +62,25 @@
     <!-- 列表按钮组 -->
     <div class="toolbar-group">
       <el-tooltip content="无序列表" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('bulletList') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleBulletList().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('bulletList') ? 'primary' : ''" @click="editor?.chain().focus().toggleBulletList().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><List /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="有序列表" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('orderedList') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleOrderedList().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('orderedList') ? 'primary' : ''" @click="editor?.chain().focus().toggleOrderedList().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><Memo /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="引用块" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('blockquote') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleBlockquote().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" @click="editor?.chain().focus().toggleBlockquote().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><ChatLineSquare /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="代码块" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('codeBlock') ? 'primary' : ''"
-          @click="editor?.chain().focus().toggleCodeBlock().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('codeBlock') ? 'primary' : ''" @click="editor?.chain().focus().toggleCodeBlock().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><Coin /></el-icon>
         </el-button>
       </el-tooltip>
@@ -145,6 +105,12 @@
       <el-tooltip content="插入视频" placement="bottom" :show-after="500">
         <el-button @click="triggerVideoUpload" :disabled="!editor" class="toolbar-btn">
           <el-icon><VideoCamera /></el-icon>
+        </el-button>
+      </el-tooltip>
+
+      <el-tooltip :content="`AI 助手 (${aiShortcut})`" placement="bottom" :show-after="500">
+        <el-button @click="toggleAiAssistant" class="toolbar-btn">
+          <el-icon><MagicStick /></el-icon>
         </el-button>
       </el-tooltip>
 
@@ -203,18 +169,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
-import type { Editor } from '@tiptap/vue-3'
-import { formatShortcut, commonShortcuts } from './utils/keyboard'
+import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick } from '@element-plus/icons-vue';
+import type { Editor } from '@tiptap/vue-3';
+import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
+import { emitter, getAiShortcutText } from '@/utils';
 
 const props = defineProps<{
-  editor: Editor | undefined
-  outputMode: 'html' | 'markdown'
-}>()
+  editor: Editor | undefined;
+  outputMode: 'html' | 'markdown';
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:outputMode', mode: 'html' | 'markdown'): void
-}>()
+  (e: 'update:outputMode', mode: 'html' | 'markdown'): void;
+}>();
 
 // 快捷键显示（根据系统自动适配）
 const shortcuts = {
@@ -223,97 +190,109 @@ const shortcuts = {
   underline: formatShortcut(commonShortcuts.underline),
   undo: formatShortcut(commonShortcuts.undo),
   redo: formatShortcut(commonShortcuts.redo),
-}
+};
 
 // 响应式状态
-const toolbarRef = ref<HTMLElement>()
-const imageInputRef = ref<HTMLInputElement>()
-const videoInputRef = ref<HTMLInputElement>()
-const linkDialogVisible = ref(false)
+const toolbarRef = ref<HTMLElement>();
+const imageInputRef = ref<HTMLInputElement>();
+const videoInputRef = ref<HTMLInputElement>();
+const linkDialogVisible = ref(false);
 const linkForm = reactive({
   href: '',
-})
+});
+
+// AI 助手快捷键提示（从全局 utils 获取，根据系统自动适配）
+const aiShortcut = getAiShortcutText();
 
 // 模式切换
 const isMarkdownMode = computed({
   get: () => props.outputMode === 'markdown',
   set: (val) => emit('update:outputMode', val ? 'markdown' : 'html'),
-})
+});
 
 const handleModeChange = () => {
   // 模式切换时的额外处理（如果需要）
-  console.log('输出模式切换为:', props.outputMode)
-}
+  console.log('输出模式切换为:', props.outputMode);
+};
 
 // 标题处理
 const handleHeading = (level: string) => {
-  const lvl = parseInt(level)
+  const lvl = parseInt(level);
   if (lvl === 0) {
-    props.editor?.chain().focus().setParagraph().run()
+    props.editor?.chain().focus().setParagraph().run();
   } else {
-    props.editor?.chain().focus().toggleHeading({ level: lvl as 1 | 2 | 3 | 4 | 5 | 6 }).run()
+    props.editor
+      ?.chain()
+      .focus()
+      .toggleHeading({ level: lvl as 1 | 2 | 3 | 4 | 5 | 6 })
+      .run();
   }
-}
+};
 
 // 链接处理
 const handleInsertLink = () => {
   // 如果已有链接，获取当前链接地址
-  const previousUrl = props.editor?.getAttributes('link').href
-  linkForm.href = previousUrl || ''
-  linkDialogVisible.value = true
-}
+  const previousUrl = props.editor?.getAttributes('link').href;
+  linkForm.href = previousUrl || '';
+  linkDialogVisible.value = true;
+};
 
 const confirmInsertLink = () => {
   if (linkForm.href) {
-    props.editor?.chain().focus().extendMarkRange('link').setLink({ href: linkForm.href }).run()
+    props.editor?.chain().focus().extendMarkRange('link').setLink({ href: linkForm.href }).run();
   } else {
-    props.editor?.chain().focus().extendMarkRange('link').unsetLink().run()
+    props.editor?.chain().focus().extendMarkRange('link').unsetLink().run();
   }
-  linkDialogVisible.value = false
-  linkForm.href = ''
-}
+  linkDialogVisible.value = false;
+  linkForm.href = '';
+};
 
 // 图片上传
 const triggerImageUpload = () => {
-  imageInputRef.value?.click()
-}
+  imageInputRef.value?.click();
+};
 
 const handleImageUpload = async (e: Event) => {
-  const files = (e.target as HTMLInputElement).files
+  const files = (e.target as HTMLInputElement).files;
   if (files && files.length > 0 && props.editor) {
     // 串行上传所有图片，确保按顺序插入
     for (const file of Array.from(files)) {
-      props.editor.commands.uploadImage(file)
+      props.editor.commands.uploadImage(file);
       // 等待当前图片上传完成
-      const storage = props.editor.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } }
-      const promise = storage?.imageUpload?.getUploadPromise?.(file)
+      const storage = props.editor.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
+      const promise = storage?.imageUpload?.getUploadPromise?.(file);
       if (promise) {
-        await promise
+        await promise;
       }
     }
   }
   // 清空 input，允许重复选择同一文件
   if (imageInputRef.value) {
-    imageInputRef.value.value = ''
+    imageInputRef.value.value = '';
   }
-}
+};
 
 // 视频上传
 const triggerVideoUpload = () => {
-  videoInputRef.value?.click()
-}
+  videoInputRef.value?.click();
+};
 
 const handleVideoUpload = (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0]
+  const file = (e.target as HTMLInputElement).files?.[0];
   if (file && props.editor) {
     // 使用自定义命令上传视频
-    props.editor.commands.uploadVideo(file)
+    props.editor.commands.uploadVideo(file);
   }
   // 清空 input
   if (videoInputRef.value) {
-    videoInputRef.value.value = ''
+    videoInputRef.value.value = '';
   }
-}
+};
+
+// AI 助手
+const toggleAiAssistant = () => {
+  emitter.emit('toggleAiAssistant');
+};
 </script>
 
 <style lang="scss" scoped>

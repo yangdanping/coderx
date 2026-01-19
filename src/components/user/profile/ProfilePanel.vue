@@ -29,7 +29,14 @@
           <el-input v-model.trim="form.email" clearable></el-input>
         </el-form-item>
         <el-form-item label="address" prop="address">
-          <el-cascader :options="provinceAndCityData" @change="handleAddressChange" class="full-width" size="large" v-model="selectedOptions" placeholder="请选择您所在的城市" />
+          <el-cascader
+            :options="provinceAndCityData as any"
+            @change="handleAddressChange"
+            class="full-width"
+            size="large"
+            v-model="selectedOptions"
+            placeholder="请选择您所在的城市"
+          />
         </el-form-item>
       </el-form>
     </div>
@@ -43,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { provinceAndCityData, CodeToText, TextToCode } from 'element-china-area-data'; // 地址级联选择器
+import { provinceAndCityData, codeToText } from 'element-china-area-data'; // 地址级联选择器
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
@@ -73,22 +80,29 @@ onMounted(() => {
   console.log('profile-panel 传来的所有信息:', editForm);
   if (Object.keys(editForm).length) {
     let { sex, age, email, career, address } = editForm;
-    address && formatCity(address.split(' ')[0], address.split(' ')[1]);
+    if (address) {
+      const [province, city] = address.split(' ');
+      formatCity(province || '', city || '');
+    }
     form.value = { sex, age, email, career, address };
   }
   console.log('profile-panel 目前可编辑的信息:', form.value);
 });
-const formatCity = (province, city) => {
-  // TextToCode属性是汉字,属性值是区域码 TextToCode['北京市'].code输出110000
-  var provinceCode = TextToCode[province].code; // 省份
-  var cityCode = TextToCode[province][city].code; // 城市
-  selectedOptions.value = [provinceCode, cityCode];
+const formatCity = (province: string, city: string) => {
+  // v6.1.0 移除了 TextToCode，需要从 provinceAndCityData 中查找
+  const provinceItem = provinceAndCityData.find((item) => item.label === province);
+  if (provinceItem) {
+    const provinceCode = provinceItem.value;
+    const cityItem = provinceItem.children?.find((item) => item.label === city);
+    const cityCode = cityItem ? cityItem.value : '';
+    selectedOptions.value = [provinceCode, cityCode];
+  }
 };
 const handleAddressChange = () => {
   var provinceCode = selectedOptions.value[0];
   var cityCode = selectedOptions.value[1];
-  // CodeToText属性是区域码,属性值是汉字 CodeToText['110000']输出北京市
-  form.value.address = `${CodeToText[provinceCode]}` + ` ${CodeToText[cityCode]}`;
+  // codeToText属性是区域码,属性值是汉字 codeToText['110000']输出北京市
+  form.value.address = `${codeToText[provinceCode]}` + ` ${codeToText[cityCode]}`;
   console.log('选择的省市:', form.value.address);
 };
 const handleSelect = (value) => {

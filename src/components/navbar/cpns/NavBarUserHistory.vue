@@ -83,7 +83,7 @@ const goToHistoryPage = () => {
     margin-top: 10px;
     width: 380px;
     height: 400px;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);

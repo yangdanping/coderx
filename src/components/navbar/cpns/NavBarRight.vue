@@ -49,27 +49,6 @@ const changeDialog = () => {
       background-clip: text;
     }
   }
-  // .register-btn::before {
-  //   content: '';
-  //   position: absolute;
-  //   left: -5px;
-  //   right: -5px;
-  //   top: -5px;
-  //   bottom: -5px;
-  //   background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
-  //   background-size: 400%;
-  //   filter: blur(15px);
-  //   z-index: -1;
-  // }
-  // .register-btn:hover {
-  //   text-shadow: 0px 2px 10px rgb(255, 255, 255);
-  //   animation: flow 3s infinite;
-  //   transform: scale(1.2);
-
-  //   &::before {
-  //     animation: flow 3s infinite;
-  //   }
-  // }
 }
 
 // 移动端响应式样式
