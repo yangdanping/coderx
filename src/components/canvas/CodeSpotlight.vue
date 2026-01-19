@@ -10,6 +10,7 @@ interface KeywordItem {
   x: number;
   y: number;
   width: number;
+  scale: number; // 字体缩放比例
 }
 
 // Props 定义
@@ -27,6 +28,10 @@ const props = withDefaults(
     lineHeight?: number;
     /** 关键词水平间距（像素），决定水平密度 */
     spacing?: number;
+    /** 高亮关键字的缩放倍数 */
+    highlightScale?: number;
+    /** 高亮关键字的比例（0-1） */
+    highlightRatio?: number;
     /** 自定义关键词列表，随机显示 */
     keywords?: string[];
   }>(),
@@ -36,7 +41,9 @@ const props = withDefaults(
     spotlightRadius: 220,
     fontSize: 16,
     lineHeight: 34,
-    spacing: 30,
+    spacing: 34,
+    highlightScale: 1.6,
+    highlightRatio: 0.3,
     keywords: () => [
       'const',
       'function',
@@ -149,12 +156,15 @@ function generateSingleRow(ctx: CanvasRenderingContext2D, width: number): { item
   // 生成足够宽度的关键词（至少比可视区域宽一点，用于无缝循环）
   while (x < width + 200) {
     const keyword = props.keywords[Math.floor(Math.random() * props.keywords.length)];
+    const scale = Math.random() < props.highlightRatio ? props.highlightScale : 1;
+    ctx.font = `${props.fontSize * scale}px "MapleMono", monospace`;
     const textWidth = ctx.measureText(keyword ?? '').width;
 
     items.push({
       text: keyword ?? '',
       x,
       width: textWidth,
+      scale,
     });
 
     x += textWidth + props.spacing;
@@ -222,8 +232,6 @@ function render() {
     scrollOffset.value = ((scrollOffset.value % loopW) + loopW) % loopW;
   }
 
-  // 设置字体
-  ctx.font = `${props.fontSize}px "MapleMono", monospace`;
   ctx.textBaseline = 'middle';
 
   // 获取聚光灯位置
@@ -251,7 +259,8 @@ function render() {
     const brightness = calculateBrightness(distance, props.spotlightRadius);
     const color = getGradientColor(distance, props.spotlightRadius);
 
-    // 设置透明度和颜色
+    // 设置字体（根据 scale 缩放）
+    ctx.font = `${props.fontSize * item.scale}px "MapleMono", monospace`;
     ctx.globalAlpha = brightness;
     ctx.fillStyle = color;
 
