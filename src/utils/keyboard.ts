@@ -1,10 +1,13 @@
 /**
- * 键盘快捷键相关工具函数
+ * 全局键盘快捷键工具函数
  *
- * 本模块主要用于根据用户操作系统显示对应的键盘快捷键符号。
+ * 本模块提供跨平台的键盘快捷键支持，包括：
+ * - 设备检测（Mac/Windows/Linux）
+ * - 键盘符号映射
+ * - 快捷键格式化显示
+ * - AI 助手快捷键配置
  *
  * @see https://developer.mozilla.org/zh-CN/docs/Web/API/Navigator/platform
- * @see ../../../说明文档/08_项目优化沙盒推演/04_浏览器API兼容性说明.md
  */
 
 /**
@@ -93,7 +96,41 @@ export const formatShortcut = (config: ShortcutConfig): string => {
 };
 
 /**
- * 常用快捷键预设
+ * AI 助手快捷键配置
+ *
+ * Mac: Alt+A (显示为 ⌥A)
+ * Windows/Linux: Alt+A
+ *
+ * 注：Mac 上 Alt 键即为 Option 键
+ */
+export const aiShortcuts = {
+  /** 切换 AI 助手面板 */
+  togglePanel: {
+    windows: 'Alt+A',
+    mac: `${MacKeySymbols.Ctrl}A`,
+  },
+} as const;
+
+/**
+ * 获取 AI 助手快捷键显示文本
+ * @returns 根据当前系统返回对应的快捷键提示字符串
+ */
+export const getAiShortcutText = (): string => {
+  return formatShortcut(aiShortcuts.togglePanel);
+};
+
+/**
+ * 检查是否按下了 AI 助手切换快捷键
+ * Mac/Windows: Alt+A
+ * @param e 键盘事件
+ * @returns 是否按下了快捷键
+ */
+export const isAiToggleShortcut = (e: KeyboardEvent): boolean => {
+  return e.altKey && e.key.toLowerCase() === 'a';
+};
+
+/**
+ * Tiptap 编辑器常用快捷键预设
  */
 export const commonShortcuts = {
   bold: {

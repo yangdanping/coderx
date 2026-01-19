@@ -2,7 +2,7 @@
   <div class="nav-bar-user">
     <div class="user-avatar" @mouseenter="toggle(true)" @mouseleave="toggle(false)">
       <Avatar :info="userInfo" disabled :size="avatarSize"></Avatar>
-      <div class="box" v-if="isShow">
+      <div class="nav-bar-user-panel" v-if="isShow">
         <div class="user-info">
           <div class="following btn" @click="goProfile('关注', 'following')">
             <div>{{ myFollowCount('following') }}</div>
@@ -95,21 +95,21 @@ const logOut = () => {
     position: relative;
     z-index: var(--z-navbar-popup);
 
-    .box {
+    .nav-bar-user-panel {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       top: 58px;
       width: 150px;
-      background-color: rgba(255, 255, 255, 0.95);
+      background-color: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(10px);
       border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 10px;
       animation: boxDown 0.3s forwards;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       overflow: hidden;
       transition: all 0.3s ease-in-out;
 

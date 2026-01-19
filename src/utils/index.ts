@@ -13,8 +13,18 @@ import Msg from './Msg';
 import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml from './extractVideosFromHtml';
 import recursiveReplace from './recursiveReplace';
-
 import throttleByRaf from './throttleByRaf';
+
+// 键盘快捷键工具
+export {
+  isMacOS,
+  MacKeySymbols,
+  formatShortcut,
+  aiShortcuts,
+  getAiShortcutText,
+  isAiToggleShortcut,
+  type ShortcutConfig,
+} from './keyboard';
 
 export {
   LocalCache,

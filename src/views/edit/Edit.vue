@@ -1,21 +1,30 @@
 <template>
   <div class="edit">
-    <!-- 使用 EditorSwitch 支持 1.0/2.0 版本切换 -->
-    <Suspense>
-      <template #default>
-        <EditorSwitch :editData="editData" :version="editorVersion" @update:content="(content) => (preview = content)" />
-      </template>
-      <template #fallback>
-        <div class="editor-loading">
-          <i-loading class="loading-icon" />
-          <span>编辑器加载中...</span>
-        </div>
-      </template>
-    </Suspense>
-    <el-drawer title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
+    <!-- 数据就绪后才渲染编辑器 ,即 await 接口返回数据） -->
+    <template v-if="isDataReady">
+      <!-- 使用 EditorSwitch 支持 1.0/2.0 版本切换 -->
+      <Suspense>
+        <template #default>
+          <EditorSwitch :editData="editData" :version="editorVersion" @update:content="(content) => (preview = content)" />
+        </template>
+        <template #fallback>
+          <div class="editor-loading">
+            <i-loading class="loading-icon" />
+            <span>编辑器加载中...</span>
+          </div>
+        </template>
+      </Suspense>
+    </template>
+    <!-- 编辑模式下数据加载中显示 loading -->
+    <div v-else class="editor-loading">
+      <i-loading class="loading-icon" />
+      <span>正在加载文章数据...</span>
+    </div>
+    <el-drawer v-if="isDataReady" title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
     <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
+    <AiAssistant :context="preview" />
   </div>
 </template>
 
@@ -24,6 +33,7 @@ import { Check } from 'lucide-vue-next';
 // 使用 EditorSwitch 组件支持编辑器版本切换
 const EditorSwitch = defineAsyncComponent(() => import('@/components/editor/EditorSwitch.vue'));
 import EditForm from './cpns/EditForm.vue';
+import AiAssistant from '@/components/AiAssistant.vue';
 
 // 编辑器版本：开发环境默认 2.0（Tiptap），生产环境默认 1.0（wangeditor）
 const editorVersion = ref<'1.0' | '2.0'>(import.meta.env.DEV ? '2.0' : '1.0');
@@ -42,17 +52,27 @@ const drawer = ref(false);
 const preview = ref('');
 const fileList = ref<UploadUserFile[]>([]);
 const isSubmitting = ref(false); // 标记是否正在提交，用于避免提交时显示离开提示
+// 数据是否就绪：创建模式直接可用，编辑模式需要等待 API 返回
+const isDataReady = ref(!isEdit.value);
+console.log('[Edit.vue] 初始化 isDataReady:', isDataReady.value, '编辑模式:', isEdit.value);
 
 // 通过路由是否传入待修改文章的id来判断是创建还是修改
-onMounted(() => {
+onMounted(async () => {
+  console.log('[Edit.vue] onMounted 开始');
   if (isEdit.value) {
-    console.log('编辑模式 - 文章ID:', route.query.editArticleId, editData.value);
-    // 刷新后editData消失，重新获取
-    if (isEmptyObj(editData.value)) {
-      articleStore.getDetailAction(route.query.editArticleId as any, true);
+    const hasData = isEmptyObj(editData.value); // true 表示"不为空"
+    console.log('[Edit.vue] 编辑模式 - 文章ID:', route.query.editArticleId, '已有数据:', hasData, editData.value);
+    // 刷新后 editData 消失，重新获取（注意：isEmptyObj 返回 true 表示"不为空"）
+    if (!hasData) {
+      console.log('[Edit.vue] editData 为空，开始请求 API...');
+      await articleStore.getDetailAction(route.query.editArticleId as any, true);
+      console.log('[Edit.vue] API 请求完成，editData:', article.value);
     }
+    // API 返回后设置为 ready
+    isDataReady.value = true;
+    console.log('[Edit.vue] isDataReady 设置为 true');
   } else {
-    console.log('创建模式');
+    console.log('[Edit.vue] 创建模式');
     // 恢复草稿中的文件 ID，防止刷新后丢失关联（否则定时任务会误清理这些文件）
     const draft = LocalCache.getCache('draft');
     if (draft?.pendingImageIds?.length || draft?.pendingVideoIds?.length) {
@@ -60,7 +80,7 @@ onMounted(() => {
       articleStore.clearAllPendingFiles();
       draft.pendingImageIds?.forEach((id: number) => articleStore.addPendingImageId(id));
       draft.pendingVideoIds?.forEach((id: number) => articleStore.addPendingVideoId(id));
-      console.log('从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
+      console.log('[Edit.vue] 从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
     }
   }
   // 监听页面刷新/关闭，显示提示

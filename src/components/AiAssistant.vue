@@ -1,12 +1,14 @@
 <template>
-  <div class="ai-assistant" role="button" :class="{ 'is-open': isOpen }">
+  <div class="ai-assistant" :class="{ 'is-open': isOpen }">
     <!-- 悬浮按钮 -->
-    <div class="ai-trigger" role="button" @click="toggleOpen">
-      <el-icon v-if="!isOpen"><MessageCircle /></el-icon>
-      <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
-      <el-icon v-else><X /></el-icon>
-      <span v-if="!isOpen" class="trigger-text">AI 助手</span>
-    </div>
+    <el-tooltip :content="`AI 助手 (${aiShortcutText})`" placement="left" :disabled="isOpen">
+      <div class="ai-trigger" role="button" @click="toggleOpen">
+        <el-icon v-if="!isOpen"><MessageCircle /></el-icon>
+        <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
+        <el-icon v-else><X /></el-icon>
+        <span v-if="!isOpen" class="trigger-text">AI助手</span>
+      </div>
+    </el-tooltip>
 
     <!-- 聊天窗口 -->
     <div class="chat-window" v-show="isOpen" :style="chatWindowStyle" ref="chatWindowRef">
@@ -16,18 +18,20 @@
       <div class="resize-handle resize-handle-corner" @mousedown="startResize('corner', $event)"></div>
       <div class="chat-header">
         <div class="header-left">
-          <h3>CoderX AI 助手</h3>
-          <div class="model-selector" style="display: flex; align-items: center; gap: 5px; margin-top: 4px">
-            <span class="model-label" style="font-size: 12px; color: #909399">Model:</span>
+          <div class="header-title"><span>Coder</span><span class="x">X</span> <span>AI 助手</span></div>
+        </div>
+        <div class="header-right">
+          <div class="model-selector">
+            <span class="model-label">Model:</span>
             <el-select v-model="activeModel" size="small" value-key="value" style="width: 110px" placeholder="选择模型">
               <el-option v-for="model in models" :key="model.value" :label="model.name" :value="model" />
             </el-select>
           </div>
-        </div>
-        <div class="status-indicator">
-          <el-tooltip :content="aiServiceStatus === 'online' ? 'AI 服务在线' : aiServiceStatus === 'checking' ? '检查中...' : 'AI 服务离线'" placement="left">
-            <span class="status-dot" :class="aiServiceStatus"></span>
-          </el-tooltip>
+          <div class="status-indicator">
+            <el-tooltip :content="aiServiceStatus === 'online' ? 'AI 服务在线' : aiServiceStatus === 'checking' ? '检查中...' : 'AI 服务离线'" placement="left">
+              <span class="status-dot" :class="aiServiceStatus"></span>
+            </el-tooltip>
+          </div>
         </div>
       </div>
       <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
@@ -90,10 +94,12 @@ import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
 import { ElMessage } from 'element-plus';
-import { LocalCache, throttle, throttleByRaf } from '@/utils';
+import { LocalCache, throttle, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut } from '@/utils';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 
+// AI 助手快捷键提示文本（根据系统自动适配）
+const aiShortcutText = getAiShortcutText();
 const props = defineProps<{
   context?: string; // 可选：传入文章内容作为上下文
 }>();
@@ -109,7 +115,7 @@ const showScrollToBottom = ref(false);
 const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
 // ============ 可调整大小功能 ============
-const MIN_WIDTH = 300;
+const MIN_WIDTH = 330;
 const MAX_WIDTH = 600;
 const MIN_HEIGHT = 400;
 const MAX_HEIGHT = 700;
@@ -205,10 +211,13 @@ const stopResize = () => {
 };
 
 // 组件卸载时清理事件监听
+// onUnmounted 处理移到了下方合并处理
+/*
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleResize);
   document.removeEventListener('mouseup', stopResize);
 });
+*/
 
 // 初始化 Markdown 解析器
 const md = new MarkdownIt({
@@ -469,9 +478,26 @@ const checkAIServiceStatus = async () => {
   }
 };
 
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Mac/Windows: Alt+A（Mac 上 Alt 即 Option 键）
+  if (isAiToggleShortcut(e)) {
+    e.preventDefault();
+    toggleOpen();
+  }
+};
+
 // 组件挂载时检查服务状态
 onMounted(() => {
   checkAIServiceStatus();
+  emitter.on('toggleAiAssistant', toggleOpen);
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleResize);
+  document.removeEventListener('mouseup', stopResize);
+  emitter.off('toggleAiAssistant', toggleOpen);
+  window.removeEventListener('keydown', handleKeyDown);
 });
 </script>
 
@@ -533,7 +559,7 @@ $shadowColor: #a3dfd0;
 
   .chat-window {
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
@@ -609,28 +635,52 @@ $shadowColor: #a3dfd0;
     }
 
     .chat-header {
-      padding: 15px;
-      background: var(--el-color-primary-light-9);
-      border-bottom: 1px solid #eee;
+      padding: 6px 16px;
+      background: linear-gradient(to right, rgba(103, 194, 58, 0.1), transparent);
+      // border-bottom: 1px solid #eee;
+      box-shadow: 0 1px 6px 0 rgba(100, 100, 100, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
 
       .header-left {
-        h3 {
-          margin: 0;
-          font-size: 16px;
-          color: var(--el-color-primary);
-        }
+        font-size: 14px;
+        font-weight: 700;
 
-        .model-info {
-          font-size: 12px;
-          color: #909399;
+        .x {
+          font-style: oblique;
+          padding-right: 4px;
+          background-image: var(--xfontStyle);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        :deep(.el-select__wrapper) {
+          background-color: transparent;
+          cursor: var(--pointerDefault);
+        }
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .model-selector {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .model-label {
+            font-size: 12px;
+            color: #606266;
+          }
         }
       }
 
       .status-indicator {
         .status-dot {
+          cursor: var(--pointerDefault);
           display: inline-block;
           width: 10px;
           height: 10px;
@@ -669,12 +719,11 @@ $shadowColor: #a3dfd0;
     .messages-container {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
-      background-color: #f9f9f9;
+      padding: 8px;
 
       .welcome-message {
         text-align: center;
-        color: #909399;
+        color: #a8a9ab;
         font-size: 14px;
         margin-top: 20px;
       }
@@ -866,8 +915,7 @@ $shadowColor: #a3dfd0;
     }
 
     .input-area {
-      padding: 10px;
-      border-top: 1px solid #eee;
+      padding: 6px;
       background: white;
     }
 
