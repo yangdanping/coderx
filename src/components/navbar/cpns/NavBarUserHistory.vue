@@ -89,6 +89,16 @@ const goToHistoryPage = () => {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: var(--z-navbar-popup);
     animation: boxDown 0.3s forwards;
+
+    // 通过伪元素创建透明桥接区域，避免鼠标从图标移向面板时经过间隙触发 mouseleave
+    &::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: 0;
+      right: 0;
+      height: 20px;
+    }
     .panel-history {
       width: 100%;
       height: calc(100% - 40px);
@@ -123,6 +133,8 @@ const goToHistoryPage = () => {
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
+        // 通过 overscroll-behavior: contain，避免滚动到边界时触发父级滚动（滚动穿透）
+        overscroll-behavior: contain;
 
         .empty {
           display: flex;

@@ -240,6 +240,10 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 20px;
+  // 大屏幕时的 sticky 定位
+  position: sticky;
+  top: calc(var(--navbarHeight, 60px) + 20px);
+  align-self: flex-start; // 防止被 flex 拉伸导致 sticky 失效
 
   &.sticky-header {
     position: sticky;
