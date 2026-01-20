@@ -288,7 +288,7 @@ $searchWidth: 100%;
     align-items: center;
 
     .header-title {
-      color: #ccc;
+      color: #eee;
       font-size: 14px;
     }
 
@@ -319,7 +319,7 @@ $searchWidth: 100%;
         align-items: center;
         max-width: 90px;
         padding: 4px 8px;
-        border: 1px solid;
+        @include thin-border(all);
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s;
@@ -362,7 +362,7 @@ $searchWidth: 100%;
     .search-result-content {
       min-height: 30px;
       &.showborder {
-        border-top: 1px solid #ccc;
+        @include thin-border(top, #eee);
       }
 
       .result-item-wrapper {
@@ -395,7 +395,7 @@ $searchWidth: 100%;
         justify-content: center;
         align-items: center;
         margin-top: 30px;
-        color: #ccc;
+        color: #eee;
         font-size: 14px;
       }
 

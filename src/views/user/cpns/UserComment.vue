@@ -40,7 +40,7 @@ const changePage = () => commentStore.getCommentAction('', profile.value.id as a
 <style lang="scss" scoped>
 .user-comment {
   .list-header {
-    border-bottom: 1px solid #ccc;
+    @include thin-border(bottom, #eee);
     padding-bottom: 10px;
     padding-left: 10px;
   }

@@ -77,7 +77,7 @@ const goToArticle = (item: any) => {
     justify-content: start;
     gap: 2px;
     list-style: none;
-    border-bottom: 1px solid #ccc;
+    @include thin-border(bottom, #eee);
     padding-bottom: 10px;
     margin-bottom: 10px;
     width: 300px;

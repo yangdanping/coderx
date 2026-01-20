@@ -20,6 +20,7 @@
 import ListAction from './ListAction.vue';
 import Icon from '@/components/icon/Icon.vue';
 import { Msg } from '@/utils';
+import debounce from '@/utils/debounce';
 
 import type { IArticle } from '@/stores/types/article.result';
 
@@ -41,18 +42,14 @@ const {
   onLike;
 }>();
 
-const likeClick = (articleId) => {
+const likeClick = debounce((articleId) => {
   if (token.value) {
-    if (article.status) {
-      Msg.showFail('文章已被封禁,不可点赞');
-    } else {
-      onLike(articleId);
-    }
+    !article.status ? onLike(articleId) : Msg.showFail('文章已被封禁,不可点赞');
   } else {
     Msg.showInfo('请先登录');
     rootStore.toggleLoginDialog();
   }
-};
+});
 </script>
 
 <style lang="scss" scoped></style>

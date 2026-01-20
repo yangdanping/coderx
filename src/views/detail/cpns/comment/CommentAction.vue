@@ -19,6 +19,7 @@ import { useLikeComment, useUserLikedComments } from '@/composables/useCommentLi
 import useCommentStore from '@/stores/comment.store';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
+import debounce from '@/utils/debounce';
 import type { IComment } from '@/service/comment/comment.request';
 
 const props = defineProps<{
@@ -44,7 +45,7 @@ const isLiked = computed(() => checkIsLiked(props.comment.id));
 const likeMutation = useLikeComment(articleId, parentId);
 
 // 处理点赞
-const handleLike = () => {
+const handleLike = debounce(() => {
   // 检查是否登录
   if (!userStore.token) {
     rootStore.toggleLoginDialog();
@@ -52,7 +53,7 @@ const handleLike = () => {
   }
 
   likeMutation.mutate(props.comment.id);
-};
+});
 
 // 处理回复
 const handleReply = () => {

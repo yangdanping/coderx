@@ -14,52 +14,52 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent } from 'vue';
 
 // 编辑器版本类型
-type EditorVersion = '1.0' | '2.0'
+type EditorVersion = '1.0' | '2.0';
 
 // 动态加载编辑器组件（减少首屏 JS 体积）
-const WangEditor = defineAsyncComponent(() => import('@/components/wang-editor/ArticleEditor.vue'))
-const TiptapEditor = defineAsyncComponent(() => import('@/components/tiptap-editor/TiptapEditor.vue'))
+const WangEditor = defineAsyncComponent(() => import('@/components/wang-editor/ArticleEditor.vue'));
+const TiptapEditor = defineAsyncComponent(() => import('@/components/tiptap-editor/TiptapEditor.vue'));
 
 // Props 定义
 const props = withDefaults(
   defineProps<{
-    version?: EditorVersion
+    version?: EditorVersion;
   }>(),
   {
     version: '1.0', // 默认使用 1.0 版本（wangeditor）
   },
-)
+);
 
 // 是否为开发环境
-const isDev = import.meta.env.DEV
+const isDev = import.meta.env.DEV;
 
 // 编辑器版本状态（开发环境可切换，生产环境使用 props.version）
-const editorVersion = ref<EditorVersion>(props.version)
+const editorVersion = ref<EditorVersion>(props.version);
 
 // 监听 props.version 变化
 watch(
   () => props.version,
   (newVersion) => {
-    editorVersion.value = newVersion
+    editorVersion.value = newVersion;
   },
-)
+);
 
 // 当前编辑器组件
 const currentEditor = computed(() => {
-  return editorVersion.value === '2.0' ? TiptapEditor : WangEditor
-})
+  return editorVersion.value === '2.0' ? TiptapEditor : WangEditor;
+});
 
 // 内容更新事件
 const emit = defineEmits<{
-  (e: 'update:content', content: string): void
-}>()
+  (e: 'update:content', content: string): void;
+}>();
 
 const handleContentUpdate = (content: string) => {
-  emit('update:content', content)
-}
+  emit('update:content', content);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -72,7 +72,7 @@ const handleContentUpdate = (content: string) => {
 .editor-version-toggle {
   padding: 8px 12px;
   background: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
+  @include thin-border(bottom, #eee);
   display: flex;
   align-items: center;
   gap: 8px;

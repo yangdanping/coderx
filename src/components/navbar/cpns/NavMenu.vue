@@ -84,10 +84,6 @@ const handleSelect = (key: string) => {
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-
-        // &.active {
-        //   border-bottom: 2px solid #81c995;
-        // }
       }
     }
   }

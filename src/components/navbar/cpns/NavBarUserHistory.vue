@@ -99,7 +99,7 @@ const goToHistoryPage = () => {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #eee;
+        @include thin-border(bottom, #eee);
         margin-bottom: 10px;
 
         .history-title {
@@ -142,7 +142,7 @@ const goToHistoryPage = () => {
         .more-btn {
           text-align: center;
           padding: 10px 0;
-          border-top: 1px solid #f0f0f0;
+          @include thin-border(top, #f0f0f0);
         }
       }
       .full-history-btn {
@@ -154,7 +154,7 @@ const goToHistoryPage = () => {
         text-align: center;
         background-color: #fff;
         padding: 10px 0;
-        border-top: 1px solid #f0f0f0;
+        @include thin-border(top, #f0f0f0);
         cursor: pointer;
         font-size: 14px;
         &:hover {

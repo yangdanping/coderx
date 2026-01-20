@@ -174,7 +174,6 @@ const formSubmit = (editData: any) => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/css/editor';
 .edit {
   .submit-btn {
     position: fixed;

@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-editor-container">
+  <div class="tiptap-editor-container" ref="editorContainerRef">
     <!-- 工具栏 -->
     <TiptapToolbar :editor="editor" :outputMode="outputMode" @update:outputMode="outputMode = $event" />
 
@@ -15,122 +15,158 @@
     />
 
     <!-- BubbleMenu：选中文字时显示 -->
-    <BubbleMenu :editor="(editor as any)" :tippy-options="{ duration: 100 }" v-if="editor" class="tiptap-bubble-menu">
-      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" @click="editor.chain().focus().toggleBold().run()">
-        加粗
-      </el-button>
-      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" @click="editor.chain().focus().toggleItalic().run()">
-        斜体
-      </el-button>
+    <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" v-if="editor" class="tiptap-bubble-menu">
+      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
+      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
       <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" @click="handleBubbleLink"> 链接 </el-button>
     </BubbleMenu>
+
+    <!-- AI 补全弹出框 -->
+    <CompletionPopover
+      :state="completionState"
+      :suggestions="completionSuggestions"
+      :position="completionPosition"
+      :activeIndex="completionActiveIndex"
+      :editorRect="editorRect"
+      @select="handleCompletionSelect"
+      @hover="handleCompletionHover"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useEditor, EditorContent } from '@tiptap/vue-3'
+import { useEditor, EditorContent } from '@tiptap/vue-3';
 // Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
-import { BubbleMenu } from '@tiptap/vue-3/menus'
-import TiptapToolbar from './TiptapToolbar.vue'
-import { getTiptapExtensions } from './config'
-import { LocalCache, isEmptyObj, emitter, Msg } from '@/utils'
-import type { IArticle } from '@/stores/types/article.result'
+import { BubbleMenu } from '@tiptap/vue-3/menus';
+import TiptapToolbar from './TiptapToolbar.vue';
+import CompletionPopover from './extensions/AiCompletion/CompletionPopover.vue';
+import { getTiptapExtensions } from './config';
+import { LocalCache, isEmptyObj, emitter, Msg } from '@/utils';
+import type { IArticle } from '@/stores/types/article.result';
+import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
 
 // 引入样式
-import './styles/tiptap.scss'
+import './styles/tiptap.scss';
 
 // Markdown storage 类型（使用 unknown 避免类型冲突）
 interface MarkdownStorageType {
-  getMarkdown?: () => string
+  getMarkdown?: () => string;
 }
 
 const props = withDefaults(
   defineProps<{
-    editData?: IArticle
-    mode?: 'default' | 'simple'
-    height?: string
+    editData?: IArticle;
+    mode?: 'default' | 'simple';
+    height?: string;
   }>(),
   {
     editData: () => ({}) as IArticle,
     mode: 'default',
     height: '100vh',
   },
-)
+);
 
 const emit = defineEmits<{
-  (e: 'update:content', content: string): void
-}>()
+  (e: 'update:content', content: string): void;
+}>();
 
 // 输出模式：html 或 markdown
-const outputMode = ref<'html' | 'markdown'>('html')
+const outputMode = ref<'html' | 'markdown'>('html');
 
 // 拖拽状态管理
-const isDragging = ref(false)
+const isDragging = ref(false);
+
+// 编辑器容器引用（用于计算弹出框位置）
+const editorContainerRef = ref<HTMLElement | null>(null);
+const editorRect = ref<DOMRect | null>(null);
+
+// AI 补全状态
+const completionState = ref<CompletionState>('idle');
+const completionSuggestions = ref<CompletionSuggestion[]>([]);
+const completionPosition = ref<PopoverPosition | null>(null);
+const completionActiveIndex = ref(0);
 
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: ReturnType<typeof useEditor>['value']) => {
-  if (!editorInstance) return ''
+  if (!editorInstance) return '';
   // 使用 unknown 中转避免类型冲突
-  const storage = editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined
-  return storage?.getMarkdown?.() ?? ''
-}
+  const storage = editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined;
+  return storage?.getMarkdown?.() ?? '';
+};
 
 // 创建编辑器实例
-const editor = useEditor({
+const editor: any = useEditor({
   extensions: getTiptapExtensions(),
   content: '',
   autofocus: false,
   onUpdate: ({ editor: editorInstance }) => {
     // 根据输出模式获取内容
     const content =
-      outputMode.value === 'markdown'
-        ? ((editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined)?.getMarkdown?.() ?? '')
-        : editorInstance.getHTML()
-    emit('update:content', content || '')
+      outputMode.value === 'markdown' ? ((editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined)?.getMarkdown?.() ?? '') : editorInstance.getHTML();
+    emit('update:content', content || '');
   },
-})
+});
 
 // 初始化内容
 onMounted(() => {
   nextTick(() => {
-    if (!editor.value) return
+    if (!editor.value) return;
 
-    const draft = LocalCache.getCache('draft')
-    const isEditMode = !isEmptyObj(props.editData)
+    const draft = LocalCache.getCache('draft');
+    const isEditMode = !isEmptyObj(props.editData);
 
-    let initialContent = ''
+    let initialContent = '';
 
     if (isEditMode && draft) {
       // 编辑模式 + 有草稿：优先使用草稿
-      initialContent = draft.draft
+      initialContent = draft.draft;
     } else if (isEditMode) {
       // 编辑模式 + 无草稿：使用原文章内容
-      initialContent = props.editData?.content ?? ''
+      initialContent = props.editData?.content ?? '';
     } else if (draft) {
       // 创建模式 + 有草稿：恢复草稿
-      initialContent = draft.draft
+      initialContent = draft.draft;
     }
 
     if (initialContent) {
-      editor.value.chain().setContent(initialContent).run()
+      editor.value.chain().setContent(initialContent).run();
     }
-  })
-})
+
+    // 注册 AI 补全状态变化回调
+    const aiCompletionStorage = editor.value.storage.aiCompletion;
+    if (aiCompletionStorage) {
+      aiCompletionStorage.onStateChange = (state: CompletionState, suggestions: CompletionSuggestion[], position: PopoverPosition | null) => {
+        completionState.value = state;
+        completionSuggestions.value = suggestions;
+        completionPosition.value = position;
+        completionActiveIndex.value = aiCompletionStorage.activeIndex || 0;
+
+        // 更新编辑器容器位置
+        if (editorContainerRef.value) {
+          editorRect.value = editorContainerRef.value.getBoundingClientRect();
+        }
+      };
+    }
+  });
+});
 
 // 监听事件总线
 onMounted(() => {
   // 清空内容事件
   emitter.on('cleanContent', () => {
-    editor.value?.chain().clearContent().run()
-  })
+    editor.value?.chain().clearContent().run();
+  });
 
   // 更新内容事件（用于编辑模式下从 store 获取内容）
   emitter.on('updateEditorContent', (content) => {
     if (editor.value && content) {
-      editor.value.chain().setContent(content as string).run()
+      editor.value
+        .chain()
+        .setContent(content as string)
+        .run();
     }
-  })
-})
+  });
+});
 
 // 监听 editData.content 变化，解决异步加载时序问题
 // 同时监听 editor 和 editData.content，确保两者都准备好后才设置内容
@@ -141,87 +177,103 @@ watch(
       hasEditor: !!editorInstance,
       hasContent: !!newContent,
       contentLength: newContent?.length,
-    })
+    });
     // 只要编辑器已初始化且有新内容，就设置内容
     // 不再依赖 isEmptyObj 判断，因为 Proxy 对象可能导致误判
     if (editorInstance && newContent) {
-      const currentContent = editorInstance.getHTML()
+      const currentContent = editorInstance.getHTML();
       // 避免重复设置相同内容（防止覆盖用户输入）
       // 注意：空编辑器的 HTML 是 '<p></p>'
-      const isEmpty = currentContent === '<p></p>' || currentContent === ''
+      const isEmpty = currentContent === '<p></p>' || currentContent === '';
       if (isEmpty || currentContent !== newContent) {
-        console.log('[TiptapEditor] 设置编辑器内容')
-        editorInstance.chain().setContent(newContent).run()
+        console.log('[TiptapEditor] 设置编辑器内容');
+        editorInstance.chain().setContent(newContent).run();
       }
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 // BubbleMenu 链接处理
 const handleBubbleLink = () => {
-  const previousUrl = editor.value?.getAttributes('link').href
-  const url = window.prompt('请输入链接地址', previousUrl)
+  const previousUrl = editor.value?.getAttributes('link').href;
+  const url = window.prompt('请输入链接地址', previousUrl);
 
   if (url === null) {
-    return // 用户取消
+    return; // 用户取消
   }
 
   if (url === '') {
-    editor.value?.chain().focus().extendMarkRange('link').unsetLink().run()
+    editor.value?.chain().focus().extendMarkRange('link').unsetLink().run();
   } else {
-    editor.value?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    editor.value?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }
-}
+};
 
 // 拖拽事件处理
 const handleDragEnter = (e: DragEvent) => {
-  e.preventDefault()
-  e.stopPropagation()
-  isDragging.value = true
-}
+  e.preventDefault();
+  e.stopPropagation();
+  isDragging.value = true;
+};
 
 const handleDragOver = (e: DragEvent) => {
-  e.preventDefault()
-  e.stopPropagation()
-}
+  e.preventDefault();
+  e.stopPropagation();
+};
 
 const handleDragLeave = (e: DragEvent) => {
-  e.preventDefault()
-  e.stopPropagation()
+  e.preventDefault();
+  e.stopPropagation();
   // 只有离开编辑器容器时才取消高亮
   if (e.target === e.currentTarget) {
-    isDragging.value = false
+    isDragging.value = false;
   }
-}
+};
 
 const handleDrop = async (e: DragEvent) => {
-  e.preventDefault()
-  e.stopPropagation()
-  isDragging.value = false
+  e.preventDefault();
+  e.stopPropagation();
+  isDragging.value = false;
 
-  const files = e.dataTransfer?.files
-  if (!files || files.length === 0) return
+  const files = e.dataTransfer?.files;
+  if (!files || files.length === 0) return;
 
   // 过滤出图片文件
-  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
 
   if (imageFiles.length === 0) {
-    Msg.showWarn('请拖入图片文件')
-    return
+    Msg.showWarn('请拖入图片文件');
+    return;
   }
 
   // 串行上传所有图片，确保按顺序插入
   for (const file of imageFiles) {
-    editor.value?.commands.uploadImage(file)
+    editor.value?.commands.uploadImage(file);
     // 等待当前图片上传完成
-    const storage = editor.value?.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } }
-    const promise = storage?.imageUpload?.getUploadPromise?.(file)
+    const storage = editor.value?.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
+    const promise = storage?.imageUpload?.getUploadPromise?.(file);
     if (promise) {
-      await promise
+      await promise;
     }
   }
-}
+};
+
+// AI 补全事件处理
+const handleCompletionSelect = (index: number) => {
+  const suggestion = completionSuggestions.value[index];
+  if (suggestion && editor.value) {
+    editor.value.commands.applyCompletion(suggestion.text);
+  }
+};
+
+const handleCompletionHover = (index: number) => {
+  completionActiveIndex.value = index;
+  // 同步到 storage
+  if (editor.value?.storage.aiCompletion) {
+    editor.value.storage.aiCompletion.activeIndex = index;
+  }
+};
 
 // 暴露方法供外部调用
 defineExpose({
@@ -235,14 +287,14 @@ defineExpose({
   setContent: (content: string) => editor.value?.chain().setContent(content).run(),
   // 获取编辑器实例
   getEditor: () => editor.value,
-})
+});
 
 // 组件销毁时清理
 onBeforeUnmount(() => {
-  emitter.off('cleanContent')
-  emitter.off('updateEditorContent')
-  editor.value?.destroy()
-})
+  emitter.off('cleanContent');
+  emitter.off('updateEditorContent');
+  editor.value?.destroy();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -251,7 +303,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid #ccc;
+  border: 1px solid #eee;
 }
 
 .tiptap-editor-content {

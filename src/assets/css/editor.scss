@@ -1,4 +1,4 @@
-:deep(.editor-content-view) {
+.editor-content-view {
   p,
   li {
     white-space: pre-wrap; /* 保留空格 */
@@ -67,11 +67,11 @@
   }
 }
 
-:deep(.w-e-text-container) {
+.w-e-text-container {
   @include customCSS; //覆盖掉默认自带的p
 }
 
-:deep(.editor-content-view) {
+.editor-content-view {
   padding: 0 10px;
   @include customCSS;
   h1,

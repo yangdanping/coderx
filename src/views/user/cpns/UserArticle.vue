@@ -52,7 +52,7 @@ const changePage = () => articleStore.getArticleListAction({ userId: profile.val
 <style lang="scss" scoped>
 .user-article {
   .list-header {
-    border-bottom: 1px solid #ccc;
+    @include thin-border(bottom, #eee);
     padding-bottom: 10px;
     padding-left: 10px;
   }

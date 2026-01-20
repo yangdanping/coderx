@@ -138,7 +138,7 @@ const logOut = () => {
         }
 
         .following {
-          border-right: 2px solid #ccc;
+          @include thin-border(right, #eee);
           padding-right: 10px;
         }
 

@@ -39,6 +39,7 @@
 <script lang="ts" setup>
 import { emitter } from '@/utils';
 import { Plus, ArrowRight, CheckCircle2 } from 'lucide-vue-next';
+import debounce from '@/utils/debounce';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
@@ -79,10 +80,10 @@ const add = () => {
   input.value = '';
   newCollect.value = false;
 };
-const addToCollect = (collectId) => {
+const addToCollect = debounce((collectId) => {
   console.log(collectId);
   userStore.collectAction({ collectId, articleId: article.value.id });
-};
+});
 </script>
 
 <style lang="scss" scoped>
@@ -128,9 +129,9 @@ const addToCollect = (collectId) => {
         margin-left: 10px;
       }
     }
-  }
-  .item:hover {
-    background-color: #f8f9fa;
+    &:hover {
+      background-color: #ebf5f0;
+    }
   }
 }
 .new-btn {

@@ -65,11 +65,9 @@ const closeReplyForm = () => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/css/editor';
-
 .comment-list-item {
   display: flex;
-  border-bottom: 1px solid #e5e6eb;
+  @include thin-border(bottom, #eee);
   margin-top: 20px;
   position: relative;
 
