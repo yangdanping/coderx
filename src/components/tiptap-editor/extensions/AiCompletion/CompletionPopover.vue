@@ -150,7 +150,7 @@ const handleHover = (index: number) => {
   display: flex;
   gap: 12px;
   padding: 6px 12px;
-  @include #eeetop, #eee);
+  @include thin-border(top, #eee);
   .hint-item {
     display: flex;
     align-items: center;
