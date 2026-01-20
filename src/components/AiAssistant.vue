@@ -36,7 +36,7 @@
       </div>
       <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
         <div v-if="messages.length === 0" class="welcome-message">
-          <p>你好！我是你的 AI 编程助手。</p>
+          <p>你好！我是你的 AI 助手。</p>
           <p>你可以问我关于这篇文章的问题，或者让我解释代码。</p>
         </div>
 
@@ -564,7 +564,7 @@ $shadowColor: #a3dfd0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid #eee;
+    @include thin-border(all, #eee);
     position: relative; // 确保绝对定位的子元素相对于此定位
 
     // 调整大小手柄 - 左侧
@@ -637,7 +637,6 @@ $shadowColor: #a3dfd0;
     .chat-header {
       padding: 6px 16px;
       background: linear-gradient(to right, rgba(103, 194, 58, 0.1), transparent);
-      // border-bottom: 1px solid #eee;
       box-shadow: 0 1px 6px 0 rgba(100, 100, 100, 0.1);
       display: flex;
       justify-content: space-between;
@@ -795,7 +794,7 @@ $shadowColor: #a3dfd0;
             :deep(blockquote) {
               margin: 8px 0;
               padding: 4px 10px;
-              border-left: 3px solid #dcdfe6;
+              border-left: 3px solid #eee;
               color: #606266;
               background-color: #f2f3f5;
               border-radius: 0 4px 4px 0;
@@ -907,7 +906,7 @@ $shadowColor: #a3dfd0;
           .bubble {
             background-color: white;
             color: #333;
-            border: 1px solid #e4e7ed;
+            @include thin-border(all, #eee);
             border-top-left-radius: 2px;
           }
         }
@@ -935,7 +934,7 @@ $shadowColor: #a3dfd0;
       cursor: pointer;
       color: var(--el-color-primary);
       z-index: var(--z-content);
-      border: 1px solid #eee;
+      @include thin-border(all, #eee);
 
       &:hover {
         background-color: #f5f7fa;

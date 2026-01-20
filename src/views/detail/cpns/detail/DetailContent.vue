@@ -94,7 +94,6 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/css/editor';
 .detail-content {
   margin-top: 80px;
   width: 80%;

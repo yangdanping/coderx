@@ -18,6 +18,7 @@ declare module 'vue' {
     CodeSpotlight: typeof import('./components/canvas/CodeSpotlight.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentEditor: typeof import('./components/wang-editor-comment/CommentEditor.vue')['default']
+    CompletionPopover: typeof import('./components/tiptap-editor/extensions/AiCompletion/CompletionPopover.vue')['default']
     EditorSwitch: typeof import('./components/editor/EditorSwitch.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']

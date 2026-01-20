@@ -16,6 +16,7 @@
 import { Msg } from '@/utils';
 import { Plus } from '@element-plus/icons-vue';
 import { useAuth } from '@/composables/useAuth';
+import debounce from '@/utils/debounce';
 
 import type { IUserInfo } from '@/stores/types/user.result';
 
@@ -48,14 +49,14 @@ const ToggleUnFollow = (toggle: boolean) => {
   }
 };
 
-const follow = () => {
+const follow = debounce(() => {
   if (token.value) {
     userStore.followAction(profile.id, isFollowListItem);
   } else {
     Msg.showFail('请先登录');
     rootStore.toggleLoginDialog();
   }
-};
+});
 </script>
 
 <style lang="scss" scoped></style>

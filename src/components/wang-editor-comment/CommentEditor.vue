@@ -1,6 +1,6 @@
 <template>
   <div class="comment-editor-container">
-    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #ccc" />
+    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode" style="border-bottom: 1px solid #eee" />
     <Editor
       :style="{ height, 'overflow-y': height === 'auto' ? 'visible' : 'hidden' }"
       v-model="valueHtml"
@@ -78,6 +78,6 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .comment-editor-container {
-  border: 1px solid #ccc;
+  border: 1px solid #eee;
 }
 </style>

@@ -62,7 +62,7 @@ const goDetail = (userId) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e5e6eb;
+  @include thin-border(bottom, #eee);
   padding: 15px;
   cursor: pointer;
   .content {

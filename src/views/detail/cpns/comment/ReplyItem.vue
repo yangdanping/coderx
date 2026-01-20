@@ -137,8 +137,6 @@ const closeReplyForm = () => {
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/css/editor';
-
 .reply-item {
   display: flex;
   position: relative;
@@ -204,7 +202,7 @@ const closeReplyForm = () => {
         justify-content: space-between;
         margin-bottom: 8px;
         padding-bottom: 6px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        @include thin-border(bottom, rgba(255, 255, 255, 0.1));
 
         .quoted-author {
           font-size: 13px;

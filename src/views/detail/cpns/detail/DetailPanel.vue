@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import DetailCollect from './DetailCollect.vue';
 import Icon from '@/components/icon/Icon.vue';
+import debounce from '@/utils/debounce';
 
 import { Msg, emitter } from '@/utils';
 
@@ -44,7 +45,7 @@ onMounted(() => {
   disabled.value = token.value ? false : true;
 });
 
-const likeClick = (articleId) => {
+const likeClick = debounce((articleId) => {
   console.log('detail-panel likeClick', articleId);
   if (token.value) {
     if (article.status) {
@@ -56,7 +57,7 @@ const likeClick = (articleId) => {
     Msg.showInfo('请先登录');
     rootStore.toggleLoginDialog();
   }
-};
+});
 
 const gotoComment = () => emitter.emit('gotoCom');
 

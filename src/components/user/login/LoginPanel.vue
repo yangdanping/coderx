@@ -159,7 +159,7 @@ $height: 42px;
       }
 
       &:hover {
-        background: #f8f9fa;
+        background: #ebf5f0;
         border-color: #d0d0d0;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }

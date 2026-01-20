@@ -89,7 +89,7 @@ const handleClick = throttle(function (name: string | number) {
     /* top: var(--navbarHeight); */
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    @include thin-border(bottom, #eee);
     /* Ensure full width on small screens */
     width: 100%;
     /* Add some padding for horizontal scroll mode */

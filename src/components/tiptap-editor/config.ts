@@ -9,6 +9,7 @@ import Underline from '@tiptap/extension-underline'
 import { Markdown } from '@tiptap/markdown'
 import { ImageUpload } from './extensions/ImageUpload'
 import { VideoUpload } from './extensions/VideoUpload'
+import { AiCompletion } from './extensions/AiCompletion'
 
 /**
  * 获取 Tiptap 编辑器扩展配置
@@ -64,6 +65,14 @@ export const getTiptapExtensions = () => {
 
     // 自定义扩展：视频上传
     VideoUpload,
+
+    // 自定义扩展：AI 编辑补全
+    AiCompletion.configure({
+      debounceMs: 500, // 防抖 500ms
+      minTriggerLength: 10, // 最少 10 个字符触发
+      contextWindow: 500, // 上下文窗口 500 字
+      maxSuggestions: 3, // 最多 3 个建议
+    }),
   ]
 }
 

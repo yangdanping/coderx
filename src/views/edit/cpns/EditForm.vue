@@ -209,7 +209,7 @@ const goBack = () => {
 
 :deep(.cover-uploader) {
   .el-upload {
-    border: 1px dashed #ccc;
+    border: 1px dashed #eee;
     border-radius: 6px;
     cursor: pointer;
     position: relative;

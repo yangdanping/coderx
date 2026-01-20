@@ -153,7 +153,6 @@ const goFollowTab = (subTabName: string) => {
 };
 
 const updateProfile = () => {
-  rootStore.toggleLoginDialog();
   emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile)));
 };
 
@@ -248,7 +247,7 @@ watch(
     width: 100%;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    @include thin-border(bottom, rgba(0, 0, 0, 0.05));
     padding: 10px 15px 0;
     gap: 10px;
     z-index: var(--z-sticky);
@@ -377,7 +376,7 @@ watch(
         .divider {
           width: 1px;
           height: 12px;
-          background: #ccc;
+          background: #eee;
         }
       }
 

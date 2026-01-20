@@ -1,6 +1,6 @@
 <template>
   <div class="article-editor-container">
-    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="props.mode" style="border-bottom: 1px solid #ccc" />
+    <Toolbar :editor="editorRef" :defaultConfig="toolbarConfig" :mode="props.mode" style="border-bottom: 1px solid #eee" />
     <Editor
       :style="{ height: props.height, 'overflow-y': 'hidden' }"
       v-model="valueHtml"
@@ -31,7 +31,7 @@ const props = withDefaults(
     editData: () => ({}) as IArticle,
     mode: 'default',
     height: '100vh',
-  }
+  },
 );
 
 const valueHtml = ref('');
@@ -87,7 +87,7 @@ watch(
       valueHtml.value = newContent;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const handleChanged = (editor: any) => {
@@ -106,6 +106,6 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .article-editor-container {
-  border: 1px solid #ccc;
+  border: 1px solid #eee;
 }
 </style>

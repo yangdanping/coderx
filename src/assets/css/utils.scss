@@ -1,0 +1,23 @@
+// 放 Mixin、变量、函数,不产生实际 CSS
+// 通过 vite 配置 全局注入,只有使用了 @include 时，才会生成代码
+
+@mixin thin-border($directions: all, $color: #ebeef5) {
+  $shadows: ();
+  @if type-of($directions) == 'string' {
+    $directions: ($directions);
+  }
+  @each $direction in $directions {
+    @if $direction == all {
+      $shadows: append($shadows, 0 0 0 0.5px $color, comma);
+    } @else if $direction == top {
+      $shadows: append($shadows, 0 -0.5px 0 0 $color, comma);
+    } @else if $direction == bottom {
+      $shadows: append($shadows, 0 0.5px 0 0 $color, comma);
+    } @else if $direction == left {
+      $shadows: append($shadows, -0.5px 0 0 0 $color, comma);
+    } @else if $direction == right {
+      $shadows: append($shadows, 0.5px 0 0 0 $color, comma);
+    }
+  }
+  box-shadow: $shadows;
+}

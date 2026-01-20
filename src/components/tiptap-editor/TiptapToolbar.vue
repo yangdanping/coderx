@@ -302,7 +302,7 @@ const toggleAiAssistant = () => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  border-bottom: 1px solid #dcdfe6;
+  @include thin-border(bottom, #eee);
   background: #fafafa;
 
   .toolbar-group {

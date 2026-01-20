@@ -163,7 +163,7 @@ const clearResultAndBack = () => {
 .list-header {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #ccc;
+  @include thin-border(bottom, #eee);
   padding-bottom: 10px;
   padding-left: 10px;
   h2 {
@@ -194,7 +194,7 @@ const clearResultAndBack = () => {
   }
 
   .item {
-    border-bottom: 1px solid #e5e6eb;
+    @include thin-border(bottom, #eee);
     cursor: pointer;
     .collect-name {
       display: flex;

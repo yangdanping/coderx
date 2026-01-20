@@ -29,6 +29,12 @@ export default defineConfig(({ mode }) => {
     },
     // 🎯 CSS 配置：PostCSS pxtorem 自动转换
     css: {
+      // vite 配置 全局注入css,避免组件 <style> 顶部手动 @use;
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/assets/css/utils.scss" as *;`,
+        },
+      },
       postcss: {
         plugins: [
           pxtorem({
