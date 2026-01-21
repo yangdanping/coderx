@@ -7,9 +7,14 @@ import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import { Markdown } from '@tiptap/markdown'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { common, createLowlight } from 'lowlight'
 import { ImageUpload } from './extensions/ImageUpload'
 import { VideoUpload } from './extensions/VideoUpload'
 import { AiCompletion } from './extensions/AiCompletion'
+
+// 创建 lowlight 实例，使用常用语言包
+const lowlight = createLowlight(common)
 
 /**
  * 获取 Tiptap 编辑器扩展配置
@@ -18,8 +23,15 @@ export const getTiptapExtensions = () => {
   return [
     // 基础功能包（包含常用格式化功能）
     StarterKit.configure({
-      // 可以在这里禁用不需要的功能
-      // heading: false,
+      // 禁用默认 codeBlock，使用 CodeBlockLowlight 替代
+      codeBlock: false,
+    }),
+
+    // 代码块高亮扩展
+    CodeBlockLowlight.configure({
+      lowlight,
+      defaultLanguage: 'plaintext',
+      languageClassPrefix: 'language-',
     }),
 
     // Markdown 支持

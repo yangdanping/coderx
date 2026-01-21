@@ -18,6 +18,7 @@ declare module 'vue' {
     CodeSpotlight: typeof import('./components/canvas/CodeSpotlight.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentEditor: typeof import('./components/wang-editor-comment/CommentEditor.vue')['default']
+    CommentToolbar: typeof import('./components/tiptap-editor-comment/CommentToolbar.vue')['default']
     CompletionPopover: typeof import('./components/tiptap-editor/extensions/AiCompletion/CompletionPopover.vue')['default']
     EditorSwitch: typeof import('./components/editor/EditorSwitch.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -88,6 +89,7 @@ declare module 'vue' {
     ThinkingShimmer: typeof import('./components/icon/cpns/ThinkingShimmer.vue')['default']
     ThinkingWave: typeof import('./components/icon/cpns/ThinkingWave.vue')['default']
     TiptapEditor: typeof import('./components/tiptap-editor/TiptapEditor.vue')['default']
+    TiptapEditorComment: typeof import('./components/tiptap-editor-comment/TiptapEditorComment.vue')['default']
     TiptapToolbar: typeof import('./components/tiptap-editor/TiptapToolbar.vue')['default']
   }
   export interface GlobalDirectives {

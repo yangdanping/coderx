@@ -11,8 +11,8 @@ import VueDOMPurifyHTML from 'vue-dompurify-html';
 import 'normalize.css';
 import '@/assets/css/index.scss';
 import 'element-plus/dist/index.css';
-import 'prismjs';
-import 'prismjs/themes/prism-okaidia.css';
+// highlight.js 主题样式（用于代码块语法高亮）
+import 'highlight.js/styles/atom-one-dark.css';
 
 import type { App } from 'vue';
 import useSocket from '@/service/socket';
