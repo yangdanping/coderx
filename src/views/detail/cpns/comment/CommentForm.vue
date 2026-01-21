@@ -2,7 +2,7 @@
   <div class="comment-form" :class="{ 'is-reply': isReply }">
     <Avatar v-if="!isReply" :info="userInfo" />
     <div class="input">
-      <CommentEditor @update:content="(valueHtml) => (content = valueHtml)" mode="simple" height="auto" />
+      <TiptapEditorComment @update:content="(valueHtml) => (content = valueHtml)" />
       <div class="input-action">
         <el-button v-if="isReply" @click="handleCancel" type="default" size="small">取消</el-button>
         <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
@@ -15,7 +15,7 @@
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
-import CommentEditor from '@/components/wang-editor-comment/CommentEditor.vue';
+import TiptapEditorComment from '@/components/tiptap-editor-comment/TiptapEditorComment.vue';
 import { Msg, emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 
@@ -142,16 +142,12 @@ onUnmounted(() => {
   }
 
   // 避免内容被按钮遮挡
-  :deep(.w-e-text-container) {
-    min-height: 150px;
-    max-height: 250px;
-    overflow-y: overlay;
-    padding-bottom: 40px;
+  :deep(.comment-editor-content) {
+    padding-bottom: 50px;
   }
 
-  &.is-reply :deep(.w-e-text-container) {
-    min-height: 100px;
-    max-height: 200px;
+  &.is-reply :deep(.comment-editor-content) {
+    padding-bottom: 50px;
   }
 }
 </style>

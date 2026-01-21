@@ -1,5 +1,5 @@
 import { h, ref } from 'vue';
-import { CopyDocument } from '@element-plus/icons-vue';
+import { Copy, Check } from 'lucide-vue-next';
 
 export const CopyButton = {
   props: ['text'],
@@ -53,10 +53,7 @@ export const CopyButton = {
           class: 'code-copy-btn',
           onClick: handleCopy,
         },
-        [
-          isCopied.value ? h('span', { class: 'copy-text' }, 'Copied!') : null,
-          h(CopyDocument, { style: { width: '1em', height: '1em' } }), // 直接设置 svg 样式确保显示
-        ],
+        [isCopied.value ? h(Check, { size: 16, color: '#81c995' }) : h(Copy, { size: 16, color: 'white' })],
       );
   },
 };

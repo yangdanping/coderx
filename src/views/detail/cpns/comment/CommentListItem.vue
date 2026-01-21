@@ -18,7 +18,7 @@
 
       <!-- 评论内容 -->
       <div class="editor-content">
-        <div class="editor-content-view" :style="item.status ? 'color: red' : ''" v-dompurify-html="item.content"></div>
+        <div ref="contentRef" class="editor-content-view" :style="item.status ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" />
       </div>
 
@@ -43,6 +43,7 @@ import ReplyList from './ReplyList.vue';
 
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
+import { codeHeightlight, renderCopyButtons } from '@/utils';
 
 import type { IComment } from '@/service/comment/comment.request';
 
@@ -55,6 +56,9 @@ const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const { isAuthor } = storeToRefs(articleStore);
 
+// 评论内容容器引用
+const contentRef = ref<HTMLElement | null>(null);
+
 // 是否正在回复此评论
 const isReplying = computed(() => commentStore.activeReplyId === item.id);
 
@@ -62,6 +66,20 @@ const isReplying = computed(() => commentStore.activeReplyId === item.id);
 const closeReplyForm = () => {
   commentStore.setActiveReply(null);
 };
+
+// 代码高亮处理
+watch(
+  () => contentRef.value,
+  (el) => {
+    if (el) {
+      nextTick(() => {
+        codeHeightlight(el);
+        renderCopyButtons(el);
+      });
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <style lang="scss" scoped>

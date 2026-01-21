@@ -11,16 +11,60 @@
   }
 
   // 代码块-----------------------------------------------------------
-
-  code {
-    font-family: monospace;
-    background-color: #eee;
-    padding: 3px;
+  // 行内代码
+  code:not(pre code) {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
     border-radius: 3px;
+    font-size: 0.9em;
+    color: #e83e8c;
   }
-  pre > code {
-    display: block;
-    padding: 10px;
+
+  // 代码块
+  pre {
+    background: #282c34;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 12px 0;
+    overflow-x: auto;
+    position: relative; // Ensure relative positioning for absolute child
+
+    &:hover .code-copy-btn {
+      display: flex;
+    }
+
+    .code-copy-btn {
+      display: none;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: #3b4048;
+      border: 1px solid #4b5263;
+      border-radius: 4px;
+      padding: 4px;
+      transition: all 0.3s;
+      z-index: 10;
+      width: 28px;
+      height: 28px;
+
+      &:hover {
+        background-color: #4b5263;
+      }
+    }
+
+    code {
+      display: block;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      background: transparent;
+      padding: 0;
+      color: #abb2bf;
+    }
   }
 
   // 表格---------------------------------------------------
@@ -81,31 +125,22 @@
     line-height: 1.5;
     margin: 20px 0;
   }
-  code,
   li {
     line-height: 1.5;
   }
   pre {
-    transition: all 0.5s;
+    transition: all 0.3s ease;
     &:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 10px rgba(0, 0, 0);
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-  }
-  code {
-    // background: #f5f2f0;
-    tab-size: 4;
-    white-space: pre;
-    word-break: normal;
-    word-spacing: normal;
-    hyphens: none;
-    font-size: 16px;
-    background-color: transparent;
-  }
-  &.preview-content {
+
     code {
-      background: #f5f2f0;
-      border: 1px solid #e8e8e8;
+      tab-size: 4;
+      white-space: pre;
+      word-break: normal;
+      word-spacing: normal;
+      hyphens: none;
     }
   }
 

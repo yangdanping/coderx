@@ -1,19 +1,13 @@
 /**
- * Tiptap 编辑器样式
- * 与现有 editor.scss 风格保持一致
+ * Tiptap 评论编辑器样式
+ * 精简版样式，与文章编辑器风格保持一致但更轻量
  */
 
-// 编辑器容器
-.tiptap-editor-container {
-  border-radius: 4px;
-  overflow: hidden;
-  background: #fff;
-}
-
 // 编辑区域
-.tiptap-editor-content {
-  padding: 16px;
-  height: 100%;
+.comment-editor-content {
+  padding: 12px 16px;
+  min-height: 100px;
+  max-height: 250px;
   overflow-y: auto;
 
   // 聚焦时的轮廓
@@ -21,10 +15,14 @@
     outline: none;
   }
 
+  &.is-focused {
+    // 聚焦时的样式（可选）
+  }
+
   // ProseMirror 编辑器核心样式
   .ProseMirror {
     outline: none;
-    min-height: calc(100vh - 150px); // 减去工具栏和版本切换的高度
+    min-height: 80px;
 
     // 占位符样式
     > p.is-editor-empty:first-child::before {
@@ -37,7 +35,7 @@
 
     // 段落样式
     p {
-      margin: 10px 0;
+      margin: 6px 0;
       line-height: 1.6;
     }
 
@@ -49,12 +47,12 @@
     h5,
     h6 {
       line-height: 1.4;
-      margin: 20px 0 10px;
+      margin: 16px 0 8px;
       font-weight: 600;
     }
 
     h1 {
-      font-size: 2em;
+      font-size: 1.75em;
     }
     h2 {
       font-size: 1.5em;
@@ -69,8 +67,8 @@
     // 引用块
     blockquote {
       border-left: 4px solid #d0e5f2;
-      padding: 10px 16px;
-      margin: 16px 0;
+      padding: 8px 12px;
+      margin: 12px 0;
       background-color: #f9f9f9;
       color: #666;
 
@@ -83,14 +81,14 @@
     pre {
       background: #282c34;
       border-radius: 6px;
-      padding: 16px;
-      margin: 16px 0;
+      padding: 12px 16px;
+      margin: 12px 0;
       overflow-x: auto;
 
       code {
         display: block;
         font-family: 'Fira Code', 'Consolas', monospace;
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.6;
         background: transparent;
         padding: 0;
@@ -115,7 +113,7 @@
     ul,
     ol {
       padding-left: 24px;
-      margin: 10px 0;
+      margin: 8px 0;
 
       li {
         margin: 4px 0;
@@ -154,63 +152,6 @@
       }
     }
 
-    // 图片
-    // 使用 inline-block 保证图片可以横向排列（与详情页显示一致）
-    // 同时保留块级元素的特性（可设置宽高、margin 等）
-    img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 4px;
-      margin: 4px;
-      vertical-align: top; // 对齐方式，避免底部出现间隙
-
-      &.ProseMirror-selectednode {
-        outline: 2px solid #409eff;
-        outline-offset: 2px;
-      }
-    }
-
-    // 视频
-    video {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      margin: 16px 0;
-      display: block;
-      background: #000;
-
-      &:focus {
-        outline: 2px solid #409eff;
-        outline-offset: 2px;
-      }
-    }
-
-    // 水平分割线
-    hr {
-      border: none;
-      border-top: 2px solid #e0e0e0;
-      margin: 24px 0;
-    }
-
-    // 表格（如果启用）
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 16px 0;
-
-      th,
-      td {
-        border: 1px solid #eee;
-        padding: 8px 12px;
-        text-align: left;
-      }
-
-      th {
-        background: #f5f7fa;
-        font-weight: 600;
-      }
-    }
-
     // 粗体、斜体等
     strong {
       font-weight: 600;
@@ -231,7 +172,7 @@
 }
 
 // BubbleMenu 样式（选中文字时的浮动菜单）
-.tiptap-bubble-menu {
+.comment-bubble-menu {
   display: flex;
   gap: 4px;
   padding: 4px 8px;
@@ -248,27 +189,13 @@
 
 // 响应式适配
 @media (max-width: 768px) {
-  .tiptap-editor-content {
-    padding: 12px;
-    min-height: 200px;
+  .comment-editor-content {
+    padding: 10px 12px;
+    min-height: 80px;
+    max-height: 200px;
 
     .ProseMirror {
       font-size: 15px;
-
-      h1 {
-        font-size: 1.75em;
-      }
-      h2 {
-        font-size: 1.4em;
-      }
-      h3 {
-        font-size: 1.2em;
-      }
-
-      pre {
-        padding: 12px;
-        font-size: 13px;
-      }
     }
   }
 }

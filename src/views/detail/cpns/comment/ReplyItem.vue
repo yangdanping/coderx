@@ -42,7 +42,7 @@
 
       <!-- 回复内容 -->
       <div class="editor-content">
-        <div class="editor-content-view" :style="item.status ? 'color: red' : ''" v-dompurify-html="item.content"></div>
+        <div ref="contentRef" class="editor-content-view" :style="item.status ? 'color: red' : ''" v-dompurify-html="item.content"></div>
         <CommentAction :comment="item" :parentCommentId="parentComment.id" />
       </div>
 
@@ -63,9 +63,10 @@ import CommentTools from './CommentTools.vue';
 
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
+import { codeHeightlight } from '@/utils';
 
 import type { IComment } from '@/service/comment/comment.request';
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { CornerDownRight } from 'lucide-vue-next';
 
 const COLLAPSE_HEIGHT = 150; // 折叠阈值（px）
@@ -86,6 +87,7 @@ const { isAuthor } = storeToRefs(articleStore);
 // ==================== 引用内容相关 ====================
 
 const quotedBodyRef = ref<HTMLElement | null>(null);
+const contentRef = ref<HTMLElement | null>(null);
 const isCollapsed = ref(true); // 默认折叠
 const needsCollapse = ref(false); // 是否需要折叠（内容超过阈值）
 
@@ -124,6 +126,18 @@ const handleScrollToParent = () => {
 onMounted(() => {
   checkContentHeight();
 });
+
+// 代码高亮处理
+watch(
+  [() => contentRef.value, () => quotedBodyRef.value],
+  ([contentEl, quotedEl]) => {
+    nextTick(() => {
+      if (contentEl) codeHeightlight(contentEl);
+      if (quotedEl) codeHeightlight(quotedEl);
+    });
+  },
+  { immediate: true },
+);
 
 // ==================== 回复表单相关 ====================
 

@@ -14,17 +14,10 @@ import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml from './extractVideosFromHtml';
 import recursiveReplace from './recursiveReplace';
 import throttleByRaf from './throttleByRaf';
+import { renderCopyButtons } from './renderCopyButtons';
 
 // 键盘快捷键工具
-export {
-  isMacOS,
-  MacKeySymbols,
-  formatShortcut,
-  aiShortcuts,
-  getAiShortcutText,
-  isAiToggleShortcut,
-  type ShortcutConfig,
-} from './keyboard';
+export { isMacOS, MacKeySymbols, formatShortcut, aiShortcuts, getAiShortcutText, isAiToggleShortcut, type ShortcutConfig } from './keyboard';
 
 export {
   LocalCache,
@@ -43,4 +36,5 @@ export {
   extractImagesFromHtml,
   extractVideosFromHtml,
   recursiveReplace,
+  renderCopyButtons,
 };
