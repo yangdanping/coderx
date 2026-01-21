@@ -502,6 +502,8 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+@use 'sass:color';
+
 $shadowColor: #a3dfd0;
 .ai-assistant {
   position: fixed;
@@ -526,17 +528,17 @@ $shadowColor: #a3dfd0;
     transition: all 0.3s;
     box-shadow:
       0 0 0 2px $shadowColor,
-      0 0 8px 2px rgba($shadowColor, 0.6),
-      0 0 16px 4px rgba($shadowColor, 0.1),
-      0 0 24px 6px rgba($shadowColor, 0.1);
+      0 0 8px 2px color.change($shadowColor, $alpha: 0.6),
+      0 0 16px 4px color.change($shadowColor, $alpha: 0.1),
+      0 0 24px 6px color.change($shadowColor, $alpha: 0.1);
 
     &:hover {
       transform: scale(1.1);
       box-shadow:
         0 0 0 2px $shadowColor,
-        0 0 8px 8px rgba($shadowColor, 0.6),
-        0 0 16px 16px rgba($shadowColor, 0.1),
-        0 0 24px 32px rgba($shadowColor, 0.1);
+        0 0 8px 8px color.change($shadowColor, $alpha: 0.6),
+        0 0 16px 16px color.change($shadowColor, $alpha: 0.1),
+        0 0 24px 32px color.change($shadowColor, $alpha: 0.1);
     }
 
     .trigger-text {
