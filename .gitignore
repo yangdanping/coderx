@@ -33,3 +33,6 @@ stats.html
 
 # Documentation
 *文档*/
+
+# 本地 macOS 10.15 兼容性补丁
+.pnpmfile.cjs
