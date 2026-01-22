@@ -317,21 +317,45 @@ const useUserStore = defineStore('user', {
       }
     },
     async uploadAvatarAction(payload) {
-      const userId = this.userInfo.id;
-      await deleteOldAvatar(userId); //删除原来的头像
+      console.log('[Store] uploadAvatarAction 开始上传', payload);
       const res = await uploadAvatar(payload);
-      console.log('uploadAvatarAction', payload);
+      console.log('[Store] uploadAvatarAction 响应结果', res);
+
       if (res.code === 0) {
         Msg.showSuccess('更换头像成功');
-        const res = await getUserInfoById(userId);
-        if (res.code === 0) {
-          this.userInfo = res.data;
-          LocalCache.setCache('userInfo', res.data);
-          router.go(0);
+        console.log('[Store] 上传成功，返回的 avatarUrl:', res.data.avatarUrl);
+
+        // 优化：直接更新本地状态，无需刷新页面
+        if (res.data.avatarUrl) {
+          const oldAvatarUrl = this.userInfo.avatarUrl;
+          // 拼接时间戳参数，避免浏览器缓存导致图片不更新
+          const timestamp = Date.now();
+          const avatarUrlWithTimestamp = `${res.data.avatarUrl}?t=${timestamp}`;
+          this.userInfo.avatarUrl = avatarUrlWithTimestamp;
+          console.log('[Store] 更新 userInfo.avatarUrl:', {
+            old: oldAvatarUrl,
+            new: this.userInfo.avatarUrl,
+            timestamp,
+          });
+          // 更新缓存
+          LocalCache.setCache('userInfo', this.userInfo);
+          console.log('[Store] 已更新 LocalCache');
         } else {
-          Msg.showFail('请求用户信息失败');
+          console.log('[Store] 后端未返回 avatarUrl，降级处理：重新请求用户信息');
+          // 降级处理：如果后端未返回 avatarUrl，则重新请求用户信息
+          const userId = this.userInfo.id;
+          const userRes = await getUserInfoById(userId);
+          if (userRes.code === 0) {
+            // 同样拼接时间戳避免缓存
+            const timestamp = Date.now();
+            const avatarUrlWithTimestamp = userRes.data.avatarUrl ? `${userRes.data.avatarUrl}?t=${timestamp}` : userRes.data.avatarUrl;
+            this.userInfo = { ...userRes.data, avatarUrl: avatarUrlWithTimestamp };
+            LocalCache.setCache('userInfo', this.userInfo);
+            console.log('[Store] 已重新获取用户信息，新的 avatarUrl:', this.userInfo.avatarUrl);
+          }
         }
       } else {
+        console.log('[Store] 上传失败:', res.msg);
         Msg.showFail('更换头像失败');
       }
     },

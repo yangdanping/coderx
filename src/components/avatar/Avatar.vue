@@ -63,7 +63,26 @@ const nameCount = computed(() => {
   return count > 0 ? count + 1 : 0;
 });
 
-const avatarUrl = computed(() => info.avatarUrl ?? getImageUrl('user', 'avatar'));
+// computed头像 URL：如果是当前登录用户，使用 store 中的响应式数据（支持热更新）
+const avatarUrl = computed(() => {
+  // 判断是否为当前登录用户
+  const isLoginUser = info.id && info.id === userStore.userInfo?.id;
+
+  // 如果是登录用户，使用 store 中的 avatarUrl（响应式，支持热更新）
+  // 否则使用传入的 info.avatarUrl
+  const sourceUrl = isLoginUser ? userStore.userInfo.avatarUrl : info.avatarUrl;
+  const url = sourceUrl ?? getImageUrl('user', 'avatar');
+
+  console.log('[Avatar] avatarUrl computed 更新:', {
+    userId: info.id,
+    userName: info.name,
+    isLoginUser,
+    propAvatarUrl: info.avatarUrl,
+    storeAvatarUrl: userStore.userInfo?.avatarUrl,
+    finalUrl: url,
+  });
+  return url;
+});
 const userSex = computed(() => getImageUrl('user', `${info.sex === '女' ? 'female' : 'male'}-icon`));
 
 const isOnline = computed(() => {
