@@ -27,6 +27,7 @@ watch(
 
 const getData = (userId) => {
   //首次加载,得到用户信息和关注信息
+  userStore.initProfile();
   userStore.getProfileAction(userId);
   userStore.getFollowAction(userId);
   // if (userInfo.value.id === parseInt(userId as any)) {
