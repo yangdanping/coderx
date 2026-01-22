@@ -51,7 +51,7 @@ const { isSmallScreen } = storeToRefs(rootStore);
 const isShow = ref(false);
 const toggle = debounce(function (toggle) {
   isShow.value = toggle;
-  userStore.getMyFollowAction(userInfo.value.id);
+  userStore.getMyFollowAction(userInfo.value.id as number);
 }, 200);
 
 const goEdit = () => router.push('/edit');
