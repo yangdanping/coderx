@@ -128,20 +128,12 @@
   li {
     line-height: 1.5;
   }
-  pre {
-    transition: all 0.3s ease;
-    &:hover {
-      transform: scale(1.01);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    code {
-      tab-size: 4;
-      white-space: pre;
-      word-break: normal;
-      word-spacing: normal;
-      hyphens: none;
-    }
+  code {
+    tab-size: 4;
+    white-space: pre;
+    word-break: normal;
+    word-spacing: normal;
+    hyphens: none;
   }
 
   table {
