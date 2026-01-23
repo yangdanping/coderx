@@ -2,18 +2,8 @@
   <div class="edit">
     <!-- 数据就绪后才渲染编辑器 ,即 await 接口返回数据） -->
     <template v-if="isDataReady">
-      <!-- 使用 EditorSwitch 支持 1.0/2.0 版本切换 -->
-      <Suspense>
-        <template #default>
-          <EditorSwitch :editData="editData" :version="editorVersion" @update:content="(content) => (preview = content)" />
-        </template>
-        <template #fallback>
-          <div class="editor-loading">
-            <i-loading class="loading-icon" />
-            <span>编辑器加载中...</span>
-          </div>
-        </template>
-      </Suspense>
+      <!-- 直接使用 TiptapEditor -->
+      <TiptapEditor :editData="editData" @update:content="(content) => (preview = content)" />
     </template>
     <!-- 编辑模式下数据加载中显示 loading -->
     <div v-else class="editor-loading">
@@ -30,13 +20,11 @@
 
 <script lang="ts" setup>
 import { Check } from 'lucide-vue-next';
-// 使用 EditorSwitch 组件支持编辑器版本切换
-const EditorSwitch = defineAsyncComponent(() => import('@/components/editor/EditorSwitch.vue'));
+// 直接使用 TiptapEditor 组件
+import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
 import EditForm from './cpns/EditForm.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
-// 编辑器版本：开发环境默认 2.0（Tiptap），生产环境默认 1.0（wangeditor）
-const editorVersion = ref<'1.0' | '2.0'>(import.meta.env.DEV ? '2.0' : '1.0');
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
 import useArticleStore from '@/stores/article.store';
@@ -175,6 +163,10 @@ const formSubmit = (editData: any) => {
 
 <style lang="scss" scoped>
 .edit {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; // 确保占满整个视口高度
+
   .submit-btn {
     position: fixed;
     bottom: 0;
@@ -211,6 +203,12 @@ const formSubmit = (editData: any) => {
     to {
       transform: rotate(360deg);
     }
+  }
+
+  // 确保编辑器能占满剩余空间
+  :deep(.tiptap-editor-container) {
+    flex: 1;
+    min-height: 0;
   }
 }
 </style>
