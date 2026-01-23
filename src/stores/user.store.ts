@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
-import { getCollect, addCollect, addToCollect, removeCollectArticle } from '@/service/collect/collect.request';
+import { getCollect, addCollect, addToCollect, removeCollectArticle, updateCollect, removeCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { LocalCache, Msg, emitter, dateFormat } from '@/utils';
 
@@ -392,6 +392,28 @@ const useUserStore = defineStore('user', {
         Msg.showSuccess('移除文章成功!');
       } else {
         Msg.showFail('移除文章失败!');
+      }
+    },
+    // 修改收藏夹名称
+    async updateCollectAction(collectId: number, name: string) {
+      const userId = this.userInfo.id;
+      const res = await updateCollect(collectId, name);
+      if (res.code === 0) {
+        Msg.showSuccess('修改收藏夹成功');
+        this.getCollectAction(userId);
+      } else {
+        Msg.showFail('修改收藏夹失败');
+      }
+    },
+    // 删除收藏夹
+    async removeCollectAction(collectId: number) {
+      const userId = this.userInfo.id;
+      const res = await removeCollect(collectId);
+      if (res.code === 0) {
+        Msg.showSuccess('删除收藏夹成功');
+        this.getCollectAction(userId);
+      } else {
+        Msg.showFail('删除收藏夹失败');
       }
     },
   },
