@@ -74,11 +74,23 @@
       </div>
 
       <form @submit.prevent="handleSubmit" class="input-area">
-        <el-input v-model="input" placeholder="输入问题..." :disabled="isLoading || aiServiceStatus !== 'online'" @keydown.enter.prevent="onEnter">
-          <template #append>
-            <el-button :loading="isLoading" :disabled="aiServiceStatus !== 'online'" @click="handleSubmit">发送</el-button>
-          </template>
-        </el-input>
+        <div class="input-wrapper">
+          <el-input
+            v-model="input"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 6 }"
+            placeholder="输入问题..."
+            :disabled="isLoading || aiServiceStatus !== 'online'"
+            @keydown.enter="onEnter"
+            class="input-textarea"
+          />
+          <div class="button-container">
+            <el-button v-if="isLoading" type="danger" plain size="small" @click="handleStop" class="action-button">停止</el-button>
+            <el-button v-else type="primary" plain size="small" :disabled="!input.trim() || aiServiceStatus !== 'online'" @click="handleSubmit" class="action-button"
+              >发送</el-button
+            >
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -383,10 +395,22 @@ const toggleOpen = () => {
   }
 };
 
-const onEnter = (e: KeyboardEvent | any) => {
-  if (!e.shiftKey) {
-    handleSubmit();
+const onEnter = (e: Event | KeyboardEvent) => {
+  // 类型守卫：确保是 KeyboardEvent
+  if (!(e instanceof KeyboardEvent)) return;
+
+  // Shift+Enter 允许换行
+  if (e.shiftKey) {
+    return; // 允许默认行为（换行）
   }
+
+  // 单独 Enter 发送消息
+  e.preventDefault();
+  handleSubmit();
+};
+
+const handleStop = () => {
+  chat.stop();
 };
 
 const scrollToBottomSmooth = async () => {
@@ -916,8 +940,59 @@ $shadowColor: #a3dfd0;
     }
 
     .input-area {
-      padding: 6px;
-      background: white;
+      // padding: 6px;
+      // background: white;
+      // border-top: 1px solid #f0f2f5;
+
+      .input-wrapper {
+        position: relative;
+        // background: #f5f7fa;
+        // border-radius: 0 0 8px 8px;
+        border-top: 1px solid #eee;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+
+        &:focus-within {
+          border-color: var(--el-color-primary);
+          box-shadow: 0 0 0 3px rgba(var(--el-color-primary-rgb), 0.1);
+        }
+
+        .input-textarea {
+          width: 100%;
+
+          :deep(.el-textarea__inner) {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 10px 12px 45px 12px; // 为底部按钮留出空间
+            min-height: 44px;
+            font-size: 14px;
+            color: #303133;
+            resize: none;
+
+            &::placeholder {
+              color: #a8abb2;
+            }
+          }
+        }
+
+        .button-container {
+          position: absolute;
+          right: 8px;
+          bottom: 8px;
+          display: flex;
+          justify-content: flex-end;
+          z-index: 2;
+
+          .action-button {
+            height: 28px;
+            padding: 0 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+        }
+      }
     }
 
     .scroll-bottom-btn {
