@@ -44,7 +44,6 @@ import { getTiptapExtensions } from './config';
 import { LocalCache, isEmptyObj, emitter, Msg } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
-
 // 引入样式
 import './styles/tiptap.scss';
 
@@ -89,8 +88,7 @@ const completionActiveIndex = ref(0);
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: ReturnType<typeof useEditor>['value']) => {
   if (!editorInstance) return '';
-  // 使用 unknown 中转避免类型冲突
-  const storage = editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined;
+  const storage = editorInstance.storage.markdown as MarkdownStorageType;
   return storage?.getMarkdown?.() ?? '';
 };
 
@@ -101,8 +99,12 @@ const editor: any = useEditor({
   autofocus: false,
   onUpdate: ({ editor: editorInstance }) => {
     // 根据输出模式获取内容
-    const content =
-      outputMode.value === 'markdown' ? ((editorInstance.storage.markdown as unknown as MarkdownStorageType | undefined)?.getMarkdown?.() ?? '') : editorInstance.getHTML();
+    let content = '';
+    if (outputMode.value === 'markdown') {
+      content = (editorInstance.storage.markdown as MarkdownStorageType)?.getMarkdown?.() ?? '';
+    } else {
+      content = editorInstance.getHTML();
+    }
     emit('update:content', content || '');
   },
 });
