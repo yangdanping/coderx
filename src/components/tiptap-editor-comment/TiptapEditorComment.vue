@@ -149,9 +149,9 @@ onBeforeUnmount(() => {
 .comment-editor-container {
   display: flex;
   flex-direction: column;
-  border: 1px solid #eee;
+  border: 1px solid var(--el-border-color);
   border-radius: 4px;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-primary);
 }
 </style>

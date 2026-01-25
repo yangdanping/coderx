@@ -245,8 +245,8 @@ const confirmInsertLink = () => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  border-bottom: 1px solid #eee;
-  background: #fafafa;
+  border-bottom: 1px solid var(--el-border-color);
+  background: var(--bg-secondary);
 
   .toolbar-group {
     display: flex;
