@@ -3,18 +3,18 @@
     <slot name="right"> </slot>
 
     <!-- 主题切换下拉菜单 -->
-    <el-dropdown @command="handleThemeChange" trigger="click">
-      <el-button class="theme-btn" circle>
-        <el-icon :size="18">
-          <Sunny v-if="mode === 'light'" />
+    <el-dropdown @command="handleThemeChange" trigger="click" class="theme-dropdown">
+      <div class="theme-btn-wrapper">
+        <el-icon :size="20">
+          <Sun v-if="mode === 'light'" />
           <Moon v-else-if="mode === 'dark'" />
           <Monitor v-else />
         </el-icon>
-      </el-button>
+      </div>
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item command="light" :class="{ active: mode === 'light' }">
-            <el-icon><Sunny /></el-icon>
+            <el-icon><Sun /></el-icon>
             <span>浅色</span>
           </el-dropdown-item>
           <el-dropdown-item command="dark" :class="{ active: mode === 'dark' }">
@@ -38,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Sunny, Moon, Monitor } from '@element-plus/icons-vue';
+import { Sun, Moon, Monitor } from 'lucide-vue-next';
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
 import { useAuth } from '@/composables/useAuth';
@@ -67,13 +67,18 @@ const handleThemeChange = (command: ThemeMode) => {
 .right {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 30px;
   height: 100%;
   margin-right: 20px;
 
-  .theme-btn {
-    border: none;
-    background: transparent;
+  .theme-btn-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.3s;
 
@@ -86,9 +91,6 @@ const handleThemeChange = (command: ThemeMode) => {
   .register-btn {
     position: relative;
     height: 36px;
-    // color: #fff;
-    // background: linear-gradient(90deg, #afffe3, #f888c8, #ffeb3b, #43c3ff);
-    // background-size: 400%;
     transition: all 0.3s;
     .x {
       font-style: oblique;
@@ -116,7 +118,7 @@ const handleThemeChange = (command: ThemeMode) => {
 // 移动端响应式样式
 @media (max-width: 768px) {
   .right {
-    gap: 20px;
+    gap: 15px;
     .register-btn {
       font-size: 14px;
       padding: 8px 12px;

@@ -63,16 +63,26 @@ const goToHistoryPage = () => {
 <style lang="scss" scoped>
 .history-icon {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  cursor: pointer;
   transition: all 0.3s;
 
-  .clock-icon {
-    font-size: 24px;
-    color: var(--text-secondary);
-    transition: color 0.3s;
-    &:hover {
+  &:hover {
+    background: var(--glass-bg);
+    .clock-icon {
       color: var(--el-color-primary);
     }
+  }
+
+  .clock-icon {
+    font-size: 20px;
+    color: var(--text-secondary);
+    transition: color 0.3s;
   }
 
   .history-box {
