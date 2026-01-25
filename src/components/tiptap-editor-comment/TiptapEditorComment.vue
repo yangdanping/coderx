@@ -25,6 +25,7 @@ import { emitter } from '@/utils';
 
 // 引入样式
 import './styles/comment-editor.scss';
+import type { Extensions } from '@tiptap/core';
 
 const props = withDefaults(
   defineProps<{
@@ -49,7 +50,7 @@ const isFocused = ref(false);
 
 // 创建编辑器实例
 const editor: any = useEditor({
-  extensions: getCommentEditorExtensions(props.placeholder),
+  extensions: getCommentEditorExtensions(props.placeholder) as Extensions,
   content: '',
   ...defaultCommentEditorConfig,
   onUpdate: ({ editor: editorInstance }) => {

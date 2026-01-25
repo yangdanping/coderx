@@ -30,8 +30,7 @@ const { item = {} } = defineProps<{
   align-items: center;
   /* width: 25%; */
   height: 200px;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   border: 1px solid #d8d8d8;
   border-radius: 8px;
   transition: all 0.3s;
@@ -54,7 +53,7 @@ const { item = {} } = defineProps<{
   }
   .bg-mask {
     background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
   }
 
   .bg {

@@ -102,8 +102,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .comment-list {
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   margin-bottom: 300px;
   border-radius: 5px;
   padding: 10px;

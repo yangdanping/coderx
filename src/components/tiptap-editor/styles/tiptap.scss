@@ -1,13 +1,14 @@
 /**
  * Tiptap 编辑器样式
  * 与现有 editor.scss 风格保持一致
+ * 支持 dark 模式
  */
 
 // 编辑器容器
 .tiptap-editor-container {
   border-radius: 4px;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-primary);
 }
 
 // 编辑区域
@@ -30,7 +31,7 @@
     > p.is-editor-empty:first-child::before {
       content: attr(data-placeholder);
       float: left;
-      color: #adb5bd;
+      color: var(--text-secondary);
       pointer-events: none;
       height: 0;
     }
@@ -68,11 +69,11 @@
 
     // 引用块
     blockquote {
-      border-left: 4px solid #d0e5f2;
+      border-left: 4px solid var(--el-color-primary-light-5);
       padding: 10px 16px;
       margin: 16px 0;
-      background-color: #f9f9f9;
-      color: #666;
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
 
       p {
         margin: 0;
@@ -103,12 +104,12 @@
 
     // 行内代码
     code:not(pre code) {
-      background: #f0f0f0;
+      background: var(--bg-secondary);
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Fira Code', 'Consolas', monospace;
       font-size: 0.9em;
-      color: #e83e8c;
+      color: var(--el-color-danger);
     }
 
     // 列表
@@ -145,7 +146,7 @@
 
     // 链接
     a {
-      color: #409eff;
+      color: var(--el-color-primary);
       text-decoration: none;
       cursor: pointer;
 
@@ -188,7 +189,7 @@
     // 水平分割线
     hr {
       border: none;
-      border-top: 2px solid #e0e0e0;
+      border-top: 2px solid var(--el-border-color);
       margin: 24px 0;
     }
 
@@ -200,13 +201,13 @@
 
       th,
       td {
-        border: 1px solid #eee;
+        border: 1px solid var(--el-border-color);
         padding: 8px 12px;
         text-align: left;
       }
 
       th {
-        background: #f5f7fa;
+        background: var(--bg-secondary);
         font-weight: 600;
       }
     }
@@ -235,8 +236,8 @@
   display: flex;
   gap: 4px;
   padding: 4px 8px;
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--bg-primary);
+  border: 1px solid var(--el-border-color);
   border-radius: 4px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 

@@ -63,15 +63,18 @@ const handleClick = () => {
     padding: 8px 20px;
     border-radius: 4px;
     justify-content: flex-start; // Align left in vertical mode usually
+    border: 1px solid transparent; // 预留 border 空间，避免切换时抖动
 
+    // 去掉 hover 背景效果，保持简洁
     &:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-      // color: #409eff;
+      color: var(--el-color-primary);
     }
 
+    // 全边 border 形式，类似 plain 按钮
     &.is-active {
-      background-color: #ecf5ff;
-      color: #409eff;
+      background-color: transparent;
+      border-color: var(--el-color-primary);
+      color: var(--el-color-primary);
       font-weight: 600;
     }
   }

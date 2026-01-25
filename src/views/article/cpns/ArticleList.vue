@@ -170,8 +170,7 @@ const setOrder = throttle(function (order: string) {
   min-width: 100%;
   margin: 0 auto;
   border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   animation: moveDown 0.5s forwards;
   // 注意：不能设置 overflow-x: hidden，否则会导致 .list-order 的 sticky 失效
 
@@ -194,19 +193,20 @@ const setOrder = throttle(function (order: string) {
     padding-left: 10px;
     gap: 10px;
     width: 100%;
-    background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+    // 使用 CSS 变量，支持 dark 模式
+    background: linear-gradient(to right, var(--bg-primary), transparent);
     z-index: var(--z-sticky);
     .btn {
       display: flex;
-      background-color: rgba(255, 255, 255, 0.5);
+      background-color: var(--glass-bg);
       align-items: center;
       justify-content: center;
       height: 30px;
       width: 60px;
       cursor: pointer;
       &.active {
-        border-bottom: 2px solid #409eff;
-        color: #409eff;
+        border-bottom: 2px solid var(--el-color-primary);
+        color: var(--el-color-primary);
       }
     }
   }

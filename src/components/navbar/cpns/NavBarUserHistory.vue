@@ -68,10 +68,10 @@ const goToHistoryPage = () => {
 
   .clock-icon {
     font-size: 24px;
-    color: #666;
+    color: var(--text-secondary);
     transition: color 0.3s;
     &:hover {
-      color: #409eff;
+      color: var(--el-color-primary);
     }
   }
 
@@ -83,8 +83,7 @@ const goToHistoryPage = () => {
     margin-top: 10px;
     width: 380px;
     height: 400px;
-    background-color: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
+    @include glass-effect-popup;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: var(--z-navbar-popup);
@@ -119,11 +118,11 @@ const goToHistoryPage = () => {
 
           gap: 8px;
           font-weight: 600;
-          color: #333;
+          color: var(--text-primary);
           flex: 1;
 
           .el-icon {
-            color: #f39c12;
+            color: var(--yellow);
             transition: color 0.3s;
           }
         }
@@ -164,13 +163,13 @@ const goToHistoryPage = () => {
         right: 0;
         width: 100%;
         text-align: center;
-        background-color: #fff;
+        background-color: var(--bg-primary);
         padding: 10px 0;
-        @include thin-border(top, #f0f0f0);
+        @include thin-border(top, var(--el-border-color));
         cursor: pointer;
         font-size: 14px;
         &:hover {
-          color: #42b983;
+          color: var(--el-color-success);
         }
       }
     }

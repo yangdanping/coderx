@@ -11,8 +11,12 @@ import VueDOMPurifyHTML from 'vue-dompurify-html';
 import 'normalize.css';
 import '@/assets/css/index.scss';
 import 'element-plus/dist/index.css';
+// Element Plus 暗黑模式 CSS 变量
+import 'element-plus/theme-chalk/dark/css-vars.css';
 // highlight.js 主题样式（用于代码块语法高亮）
 import 'highlight.js/styles/atom-one-dark.css';
+
+import { initThemeOnLoad } from '@/composables/useTheme';
 
 import type { App } from 'vue';
 import useSocket from '@/service/socket';
@@ -42,6 +46,8 @@ function isTokenExpiringSoon(token: string, threshold = 5 * 60): boolean {
 let hasVerifiedOnce = false;
 
 export default function init(app: App) {
+  // 在应用挂载前初始化主题，避免闪烁
+  initThemeOnLoad();
   app.use(createPinia()).use(router).use(VueDOMPurifyHTML).use(VueQueryPlugin).mount('#app');
   initDirective(app); // 初始化指令
   // 使用vue-dompurify-html既可以保留样式和防止xss攻击

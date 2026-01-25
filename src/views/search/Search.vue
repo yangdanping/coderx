@@ -159,8 +159,7 @@ onUnmounted(() => {
 }
 
 .search-results {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   border-radius: 12px;
   padding: 20px;
   min-height: 400px;
@@ -173,19 +172,20 @@ onUnmounted(() => {
     padding-left: 10px;
     gap: 10px;
     width: 100%;
-    background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+    // 使用 CSS 变量，支持 dark 模式
+    background: linear-gradient(to right, var(--bg-primary), transparent);
     z-index: var(--z-sticky);
     .btn {
       display: flex;
-      background-color: rgba(255, 255, 255, 0.5);
+      background-color: var(--glass-bg);
       align-items: center;
       justify-content: center;
       height: 30px;
       width: 60px;
       cursor: pointer;
       &.active {
-        border-bottom: 2px solid #409eff;
-        color: #409eff;
+        border-bottom: 2px solid var(--el-color-primary);
+        color: var(--el-color-primary);
       }
     }
   }

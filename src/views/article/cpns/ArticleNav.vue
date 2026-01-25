@@ -87,8 +87,7 @@ const handleClick = throttle(function (name: string | number) {
   &.is-sticky {
     /* position: sticky;  Moved to Article.vue */
     /* top: var(--navbarHeight); */
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
+    @include glass-effect;
     @include thin-border(bottom, #eee);
     /* Ensure full width on small screens */
     width: 100%;

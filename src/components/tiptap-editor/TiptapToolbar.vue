@@ -302,8 +302,8 @@ const toggleAiAssistant = () => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  @include thin-border(bottom, #eee);
-  background: #fafafa;
+  @include thin-border(bottom, var(--el-border-color));
+  background: var(--bg-secondary);
 
   .toolbar-group {
     display: flex;

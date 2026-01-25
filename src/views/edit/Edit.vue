@@ -166,6 +166,7 @@ const formSubmit = (editData: any) => {
   display: flex;
   flex-direction: column;
   height: 100vh; // 确保占满整个视口高度
+  background: var(--bg-primary);
 
   .submit-btn {
     position: fixed;
@@ -176,8 +177,7 @@ const formSubmit = (editData: any) => {
   }
 
   :deep(.el-drawer) {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(1px);
+    @include glass-effect;
   }
 
   .editor-loading {
@@ -186,7 +186,7 @@ const formSubmit = (editData: any) => {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    color: #909399;
+    color: var(--text-secondary);
     font-size: 14px;
     gap: 12px;
 
