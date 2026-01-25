@@ -74,7 +74,7 @@ watch(
   width: 80%;
 
   .el-main {
-    backdrop-filter: blur(10px);
+    @include glass-effect;
     .author-info-block {
       display: flex;
       align-items: center;

@@ -87,9 +87,28 @@ function handleBeforeUnload() {
 
 <style lang="scss" scoped>
 .app {
-  background: var(--bg);
-  transition: background-color 1s;
+  position: relative;
+  min-height: 100vh;
+  // 不设置 background-color，让 ::before 的 SVG 背景可见
+  // 兜底背景色在 html 上设置
+
+  // SVG 背景层 - 使用伪元素，便于在 dark 模式下应用滤镜
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg);
+    filter: var(--bg-filter);
+    z-index: var(--z-below);
+    pointer-events: none;
+    transition: filter 0.3s;
+  }
+
   .router-view {
+    position: relative;
     min-height: calc(100vh - var(--navbarHeight));
     &:not(.edit) {
       padding-top: var(--navbarHeight);

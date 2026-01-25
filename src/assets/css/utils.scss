@@ -4,6 +4,18 @@
 // 放 Mixin、变量、函数,不产生实际 CSS
 // 通过 vite 配置 全局注入,只有使用了 @include 时，才会生成代码
 
+// 玻璃模糊效果 - 统一使用 CSS 变量，支持主题切换
+@mixin glass-effect {
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+}
+
+// 弹窗专用玻璃效果 - 更高不透明度，避免背景内容干扰
+@mixin glass-effect-popup {
+  background-color: var(--glass-bg-popup);
+  backdrop-filter: var(--glass-blur);
+}
+
 @mixin thin-border($directions: all, $color: #ebeef5) {
   $shadows: ();
   @if meta.type-of($directions) == 'string' {

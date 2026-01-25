@@ -20,10 +20,28 @@
   --xfontStyle: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
   --cursorDefault: url('@/assets/img/cursor.svg'), auto;
   --pointerDefault: url('@/assets/img/pointer.svg'), auto;
-  --fontColor: #5f5f5f;
   --navbarHeight: 56px;
-  --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
   --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
+
+  /* ========== 主题色 - Light Mode ========== */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --text-primary: #303133;
+  --text-secondary: #5f5f5f;
+  --fontColor: var(--text-secondary);
+
+  /* ========== 玻璃效果 ========== */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-popup: rgba(255, 255, 255, 0.92); /* 弹窗用更高不透明度 */
+  --glass-blur: blur(10px);
+
+  /* ========== SVG 背景滤镜 ========== */
+  --bg-filter: none;
+
+  /* ========== 装饰块背景 ========== */
+  --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
+
+  /* ========== 调色板 ========== */
   --red: #ea3329;
   --orange: #eb6a2c;
   --yellow: #f29c38;
@@ -117,6 +135,9 @@ html {
   scroll-behavior: smooth;
   /* Ensure anchor targets are not hidden behind fixed navbar */
   scroll-padding-top: calc(var(--navbarHeight) + 20px);
+  /* 兜底背景色，在 SVG 背景加载前显示 */
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s;
 }
 
 /* Header Anchor Styles - similar to Vue docs */
@@ -144,5 +165,31 @@ h6 {
 
   &:hover {
     color: var(--green);
+  }
+}
+
+/* ========== Dark Mode ========== */
+html.dark {
+  /* 主题色 - Dark Mode (基底 #0f0f0f) */
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --text-primary: #ededed;
+  --text-secondary: #a0a0a0;
+  --fontColor: var(--text-secondary);
+
+  /* 玻璃效果 - dark 模式使用深色半透明背景 */
+  --glass-bg: rgba(15, 15, 15, 0.6);
+  --glass-bg-popup: rgba(30, 30, 30, 0.95); /* 弹窗用更高不透明度 */
+
+  /* SVG 背景滤镜 - 降低亮度和饱和度 */
+  --bg-filter: brightness(0.3) saturate(0.8);
+
+  /* 装饰块背景 */
+  --blockBg: linear-gradient(90deg, rgba(30, 50, 30, 0.7), rgba(15, 15, 15, 0.7));
+
+  /* 文字选中颜色 */
+  ::selection {
+    background: #4a7c59;
+    color: #ededed;
   }
 }

@@ -101,8 +101,7 @@ const logOut = () => {
       transform: translateX(-50%);
       top: 58px;
       width: 150px;
-      background-color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
+      @include glass-effect-popup;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       display: flex;

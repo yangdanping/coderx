@@ -87,8 +87,7 @@ const handleHover = (index: number) => {
   z-index: 9999;
   min-width: 100px;
   max-width: 400px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
+  @include glass-effect;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   overflow: hidden;

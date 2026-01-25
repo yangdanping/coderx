@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { useEditor, EditorContent, type Extensions } from '@tiptap/vue-3';
 // Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import TiptapToolbar from './TiptapToolbar.vue';
@@ -51,6 +51,8 @@ import './styles/tiptap.scss';
 interface MarkdownStorageType {
   getMarkdown?: () => string;
 }
+
+type EditorInstance = ReturnType<typeof useEditor>['value'] | any;
 
 const props = withDefaults(
   defineProps<{
@@ -86,7 +88,7 @@ const completionPosition = ref<PopoverPosition | null>(null);
 const completionActiveIndex = ref(0);
 
 // 获取 Markdown 内容的辅助函数
-const getMarkdownContent = (editorInstance: ReturnType<typeof useEditor>['value']) => {
+const getMarkdownContent = (editorInstance: EditorInstance) => {
   if (!editorInstance) return '';
   const storage = editorInstance.storage.markdown as MarkdownStorageType;
   return storage?.getMarkdown?.() ?? '';
@@ -94,10 +96,10 @@ const getMarkdownContent = (editorInstance: ReturnType<typeof useEditor>['value'
 
 // 创建编辑器实例
 const editor: any = useEditor({
-  extensions: getTiptapExtensions(),
+  extensions: getTiptapExtensions() as Extensions,
   content: '',
   autofocus: false,
-  onUpdate: ({ editor: editorInstance }) => {
+  onUpdate: ({ editor: editorInstance }: { editor: EditorInstance }) => {
     // 根据输出模式获取内容
     let content = '';
     if (outputMode.value === 'markdown') {
@@ -305,7 +307,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid #eee;
+  border: 1px solid var(--el-border-color);
+  background: var(--bg-primary);
 }
 
 .tiptap-editor-content {
@@ -313,9 +316,11 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   min-height: 0; // 关键：让 flex 子元素能正确收缩
   transition: all 0.2s ease;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 
   &.is-dragging {
-    border: 2px dashed #409eff;
+    border: 2px dashed var(--el-color-primary);
     background-color: rgba(64, 158, 255, 0.05);
     // 添加内边距避免内容被边框遮挡
     padding: 8px;

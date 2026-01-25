@@ -70,8 +70,7 @@ const goBack = () => {
   /* display: flex; */
   height: var(--navbarHeight);
   z-index: var(--z-navbar);
-  background-color: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
   .list {
     display: flex;

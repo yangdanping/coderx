@@ -249,8 +249,7 @@ watch(
     position: sticky;
     top: var(--navbarHeight, 60px);
     width: 100%;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    @include glass-effect;
     @include thin-border(bottom, rgba(0, 0, 0, 0.05));
     padding: 10px 15px 0;
     gap: 10px;

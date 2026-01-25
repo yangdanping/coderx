@@ -57,8 +57,7 @@ const goToUserProfile = () => {
   height: 200px;
   margin: 0 16px 16px 0;
   padding: 20px;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  @include glass-effect;
   border: 1px solid #d8d8d8;
   border-radius: 8px;
   display: flex;
@@ -111,7 +110,7 @@ const goToUserProfile = () => {
 
   .bg-mask {
     background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
   }
 
   /* hover 效果 */
