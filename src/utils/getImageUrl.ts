@@ -6,6 +6,5 @@
  * @returns 图片静态资源url
  */
 export default function getImageUrl(docName: string, name: string, type: 'png' | 'svg' = 'png') {
-  const imgAssets = new URL('@/assets/img', import.meta.url).href;
-  return new URL(`${imgAssets}/${docName}/${name}.${type}`, import.meta.url).href;
+  return new URL(`../assets/img/${docName}/${name}.${type}`, import.meta.url).href;
 }
