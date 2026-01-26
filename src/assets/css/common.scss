@@ -192,4 +192,27 @@ html.dark {
     background: #4a7c59;
     color: #ededed;
   }
+
+  /* Element Plus Tooltip 暗色模式适配 */
+  .el-popper.is-dark {
+    background: #333 !important;
+    color: #fff !important;
+    border: 1px solid #444 !important;
+
+    .el-popper__arrow::before {
+      background: #333 !important;
+      border: 1px solid #444 !important;
+    }
+  }
+
+  .el-popper.is-light {
+    background: #1a1a1a !important;
+    color: #ededed !important;
+    border: 1px solid #333 !important;
+
+    .el-popper__arrow::before {
+      background: #1a1a1a !important;
+      border: 1px solid #333 !important;
+    }
+  }
 }

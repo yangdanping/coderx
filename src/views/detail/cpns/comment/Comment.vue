@@ -7,7 +7,7 @@
     <template v-else>
       <div class="showLogin">
         <h1>请先登录后评论</h1>
-        <el-button @click="rootStore.toggleLoginDialog" type="primary">登录</el-button>
+        <el-button @click="rootStore.toggleLoginDialog" type="primary" plain>登录</el-button>
       </div>
     </template>
 

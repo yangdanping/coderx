@@ -6,6 +6,7 @@
     @mouseenter="ToggleUnFollow(true)"
     @mouseleave="ToggleUnFollow(false)"
     :type="!isFollowed ? 'primary' : ''"
+    plain
     :icon="!isFollowed ? Plus : ''"
   >
     {{ !isFollowed ? '关注' : !isWantToUnFollowed ? '已关注' : '取消关注' }}

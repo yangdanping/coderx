@@ -16,9 +16,9 @@
 
     <!-- BubbleMenu：选中文字时显示 -->
     <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" v-if="editor" class="tiptap-bubble-menu">
-      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
-      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
-      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" @click="handleBubbleLink"> 链接 </el-button>
+      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" plain @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
+      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" plain @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
+      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" plain @click="handleBubbleLink"> 链接 </el-button>
     </BubbleMenu>
 
     <!-- AI 补全弹出框 -->

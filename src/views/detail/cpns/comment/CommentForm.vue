@@ -4,8 +4,8 @@
     <div class="input">
       <TiptapEditorComment @update:content="(valueHtml) => (content = valueHtml)" />
       <div class="input-action">
-        <el-button v-if="isReply" @click="handleCancel" type="default" size="small">取消</el-button>
-        <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
+        <el-button v-if="isReply" @click="handleCancel" type="default" plain size="small">取消</el-button>
+        <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" plain :size="isReply ? 'small' : 'default'">
           {{ isSubmitting ? '提交中' : isReply ? '回复' : '发送' }}
         </el-button>
       </div>

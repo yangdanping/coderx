@@ -16,7 +16,7 @@
         </el-input>
       </el-form-item>
       <el-form-item class="btn-box">
-        <el-button class="login-btn" @click="login">登录</el-button>
+        <el-button class="login-btn" type="primary" plain @click="login">登录</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -72,24 +72,28 @@ $height: 42px;
       height: $height;
 
       .el-input__wrapper {
-        border: 1px solid #e0e0e0;
+        background-color: transparent;
+        border: 1px solid var(--text-secondary);
+        opacity: 0.8;
         padding: 10px 14px;
         box-shadow: none;
+        transition: all 0.3s;
 
         &.is-focus {
-          background-color: #fff;
+          opacity: 1;
+          background-color: var(--bg-primary);
           border-color: #409eff;
           box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
         }
       }
 
       .el-input__inner {
-        color: #2c3e50;
+        color: var(--text-primary);
         font-size: 15px;
         font-weight: 400;
 
         &::placeholder {
-          color: #909399;
+          color: var(--text-secondary);
           font-weight: 400;
         }
       }
@@ -97,13 +101,13 @@ $height: 42px;
       // 清除和密码显示图标样式
       .el-input__suffix {
         .el-input__icon {
-          color: #909399;
+          color: var(--text-secondary);
           font-size: 16px;
         }
       }
 
       .el-input__prefix {
-        color: #909399;
+        color: var(--text-secondary);
         display: flex;
         align-items: center;
       }
@@ -117,23 +121,16 @@ $height: 42px;
       .login-btn {
         width: 100%;
         height: $height;
-        background: #409eff;
-        color: #fff;
-        border: none;
         font-size: 20px;
         letter-spacing: 2px;
         transition: all 0.3s;
-        box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
 
         &:hover {
-          background: #66b1ff;
-          box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
           transform: translateY(-1px);
         }
 
         &:active {
           transform: translateY(0);
-          box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
         }
       }
     }

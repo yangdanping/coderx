@@ -6,7 +6,7 @@
     <el-input v-model="otherReport" placeholder="其他违规信息" maxlength="10" show-word-limit style="width: 50%; margin-top: 30px" />
     <template #footer>
       <el-button @click="cancelReport">取 消</el-button>
-      <el-button type="primary" @click="submitReport">提 交</el-button>
+      <el-button type="primary" plain @click="submitReport">提 交</el-button>
     </template>
   </el-dialog>
 </template>

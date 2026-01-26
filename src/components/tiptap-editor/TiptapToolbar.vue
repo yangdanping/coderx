@@ -3,25 +3,25 @@
     <!-- 格式化按钮组 -->
     <div class="toolbar-group">
       <el-tooltip :content="`加粗 (${shortcuts.bold})`" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('bold') ? 'primary' : ''" @click="editor?.chain().focus().toggleBold().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('bold') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBold().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon">B</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`斜体 (${shortcuts.italic})`" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('italic') ? 'primary' : ''" @click="editor?.chain().focus().toggleItalic().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('italic') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleItalic().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon italic">I</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`下划线 (${shortcuts.underline})`" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('underline') ? 'primary' : ''" @click="editor?.chain().focus().toggleUnderline().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('underline') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleUnderline().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon underline">U</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="删除线" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('strike') ? 'primary' : ''" @click="editor?.chain().focus().toggleStrike().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('strike') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleStrike().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon strike">S</span>
         </el-button>
       </el-tooltip>
@@ -62,25 +62,25 @@
     <!-- 列表按钮组 -->
     <div class="toolbar-group">
       <el-tooltip content="无序列表" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('bulletList') ? 'primary' : ''" @click="editor?.chain().focus().toggleBulletList().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('bulletList') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBulletList().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><List /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="有序列表" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('orderedList') ? 'primary' : ''" @click="editor?.chain().focus().toggleOrderedList().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('orderedList') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleOrderedList().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><Memo /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="引用块" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" @click="editor?.chain().focus().toggleBlockquote().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBlockquote().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><ChatLineSquare /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="代码块" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('codeBlock') ? 'primary' : ''" @click="editor?.chain().focus().toggleCodeBlock().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('codeBlock') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleCodeBlock().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><Coin /></el-icon>
         </el-button>
       </el-tooltip>
@@ -91,7 +91,7 @@
     <!-- 插入按钮组 -->
     <div class="toolbar-group">
       <el-tooltip content="插入链接" placement="bottom" :show-after="500">
-        <el-button @click="handleInsertLink" :disabled="!editor" class="toolbar-btn" :type="editor?.isActive('link') ? 'primary' : ''">
+        <el-button @click="handleInsertLink" :disabled="!editor" class="toolbar-btn" :type="editor?.isActive('link') ? 'primary' : ''" plain>
           <el-icon><Link /></el-icon>
         </el-button>
       </el-tooltip>
@@ -148,7 +148,7 @@
           inactive-text="HTML"
           inline-prompt
           :width="60"
-          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #409eff"
+          class="plain-switch"
         />
       </el-tooltip>
     </div>
@@ -163,7 +163,7 @@
     </el-form>
     <template #footer>
       <el-button @click="linkDialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="confirmInsertLink">确定</el-button>
+      <el-button type="primary" plain @click="confirmInsertLink">确定</el-button>
     </template>
   </el-dialog>
 </template>
@@ -353,6 +353,34 @@ const toggleAiAssistant = () => {
     // 确保 switch 宽度固定，避免切换模式时抖动
     :deep(.el-switch) {
       width: 60px;
+
+      &.plain-switch {
+        --el-switch-on-color: var(--el-color-success-light-8);
+        --el-switch-off-color: var(--el-color-primary-light-8);
+
+        .el-switch__inner {
+          .is-text {
+            color: var(--el-text-color-primary);
+            font-weight: bold;
+          }
+        }
+
+        &.is-checked {
+          .el-switch__inner {
+            .is-text {
+              color: var(--el-color-success);
+            }
+          }
+        }
+
+        &:not(.is-checked) {
+          .el-switch__inner {
+            .is-text {
+              color: var(--el-color-primary);
+            }
+          }
+        }
+      }
     }
 
     @media (max-width: 768px) {

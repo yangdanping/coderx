@@ -45,7 +45,7 @@
       <el-step title="步骤 2"></el-step>
       <el-step title="步骤 3"></el-step>
     </el-steps>
-    <el-button style="margin-top: 12px" @click="next">{{ active <= 2 ? '下一步' : '完成' }}</el-button>
+    <el-button style="margin-top: 12px" type="primary" plain @click="next">{{ active <= 2 ? '下一步' : '完成' }}</el-button>
   </div>
 </template>
 
