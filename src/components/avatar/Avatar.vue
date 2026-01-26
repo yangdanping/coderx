@@ -7,7 +7,7 @@
         <div class="user-info">
           <div class="info1">
             <h2>{{ info.name }}</h2>
-            <img :src="userSex" alt="" />
+            <component :is="info.sex === '女' ? Venus : Mars" :class="['gender-icon', info.sex === '女' ? 'female' : 'male']" />
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
@@ -29,6 +29,7 @@
 
 <script lang="ts" setup>
 import FollowButton from '@/components/FollowButton.vue';
+import { Mars, Venus } from 'lucide-vue-next';
 import { debounce, getImageUrl } from '@/utils';
 
 import type { IUserInfo } from '@/stores/types/user.result';
@@ -83,7 +84,6 @@ const avatarUrl = computed(() => {
   });
   return url;
 });
-const userSex = computed(() => getImageUrl('user', `${info.sex === '女' ? 'female' : 'male'}-icon`));
 
 const isOnline = computed(() => {
   const user = onlineUsers.value.find((user) => user.userName === info.name);
@@ -189,9 +189,16 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
       .info1 {
         display: flex;
         align-items: center;
-        img {
-          margin: 5px 0 0 5px;
-          width: 20px;
+        .gender-icon {
+          margin: 2px 0 0 2px;
+          width: 16px;
+          height: 16px;
+          &.male {
+            color: #409eff;
+          }
+          &.female {
+            color: #f56c6c;
+          }
         }
       }
       .info2 {

@@ -7,7 +7,7 @@
           <div class="mobile-header-right" v-if="isSmallScreen">
             <div class="name-row">
               <span class="name">{{ profile.name }}</span>
-              <img :src="userSex" class="gender-icon" alt="" />
+              <component :is="profile.sex === '女' ? Venus : Mars" :class="['gender-icon', profile.sex === '女' ? 'female' : 'male']" />
               <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
             </div>
 
@@ -37,7 +37,7 @@
         <div class="profile-info">
           <div class="name-row" v-if="!isSmallScreen">
             <span class="name">{{ profile.name }}</span>
-            <img :src="userSex" class="gender-icon" alt="" />
+            <component :is="profile.sex === '女' ? Venus : Mars" :class="['gender-icon', profile.sex === '女' ? 'female' : 'male']" />
             <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
           </div>
 
@@ -96,6 +96,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { Mars, Venus } from 'lucide-vue-next';
 import { emitter, getImageUrl } from '@/utils';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
@@ -140,8 +141,6 @@ const infos = computed(() => {
     { label: '邮箱', value: profile.email ?? '无', icon: 'takeaway-box' },
   ] as any[];
 });
-
-const userSex = computed(() => getImageUrl('user', `${profile.sex === '女' ? 'female' : 'male'}-icon`));
 
 const goFollowTab = (subTabName: string) => {
   activeTab.value = '关注';
@@ -287,6 +286,12 @@ watch(
           .gender-icon {
             width: 16px;
             height: 16px;
+            &.male {
+              color: #409eff;
+            }
+            &.female {
+              color: #f56c6c;
+            }
           }
         }
 
@@ -352,6 +357,12 @@ watch(
         .gender-icon {
           width: 18px;
           height: 18px;
+          &.male {
+            color: #409eff;
+          }
+          &.female {
+            color: #f56c6c;
+          }
         }
       }
 
