@@ -24,7 +24,7 @@
       </template>
     </div>
     <div class="new-btn">
-      <template v-if="!newCollect"><el-button @click="newCollect = true">新建收藏夹</el-button></template>
+      <template v-if="!newCollect"><el-button type="primary" plain @click="newCollect = true">新建收藏夹</el-button></template>
       <template v-else>
         <el-input placeholder="请输入新收藏夹" v-model="input" class="search" clearable>
           <template #append>

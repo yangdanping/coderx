@@ -544,8 +544,8 @@ $shadowColor: #a3dfd0;
     height: 40px;
     padding: 0 15px;
     border-radius: 25px;
-    background-color: #fff;
-    color: #000;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -584,14 +584,19 @@ $shadowColor: #a3dfd0;
   }
 
   .chat-window {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    @include thin-border(all, #eee);
+    @include thin-border(all, var(--el-border-color-lighter));
     position: relative; // 确保绝对定位的子元素相对于此定位
+
+    :where(html.dark) & {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      @include thin-border(all, #333);
+    }
 
     // 调整大小手柄 - 左侧
     .resize-handle-left {

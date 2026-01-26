@@ -11,7 +11,7 @@
     <template v-else-if="isError">
       <div class="error">
         <span>加载评论失败</span>
-        <el-button @click="refetch as any" type="primary" size="small">重试</el-button>
+        <el-button @click="refetch as any" type="primary" plain size="small">重试</el-button>
       </div>
     </template>
 

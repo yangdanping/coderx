@@ -34,7 +34,7 @@
       </el-form-item>
       <!-- ---------------------------------------------------------------------------------- -->
       <el-form-item>
-        <el-button @click="onSubmit" type="primary">{{ isEdit ? '修改' : '创建' }}</el-button>
+        <el-button @click="onSubmit" type="primary" plain>{{ isEdit ? '修改' : '创建' }}</el-button>
       </el-form-item>
       <el-form-item>
         <el-button @click="goBack">退出{{ isEdit ? '修改' : '编辑' }}</el-button>

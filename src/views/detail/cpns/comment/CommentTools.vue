@@ -22,7 +22,7 @@
     <!-- 编辑对话框 -->
     <el-dialog width="50%" title="修改我的评论" v-model="isShowEdit" append-to-body destroy-on-close center>
       <TiptapEditorComment @update:content="(valueHtml) => (editContent = valueHtml)" :editComment="comment.content" />
-      <el-button @click="submitEdit" :loading="isUpdating" type="primary" style="margin-top: 10px">修改</el-button>
+      <el-button @click="submitEdit" :loading="isUpdating" type="primary" plain style="margin-top: 10px">修改</el-button>
     </el-dialog>
 
     <!-- 举报对话框 -->

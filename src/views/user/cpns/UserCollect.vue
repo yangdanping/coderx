@@ -37,7 +37,7 @@
         <ul class="setting">
           <li><input id="all" type="checkbox" @change="handleCheckboxAll" /> <label for="all">全选</label></li>
           <li>
-            <el-button @click="remove" :disabled="!!!manageArr.length" type="danger">移除</el-button>
+            <el-button @click="remove" :disabled="!!!manageArr.length" type="danger" plain>移除</el-button>
           </li>
           <li v-if="manageArr.length">已选择{{ manageArr.length }}个文章</li>
         </ul>
@@ -51,7 +51,7 @@
                 <div class="edit-collect-input">
                   <el-input ref="editInputRef" v-model="editCollectName" size="default" @keyup.enter="confirmEdit(item.id)" @keyup.escape="cancelEdit" />
                   <div class="edit-btns">
-                    <el-button type="primary" size="small" @click="confirmEdit(item.id)">保存</el-button>
+                    <el-button type="primary" plain size="small" @click="confirmEdit(item.id)">保存</el-button>
                     <el-button size="small" @click="cancelEdit">取消</el-button>
                   </div>
                 </div>
@@ -104,7 +104,7 @@
         <div class="empty-state">
           <template v-if="isMe">
             <p>你还没有创建收藏夹</p>
-            <el-button type="primary" @click="showNewInput = true">
+            <el-button type="primary" plain @click="showNewInput = true">
               <el-icon><Plus /></el-icon>
               创建第一个收藏夹
             </el-button>

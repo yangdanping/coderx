@@ -100,7 +100,7 @@ $height: 42px;
       font-size: 32px;
       text-align: center;
       margin-bottom: 36px;
-      color: #2c3e50;
+      color: var(--text-primary);
       letter-spacing: 1px;
       .title-login {
         display: flex;
@@ -129,12 +129,13 @@ $height: 42px;
         content: '';
         flex: 1;
         height: 1px;
-        background: #e0e0e0;
+        background: var(--text-secondary);
+        opacity: 0.3;
       }
 
       span {
         padding: 0 16px;
-        color: #909399;
+        color: var(--text-secondary);
         font-size: 14px;
       }
     }
@@ -143,9 +144,9 @@ $height: 42px;
     .google-btn {
       width: 100%;
       height: $height;
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      color: #2c3e50;
+      background: var(--bg-primary);
+      border: 1px solid var(--text-secondary);
+      color: var(--text-primary);
       font-size: 15px;
       font-weight: 500;
       transition: all 0.3s;
@@ -159,13 +160,13 @@ $height: 42px;
       }
 
       &:hover {
-        background: #ebf5f0;
-        border-color: #d0d0d0;
+        background: var(--bg-secondary);
+        border-color: var(--text-secondary);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
 
       &:active {
-        background: #f1f3f4;
+        background: var(--bg-secondary);
       }
     }
 
@@ -173,7 +174,7 @@ $height: 42px;
       margin-top: 28px;
       text-align: center;
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary);
       line-height: 1.5;
 
       a {

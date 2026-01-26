@@ -87,11 +87,16 @@ const handleHover = (index: number) => {
   z-index: 9999;
   min-width: 100px;
   max-width: 400px;
-  @include glass-effect;
+  @include glass-effect-popup;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   font-size: 13px;
+
+  :where(html.dark) & {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    @include thin-border(all, #333);
+  }
 }
 
 .completion-loading {
@@ -122,10 +127,15 @@ const handleHover = (index: number) => {
   padding: 8px 12px;
   cursor: pointer;
   transition: background-color 0.15s;
+  color: var(--text-primary);
 
   &:hover,
   &.active {
     background-color: #ebf5f0;
+
+    :where(html.dark) & {
+      background-color: #2c3e34;
+    }
   }
 
   .shortcut {
@@ -136,11 +146,17 @@ const handleHover = (index: number) => {
     height: 18px;
     background-color: #dce9de;
     font-size: 11px;
+    color: #303133;
+
+    :where(html.dark) & {
+      background-color: #2c3e34;
+      color: #8feb87;
+    }
   }
 
   .text {
     flex: 1;
-    color: #303133;
+    color: inherit;
     word-break: break-word;
   }
 }
@@ -150,6 +166,12 @@ const handleHover = (index: number) => {
   gap: 12px;
   padding: 6px 12px;
   @include thin-border(top, #eee);
+  color: var(--text-secondary);
+
+  :where(html.dark) & {
+    @include thin-border(top, #333);
+  }
+
   .hint-item {
     display: flex;
     align-items: center;
@@ -164,6 +186,13 @@ const handleHover = (index: number) => {
     border: 1px solid #eee;
     font-family: inherit;
     font-size: 8px;
+    color: #333;
+
+    :where(html.dark) & {
+      background: #333;
+      border-color: #444;
+      color: #ccc;
+    }
   }
 }
 

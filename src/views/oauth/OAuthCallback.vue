@@ -12,7 +12,7 @@
           <CircleCloseFilled />
         </el-icon>
         <p class="error-text">{{ errorMessage }}</p>
-        <el-button type="primary" @click="goHome">返回首页</el-button>
+        <el-button type="primary" plain @click="goHome">返回首页</el-button>
       </template>
     </div>
   </div>
