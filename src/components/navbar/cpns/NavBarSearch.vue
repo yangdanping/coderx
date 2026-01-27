@@ -180,7 +180,8 @@ const widerStyle = computed(() => {
   if (!isSmallScreen.value) {
     return shouldShowCard.value ? baseWidth + 100 + 'px' : baseWidth + 'px';
   } else {
-    return '100%';
+    // 移动端固定宽度，配合 NavBar 的绝对定位居中
+    return '200px';
   }
 });
 
@@ -303,7 +304,8 @@ $searchWidth: 100%;
 
   .search-card {
     position: absolute;
-    top: 39px;
+    top: 100%;
+    margin-top: 4px;
     width: $searchWidth;
     z-index: var(--z-navbar-popup);
     animation: boxDownSimple 0.3s;
@@ -413,9 +415,7 @@ $searchWidth: 100%;
 // 移动端响应式样式
 @media (max-width: 768px) {
   .search {
-    :deep(.el-input) {
-      width: 180px;
-    }
+    // 宽度由 JS computed 属性控制
   }
 }
 </style>

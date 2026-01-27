@@ -128,7 +128,9 @@ hr {
   margin: 40px auto;
   border: 0;
   height: 6px;
+  opacity: 0.8;
   background-image: linear-gradient(90deg, transparent, var(--yellow), var(--red), var(--pink), var(--purple), var(--blue), transparent);
+  // background-image: linear-gradient(90deg, transparent, var(--blue), var(--green), var(--blue), transparent);
 }
 
 html {
@@ -159,13 +161,9 @@ h6 {
   padding-right: 0.2em;
   opacity: 0;
   transition: opacity 0.2s;
-  color: var(--green);
+  color: #81c895;
   text-decoration: none;
   font-weight: normal;
-
-  &:hover {
-    color: var(--green);
-  }
 }
 
 /* ========== Dark Mode ========== */
@@ -214,5 +212,9 @@ html.dark {
       background: #1a1a1a !important;
       border: 1px solid #333 !important;
     }
+  }
+
+  .hot-user-card-item {
+    border: 1px solid rgba(216, 216, 216, 0.3);
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="item">
+  <div class="hot-user-card-item">
     <div class="user">
       <Avatar :info="item" :size="60" />
       <h3 class="name">{{ item.name }}</h3>
@@ -18,7 +18,9 @@ const { item = {} } = defineProps<{
 </script>
 
 <style lang="scss" scoped>
-.item {
+$borderRadius: 28px;
+
+.hot-user-card-item {
   box-sizing: border-box;
   flex-basis: calc(100% * 1 / 4); //指在flex布局中给flex设置最小宽度
   flex-shrink: 0; //flex-shrink默认为1,默认就会对图片做压缩
@@ -31,8 +33,8 @@ const { item = {} } = defineProps<{
   /* width: 25%; */
   height: 200px;
   @include glass-effect;
-  border: 1px solid #d8d8d8;
-  border-radius: 8px;
+  border: 1px solid rgba(216, 216, 216);
+  border-radius: $borderRadius;
   transition: all 0.3s;
   &:last-child {
     margin-right: 0;
@@ -49,7 +51,7 @@ const { item = {} } = defineProps<{
     z-index: var(--z-below);
     transition: all 0.3s;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: $borderRadius;
   }
   .bg-mask {
     background: rgba(0, 0, 0, 0.5);
@@ -60,8 +62,7 @@ const { item = {} } = defineProps<{
     object-fit: cover;
   }
   &:hover {
-    box-shadow: 0px 2px 8px rgba(100, 100, 100, 0.7);
-    transform: scale(1.02);
+    // box-shadow: 0px 2px 8px rgba(100, 100, 100, 0.7);
     color: #fff;
     .bg,
     .bg-mask {

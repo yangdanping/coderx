@@ -4,10 +4,11 @@ interface OAuthStatusResponse {
   code: number;
   data: {
     google: boolean;
+    github: boolean;
   };
 }
 
-interface GoogleAuthUrlResponse {
+interface AuthUrlResponse {
   code: number;
   data: {
     authUrl: string;
@@ -16,7 +17,7 @@ interface GoogleAuthUrlResponse {
 
 /**
  * 检查 OAuth 配置状态
- * 用于前端判断是否显示 Google 登录按钮
+ * 用于前端判断是否显示 OAuth 登录按钮
  */
 export const getOAuthStatus = () => {
   return myRequest.get<OAuthStatusResponse>({
@@ -29,7 +30,16 @@ export const getOAuthStatus = () => {
  * 获取 Google 授权 URL
  */
 export const getGoogleAuthUrl = () => {
-  return myRequest.get<GoogleAuthUrlResponse>({
+  return myRequest.get<AuthUrlResponse>({
     url: '/oauth/google',
+  });
+};
+
+/**
+ * 获取 GitHub 授权 URL
+ */
+export const getGitHubAuthUrl = () => {
+  return myRequest.get<AuthUrlResponse>({
+    url: '/oauth/github',
   });
 };
