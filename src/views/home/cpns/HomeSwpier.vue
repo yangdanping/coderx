@@ -1,8 +1,8 @@
 <template>
   <div class="home-swpier" id="hot-news">
-    <h1 class="swiper-title" role="button" @click="handleAnchorClick">
+    <h1 class="swiper-title">
       热门新闻
-      <a href="#hot-news" class="header-anchor" @click.stop>#</a>
+      <a href="#hot-news" class="header-anchor">#</a>
     </h1>
     <el-carousel :interval="4000" type="card" height="500px">
       <el-carousel-item v-for="(item, index) in news" :key="index">
@@ -25,10 +25,6 @@ import { ChevronRight } from 'lucide-vue-next';
 const { news = [] } = defineProps<{
   news?: any[];
 }>();
-
-const handleAnchorClick = () => {
-  window.location.hash = 'hot-news';
-};
 </script>
 
 <style lang="scss" scoped>

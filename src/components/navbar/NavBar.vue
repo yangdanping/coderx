@@ -75,7 +75,7 @@ const goBack = () => {
   .list {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     margin: 0 auto;
     /* padding: 0 80px; */
     max-width: 1280px;
@@ -85,6 +85,13 @@ const goBack = () => {
       display: flex;
       justify-content: center;
       align-items: center;
+
+      @media (max-width: 768px) {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
       .back-icon-container {
         display: flex;
         align-items: center;
