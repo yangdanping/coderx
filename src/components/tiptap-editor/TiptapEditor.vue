@@ -90,9 +90,29 @@ const completionActiveIndex = ref(0);
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: EditorInstance) => {
   if (!editorInstance) return '';
+  
+  // Tiptap v3 (@tiptap/markdown) 直接在 editor 实例上提供了 getMarkdown 方法
+  if (typeof editorInstance.getMarkdown === 'function') {
+    return editorInstance.getMarkdown();
+  }
+  
+  // 备选方案：尝试从 storage 获取（兼容旧版本或其他插件）
   const storage = editorInstance.storage.markdown as MarkdownStorageType;
   return storage?.getMarkdown?.() ?? '';
 };
+
+// 监听输出模式变化，及时触发内容更新
+watch(outputMode, (newMode) => {
+  if (!editor.value) return;
+  
+  console.log('[TiptapEditor] 模式切换:', newMode);
+  // 无论切换到什么模式，对外输出始终保持 HTML，以确保详情页和列表页的兼容性
+  // Tiptap 内部会根据模式自动处理内容的解析和渲染
+  const content = editor.value.getHTML();
+  
+  console.log('[TiptapEditor] 模式切换后发送内容 (HTML):', content);
+  emit('update:content', content || '');
+});
 
 // 创建编辑器实例
 const editor: any = useEditor({
@@ -100,13 +120,10 @@ const editor: any = useEditor({
   content: '',
   autofocus: false,
   onUpdate: ({ editor: editorInstance }: { editor: EditorInstance }) => {
-    // 根据输出模式获取内容
-    let content = '';
-    if (outputMode.value === 'markdown') {
-      content = (editorInstance.storage.markdown as MarkdownStorageType)?.getMarkdown?.() ?? '';
-    } else {
-      content = editorInstance.getHTML();
-    }
+    // 始终发送 HTML 内容给父组件，确保预览和保存的一致性
+    const content = editorInstance.getHTML();
+    console.log('[TiptapEditor] onUpdate 触发 (HTML):', content);
+
     emit('update:content', content || '');
   },
 });
@@ -177,22 +194,26 @@ onMounted(() => {
 watch(
   [() => editor.value, () => props.editData?.content],
   ([editorInstance, newContent]) => {
-    console.log('[TiptapEditor] watch 触发:', {
-      hasEditor: !!editorInstance,
-      hasContent: !!newContent,
-      contentLength: newContent?.length,
-    });
-    // 只要编辑器已初始化且有新内容，就设置内容
-    // 不再依赖 isEmptyObj 判断，因为 Proxy 对象可能导致误判
-    if (editorInstance && newContent) {
-      const currentContent = editorInstance.getHTML();
-      // 避免重复设置相同内容（防止覆盖用户输入）
-      // 注意：空编辑器的 HTML 是 '<p></p>'
-      const isEmpty = currentContent === '<p></p>' || currentContent === '';
-      if (isEmpty || currentContent !== newContent) {
-        console.log('[TiptapEditor] 设置编辑器内容');
-        editorInstance.chain().setContent(newContent).run();
-      }
+    if (!editorInstance || !newContent) return;
+
+    const currentHTML = editorInstance.getHTML();
+    const currentMD = getMarkdownContent(editorInstance);
+
+    // 避免重复设置相同内容（防止覆盖用户输入或触发循环更新）
+    // 如果新内容与当前 HTML 或当前 Markdown 一致，说明不需要更新
+    if (newContent === currentHTML || newContent === currentMD) {
+      return;
+    }
+
+    // 注意：空编辑器的 HTML 是 '<p></p>'
+    const isEmpty = currentHTML === '<p></p>' || currentHTML === '';
+    if (isEmpty || (currentHTML !== newContent && currentMD !== newContent)) {
+      console.log('[TiptapEditor] 设置编辑器内容:', {
+        newContentLength: newContent.length,
+        currentHTML: currentHTML.substring(0, 20),
+        currentMD: currentMD.substring(0, 20),
+      });
+      editorInstance.chain().setContent(newContent).run();
     }
   },
   { immediate: true },

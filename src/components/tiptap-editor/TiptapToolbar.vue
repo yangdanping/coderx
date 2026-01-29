@@ -68,7 +68,13 @@
       </el-tooltip>
 
       <el-tooltip content="有序列表" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('orderedList') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleOrderedList().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button
+          :type="editor?.isActive('orderedList') ? 'primary' : ''"
+          plain
+          @click="editor?.chain().focus().toggleOrderedList().run()"
+          :disabled="!editor"
+          class="toolbar-btn"
+        >
           <el-icon><Memo /></el-icon>
         </el-button>
       </el-tooltip>
@@ -141,15 +147,7 @@
     <!-- 模式切换 -->
     <div class="toolbar-group mode-switch">
       <el-tooltip :content="outputMode === 'html' ? '当前：富文本模式' : '当前：Markdown 模式'" placement="bottom" :show-after="500">
-        <el-switch
-          v-model="isMarkdownMode"
-          @change="handleModeChange"
-          active-text="MD"
-          inactive-text="HTML"
-          inline-prompt
-          :width="60"
-          class="plain-switch"
-        />
+        <el-switch :model-value="isMarkdownMode" @change="handleModeChange" active-text="MD" inactive-text="HTML" inline-prompt :width="60" class="plain-switch" />
       </el-tooltip>
     </div>
   </div>
@@ -205,14 +203,12 @@ const linkForm = reactive({
 const aiShortcut = getAiShortcutText();
 
 // 模式切换
-const isMarkdownMode = computed({
-  get: () => props.outputMode === 'markdown',
-  set: (val) => emit('update:outputMode', val ? 'markdown' : 'html'),
-});
+const isMarkdownMode = computed(() => props.outputMode === 'markdown');
 
-const handleModeChange = () => {
-  // 模式切换时的额外处理（如果需要）
-  console.log('输出模式切换为:', props.outputMode);
+const handleModeChange = (val: boolean | string | number) => {
+  const newMode = val ? 'markdown' : 'html';
+  console.log('[DEBUG] TiptapToolbar - 模式切换触发:', { val, newMode });
+  emit('update:outputMode', newMode);
 };
 
 // 标题处理

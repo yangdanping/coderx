@@ -12,7 +12,7 @@
           </div>
           <hr />
           <h1 class="article-title">{{ article.title }}</h1>
-          <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="article.content"></div>
+          <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
           <hr />
         </el-main>
       </el-container>
@@ -31,12 +31,32 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import DetailPanel from './DetailPanel.vue';
 
 import { ElImageViewer } from 'element-plus';
+import MarkdownIt from 'markdown-it';
 import type { IArticle } from '@/stores/types/article.result';
 import { codeHeightlight, bindImagesLayer, renderCopyButtons } from '@/utils';
-import { nextTick } from 'vue';
+import { nextTick, computed } from 'vue';
+
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
+
 const { article = {} } = defineProps<{
   article?: IArticle;
 }>();
+
+const renderedContent = computed(() => {
+  const content = article.content || '';
+  // 如果已经是 HTML (包含 <p, <h, <div, <span 等标签)
+  const isHtml = /<[a-z][\s\S]*>/i.test(content);
+  if (isHtml) {
+    return content;
+  }
+  // 否则尝试作为 Markdown 渲染
+  return md.render(content);
+});
+
 const htmlContentRef = ref<null | HTMLElement>();
 
 const imgPreview = reactive({
