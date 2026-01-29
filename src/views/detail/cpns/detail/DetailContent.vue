@@ -44,7 +44,7 @@ import DetailToc from './DetailToc.vue';
 import { ElImageViewer } from 'element-plus';
 import MarkdownIt from 'markdown-it';
 import type { IArticle } from '@/stores/types/article.result';
-import { codeHeightlight, bindImagesLayer, renderCopyButtons } from '@/utils';
+import { codeHeightlight, bindImagesLayer, renderCopyButtons, extractTocFromElement } from '@/utils';
 import { nextTick, computed } from 'vue';
 
 const md = new MarkdownIt({
@@ -53,7 +53,7 @@ const md = new MarkdownIt({
   typographer: true,
 });
 
-const { article = {} } = defineProps<{
+const { article = {} as IArticle } = defineProps<{
   article?: IArticle;
 }>();
 
@@ -78,34 +78,22 @@ const imgPreview = reactive({
   index: 0,
 });
 
-watch(
-  () => htmlContentRef.value,
-  (newV) => {
-    if (newV) {
-      const el = newV as HTMLElement;
-      bindImagesLayer(el, imgPreview); //图片放大
-      codeHeightlight(el); //代码高亮
+const initContentProcessing = (el: HTMLElement) => {
+  bindImagesLayer(el, imgPreview); //图片放大
+  codeHeightlight(el); //代码高亮
+  renderCopyButtons(el); // 挂载复制按钮
 
-      // 提取标题生成目录
-      const headers = el.querySelectorAll('h1, h2');
-      tocTitles.value = Array.from(headers).map((header, index) => {
-        const id = `article-header-${index}`;
-        header.setAttribute('id', id);
-        return {
-          id,
-          title: (header as HTMLElement).innerText,
-          level: Number(header.tagName.substring(1)),
-        };
-      });
-    }
-  },
-);
+  // 提取标题生成目录
+  tocTitles.value = extractTocFromElement(el);
+};
 
+// 必须同时监听 DOM 挂载和内容变化，确保异步数据加载后能重新执行图片绑定和代码高亮等逻辑
 watch(
   () => [htmlContentRef.value, article.content],
-  ([el]) => {
-    if (el) {
-      nextTick(() => renderCopyButtons(el as HTMLElement)); // 挂载复制按钮
+  ([el, content]) => {
+    if (el && content) {
+      // 使用 nextTick 确保在 v-dompurify-html 完成渲染后再进行 DOM 后处理
+      nextTick(() => initContentProcessing(el as HTMLElement));
     }
   },
   { immediate: true },
