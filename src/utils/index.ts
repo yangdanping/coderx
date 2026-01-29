@@ -14,6 +14,7 @@ import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml from './extractVideosFromHtml';
 import recursiveReplace from './recursiveReplace';
 import throttleByRaf from './throttleByRaf';
+import { extractTocFromElement } from './extractTocFromElement';
 import { renderCopyButtons } from './renderCopyButtons';
 
 // 键盘快捷键工具
@@ -36,5 +37,6 @@ export {
   extractImagesFromHtml,
   extractVideosFromHtml,
   recursiveReplace,
+  extractTocFromElement,
   renderCopyButtons,
 };
