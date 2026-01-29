@@ -1,7 +1,7 @@
 <template>
   <div class="tiptap-editor-container" ref="editorContainerRef">
     <!-- 工具栏 -->
-    <TiptapToolbar :editor="editor" :outputMode="outputMode" @update:outputMode="outputMode = $event" />
+    <TiptapToolbar :editor="editor" />
 
     <!-- 编辑区域 -->
     <EditorContent
@@ -71,9 +71,6 @@ const emit = defineEmits<{
   (e: 'update:content', content: string): void;
 }>();
 
-// 输出模式：html 或 markdown
-const outputMode = ref<'html' | 'markdown'>('html');
-
 // 拖拽状态管理
 const isDragging = ref(false);
 
@@ -100,19 +97,6 @@ const getMarkdownContent = (editorInstance: EditorInstance) => {
   const storage = editorInstance.storage.markdown as MarkdownStorageType;
   return storage?.getMarkdown?.() ?? '';
 };
-
-// 监听输出模式变化，及时触发内容更新
-watch(outputMode, (newMode) => {
-  if (!editor.value) return;
-  
-  console.log('[TiptapEditor] 模式切换:', newMode);
-  // 无论切换到什么模式，对外输出始终保持 HTML，以确保详情页和列表页的兼容性
-  // Tiptap 内部会根据模式自动处理内容的解析和渲染
-  const content = editor.value.getHTML();
-  
-  console.log('[TiptapEditor] 模式切换后发送内容 (HTML):', content);
-  emit('update:content', content || '');
-});
 
 // 创建编辑器实例
 const editor: any = useEditor({

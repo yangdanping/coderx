@@ -131,23 +131,18 @@
     <div class="toolbar-group">
       <el-tooltip :content="`撤销 (${shortcuts.undo})`" placement="bottom" :show-after="500">
         <el-button @click="editor?.chain().focus().undo().run()" :disabled="!editor?.can().undo()" class="toolbar-btn">
-          <el-icon><RefreshLeft /></el-icon>
+          <span class="btn-icon">
+            <el-icon><RefreshLeft /></el-icon>
+          </span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`重做 (${shortcuts.redo})`" placement="bottom" :show-after="500">
         <el-button @click="editor?.chain().focus().redo().run()" :disabled="!editor?.can().redo()" class="toolbar-btn">
-          <el-icon><RefreshRight /></el-icon>
+          <span class="btn-icon">
+            <el-icon><RefreshRight /></el-icon>
+          </span>
         </el-button>
-      </el-tooltip>
-    </div>
-
-    <el-divider direction="vertical" />
-
-    <!-- 模式切换 -->
-    <div class="toolbar-group mode-switch">
-      <el-tooltip :content="outputMode === 'html' ? '当前：富文本模式' : '当前：Markdown 模式'" placement="bottom" :show-after="500">
-        <el-switch :model-value="isMarkdownMode" @change="handleModeChange" active-text="MD" inactive-text="HTML" inline-prompt :width="60" class="plain-switch" />
       </el-tooltip>
     </div>
   </div>
@@ -174,12 +169,9 @@ import { emitter, getAiShortcutText } from '@/utils';
 
 const props = defineProps<{
   editor: Editor | undefined;
-  outputMode: 'html' | 'markdown';
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:outputMode', mode: 'html' | 'markdown'): void;
-}>();
+const emit = defineEmits<{}>();
 
 // 快捷键显示（根据系统自动适配）
 const shortcuts = {
@@ -201,15 +193,6 @@ const linkForm = reactive({
 
 // AI 助手快捷键提示（从全局 utils 获取，根据系统自动适配）
 const aiShortcut = getAiShortcutText();
-
-// 模式切换
-const isMarkdownMode = computed(() => props.outputMode === 'markdown');
-
-const handleModeChange = (val: boolean | string | number) => {
-  const newMode = val ? 'markdown' : 'html';
-  console.log('[DEBUG] TiptapToolbar - 模式切换触发:', { val, newMode });
-  emit('update:outputMode', newMode);
-};
 
 // 标题处理
 const handleHeading = (level: string) => {
@@ -341,50 +324,6 @@ const toggleAiAssistant = () => {
   .dropdown-btn {
     min-width: auto;
     padding: 0 12px;
-  }
-
-  .mode-switch {
-    margin-left: auto; // 推到右侧
-
-    // 确保 switch 宽度固定，避免切换模式时抖动
-    :deep(.el-switch) {
-      width: 60px;
-
-      &.plain-switch {
-        --el-switch-on-color: var(--el-color-success-light-8);
-        --el-switch-off-color: var(--el-color-primary-light-8);
-
-        .el-switch__inner {
-          .is-text {
-            color: var(--el-text-color-primary);
-            font-weight: bold;
-          }
-        }
-
-        &.is-checked {
-          .el-switch__inner {
-            .is-text {
-              color: var(--el-color-success);
-            }
-          }
-        }
-
-        &:not(.is-checked) {
-          .el-switch__inner {
-            .is-text {
-              color: var(--el-color-primary);
-            }
-          }
-        }
-      }
-    }
-
-    @media (max-width: 768px) {
-      margin-left: 0;
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 4px;
-    }
   }
 
   // 分隔符在换行时隐藏
