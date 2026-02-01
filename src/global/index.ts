@@ -91,11 +91,21 @@ export default function init(app: App) {
     // 3. 其他路由逻辑
     if (from.path !== to.path) {
       // 不要使用 $reset()，它会重置 windowInfo 导致布局问题
-      // 只重置分页和排序相关的字段
+      // 只重置分页相关的字段
       rootStore.changePageNum(1);
       rootStore.changePageSize(10);
-      rootStore.changePageOrder('date');
-      rootStore.changeTag('');
+
+      // 如果去往文章列表页，尝试从 articleStore 恢复记忆的标签和排序
+      if (to.name === 'article') {
+        const tag = articleStore.activeTagId === '综合' ? '' : articleStore.activeTagId;
+        rootStore.changeTag(tag);
+        rootStore.changePageOrder(articleStore.activeOrder);
+      } else if (to.name !== 'detail') {
+        // 如果不是去文章页也不是去详情页（例如去用户页、搜索页等），重置为默认值
+        // 注意：去往 detail 时不重置，以保持详情页背景或返回时的状态一致性
+        rootStore.changeTag('');
+        rootStore.changePageOrder('date');
+      }
     }
     if (to.path.includes('article')) {
       articleStore.initArticle();

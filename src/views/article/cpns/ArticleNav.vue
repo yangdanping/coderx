@@ -15,6 +15,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { emitter, throttle } from '@/utils';
 import useRootStore from '@/stores/index.store';
+import useArticleStore from '@/stores/article.store';
 import Tabs from '@/components/common/Tabs.vue';
 import TabItem from '@/components/common/TabItem.vue';
 
@@ -23,17 +24,28 @@ const props = defineProps<{
 }>();
 
 const rootStore = useRootStore();
+const articleStore = useArticleStore();
 const { isSmallScreen } = storeToRefs(rootStore);
+const { activeTagId } = storeToRefs(articleStore);
 
-const activeId = ref<string | number>('综合');
+const activeId = ref<string | number>(activeTagId.value);
 const navRef = ref<HTMLElement | null>(null);
+
+// 同步 activeId 到 store
+watch(activeId, (newVal) => {
+  activeTagId.value = newVal;
+});
 const tabDirection = computed(() => (isSmallScreen.value ? 'horizontal' : 'vertical'));
 onMounted(() => {
   emitter.on('changeTagInList', (tag: any) => {
     activeId.value = tag.id;
+    articleStore.activeTagId = tag.id; // 确保同步到 store
     rootStore.changeTag(tag.id);
   });
-  emitter.on('submitSearchValue', () => (activeId.value = '综合'));
+  emitter.on('submitSearchValue', () => {
+    activeId.value = '综合';
+    articleStore.activeTagId = '综合'; // 确保同步到 store
+  });
 
   // 使用 ResizeObserver 监听高度变化
   if (navRef.value) {
@@ -69,11 +81,11 @@ const updateNavHeightVar = () => {
 const handleClick = throttle(function (name: string | number) {
   if (name) {
     rootStore.changePageNum(1);
-    rootStore.changePageOrder('date');
+    // 保持当前排序习惯，不强制重置为 'date'
     rootStore.changeTag(name === '综合' ? '' : name);
+    articleStore.activeTagId = name; // 同步记忆标签
   } else {
     rootStore.changePageNum(1);
-    rootStore.changePageOrder('date');
   }
   window.scrollTo(0, 0);
 }, 300);
@@ -94,9 +106,5 @@ const handleClick = throttle(function (name: string | number) {
     /* Add some padding for horizontal scroll mode */
     padding: 0;
   }
-}
-
-.nav-tabs {
-  /* Pass through styles if needed */
 }
 </style>

@@ -36,6 +36,8 @@ const useArticleStore = defineStore('article', {
     pendingImageIds: [] as number[], // 待清理的图片ID（用于刷新页面时清理孤儿图片）
     pendingVideoIds: [] as number[], // 待清理的视频ID（用于清理孤儿视频）
     uploadedVideos: [] as number[], // 上传的视频ID数组（已弃用，使用pendingVideoIds代替）
+    activeTagId: '综合' as string | number, // 记忆导航栏激活的标签ID
+    activeOrder: 'date' as string, // 记忆文章列表的排序方式
   }),
   getters: {
     isAuthor() {

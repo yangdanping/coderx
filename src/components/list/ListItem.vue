@@ -11,7 +11,7 @@
       </div>
       <el-tag v-for="tag in item.tags" size="small" :key="tag.name" @click="goTag(tag)" type="success">{{ tag.name }}</el-tag>
     </div>
-    <a class="content-wrapper" :href="item.articleUrl" @click.stop.prevent="goDetail(item)">
+    <a class="content-wrapper" :href="item.articleUrl" @click.stop.prevent="goDetail(item, $event)">
       <div class="content">
         <h2 class="title">{{ !isComment ? item.title : item.article?.title }}</h2>
         <p class="abstract">{{ item.content }}</p>
@@ -55,11 +55,18 @@ const { isComment = false, showAvatar = true } = defineProps<{
   showAvatar?: boolean;
 }>();
 
-const goDetail = (item: IListItemData) => {
+const goDetail = (item: IListItemData, event: MouseEvent) => {
   const articleId = isComment ? item.article?.id : item.id;
-  const routeUrl = router.resolve({ name: 'detail', params: { articleId } });
-  window.open(routeUrl.href, '_blank'); // routeUrl.href 是相对路径article/:id
-  // 当在 http://192.168.3.96:8080/article 访问id为123的文章时 会打开 http://192.168.3.96:8080/article/123
+  const routeName = isComment ? 'detail' : 'detail'; // 保持一致，但逻辑上可以扩展
+  
+  if (event.metaKey || event.ctrlKey) {
+    const routeUrl = router.resolve({ name: 'detail', params: { articleId } });
+    window.open(routeUrl.href, '_blank');
+  } else {
+    // 使用 router.push 会保留当前路由在历史记录中
+    // 这样在详情页点击“返回”按钮（通常是 router.back() 或浏览器返回）时，会回到之前的页面
+    router.push({ name: 'detail', params: { articleId } });
+  }
 };
 const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
 </script>

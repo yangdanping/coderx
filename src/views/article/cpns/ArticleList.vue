@@ -151,6 +151,7 @@ onUnmounted(() => {
 const setOrder = throttle(function (order: string) {
   rootStore.changePageNum(1); // 仅用于同步 Store 里的页码显示(如果有的话)，对请求无影响
   rootStore.changePageOrder(order);
+  articleStore.activeOrder = order; // 记忆排序方式
   window.scrollTo(0, 0);
 }, 300);
 </script>

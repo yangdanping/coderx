@@ -47,7 +47,14 @@ const { isAuthor = false, article = {} } = defineProps<{
 }>();
 const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
-const goBack = () => router.push('/article');
+const goBack = () => {
+  // 如果有历史记录，则返回；否则跳转到文章列表页
+  if (window.history.state && window.history.state.back) {
+    router.back();
+  } else {
+    router.push('/article');
+  }
+};
 // 编辑-------------------------------------------------------
 const goEdit = () => {
   router.push({ path: `/edit`, query: { editArticleId: article.id } });
