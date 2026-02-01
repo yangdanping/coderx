@@ -7,7 +7,7 @@
 
     <!-- 回复 -->
     <div class="action-item" @click="handleReply">
-      <Icon type="comment" label="回复" />
+      <Icon type="comment" :label="isActiveReply ? '取消回复' : '回复'" :isActive="isActiveReply" />
     </div>
   </div>
 </template>
@@ -34,6 +34,9 @@ const commentStore = useCommentStore();
 
 const articleId = computed(() => String(route.params.articleId || ''));
 const parentId = computed(() => props.parentCommentId);
+
+// 是否正在回复当前评论
+const isActiveReply = computed(() => commentStore.activeReplyId === props.comment.id);
 
 // 获取用户点赞列表
 const { isLiked: checkIsLiked } = useUserLikedComments();
