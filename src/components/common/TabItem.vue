@@ -60,7 +60,7 @@ const handleClick = () => {
   color: var(--fontColor);
 
   &.vertical {
-    padding: 8px 20px;
+    padding: 6px 20px;
     border-radius: 4px;
     justify-content: flex-start; // Align left in vertical mode usually
     border: 1px solid transparent; // 预留 border 空间，避免切换时抖动
@@ -72,8 +72,8 @@ const handleClick = () => {
 
     // 全边 border 形式，类似 plain 按钮
     &.is-active {
-      background-color: transparent;
-      border-color: var(--el-color-primary);
+      background: rgba(64, 158, 255, 0.05);
+      border: 1px solid rgba(64, 158, 255, 0.2); // 预留 border 空间，避免切换时抖动
       color: var(--el-color-primary);
       font-weight: 600;
     }

@@ -143,7 +143,7 @@ const next = () => {
         align-items: center;
         width: 200px;
         // background: pink;
-        border-radius: 10px;
+        border-radius: 6px;
         transition: all 0.3s;
         cursor: pointer;
       }

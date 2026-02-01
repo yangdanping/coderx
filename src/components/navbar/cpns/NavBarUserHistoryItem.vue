@@ -43,7 +43,7 @@ const handleClick = () => {
   display: flex;
   gap: 12px;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 8px;
 

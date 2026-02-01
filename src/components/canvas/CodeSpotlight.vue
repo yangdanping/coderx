@@ -366,7 +366,7 @@ onUnmounted(() => {
   height: 100%;
   min-height: 200px;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 6px;
   background: transparent;
 
   // 四周渐变遮罩：左右渐隐

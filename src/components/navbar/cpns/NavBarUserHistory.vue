@@ -94,7 +94,7 @@ const goToHistoryPage = () => {
     width: 380px;
     height: 400px;
     @include glass-effect-popup;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: var(--z-navbar-popup);
     animation: boxDown 0.3s forwards;

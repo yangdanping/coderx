@@ -13,7 +13,7 @@
     "update:prettier": "git fetch https://github.com/yangdanping/prettier_config_repo.git main && git checkout FETCH_HEAD -- .prettierrc .prettierignore"
   },
   "dependencies": {
-    "@ai-sdk/vue": "^3.0.64",
+    "@ai-sdk/vue": "^3.0.67",
     "@element-plus/icons-vue": "^2.3.2",
     "@tanstack/vue-query": "^5.92.9",
     "@tiptap/core": "^3.18.0",
@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^3.18.0",
     "@tiptap/vue-3": "^3.18.0",
     "@types/markdown-it": "^14.1.2",
-    "ai": "^6.0.64",
+    "ai": "^6.0.67",
     "axios": "^1.13.4",
     "cropperjs": "2.1.0",
     "dayjs": "^1.11.19",
@@ -58,7 +58,7 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.7.0",
-    "globals": "^17.2.0",
+    "globals": "^17.3.0",
     "npm-run-all": "^4.1.5",
     "postcss-pxtorem": "^6.1.0",
     "prettier": "^3.8.1",

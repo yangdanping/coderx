@@ -96,10 +96,9 @@ onUnmounted(() => {
   position: sticky;
   top: 80px;
   width: 100%;
-  @include glass-effect-popup;
+  @include glass-effect;
   padding: 20px;
   border-radius: 6px;
-  box-shadow: var(--el-box-shadow-light);
   max-height: calc(100vh - 100px);
   overflow-y: auto;
   transition: all 0.3s ease;
@@ -131,7 +130,6 @@ onUnmounted(() => {
     line-height: 1.4;
 
     &:hover {
-      background-color: var(--el-fill-color-light);
       color: var(--el-color-primary);
     }
 

@@ -160,7 +160,7 @@ onUnmounted(() => {
 
 .search-results {
   @include glass-effect;
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 20px;
   min-height: 400px;
 

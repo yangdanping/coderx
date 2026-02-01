@@ -108,7 +108,7 @@ onMounted(() => {
     align-items: center;
     padding: 48px;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 
     .loading-icon {

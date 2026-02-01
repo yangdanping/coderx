@@ -59,7 +59,7 @@ const goToUserProfile = () => {
   padding: 20px;
   @include glass-effect;
   border: 1px solid #d8d8d8;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -101,7 +101,7 @@ const goToUserProfile = () => {
     height: 100%;
     z-index: var(--z-base);
     transition: all 0.3s;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .bg {

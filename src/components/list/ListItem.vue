@@ -130,13 +130,13 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
     justify-content: space-between;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
+    margin-top: 10px;
     cursor: pointer;
     // 防止溢出
     min-width: 0;
 
     .content {
       flex: 1;
-      margin-top: 5px;
       // 🌟关键：允许内容收缩
       min-width: 0;
       overflow: hidden;
@@ -160,7 +160,7 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
       flex: 0 0 auto;
       width: 170px;
       height: 100px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-left: 24px;
       overflow: hidden;
       cursor: pointer;

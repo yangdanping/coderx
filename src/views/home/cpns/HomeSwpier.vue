@@ -33,7 +33,7 @@ const { news = [] } = defineProps<{
     margin-bottom: 20px;
   }
   .el-carousel__item {
-    border-radius: 10px;
+    border-radius: 6px;
   }
   .item {
     position: relative;

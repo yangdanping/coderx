@@ -585,7 +585,7 @@ $shadowColor: #a3dfd0;
 
   .chat-window {
     background: var(--bg-primary);
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
@@ -644,7 +644,7 @@ $shadowColor: #a3dfd0;
       cursor: nwse-resize;
       z-index: 11;
       background: transparent;
-      border-radius: 12px 0 0 0;
+      border-radius: 6px 0 0 0;
 
       &::before {
         content: '';
@@ -771,7 +771,7 @@ $shadowColor: #a3dfd0;
 
           .bubble {
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 6px;
             font-size: 14px;
             line-height: 1.5;
             word-break: break-word;
@@ -867,7 +867,7 @@ $shadowColor: #a3dfd0;
               border: none;
               z-index: 0;
               overflow: hidden;
-              border-radius: 10px;
+              border-radius: 6px;
 
               // 流光边框 - 旋转的渐变背景
               &::before {
@@ -881,7 +881,7 @@ $shadowColor: #a3dfd0;
                 transform: translate(-50%, -50%);
                 animation: rotate-border 2s linear infinite;
                 z-index: -2;
-                border-radius: 10px;
+                border-radius: 6px;
               }
 
               // 内部遮罩 - 白色背景覆盖中心
@@ -893,7 +893,7 @@ $shadowColor: #a3dfd0;
                 right: 2px;
                 bottom: 2px;
                 background: white;
-                border-radius: 8px;
+                border-radius: 6px;
                 z-index: -1;
               }
 
