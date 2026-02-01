@@ -56,7 +56,11 @@ const toggleNavMenu = computed(() => {
 });
 
 const goBack = () => {
-  router.go(-1);
+  if (window.history.state && window.history.state.back) {
+    router.go(-1);
+  } else {
+    router.push('/');
+  }
 };
 </script>
 

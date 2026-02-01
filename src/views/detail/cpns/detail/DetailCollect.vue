@@ -68,11 +68,10 @@ onMounted(() => {
   });
 });
 const goProfile = () => {
-  const routeData = router.resolve({
+  router.push({
     path: `/user/${userInfo.value.id}`,
     query: { tabName: '收藏' },
   });
-  window.open(routeData.href, '_blank');
 };
 
 const add = () => {
@@ -104,6 +103,10 @@ const addToCollect = debounce((collectId) => {
   height: 140px;
   width: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  // 通过 overscroll-behavior: contain，避免滚动到边界时触发父级滚动（滚动穿透）
+  overscroll-behavior: contain;
+
   border: 1px solid #eceeef;
   .show-msg {
     margin: 50px auto;

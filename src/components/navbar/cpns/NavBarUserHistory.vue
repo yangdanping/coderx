@@ -52,11 +52,10 @@ const toggle = debounce(async function (show: boolean) {
 
 // 跳转到个人空间的浏览记录
 const goToHistoryPage = () => {
-  const routeData = router.resolve({
+  router.push({
     path: `/user/${userInfo.value.id}`,
     query: { tabName: '最近浏览' },
   });
-  window.open(routeData.href, '_blank');
 };
 </script>
 
