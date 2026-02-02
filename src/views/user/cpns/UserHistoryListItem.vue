@@ -1,5 +1,5 @@
 <template>
-  <div class="history-list-item">
+  <div class="user-history-list-item">
     <div class="author">
       <Avatar :info="item.author" :src="item.author?.avatarUrl" />
       <div class="author-info">
@@ -63,7 +63,7 @@ const handleDelete = async (articleId: any) => {
 </script>
 
 <style lang="scss" scoped>
-.history-list-item {
+.user-history-list-item {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -73,10 +73,10 @@ const handleDelete = async (articleId: any) => {
   transition: all 0.3s;
 
   &:hover {
-    transform: scale(1.005);
-    box-shadow: 1px 1px 8px rgba(100, 100, 100, 0.3);
+    .content-wrapper {
+      color: var(--el-color-primary);
+    }
   }
-
   .author {
     display: flex;
     align-items: center;

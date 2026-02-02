@@ -16,7 +16,7 @@
         <el-checkbox-group v-model="selectedItems">
           <template v-for="item in historyStore.historyList" :key="item.id">
             <el-checkbox :value="item.articleId" class="history-item">
-              <HistoryListItem :item="item" :deleting-items="deletingItems" @delete-start="handleDeleteStart" @delete-end="handleDeleteEnd" />
+              <UserHistoryListItem :item="item" :deleting-items="deletingItems" @delete-start="handleDeleteStart" @delete-end="handleDeleteEnd" />
             </el-checkbox>
           </template>
         </el-checkbox-group>
@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-import HistoryListItem from '@/components/list/HistoryListItem.vue';
+import UserHistoryListItem from './UserHistoryListItem.vue';
 import useUserStore from '@/stores/user.store';
 import useHistoryStore from '@/stores/history.store';
 import { ElMessageBox } from 'element-plus';

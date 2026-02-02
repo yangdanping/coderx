@@ -6,7 +6,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { fetchCompletion } from './api';
-import type { AiCompletionOptions, CompletionSuggestion, CompletionState, PopoverPosition } from './types';
+import type { AiCompletionOptions, CompletionSuggestion, CompletionState, PopoverPosition, TriggerMode } from './types';
 
 // Plugin Key
 export const AiCompletionPluginKey = new PluginKey('aiCompletion');
@@ -17,19 +17,38 @@ const DEFAULT_OPTIONS: AiCompletionOptions = {
   minTriggerLength: 10,
   contextWindow: 500,
   maxSuggestions: 3,
+  triggerMode: 'punctuation', // 默认：标点/空格后触发
 };
 
-// 触发模式：标点符号后触发
-const TRIGGER_PATTERNS = [
+// 标点符号触发模式的匹配规则
+const PUNCTUATION_PATTERNS = [
   /[。！？，；：、]$/, // 中文标点
   /[.!?,;:]$/, // 英文标点
   /\s$/, // 空格后
 ];
 
-// 检测是否满足触发条件
-function shouldTrigger(beforeText: string, minLength: number): boolean {
+/**
+ * 检测是否满足触发条件
+ * @param beforeText 光标前文本
+ * @param minLength 最小触发字数
+ * @param mode 触发模式
+ */
+function shouldTrigger(beforeText: string, minLength: number, mode: TriggerMode = 'punctuation'): boolean {
+  // 长度检查
   if (beforeText.length < minLength) return false;
-  return TRIGGER_PATTERNS.some((p) => p.test(beforeText));
+
+  switch (mode) {
+    case 'punctuation':
+      // 标点/空格模式：必须以标点或空格结尾
+      return PUNCTUATION_PATTERNS.some((p) => p.test(beforeText));
+
+    case 'idle':
+      // 空闲模式：只要满足长度就可以触发（防抖会处理频率）
+      return true;
+
+    default:
+      return false;
+  }
 }
 
 // 获取光标位置（用于定位弹出框）
@@ -83,6 +102,8 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
       activeIndex: 0,
       // 防抖定时器
       debounceTimer: null as ReturnType<typeof setTimeout> | null,
+      // 请求取消控制器（用于竞态取消）
+      abortController: null as AbortController | null,
       // 状态更新回调（由 Vue 组件注册）
       onStateChange: null as ((state: CompletionState, suggestions: CompletionSuggestion[], position: PopoverPosition | null) => void) | null,
     };
@@ -101,6 +122,12 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
             clearTimeout(storage.debounceTimer);
           }
 
+          // 取消之前正在进行的请求（竞态取消）
+          if (storage.abortController) {
+            storage.abortController.abort();
+            storage.abortController = null;
+          }
+
           // 获取光标前后文本
           const { from } = editor.state.selection;
           const doc = editor.state.doc;
@@ -108,7 +135,7 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
           const afterText = doc.textBetween(from, Math.min(doc.content.size, from + 200));
 
           // 检查触发条件
-          if (!shouldTrigger(beforeText, options.minTriggerLength)) {
+          if (!shouldTrigger(beforeText, options.minTriggerLength, options.triggerMode)) {
             return false;
           }
 
@@ -117,15 +144,32 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
           storage.position = getCursorCoords(editor.view);
           storage.onStateChange?.(storage.state, storage.suggestions, storage.position);
 
+          // 创建新的 AbortController 用于本次请求
+          const abortController = new AbortController();
+          storage.abortController = abortController;
+
           // 防抖请求
           storage.debounceTimer = setTimeout(async () => {
+            // 检查是否已被取消（防止竞态问题）
+            if (abortController.signal.aborted) {
+              return;
+            }
+
             try {
-              const suggestions = await fetchCompletion({
-                beforeText,
-                afterText,
-                model: options.model,
-                maxSuggestions: options.maxSuggestions,
-              });
+              const suggestions = await fetchCompletion(
+                {
+                  beforeText,
+                  afterText,
+                  model: options.model,
+                  maxSuggestions: options.maxSuggestions,
+                },
+                abortController.signal,
+              );
+
+              // 再次检查：请求返回后可能已被取消
+              if (abortController.signal.aborted) {
+                return;
+              }
 
               if (suggestions.length > 0) {
                 storage.state = 'showing';
@@ -137,6 +181,10 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
                 storage.suggestions = [];
               }
             } catch (error) {
+              // 被取消的请求不设置错误状态
+              if (abortController.signal.aborted) {
+                return;
+              }
               storage.state = 'error';
               storage.suggestions = [];
             }
@@ -177,13 +225,19 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
 
       dismissCompletion:
         () =>
-        ({ editor }) => {
+        () => {
           const storage = this.storage;
 
           // 清除定时器
           if (storage.debounceTimer) {
             clearTimeout(storage.debounceTimer);
             storage.debounceTimer = null;
+          }
+
+          // 取消正在进行的请求
+          if (storage.abortController) {
+            storage.abortController.abort();
+            storage.abortController = null;
           }
 
           // 重置状态
@@ -277,7 +331,7 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
                 const beforeText = view.state.doc.textBetween(Math.max(0, from - extensionThis.options.contextWindow), from);
 
                 // 检查是否应该触发
-                if (shouldTrigger(beforeText, extensionThis.options.minTriggerLength)) {
+                if (shouldTrigger(beforeText, extensionThis.options.minTriggerLength, extensionThis.options.triggerMode)) {
                   extensionThis.editor?.commands.triggerCompletion();
                 } else if (extensionThis.storage.state !== 'idle') {
                   // 不满足条件时关闭补全
@@ -293,4 +347,4 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
 });
 
 export default AiCompletion;
-export type { AiCompletionOptions, CompletionSuggestion, CompletionState, PopoverPosition };
+export type { AiCompletionOptions, CompletionSuggestion, CompletionState, PopoverPosition, TriggerMode };

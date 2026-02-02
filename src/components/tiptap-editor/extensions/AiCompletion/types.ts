@@ -34,6 +34,13 @@ export interface PopoverPosition {
   left: number
 }
 
+/**
+ * 触发模式
+ * - 'punctuation': 标点/空格后触发（默认，减少干扰）
+ * - 'idle': 停止输入后触发（更自然的补全体验）
+ */
+export type TriggerMode = 'punctuation' | 'idle'
+
 // Extension 配置选项
 export interface AiCompletionOptions {
   debounceMs: number // 防抖时间（毫秒）
@@ -41,4 +48,5 @@ export interface AiCompletionOptions {
   contextWindow: number // 上下文窗口大小
   maxSuggestions: number // 最大建议数
   model?: string // 指定模型
+  triggerMode?: TriggerMode // 触发模式，默认 'punctuation'
 }

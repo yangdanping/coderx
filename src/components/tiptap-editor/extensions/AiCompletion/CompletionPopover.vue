@@ -4,7 +4,7 @@
       <div v-if="visible" class="completion-popover" :style="positionStyle" @mousedown.prevent>
         <!-- Loading 状态 -->
         <div v-if="state === 'loading'" class="completion-loading">
-          <ThinkingShimmer :width="100" :height="20" text="Thinking..." color="#909399" shimmerColor="#fff" />
+          <ThinkingShimmer :width="120" :height="20" :text="waitingTimeText" color="#909399" shimmerColor="#fff" />
         </div>
 
         <!-- 建议列表 -->
@@ -51,6 +51,45 @@ const emit = defineEmits<{
   (e: 'select', index: number): void;
   (e: 'hover', index: number): void;
 }>();
+
+// 等待时间计时器
+const elapsedSeconds = ref(0);
+let timerInterval: ReturnType<typeof setInterval> | null = null;
+
+// 监听 state 变化，控制计时器
+watch(
+  () => props.state,
+  (newState, oldState) => {
+    if (newState === 'loading' && oldState !== 'loading') {
+      // 进入 loading 状态，开始计时
+      elapsedSeconds.value = 0;
+      timerInterval = setInterval(() => {
+        elapsedSeconds.value++;
+      }, 1000);
+    } else if (newState !== 'loading' && oldState === 'loading') {
+      // 离开 loading 状态，停止计时
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+  },
+);
+
+// 格式化等待时间显示
+const waitingTimeText = computed(() => {
+  if (elapsedSeconds.value === 0) {
+    return 'Thinking...';
+  }
+  return `Thinking... ${elapsedSeconds.value}s`;
+});
+
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+});
 
 // 是否显示弹出框
 const visible = computed(() => {

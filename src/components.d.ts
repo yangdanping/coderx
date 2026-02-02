@@ -56,7 +56,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     FollowButton: typeof import('./components/FollowButton.vue')['default']
-    HistoryListItem: typeof import('./components/list/HistoryListItem.vue')['default']
+    HistoryListItem: typeof import('./views/user/cpns/UserHistoryListItem.vue')['default']
     Icon: typeof import('./components/icon/Icon.vue')['default']
     ILoading: typeof import('~icons/ep/loading')['default']
     ListAction: typeof import('./components/list/cpns/ListAction.vue')['default']
