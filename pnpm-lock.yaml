@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/vue':
-        specifier: ^3.0.67
-        version: 3.0.67(vue@3.5.27(typescript@5.9.3))(zod@4.3.5)
+        specifier: ^3.0.68
+        version: 3.0.68(vue@3.5.27(typescript@5.9.3))(zod@4.3.5)
       '@element-plus/icons-vue':
         specifier: ^2.3.2
         version: 2.3.2(vue@3.5.27(typescript@5.9.3))
@@ -51,8 +51,8 @@ importers:
         specifier: ^14.1.2
         version: 14.1.2
       ai:
-        specifier: ^6.0.67
-        version: 6.0.67(zod@4.3.5)
+        specifier: ^6.0.68
+        version: 6.0.68(zod@4.3.5)
       axios:
         specifier: ^1.13.4
         version: 1.13.4
@@ -199,8 +199,8 @@ packages:
     resolution: {integrity: sha512-VkPLrutM6VdA924/mG8OS+5frbVTcu6e046D2bgDo00tehBANR1QBJ/mPcZ9tXMFOsVcm6SQArOregxePzTFPw==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/vue@3.0.67':
-    resolution: {integrity: sha512-Sy53Dc7Nj1vI2Q6HUpcfvvoH1KXtKjychiit7uZvVY0jrvSLq9kNTiVQCpEH4qg7trIZMyDumri0O3IULZbwAg==}
+  '@ai-sdk/vue@3.0.68':
+    resolution: {integrity: sha512-JwFWGgvN79/iX6dKqUz2Cwi7HPMpmCAplnInytrpxpa4BGcfD8J/pg76iTH4Qyj4v0AI3PCGsRAVDnYQRMAcyA==}
     engines: {node: '>=18'}
     peerDependencies:
       vue: ^3.3.4
@@ -1173,8 +1173,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ai@6.0.67:
-    resolution: {integrity: sha512-xBnTcByHCj3OcG6V8G1s6zvSEqK0Bdiu+IEXYcpGrve1iGFFRgcrKeZtr/WAW/7gupnSvBbDF24BEv1OOfqi1g==}
+  ai@6.0.68:
+    resolution: {integrity: sha512-nrTOAXm+XUhi/NvkUbb5yRebf6+PBkZT8zkR2P57ot1f4IMGWMmBzk9JOSSSGiVeVUaakhOkLq/IUEtb71yWTw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2795,10 +2795,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/vue@3.0.67(vue@3.5.27(typescript@5.9.3))(zod@4.3.5)':
+  '@ai-sdk/vue@3.0.68(vue@3.5.27(typescript@5.9.3))(zod@4.3.5)':
     dependencies:
       '@ai-sdk/provider-utils': 4.0.13(zod@4.3.5)
-      ai: 6.0.67(zod@4.3.5)
+      ai: 6.0.68(zod@4.3.5)
       swrv: 1.1.0(vue@3.5.27(typescript@5.9.3))
       vue: 3.5.27(typescript@5.9.3)
     transitivePeerDependencies:
@@ -3741,7 +3741,7 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  ai@6.0.67(zod@4.3.5):
+  ai@6.0.68(zod@4.3.5):
     dependencies:
       '@ai-sdk/gateway': 3.0.32(zod@4.3.5)
       '@ai-sdk/provider': 3.0.7

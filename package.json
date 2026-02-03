@@ -13,7 +13,7 @@
     "update:prettier": "git fetch https://github.com/yangdanping/prettier_config_repo.git main && git checkout FETCH_HEAD -- .prettierrc .prettierignore"
   },
   "dependencies": {
-    "@ai-sdk/vue": "^3.0.67",
+    "@ai-sdk/vue": "^3.0.68",
     "@element-plus/icons-vue": "^2.3.2",
     "@tanstack/vue-query": "^5.92.9",
     "@tiptap/core": "^3.18.0",
@@ -27,7 +27,7 @@
     "@tiptap/starter-kit": "^3.18.0",
     "@tiptap/vue-3": "^3.18.0",
     "@types/markdown-it": "^14.1.2",
-    "ai": "^6.0.67",
+    "ai": "^6.0.68",
     "axios": "^1.13.4",
     "cropperjs": "2.1.0",
     "dayjs": "^1.11.19",
