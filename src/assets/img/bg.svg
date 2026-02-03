@@ -2,6 +2,19 @@
   viewBox="0 0 1400 800">
   <!-- 创建阴影效果 -->
   <defs>
+    <style>
+      :root {
+        /* 在这里定义你的“变量” */
+        --my-fill-op: 0.5;
+        --my-stroke-op: 0.8;
+      }
+
+      .item-style {
+        fill-opacity: var(--my-fill-op);
+        stroke-opacity: var(--my-stroke-op);
+      }
+    </style>
+
     <filter id="f1" x="0" y="0" width="200%" height="200%">
       <feOffset result="offOut" in="SourceGraphic" dx="12" dy="12" />
       <feGaussianBlur result="blurOut" in="offOut" stdDeviation="8" />
@@ -9,42 +22,45 @@
     </filter>
   </defs>
 
-  <circle cx="140" cy="90" r="30" stroke="rgb(26, 115, 232)" fill="rgb(26, 115, 232)">
+  <circle class="item-style" cx="140" cy="90" r="30" stroke="rgba(26, 115, 232)" fill="rgba(26, 115, 232)">
     <animateMotion path="M 0 0 L 40 20 Z" dur="5s" repeatCount="indefinite" />
   </circle>
 
-  <circle cx="1200" cy="600" r="30" stroke="rgb(241, 243, 244)" fill="rgb(241, 243, 244)">
+  <circle class="item-style" cx="1200" cy="600" r="30" stroke="rgba(241, 243, 244)" fill="rgba(241, 243, 244)">
     <animateMotion path="M 0 0 L -20 40 Z" dur="9s" repeatCount="indefinite" />
   </circle>
 
-  <rect x="1300" y="400" rx="40" ry="40" width="300" height="300" stroke="rgb(129, 201, 149)" fill="rgb(129, 201, 149)">
+  <rect class="item-style" fill-opacity="0.5" stroke-opacity="0.7" x="1300" y="400" rx="40" ry="40" width="300"
+    height="300" stroke="rgba(129, 201, 149)" fill="rgba(129, 201, 149)">
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 1450 550"
       to="360 1450 550" repeatCount="indefinite" />
   </rect>
 
-  <path d="M 100 350 A 150 150 0 1 1 400 350 Q400 370 380 370 L 250 370 L 120 370 Q100 370 100 350"
-    stroke="rgb(253, 214, 99)" fill="rgb(253, 214, 99)">
+  <path class="item-style" d="M 100 350 A 150 150 0 1 1 400 350 Q400 370 380 370 L 250 370 L 120 370 Q100 370 100 350"
+    stroke="rgba(253, 214, 99)" fill="rgba(253, 214, 99)">
     <animateMotion path="M 800 -200 L 800 -300 L 800 -200" dur="20s" begin="0s" repeatCount="indefinite" />
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="20s" type="rotate"
       values="0 210 530 ; -30 210 530 ; 0 210 530" keyTimes="0 ; 0.5 ; 1" repeatCount="indefinite" />
   </path>
 
   <!-- 三角形 -->
-  <path d="M 165 580 L 270 580 Q275 578 270 570 L 223 483 Q220 480 217 483 L 165 570 Q160 578 165 580"
-    stroke="rgb(238, 103, 92)" fill="rgb(238, 103, 92)">
+  <path class="item-style"
+    d="M 165 580 L 270 580 Q275 578 270 570 L 223 483 Q220 480 217 483 L 165 570 Q160 578 165 580"
+    stroke="rgba(238, 103, 92)" fill="rgba(238, 103, 92)">
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 210 600"
       to="360 210 600" repeatCount="indefinite" />
   </path>
 
   <!-- 下方小块 -->
-  <path d="M 100 350 A 40 40 0 1 1 180 350 L 180 430 A 40 40 0 1 1 100 430 Z" stroke="rgb(241, 243, 244)"
-    fill="rgb(241, 243, 244)">
+  <path class="item-style" d="M 100 350 A 40 40 0 1 1 180 350 L 180 430 A 40 40 0 1 1 100 430 Z"
+    stroke="rgba(241, 243, 244)" fill="rgba(241, 243, 244)">
     <animateMotion path="M 140 390 L 180 360 L 140 390" dur="20s" begin="0s" repeatCount="indefinite" />
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="20s" type="rotate"
       values="0 140 390; -60 140 390; 0 140 390" keyTimes="0 ; 0.5 ; 1" repeatCount="indefinite" />
   </path>
 
-  <rect x="400" y="600" rx="40" ry="40" width="100" height="100" stroke="rgb(129, 201, 149)" fill="rgb(129, 201, 149)">
+  <rect class="item-style" x="400" y="600" rx="40" ry="40" width="100" height="100" stroke="rgba(129, 201, 149)"
+    fill="rgba(129, 201, 149)">
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="35s" type="rotate"
       from="-30 550 750" to="330 550 750" repeatCount="indefinite" />
   </rect>

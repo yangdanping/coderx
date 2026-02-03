@@ -176,7 +176,7 @@ const setOrder = throttle(function (order: string) {
   // 注意：不能设置 overflow-x: hidden，否则会导致 .list-order 的 sticky 失效
 
   .no-data {
-    margin-top: 100px;
+    margin: 300px auto;
     text-align: center;
     padding: 0 16px;
     // 移动端调整

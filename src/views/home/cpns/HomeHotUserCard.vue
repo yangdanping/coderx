@@ -18,13 +18,13 @@ const { item = {} } = defineProps<{
 </script>
 
 <style lang="scss" scoped>
-$borderRadius: 28px;
+$borderRadius: 6px;
 
 .hot-user-card-item {
   box-sizing: border-box;
   flex-basis: calc(100% * 1 / 4); //指在flex布局中给flex设置最小宽度
   flex-shrink: 0; //flex-shrink默认为1,默认就会对图片做压缩
-  background: #eee;
+  background: var(--bg-primary);
   text-align: center;
   margin-right: 16px;
   display: flex;
@@ -33,7 +33,7 @@ $borderRadius: 28px;
   /* width: 25%; */
   height: 200px;
   @include glass-effect;
-  border: 1px solid rgba(216, 216, 216);
+  border: 1px solid rgba(216, 216, 216, 0.4);
   border-radius: $borderRadius;
   transition: all 0.3s;
   &:last-child {
@@ -63,7 +63,7 @@ $borderRadius: 28px;
   }
   &:hover {
     // box-shadow: 0px 2px 8px rgba(100, 100, 100, 0.7);
-    color: #fff;
+    color: #eee;
     .bg,
     .bg-mask {
       opacity: 1;

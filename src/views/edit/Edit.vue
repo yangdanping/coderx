@@ -13,7 +13,9 @@
     <el-drawer v-if="isDataReady" title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
       <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
     </el-drawer>
-    <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
+    <el-tooltip content="提交 (⌃Q)" placement="top" :show-after="100">
+      <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
+    </el-tooltip>
     <AiAssistant :context="preview" />
   </div>
 </template>

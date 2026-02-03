@@ -118,15 +118,14 @@ onUnmounted(() => {
     .input-action {
       position: absolute;
       bottom: 10px;
-      right: 20px;
+      right: 10px;
       display: flex;
       gap: 8px;
     }
   }
 
   &.is-reply {
-    margin-bottom: 10px;
-    margin-top: 10px;
+    margin: 10px 0;
     .input {
       width: 100%;
       margin-left: 0;
@@ -135,7 +134,7 @@ onUnmounted(() => {
         position: relative;
         bottom: auto;
         margin-top: 8px;
-        justify-content: flex-end;
+        display: flex;
         right: auto;
       }
     }

@@ -3,49 +3,25 @@
     <!-- 格式化按钮组 -->
     <div class="toolbar-group">
       <el-tooltip :content="`加粗 (${shortcuts.bold})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('bold') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleBold().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('bold') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBold().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon">B</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`斜体 (${shortcuts.italic})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('italic') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleItalic().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('italic') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleItalic().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon italic">I</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`下划线 (${shortcuts.underline})`" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('underline') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleUnderline().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('underline') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleUnderline().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon underline">U</span>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="删除线" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('strike') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleStrike().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('strike') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleStrike().run()" :disabled="!editor" class="toolbar-btn">
           <span class="btn-icon strike">S</span>
         </el-button>
       </el-tooltip>
@@ -86,13 +62,7 @@
     <!-- 列表按钮组 -->
     <div class="toolbar-group">
       <el-tooltip content="无序列表" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('bulletList') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleBulletList().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('bulletList') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBulletList().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><List /></el-icon>
         </el-button>
       </el-tooltip>
@@ -110,25 +80,13 @@
       </el-tooltip>
 
       <el-tooltip content="引用块" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('blockquote') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleBlockquote().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBlockquote().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><ChatLineSquare /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="代码块" placement="bottom" :show-after="500">
-        <el-button
-          :type="editor?.isActive('codeBlock') ? 'primary' : ''"
-          plain
-          @click="editor?.chain().focus().toggleCodeBlock().run()"
-          :disabled="!editor"
-          class="toolbar-btn"
-        >
+        <el-button :type="editor?.isActive('codeBlock') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleCodeBlock().run()" :disabled="!editor" class="toolbar-btn">
           <el-icon><Coin /></el-icon>
         </el-button>
       </el-tooltip>
@@ -139,13 +97,7 @@
     <!-- 链接按钮 -->
     <div class="toolbar-group">
       <el-tooltip content="插入链接" placement="bottom" :show-after="500">
-        <el-button
-          @click="handleInsertLink"
-          :disabled="!editor"
-          class="toolbar-btn"
-          :type="editor?.isActive('link') ? 'primary' : ''"
-          plain
-        >
+        <el-button @click="handleInsertLink" :disabled="!editor" class="toolbar-btn" :type="editor?.isActive('link') ? 'primary' : ''" plain>
           <el-icon><Link /></el-icon>
         </el-button>
       </el-tooltip>
@@ -156,21 +108,13 @@
     <!-- 撤销/重做 -->
     <div class="toolbar-group">
       <el-tooltip :content="`撤销 (${shortcuts.undo})`" placement="bottom" :show-after="500">
-        <el-button
-          @click="editor?.chain().focus().undo().run()"
-          :disabled="!editor?.can().undo()"
-          class="toolbar-btn"
-        >
+        <el-button @click="editor?.chain().focus().undo().run()" :disabled="!editor?.can().undo()" class="toolbar-btn">
           <el-icon><RefreshLeft /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`重做 (${shortcuts.redo})`" placement="bottom" :show-after="500">
-        <el-button
-          @click="editor?.chain().focus().redo().run()"
-          :disabled="!editor?.can().redo()"
-          class="toolbar-btn"
-        >
+        <el-button @click="editor?.chain().focus().redo().run()" :disabled="!editor?.can().redo()" class="toolbar-btn">
           <el-icon><RefreshRight /></el-icon>
         </el-button>
       </el-tooltip>
@@ -192,13 +136,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
-import type { Editor } from '@tiptap/vue-3'
-import { formatShortcut, commonShortcuts } from '@/utils/keyboard'
+import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, RefreshLeft, RefreshRight } from '@element-plus/icons-vue';
+import type { Editor } from '@tiptap/vue-3';
+import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
 
 const props = defineProps<{
-  editor: Editor | undefined
-}>()
+  editor: Editor | undefined;
+}>();
 
 // 快捷键显示（根据系统自动适配）
 const shortcuts = {
@@ -207,44 +151,44 @@ const shortcuts = {
   underline: formatShortcut(commonShortcuts.underline),
   undo: formatShortcut(commonShortcuts.undo),
   redo: formatShortcut(commonShortcuts.redo),
-}
+};
 
 // 标题处理
 const handleHeading = (level: string) => {
-  const lvl = parseInt(level)
+  const lvl = parseInt(level);
   if (lvl === 0) {
-    props.editor?.chain().focus().setParagraph().run()
+    props.editor?.chain().focus().setParagraph().run();
   } else {
     props.editor
       ?.chain()
       .focus()
       .toggleHeading({ level: lvl as 1 | 2 | 3 | 4 | 5 | 6 })
-      .run()
+      .run();
   }
-}
+};
 
 // 链接处理
-const linkDialogVisible = ref(false)
+const linkDialogVisible = ref(false);
 const linkForm = reactive({
   href: '',
-})
+});
 
 const handleInsertLink = () => {
   // 如果已有链接，获取当前链接地址
-  const previousUrl = props.editor?.getAttributes('link').href
-  linkForm.href = previousUrl || ''
-  linkDialogVisible.value = true
-}
+  const previousUrl = props.editor?.getAttributes('link').href;
+  linkForm.href = previousUrl || '';
+  linkDialogVisible.value = true;
+};
 
 const confirmInsertLink = () => {
   if (linkForm.href) {
-    props.editor?.chain().focus().extendMarkRange('link').setLink({ href: linkForm.href }).run()
+    props.editor?.chain().focus().extendMarkRange('link').setLink({ href: linkForm.href }).run();
   } else {
-    props.editor?.chain().focus().extendMarkRange('link').unsetLink().run()
+    props.editor?.chain().focus().extendMarkRange('link').unsetLink().run();
   }
-  linkDialogVisible.value = false
-  linkForm.href = ''
-}
+  linkDialogVisible.value = false;
+  linkForm.href = '';
+};
 </script>
 
 <style lang="scss" scoped>
