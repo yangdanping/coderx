@@ -58,7 +58,7 @@ const { isComment = false, showAvatar = true } = defineProps<{
 const goDetail = (item: IListItemData, event: MouseEvent) => {
   const articleId = isComment ? item.article?.id : item.id;
   const routeName = isComment ? 'detail' : 'detail'; // 保持一致，但逻辑上可以扩展
-  
+
   if (event.metaKey || event.ctrlKey) {
     const routeUrl = router.resolve({ name: 'detail', params: { articleId } });
     window.open(routeUrl.href, '_blank');
@@ -88,48 +88,6 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
   // 等价于 .list-item ~ .list-item { ... }
   & ~ & {
     padding-top: 10px;
-  }
-
-  .checkbox {
-    position: absolute;
-    left: -13px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  // 动态下划线
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0px;
-    bottom: 0px;
-    z-index: var(--z-base);
-    height: 1.5px;
-    width: 100%;
-    background: linear-gradient(90deg, #43c3ff, #afffe3);
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform 0.5s ease-out;
-  }
-  &:hover::after {
-    transform: scaleX(1);
-  }
-
-  .author {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap; // 允许标签换行
-    gap: 6px 0; // 换行时的垂直间距
-    span {
-      margin-right: 10px;
-    }
-    .el-tag {
-      cursor: pointer;
-    }
-    .author-info {
-      display: flex;
-      align-items: center;
-      margin-left: 15px;
-    }
   }
 
   .content-wrapper {
@@ -183,6 +141,49 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
         top: 50%;
         transform: translateY(-50%);
       }
+    }
+  }
+
+  // 动态下划线
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    z-index: var(--z-base);
+    height: 1.5px;
+    width: 100%;
+    background: linear-gradient(90deg, #43c3ff, #afffe3);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.5s ease-out;
+  }
+  &:hover::after {
+    transform: scaleX(1);
+  }
+
+  .checkbox {
+    position: absolute;
+    left: -13px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .author {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; // 允许标签换行
+    gap: 6px 0; // 换行时的垂直间距
+    span {
+      margin-right: 10px;
+    }
+    .el-tag {
+      cursor: pointer;
+    }
+    .author-info {
+      display: flex;
+      align-items: center;
+      margin-left: 15px;
     }
   }
 

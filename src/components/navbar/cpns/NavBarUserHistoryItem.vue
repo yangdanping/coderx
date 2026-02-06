@@ -1,7 +1,7 @@
 <template>
   <div class="history-item" @click="handleClick">
     <div class="item-cover">
-      <img v-if="item.cover && item.cover.length > 0" :src="item.cover[0]" :alt="item.title" />
+      <img v-if="item.cover && item.cover.length > 0" :src="item.cover" :alt="item.title" />
       <div v-else class="cover-placeholder">
         {{ item.title.charAt(0).toUpperCase() }}
       </div>
@@ -43,7 +43,6 @@ const handleClick = () => {
   display: flex;
   gap: 12px;
   padding: 8px;
-  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 8px;
 
@@ -56,29 +55,29 @@ const handleClick = () => {
   }
 
   .item-cover {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
+    width: 45px;
+    height: 45px;
     overflow: hidden;
     flex-shrink: 0;
+
+    .cover-placeholder {
+      width: 43px;
+      height: 43px;
+      border: 1px solid rgba(64, 158, 255, 0.2);
+      background: rgba(64, 158, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      // color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       transition: transform 0.2s;
-    }
-
-    .cover-placeholder {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #9de0ff 0%, #42b983 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
     }
   }
 

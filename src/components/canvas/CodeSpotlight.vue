@@ -89,6 +89,8 @@ const animationId = ref<number | null>(null);
 const scrollOffset = ref(0);
 const canvasSize = ref({ width: 0, height: 0 });
 const singleLoopWidth = ref(0); // 单次循环的宽度
+// const fontFamily = 'MapleMono';
+const fontFamily = 'Gohufont';
 
 // 计算聚光灯位置：默认居中，hover 时跟随鼠标
 const spotlightPosition = computed(() => {
@@ -157,7 +159,7 @@ function generateSingleRow(ctx: CanvasRenderingContext2D, width: number): { item
   while (x < width + 200) {
     const keyword = props.keywords[Math.floor(Math.random() * props.keywords.length)];
     const scale = Math.random() < props.highlightRatio ? props.highlightScale : 1;
-    ctx.font = `${props.fontSize * scale}px "MapleMono", monospace`;
+    ctx.font = `${props.fontSize * scale}px ${fontFamily}, monospace`;
     const textWidth = ctx.measureText(keyword ?? '').width;
 
     items.push({
@@ -182,7 +184,7 @@ function generateKeywordGrid(width: number, height: number): KeywordItem[] {
   const ctx = canvas.getContext('2d');
   if (!ctx) return grid;
 
-  ctx.font = `${props.fontSize}px "MapleMono", monospace`;
+  ctx.font = `${props.fontSize}px ${fontFamily}, monospace`;
 
   let y = props.lineHeight;
   let maxRowWidth = 0;
@@ -260,7 +262,7 @@ function render() {
     const color = getGradientColor(distance, props.spotlightRadius);
 
     // 设置字体（根据 scale 缩放）
-    ctx.font = `${props.fontSize * item.scale}px "MapleMono", monospace`;
+    ctx.font = `${props.fontSize * item.scale}px ${fontFamily}, monospace`;
     ctx.globalAlpha = brightness;
     ctx.fillStyle = color;
 

@@ -1,4 +1,11 @@
 @font-face {
+  font-family: 'Gohufont';
+  src: url('../font/GohuFontuni14NerdFont-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
   font-family: 'MapleMono';
   src: url('../font/MapleMono-Italic[wght].ttf') format('truetype');
   font-weight: normal;
@@ -214,6 +221,12 @@ html.dark {
   }
 
   .hot-user-card-item {
-    border: 1px solid rgba(216, 216, 216, 0.3);
+    border: 1px solid rgba(216, 216, 216, 0.2);
+  }
+
+  .list-item {
+    .content-wrapper {
+      border-bottom: 1px solid rgba(216, 216, 216, 0.2);
+    }
   }
 }

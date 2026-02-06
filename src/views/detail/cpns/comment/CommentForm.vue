@@ -106,14 +106,17 @@ onUnmounted(() => {
 .comment-form {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  margin-top: 20px;
+  margin-right: 30px;
   margin-bottom: 80px;
 
   .input {
     position: relative;
     display: flex;
     flex-direction: column;
+    // margin-left: 20px;
     width: clamp(400px, 50vw, 1150px);
+    margin-left: 30px;
 
     .input-action {
       position: absolute;

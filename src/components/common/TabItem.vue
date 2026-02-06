@@ -61,7 +61,6 @@ const handleClick = () => {
 
   &.vertical {
     padding: 6px 20px;
-    border-radius: 4px;
     justify-content: flex-start; // Align left in vertical mode usually
     border: 1px solid transparent; // 预留 border 空间，避免切换时抖动
 

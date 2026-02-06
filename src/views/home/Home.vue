@@ -85,7 +85,6 @@ $TitleSize: 2em;
         font-size: clamp(40px, 10vw, 70px);
         user-select: none;
         transition: all 0.5s;
-
         .title-line-1 {
           -webkit-animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
           animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;

@@ -1,6 +1,6 @@
 <template>
   <div class="comment-list">
-    <span ref="listRef" class="comment-title">最新评论({{ totalCount }})</span>
+    <span ref="listRef" class="comment-title" v-if="totalCount">最新评论({{ totalCount }})</span>
 
     <!-- 首次加载中(查询第一次执行，还没有任何缓存数据) -->
     <template v-if="isPending">
@@ -28,7 +28,7 @@
 
     <!-- 空状态 -->
     <template v-else>
-      <h1 class="no-data">评论区暂时为空~发表你的第一条评论吧~</h1>
+      <span class="no-data">评论区暂时为空~发表你的第一条评论吧~</span>
     </template>
 
     <!-- 触底哨兵 - 移出条件块，确保始终存在于 DOM 中 -->
@@ -105,11 +105,11 @@ onUnmounted(() => {
   @include glass-effect;
   margin-bottom: 300px;
   border-radius: 5px;
-  padding: 10px;
+  padding: 20px;
 
   .comment-title {
     font-weight: 300;
-    font-size: 30px;
+    font-size: 24px;
     padding-top: var(--navbarHeight);
   }
 
@@ -123,8 +123,8 @@ onUnmounted(() => {
 
   .no-data {
     text-align: center;
-    padding: 40px 0;
-    color: #666;
+    font-size: 24px;
+    padding: 100px 0;
   }
 
   .no-more {
