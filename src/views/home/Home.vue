@@ -27,6 +27,7 @@ import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeSwpier from './cpns/HomeSwpier.vue';
 import CodeSpotlight from '@/components/canvas/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
+
 const counter = ref(1);
 const line2 = ref('Coder');
 const line2Str = ref('');
@@ -85,6 +86,7 @@ $TitleSize: 2em;
         font-size: clamp(40px, 10vw, 70px);
         user-select: none;
         transition: all 0.5s;
+        font-family: 'GeistPixel-Line', sans-serif;
         .title-line-1 {
           -webkit-animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
           animation: tracking-in-expand 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
@@ -95,23 +97,27 @@ $TitleSize: 2em;
           height: $TitleSize;
           font-size: $TitleSize;
         }
+        &:hover {
+          text-shadow: 4px 4px var(--text-shadow);
+        }
+
         .isLast:after {
           content: 'X';
           font-style: oblique;
           padding-right: 30px;
-          padding-left: 10px;
-          margin-left: -5px;
           background-image: var(--xfontStyle);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
+          font-family: none;
+          text-shadow: none;
         }
       }
 
       .code-spotlight {
         flex: 1;
         min-width: 300px;
-        height: 380px;
+        height: 400px;
         max-width: 800px;
       }
 
@@ -132,7 +138,7 @@ $TitleSize: 2em;
       height: 500px;
       display: flex;
       flex-direction: column;
-      font-family: 'MapleMono', sans-serif;
+      font-family: 'GeistPixel-Line', sans-serif;
       /* 
          同样使用 clamp() 实现 brief 部分的响应式字体
          - 最小值 16px，理想值 4vw (屏幕宽度的 4%)，最大值 30px

@@ -54,7 +54,7 @@ const follow = debounce(() => {
   if (token.value) {
     userStore.followAction(profile.id, isFollowListItem);
   } else {
-    Msg.showFail('请先登录');
+    Msg.showInfo('请先登录');
     rootStore.toggleLoginDialog();
   }
 });

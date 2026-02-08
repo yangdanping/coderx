@@ -89,7 +89,6 @@ const animationId = ref<number | null>(null);
 const scrollOffset = ref(0);
 const canvasSize = ref({ width: 0, height: 0 });
 const singleLoopWidth = ref(0); // 单次循环的宽度
-// const fontFamily = 'MapleMono';
 const fontFamily = 'Gohufont';
 
 // 计算聚光灯位置：默认居中，hover 时跟随鼠标
@@ -115,7 +114,6 @@ function getGradientColor(distance: number, radius: number): string {
     { pos: 0.7, r: 0, g: 200, b: 255 }, // 青色
     { pos: 1, r: 0, g: 136, b: 255 }, // 蓝色
   ];
-
   // 找到当前比例所在的颜色区间
   let startColor = colors[0];
   let endColor = colors[colors.length - 1];

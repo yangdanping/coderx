@@ -1,6 +1,6 @@
 import path from 'path';
 import vue from '@vitejs/plugin-vue';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
@@ -8,80 +8,17 @@ import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
-import viteCompression from 'vite-plugin-compression';
 import pxtorem from 'postcss-pxtorem';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
   return {
     publicDir: 'public', // 作为静态资源服务的文件夹 默认public
-    build: {
-      outDir: 'build', // 打包文件的输出目录
-      // outDir: 'coderx', // 打包文件的输出目录
-      target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：：'baseline-widely-available'
-      assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
-      emptyOutDir: true, // 打包前先清空原有打包文件
-    },
-    esbuild: {
-      drop: mode === 'production' ? ['console', 'debugger'] : [],
-    },
-    // 🎯 CSS 配置：PostCSS pxtorem 自动转换
-    css: {
-      // vite 配置 全局注入css,避免组件 <style> 顶部手动 @use;
-      preprocessorOptions: {
-        scss: {
-          additionalData: `@use "@/assets/css/utils.scss" as *;`,
-        },
-      },
-      postcss: {
-        plugins: [
-          pxtorem({
-            rootValue: 16, // 根元素字体大小基准值（与设计稿对应）
-            propList: ['*'], // 所有属性都进行转换
-            selectorBlackList: [
-              'el-', // Element Plus 组件不转换
-              'w-e-', // WangEditor 组件不转换
-            ],
-            exclude: /node_modules/i, // 排除 node_modules 目录
-            mediaQuery: false, // 是否允许在媒体查询中转换 px
-            minPixelValue: 1, // 小于1px的值不转换
-          }),
-        ],
-      },
-    },
-    server: {
-      port: 8080,
-      open: true,
-      proxy: {
-        '/dev-api': {
-          target: 'http://localhost:8000', //接口的前缀
-          changeOrigin: true, //支持跨域
-          rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
-        },
-        '/dev-laptop-api': {
-          target: 'http://100.107.181.55:8000', //接口的前缀
-          changeOrigin: true, //支持跨域
-          rewrite: (path) => path.replace(/^\/dev-laptop-api/, ''), //重写路径
-        },
-        '/api': {
-          // target: 'http://119.91.150.141:8000', // 腾讯云（已下线）
-          // target: 'http://8.138.223.188:8000', // 阿里云（已下线）
-          target: 'http://95.40.29.75:8000', // AWS Debian（当前使用）
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
-        },
-        // '/news-api/': {
-        //   target: 'https://gnews.io/api/v4',
-        //   changeOrigin: true,
-        //   rewrite: (path) => path.replace(/^\/news-api/, ''),
-        // },
-      },
-    },
     plugins: [
       vue(),
-      viteCompression(), //在客户端压缩,注意,服务器nginx那边要配置gzip_static on,使得优先使用这边压缩好的
       visualizer({
         emitFile: false,
         filename: 'stats.html', //分析图生成的文件名
@@ -119,6 +56,68 @@ export default defineConfig(({ mode }) => {
         autoInstall: true,
       }),
     ],
+    build: {
+      // outDir: 'build', // 打包文件的输出目录(默认 dist)
+      target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：：'baseline-widely-available'
+      assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
+      emptyOutDir: true, // 打包前先清空原有打包文件
+    },
+    server: {
+      port: Number(env.VITE_PORT),
+      host: env.VITE_HOST,
+      proxy: {
+        '/dev-api': {
+          target: 'http://localhost:8000', //接口的前缀
+          changeOrigin: true, //支持跨域
+          rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
+        },
+        '/dev-laptop-api': {
+          target: 'http://100.107.181.55:8000', //接口的前缀
+          changeOrigin: true, //支持跨域
+          rewrite: (path) => path.replace(/^\/dev-laptop-api/, ''), //重写路径
+        },
+        '/api': {
+          // target: 'http://119.91.150.141:8000', // 腾讯云（已下线）
+          // target: 'http://8.138.223.188:8000', // 阿里云（已下线）
+          target: 'http://95.40.29.75:8000', // AWS Debian（当前使用）
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+        // '/news-api/': {
+        //   target: 'https://gnews.io/api/v4',
+        //   changeOrigin: true,
+        //   rewrite: (path) => path.replace(/^\/news-api/, ''),
+        // },
+      },
+    },
+
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
+    },
+    // 🎯 CSS 配置：PostCSS pxtorem 自动转换
+    css: {
+      // vite 配置 全局注入css,避免组件 <style> 顶部手动 @use;
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@use "@/assets/css/utils.scss" as *;`,
+        },
+      },
+      postcss: {
+        plugins: [
+          pxtorem({
+            rootValue: 16, // 根元素字体大小基准值（与设计稿对应）
+            propList: ['*'], // 所有属性都进行转换
+            selectorBlackList: [
+              'el-', // Element Plus 组件不转换
+              'w-e-', // WangEditor 组件不转换
+            ],
+            exclude: /node_modules/i, // 排除 node_modules 目录
+            mediaQuery: false, // 是否允许在媒体查询中转换 px
+            minPixelValue: 1, // 小于1px的值不转换
+          }),
+        ],
+      },
+    },
     resolve: {
       alias: {
         '@': pathSrc,

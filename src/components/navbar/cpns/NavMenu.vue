@@ -55,7 +55,6 @@ const handleSelect = (key: string) => {
 }
 .nav-menu {
   user-select: none;
-  // font-family: 'SmileySans', sans-serif;
   // letter-spacing: 0.1em;
   font-size: 22px;
   .menu {

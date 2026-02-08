@@ -7,24 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-.DS_Store
 node_modules
 dist
 dist-ssr
-coverage
 *.local
 build
-coderx-v3
 stats.html
 
-/cypress/videos/
-/cypress/screenshots/
 
 # Editor directories and files
 .vscode/*
 .cursor/*
 !.vscode/extensions.json
 .idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj

@@ -1,4 +1,11 @@
 @font-face {
+  font-family: 'GeistPixel-Line';
+  src: url('../font/GeistPixel-Line.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
   font-family: 'Gohufont';
   src: url('../font/GohuFontuni14NerdFont-Regular.ttf') format('truetype');
   font-weight: normal;
@@ -24,7 +31,7 @@
   /* 在 1440px 屏幕: 1.5vw = 21.6px → 被 max 限制 → 使用 16px */
   /* 在 800px 屏幕: 1.5vw = 12px → 正好符合 → 使用 12px */
   font-size: clamp(12px, 1.5vw, 16px);
-  --xfontStyle: linear-gradient(135deg, #8feb87 10%, #3848f9 100%);
+  --xfontStyle: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
   --cursorDefault: url('@/assets/img/cursor.svg'), auto;
   --pointerDefault: url('@/assets/img/pointer.svg'), auto;
   --navbarHeight: 56px;
@@ -34,6 +41,7 @@
   --bg-secondary: #f5f5f5;
   --text-primary: #303133;
   --text-secondary: #5f5f5f;
+  --text-shadow: rgba(0, 0, 0, 0.2);
   --fontColor: var(--text-secondary);
 
   /* ========== 玻璃效果 ========== */
@@ -179,6 +187,7 @@ html.dark {
   --bg-secondary: #1a1a1a;
   --text-primary: #ededed;
   --text-secondary: #a0a0a0;
+  --text-shadow: rgba(255, 255, 255, 0.15);
   --fontColor: var(--text-secondary);
 
   /* 玻璃效果 - dark 模式使用深色半透明背景 */
