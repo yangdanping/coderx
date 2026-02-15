@@ -9,16 +9,19 @@ import IconsResolver from 'unplugin-icons/resolver';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
 import pxtorem from 'postcss-pxtorem';
+import glsl from 'vite-plugin-glsl';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+
   return {
     publicDir: 'public', // 作为静态资源服务的文件夹 默认public
     plugins: [
       vue(),
+      glsl(),
       visualizer({
         emitFile: false,
         filename: 'stats.html', //分析图生成的文件名
@@ -39,7 +42,6 @@ export default defineConfig(({ mode }) => {
         ],
         dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
       }),
-
       Components({
         resolvers: [
           // Auto register icon components
@@ -51,20 +53,50 @@ export default defineConfig(({ mode }) => {
         ],
         dts: path.resolve(pathSrc, 'components.d.ts'),
       }),
-
-      Icons({
-        autoInstall: true,
-      }),
+      Icons({ autoInstall: true }),
     ],
     build: {
-      // outDir: 'build', // 打包文件的输出目录(默认 dist)
-      target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：：'baseline-widely-available'
-      assetsDir: 'assets', // 指定生成静态资源的存放路径 默认assets
-      emptyOutDir: true, // 打包前先清空原有打包文件
+      target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：'baseline-widely-available'
+      rollupOptions: {
+        output: {
+          // 框架与业务分离
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              // 1. 核心框架
+              if (/(^|\/)vue($|\/)|(^|\/)vue-router($|\/)|(^|\/)pinia($|\/)/.test(id)) {
+                return 'vue-core';
+              }
+
+              // 2. UI 框架
+              if (id.includes('element-plus')) {
+                return 'element-plus';
+              }
+
+              // 3. 通用工具库 (合并了 @tanstack, axios, dayjs)
+              if (id.includes('@tanstack') || id.includes('axios') || id.includes('dayjs')) {
+                return 'common-utils';
+              }
+
+              // 4. 巨型编辑器库 (按需加载/独立缓存)
+              if (id.includes('@tiptap') || id.includes('prosemirror')) {
+                return 'editor-vendor';
+              }
+              // 5. 语法高亮
+              if (id.includes('highlight.js')) {
+                return 'syntax-highlight';
+              }
+              // 6. 其他带 vue 的小插件 (如 vue-dompurify-html, @ai-sdk/vue等)
+              if (id.includes('vue')) {
+                return 'vue-plugins';
+              }
+            }
+          },
+        },
+      },
     },
     server: {
-      port: Number(env.VITE_PORT),
-      host: env.VITE_HOST,
+      port: Number(env.PORT),
+      host: env.HOST,
       proxy: {
         '/dev-api': {
           target: 'http://localhost:8000', //接口的前缀
@@ -79,7 +111,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           // target: 'http://119.91.150.141:8000', // 腾讯云（已下线）
           // target: 'http://8.138.223.188:8000', // 阿里云（已下线）
-          target: 'http://95.40.29.75:8000', // AWS Debian（当前使用）
+          target: 'http://95.40.29.75:8000', // AWS
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
@@ -90,7 +122,6 @@ export default defineConfig(({ mode }) => {
         // },
       },
     },
-
     esbuild: {
       drop: mode === 'production' ? ['console', 'debugger'] : [],
     },

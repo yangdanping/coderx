@@ -21,9 +21,13 @@ import useUserStore from '@/stores/user.store';
 import useCommentStore from './comment.store';
 import useHistoryStore from './history.store';
 import { Msg, isEmptyObj, extractImagesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
+import { MAX_VIDEO_COUNT } from '@/components/tiptap-editor/config';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
+
+const dedupeNumberIds = (ids: number[]) => Array.from(new Set(ids));
+
 const useArticleStore = defineStore('article', {
   state: () => ({
     articles: {} as IArticles,
@@ -91,6 +95,10 @@ const useArticleStore = defineStore('article', {
       console.log('添加待清理图片ID:', imgId, '当前列表:', this.pendingImageIds);
     },
     addPendingVideoId(videoId: number) {
+      if (this.pendingVideoIds.includes(videoId)) {
+        console.log('待清理视频ID已存在，跳过重复添加:', videoId);
+        return;
+      }
       this.pendingVideoIds.push(videoId);
       console.log('添加待清理视频ID:', videoId, '当前列表:', this.pendingVideoIds);
     },
@@ -169,6 +177,14 @@ const useArticleStore = defineStore('article', {
     },
     async createAction(payload) {
       const { title, content, tags } = payload;
+
+      // 视频数量限制校验
+      const videoUrls = extractVideosFromHtml(content);
+      if (videoUrls.length > MAX_VIDEO_COUNT) {
+        Msg.showInfo(`每篇文章最多只能包含 ${MAX_VIDEO_COUNT} 个视频`);
+        return;
+      }
+
       console.log('创建文章 createAction', { title, content });
       const res = await createArticle({ title, content });
       console.log('创建文章成功!!!!!!', res);
@@ -213,13 +229,17 @@ const useArticleStore = defineStore('article', {
         }
 
         // 关联视频到文章
-        const videoUrls = extractVideosFromHtml(content);
         console.log('从内容中提取到的视频:', videoUrls);
 
         if (videoUrls.length > 0 || this.pendingVideoIds.length > 0) {
           // 使用pendingVideoIds（已上传的视频ID列表）
-          const videoIds = this.pendingVideoIds;
+          const videoIds = dedupeNumberIds(this.pendingVideoIds);
           console.log(`文章 ${articleId} 已创建,要为该文章添加以下视频id:`, videoIds);
+
+          if (videoIds.length > MAX_VIDEO_COUNT) {
+            Msg.showInfo(`每篇文章最多只能上传 ${MAX_VIDEO_COUNT} 个视频`);
+            return;
+          }
 
           if (videoIds.length > 0) {
             const res = await addVideoForArticle(articleId, videoIds);
@@ -255,6 +275,13 @@ const useArticleStore = defineStore('article', {
     async updateAction(payload) {
       console.log('修改文章 updateAction', payload);
       const { articleId, title, content, tags } = payload;
+
+      // 视频数量限制校验
+      const videoUrls = extractVideosFromHtml(content);
+      if (videoUrls.length > MAX_VIDEO_COUNT) {
+        Msg.showInfo(`每篇文章最多只能包含 ${MAX_VIDEO_COUNT} 个视频`);
+        return;
+      }
 
       // 修改标签（统一处理，无需对比）
       console.log('修改文章 updateAction tags=================', tags);
@@ -318,13 +345,17 @@ const useArticleStore = defineStore('article', {
         }
 
         // 关联视频到文章（包括新增和删除）
-        const videoUrls = extractVideosFromHtml(content);
         console.log('修改后内容中的视频:', videoUrls);
 
         if (videoUrls.length > 0 || this.pendingVideoIds.length > 0) {
           // 使用pendingVideoIds（本次编辑新上传的视频）
-          const videoIds = this.pendingVideoIds;
+          const videoIds = dedupeNumberIds(this.pendingVideoIds);
           console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id:`, videoIds);
+
+          if (videoIds.length > MAX_VIDEO_COUNT) {
+            Msg.showInfo(`每篇文章最多只能上传 ${MAX_VIDEO_COUNT} 个视频`);
+            return;
+          }
 
           if (videoIds.length > 0) {
             const res = await addVideoForArticle(articleId, videoIds);

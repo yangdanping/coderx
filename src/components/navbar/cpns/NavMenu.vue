@@ -48,11 +48,6 @@ const handleSelect = (key: string) => {
 </script>
 
 <style lang="scss" scoped>
-@media (hover: hover) and (pointer: fine) {
-  :deep(.el-tabs__nav) {
-    cursor: url('@/assets/img/pointer.svg'), auto;
-  }
-}
 .nav-menu {
   user-select: none;
   // letter-spacing: 0.1em;

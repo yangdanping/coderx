@@ -16,6 +16,7 @@ declare module 'vue' {
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     AvatarCropper: typeof import('./components/avatar/AvatarCropper.vue')['default']
     CodeSpotlight: typeof import('./components/canvas/CodeSpotlight.vue')['default']
+    CodeSpotlightCanvas2D: typeof import('./components/canvas/CodeSpotlightCanvas2D.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']
     CommentToolbar: typeof import('./components/tiptap-editor-comment/CommentToolbar.vue')['default']
     CompletionPopover: typeof import('./components/tiptap-editor/extensions/AiCompletion/CompletionPopover.vue')['default']

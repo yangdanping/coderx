@@ -24,7 +24,6 @@ $borderRadius: 6px;
   box-sizing: border-box;
   flex-basis: calc(100% * 1 / 4); //指在flex布局中给flex设置最小宽度
   flex-shrink: 0; //flex-shrink默认为1,默认就会对图片做压缩
-  background: var(--bg-primary);
   text-align: center;
   margin-right: 16px;
   display: flex;

@@ -189,7 +189,7 @@ $height: 42px;
     .oauth-btn {
       width: 100%;
       height: $height;
-      background: var(--bg-primary);
+      background: var(--bg-color-primary);
       border: 1px solid var(--text-secondary);
       border-radius: 4px;
       color: var(--text-primary);
@@ -206,13 +206,13 @@ $height: 42px;
       }
 
       &:hover {
-        background: var(--bg-secondary);
+        background: var(--bg-color-secondary);
         border-color: var(--text-secondary);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
 
       &:active {
-        background: var(--bg-secondary);
+        background: var(--bg-color-secondary);
       }
     }
 

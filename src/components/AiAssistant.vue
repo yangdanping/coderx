@@ -544,7 +544,7 @@ $shadowColor: #a3dfd0;
     height: 40px;
     padding: 0 15px;
     border-radius: 25px;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-color-primary);
     color: var(--text-primary);
     display: flex;
     align-items: center;
@@ -584,7 +584,7 @@ $shadowColor: #a3dfd0;
   }
 
   .chat-window {
-    background: var(--bg-primary);
+    background: var(--bg-color-primary);
     border-radius: 6px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
     display: flex;
@@ -687,7 +687,7 @@ $shadowColor: #a3dfd0;
         }
         :deep(.el-select__wrapper) {
           background-color: transparent;
-          cursor: var(--pointerDefault);
+          cursor: var(--cursorPointer);
         }
       }
 
@@ -710,7 +710,7 @@ $shadowColor: #a3dfd0;
 
       .status-indicator {
         .status-dot {
-          cursor: var(--pointerDefault);
+          cursor: var(--cursorPointer);
           display: inline-block;
           width: 10px;
           height: 10px;

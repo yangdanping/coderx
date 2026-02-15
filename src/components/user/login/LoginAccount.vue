@@ -81,7 +81,7 @@ $height: 42px;
 
         &.is-focus {
           opacity: 1;
-          background-color: var(--bg-primary);
+          background-color: var(--bg-color-primary);
           border-color: #409eff;
           box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
         }

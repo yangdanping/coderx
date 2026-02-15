@@ -14,11 +14,20 @@
       @drop="handleDrop"
     />
 
-    <!-- BubbleMenu：选中文字时显示 -->
-    <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" v-if="editor" class="tiptap-bubble-menu">
+    <!-- BubbleMenu：仅选中文字时显示 -->
+    <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" :should-show="shouldShowTextBubbleMenu" v-if="editor" class="tiptap-bubble-menu">
       <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" plain @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
       <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" plain @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
       <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" plain @click="handleBubbleLink"> 链接 </el-button>
+    </BubbleMenu>
+
+    <!-- BubbleMenu：仅选中视频时显示 -->
+    <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" :should-show="shouldShowVideoBubbleMenu" v-if="editor" class="tiptap-bubble-menu">
+      <el-button size="small" plain @click="applyVideoSize('320')"> 小 </el-button>
+      <el-button size="small" plain @click="applyVideoSize('480')"> 中 </el-button>
+      <el-button size="small" plain @click="applyVideoSize('640')"> 大 </el-button>
+      <el-button size="small" plain @click="applyVideoFullWidth"> 铺满 </el-button>
+      <el-button size="small" plain @click="customVideoSize"> 自定义 </el-button>
     </BubbleMenu>
 
     <!-- AI 补全弹出框 -->
@@ -83,16 +92,17 @@ const completionState = ref<CompletionState>('idle');
 const completionSuggestions = ref<CompletionSuggestion[]>([]);
 const completionPosition = ref<PopoverPosition | null>(null);
 const completionActiveIndex = ref(0);
+const DEFAULT_VIDEO_WIDTH = 360;
 
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: EditorInstance) => {
   if (!editorInstance) return '';
-  
+
   // Tiptap v3 (@tiptap/markdown) 直接在 editor 实例上提供了 getMarkdown 方法
   if (typeof editorInstance.getMarkdown === 'function') {
     return editorInstance.getMarkdown();
   }
-  
+
   // 备选方案：尝试从 storage 获取（兼容旧版本或其他插件）
   const storage = editorInstance.storage.markdown as MarkdownStorageType;
   return storage?.getMarkdown?.() ?? '';
@@ -219,6 +229,58 @@ const handleBubbleLink = () => {
   }
 };
 
+const shouldShowTextBubbleMenu = ({ editor: currentEditor, state }: { editor: any; state: any }) => {
+  if (!currentEditor || !state) return false;
+  if (currentEditor.isActive('video')) return false;
+  return !state.selection.empty;
+};
+
+const shouldShowVideoBubbleMenu = ({ editor: currentEditor }: { editor: any }) => {
+  if (!currentEditor) return false;
+  return currentEditor.isActive('video');
+};
+
+const applyVideoStyle = (style: string) => {
+  if (!editor.value?.isActive('video')) return;
+  editor.value.chain().focus().updateAttributes('video', { style }).run();
+};
+
+const applyVideoSize = (widthPx: string) => {
+  applyVideoStyle(`width: ${widthPx}px; max-width: 100%; height: auto;`);
+};
+
+const applyVideoFullWidth = () => {
+  applyVideoStyle('width: 100%; max-width: 100%; height: auto;');
+};
+
+const customVideoSize = () => {
+  if (!editor.value?.isActive('video')) return;
+
+  const rawWidth = window.prompt('请输入视频宽度(px)', String(DEFAULT_VIDEO_WIDTH));
+  if (rawWidth === null) return;
+
+  const widthValue = Number.parseInt(rawWidth.trim(), 10);
+  if (!Number.isInteger(widthValue) || widthValue <= 0) {
+    Msg.showFail('宽度请输入正整数');
+    return;
+  }
+
+  const rawHeight = window.prompt('请输入视频高度(px)，留空保持比例', '');
+  if (rawHeight === null) return;
+
+  let heightRule = 'auto';
+  if (rawHeight.trim()) {
+    const heightValue = Number.parseInt(rawHeight.trim(), 10);
+    if (!Number.isInteger(heightValue) || heightValue <= 0) {
+      Msg.showFail('高度请输入正整数，或留空自动');
+      return;
+    }
+    heightRule = `${heightValue}px`;
+  }
+
+  applyVideoStyle(`width: ${widthValue}px; max-width: 100%; height: ${heightRule};`);
+};
+
 // 拖拽事件处理
 const handleDragEnter = (e: DragEvent) => {
   e.preventDefault();
@@ -313,7 +375,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   border: 1px solid var(--el-border-color);
-  background: var(--bg-primary);
+  background: var(--bg-color-primary);
 }
 
 .tiptap-editor-content {
@@ -321,7 +383,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   min-height: 0; // 关键：让 flex 子元素能正确收缩
   transition: all 0.2s ease;
-  background: var(--bg-primary);
+  background: var(--bg-color-primary);
   color: var(--text-primary);
 
   &.is-dragging {

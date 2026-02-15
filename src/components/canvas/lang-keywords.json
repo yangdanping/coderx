@@ -1,0 +1,6 @@
+{
+  "common": ["{}", "[]", "()", "&&", "||", "if", "else", "for", "return", "class", "import"],
+  "ts": ["const", "function", "export", "async", "await", "Vue", "ref", "computed", "=>", "</>", "interface", "type", "API", "let", "git", "npm"],
+  "rust": ["pub", "fn", "let", "mut", "match", "impl", "struct", "trait", "use", "mod", "crate", "vec!", "println!", "Option", "Result", "self"],
+  "python": ["def", "from", "as", "with", "yield", "lambda", "try", "except", "finally", "None", "True", "False", "print", "self"]
+}

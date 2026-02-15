@@ -8,7 +8,7 @@
 .tiptap-editor-container {
   border-radius: 4px;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--bg-color-primary);
 }
 
 // 编辑区域
@@ -72,7 +72,7 @@
       border-left: 4px solid var(--el-color-primary-light-5);
       padding: 10px 16px;
       margin: 16px 0;
-      background-color: var(--bg-secondary);
+      background-color: var(--bg-color-secondary);
       color: var(--text-secondary);
 
       p {
@@ -104,7 +104,7 @@
 
     // 行内代码
     code:not(pre code) {
-      background: var(--bg-secondary);
+      background: var(--bg-color-secondary);
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Fira Code', 'Consolas', monospace;
@@ -173,6 +173,7 @@
 
     // 视频
     video {
+      width: 360px; // 兜底默认宽度（未设置内联宽度时生效）
       max-width: 100%;
       height: auto;
       border-radius: 6px;
@@ -207,7 +208,7 @@
       }
 
       th {
-        background: var(--bg-secondary);
+        background: var(--bg-color-secondary);
         font-weight: 600;
       }
     }
@@ -236,7 +237,7 @@
   display: flex;
   gap: 4px;
   padding: 4px 8px;
-  background: var(--bg-primary);
+  background: var(--bg-color-primary);
   border: 1px solid var(--el-border-color);
   border-radius: 4px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);

@@ -117,7 +117,8 @@ $TitleSize: 2em;
       .code-spotlight {
         flex: 1;
         min-width: 300px;
-        height: 400px;
+        height: 480px;
+        align-self: stretch;
         max-width: 800px;
       }
 

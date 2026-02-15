@@ -159,6 +159,7 @@
       <el-button type="primary" plain @click="confirmInsertLink">确定</el-button>
     </template>
   </el-dialog>
+
 </template>
 
 <script lang="ts" setup>
@@ -282,7 +283,7 @@ const toggleAiAssistant = () => {
   gap: 4px;
   padding: 8px 12px;
   @include thin-border(bottom, var(--el-border-color));
-  background: var(--bg-secondary);
+  background: var(--bg-color-secondary);
 
   .toolbar-group {
     display: flex;

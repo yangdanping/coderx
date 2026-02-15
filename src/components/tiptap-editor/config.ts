@@ -1,20 +1,24 @@
 /**
  * Tiptap 编辑器配置
  */
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
-import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
-import { Markdown } from '@tiptap/markdown'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { common, createLowlight } from 'lowlight'
-import { ImageUpload } from './extensions/ImageUpload'
-import { VideoUpload } from './extensions/VideoUpload'
-import { AiCompletion } from './extensions/AiCompletion'
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import { Markdown } from '@tiptap/markdown';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
+import { ImageUpload } from './extensions/ImageUpload';
+import { VideoNode } from './extensions/VideoNode';
+import { VideoUpload } from './extensions/VideoUpload';
+import { AiCompletion } from './extensions/AiCompletion';
 
 // 创建 lowlight 实例，使用常用语言包
-const lowlight = createLowlight(common)
+const lowlight = createLowlight(common);
+
+// 视频上传限制常量
+export const MAX_VIDEO_COUNT = 2; // 每篇文章最多只能上传 2 个视频,后端在coderx_server/src/controller/video.controller.js
 
 /**
  * 获取 Tiptap 编辑器扩展配置
@@ -75,6 +79,9 @@ export const getTiptapExtensions = () => {
     // 自定义扩展：图片上传
     ImageUpload,
 
+    // 自定义扩展：视频节点
+    VideoNode,
+
     // 自定义扩展：视频上传
     VideoUpload,
 
@@ -85,8 +92,8 @@ export const getTiptapExtensions = () => {
       contextWindow: 500, // 上下文窗口 500 字
       maxSuggestions: 3, // 最多 3 个建议
     }),
-  ]
-}
+  ];
+};
 
 /**
  * 编辑器默认配置
@@ -94,4 +101,4 @@ export const getTiptapExtensions = () => {
 export const defaultEditorConfig = {
   autofocus: false,
   editable: true,
-}
+};

@@ -172,7 +172,6 @@ const goToHistoryPage = () => {
         right: 0;
         width: 100%;
         text-align: center;
-        background-color: var(--bg-primary);
         padding: 10px 0;
         @include thin-border(top, var(--el-border-color));
         cursor: pointer;

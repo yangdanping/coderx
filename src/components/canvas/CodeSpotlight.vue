@@ -5,15 +5,18 @@
 </template>
 
 <script lang="ts" setup>
+import vertexShaderSource from './shaders/vertex.glsl';
+import fragmentShaderSource from './shaders/fragment.glsl';
+import langKeywords from './lang-keywords.json';
+
 interface KeywordItem {
   text: string;
   x: number;
   y: number;
   width: number;
-  scale: number; // 字体缩放比例
+  scale: number;
 }
 
-// Props 定义
 const props = withDefaults(
   defineProps<{
     /** 滚动方向：'left' 向左滚动 | 'right' 向右滚动 */
@@ -32,48 +35,34 @@ const props = withDefaults(
     highlightScale?: number;
     /** 高亮关键字的比例（0-1） */
     highlightRatio?: number;
-    /** 自定义关键词列表，随机显示 */
+    /** 自定义关键词列表，若不传则从 lang-keywords.json 随机获取 */
     keywords?: string[];
+    /** 色散强度，控制 RGB 通道偏移量 */
+    dispersion?: number;
+    /** 色散生效的内边界比例（相对 spotlightRadius） */
+    dispersionInnerRatio?: number;
+    /** 色散衰减结束的外边界比例（相对 spotlightRadius） */
+    dispersionOuterRatio?: number;
+    /** 是否开启凸透镜效果 */
+    enableLens?: boolean;
+    /** 凸透镜缩放倍数 */
+    lensMagnification?: number;
   }>(),
   {
+    keywords: () => [],
     scrollDirection: 'left',
     scrollSpeed: 0.3,
-    spotlightRadius: 220,
+    spotlightRadius: 300,
     fontSize: 16,
     lineHeight: 34,
-    spacing: 34,
-    highlightScale: 1.6,
+    spacing: 10,
+    highlightScale: 1.8,
     highlightRatio: 0.3,
-    keywords: () => [
-      'const',
-      'function',
-      'import',
-      'export',
-      'async',
-      'await',
-      'Vue',
-      'ref',
-      'computed',
-      '=>',
-      '{}',
-      '</>',
-      'return',
-      'if',
-      'else',
-      'for',
-      'let',
-      'var',
-      'class',
-      'interface',
-      'type',
-      'npm',
-      'git',
-      'API',
-      '[]',
-      '()',
-      '&&',
-      '||',
-    ],
+    dispersion: 0.02,
+    dispersionInnerRatio: 0.75,
+    dispersionOuterRatio: 1.3,
+    enableLens: true,
+    lensMagnification: 1.03,
   },
 );
 
@@ -84,202 +73,283 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const mousePosition = ref({ x: 0, y: 0 });
 const isMouseInCanvas = ref(false);
-const keywordGrid = ref<KeywordItem[]>([]);
 const animationId = ref<number | null>(null);
 const scrollOffset = ref(0);
 const canvasSize = ref({ width: 0, height: 0 });
-const singleLoopWidth = ref(0); // 单次循环的宽度
+const singleLoopWidth = ref(0);
 const fontFamily = 'Gohufont';
 
-// 计算聚光灯位置：默认居中，hover 时跟随鼠标
+const displayKeywords = ref<string[]>([]);
+
+/**
+ * 初始化关键词：从 lang-keywords.json 中随机选择一种语言或使用混合模式
+ */
+function initKeywords() {
+  if (props.keywords && props.keywords.length > 0) {
+    displayKeywords.value = props.keywords;
+    return;
+  }
+
+  const keywordsData = langKeywords as Record<string, string[]>;
+  const langs = Object.keys(keywordsData).filter((k) => k !== 'common');
+  // 25% 概率进入 randomLang (混合模式)
+  const isRandomMode = Math.random() < 0.25;
+
+  let selected: string[] = [...(keywordsData.common || [])];
+
+  if (isRandomMode) {
+    // 混合模式：所有语言关键词混搭
+    const allLangsKeywords = langs.flatMap((l) => keywordsData[l] || []);
+    selected = [...new Set([...selected, ...allLangsKeywords])];
+  } else if (langs.length > 0) {
+    // 随机选择一种语言
+    const randomLang = langs[Math.floor(Math.random() * langs.length)];
+    if (randomLang) {
+      const langSpecific = keywordsData[randomLang];
+      if (langSpecific) {
+        selected = [...new Set([...selected, ...langSpecific])];
+      }
+    }
+  }
+
+  // 限制数量，避免过多影响性能 (保持在 30 个左右)
+  displayKeywords.value = selected.slice(0, 30);
+}
+
+// WebGL related
+let gl: WebGLRenderingContext | null = null;
+let program: WebGLProgram | null = null;
+let texture: WebGLTexture | null = null;
+let offscreenCanvas: HTMLCanvasElement | null = null;
+let offscreenCtx: CanvasRenderingContext2D | null = null;
+
 const spotlightPosition = computed(() => {
   if (isMouseInCanvas.value) {
     return mousePosition.value;
   }
-  // 默认居中
   return {
     x: canvasSize.value.width / 2,
     y: canvasSize.value.height / 2,
   };
 });
 
-// 计算渐变色：绿 -> 青 -> 蓝
-function getGradientColor(distance: number, radius: number): string {
-  const ratio = Math.min(distance / radius, 1);
-
-  // 颜色节点
-  const colors: any[] = [
-    { pos: 0, r: 0, g: 255, b: 100 }, // 绿色
-    { pos: 0.4, r: 0, g: 255, b: 200 }, // 青绿
-    { pos: 0.7, r: 0, g: 200, b: 255 }, // 青色
-    { pos: 1, r: 0, g: 136, b: 255 }, // 蓝色
-  ];
-  // 找到当前比例所在的颜色区间
-  let startColor = colors[0];
-  let endColor = colors[colors.length - 1];
-
-  for (let i = 0; i < colors.length - 1; i++) {
-    if (ratio >= colors[i].pos && ratio <= colors[i + 1]?.pos) {
-      startColor = colors[i];
-      endColor = colors[i + 1];
-      break;
-    }
-  }
-
-  // 在区间内插值
-  const segmentRatio = (ratio - startColor.pos) / (endColor.pos - startColor.pos);
-  const r = Math.round(startColor.r + (endColor.r - startColor.r) * segmentRatio);
-  const g = Math.round(startColor.g + (endColor.g - startColor.g) * segmentRatio);
-  const b = Math.round(startColor.b + (endColor.b - startColor.b) * segmentRatio);
-
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
-// 计算亮度衰减（二次衰减）
-function calculateBrightness(distance: number, radius: number): number {
-  if (distance >= radius) return BASE_BRIGHTNESS;
-  const normalizedDist = distance / radius;
-  // 二次衰减，中心最亮
-  return Math.max(BASE_BRIGHTNESS, 1 - normalizedDist * normalizedDist);
-}
-
-// 计算两点距离
-function getDistance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-}
-
-// 生成单行关键词（用于无缝循环）
-function generateSingleRow(ctx: CanvasRenderingContext2D, width: number): { items: Omit<KeywordItem, 'y'>[]; totalWidth: number } {
-  const items: Omit<KeywordItem, 'y'>[] = [];
-  let x = 0;
-
-  // 生成足够宽度的关键词（至少比可视区域宽一点，用于无缝循环）
-  while (x < width + 200) {
-    const keyword = props.keywords[Math.floor(Math.random() * props.keywords.length)];
-    const scale = Math.random() < props.highlightRatio ? props.highlightScale : 1;
-    ctx.font = `${props.fontSize * scale}px ${fontFamily}, monospace`;
-    const textWidth = ctx.measureText(keyword ?? '').width;
-
-    items.push({
-      text: keyword ?? '',
-      x,
-      width: textWidth,
-      scale,
-    });
-
-    x += textWidth + props.spacing;
-  }
-
-  return { items, totalWidth: x };
-}
-
-// 生成关键词网格
-function generateKeywordGrid(width: number, height: number): KeywordItem[] {
-  const grid: KeywordItem[] = [];
+// 初始化 WebGL
+function initGL() {
+  /* ========== WebGL 上下文环境初始化 ========== */
   const canvas = canvasRef.value;
-  if (!canvas) return grid;
+  if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return grid;
+  gl = canvas.getContext('webgl');
+  if (!gl) return;
 
-  ctx.font = `${props.fontSize}px ${fontFamily}, monospace`;
+  const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+  if (!vs || !fs) return;
 
-  let y = props.lineHeight;
-  let maxRowWidth = 0;
+  program = createProgram(gl, vs, fs);
+  if (!program) return;
 
-  while (y < height) {
-    const { items, totalWidth } = generateSingleRow(ctx, width);
-    maxRowWidth = Math.max(maxRowWidth, totalWidth);
+  gl.useProgram(program);
 
-    for (const item of items) {
-      grid.push({
-        ...item,
-        y,
-      });
-    }
+  // 设置全屏四边形顶点数据
+  const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
 
-    y += props.lineHeight;
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  const positionLoc = gl.getAttribLocation(program, 'position');
+  gl.enableVertexAttribArray(positionLoc);
+  gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+  // 创建纹理
+  texture = gl.createTexture();
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+}
+
+function createShader(gl: WebGLRenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function createProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShader) {
+  const program = gl.createProgram();
+  if (!program) return null;
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    return null;
+  }
+  return program;
+}
+
+// 将文字渲染到离屏画布并生成纹理
+function updateTexture() {
+  /* ========== 纹理画质优化 (DPR 适配) ========== */
+  if (!gl || !texture) return;
+
+  const width = canvasSize.value.width;
+  const height = canvasSize.value.height;
+  if (width === 0 || height === 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+
+  if (!offscreenCanvas) {
+    offscreenCanvas = document.createElement('canvas');
   }
 
-  singleLoopWidth.value = maxRowWidth;
-  return grid;
+  // 纹理尺寸需要是 2 的幂次方以获得最佳兼容性和性能
+  const texWidth = nextPowerOfTwo(width * 2 * dpr);
+  const texHeight = nextPowerOfTwo(height * dpr);
+
+  offscreenCanvas.width = texWidth;
+  offscreenCanvas.height = texHeight;
+  offscreenCtx = offscreenCanvas.getContext('2d');
+
+  if (!offscreenCtx) return;
+
+  offscreenCtx.clearRect(0, 0, texWidth, texHeight);
+  offscreenCtx.textBaseline = 'middle';
+  offscreenCtx.fillStyle = 'white';
+
+  /* ========== 随机密度与布局逻辑 ========== */
+  // 使用缩放后的 DPR 绘制文字以保证清晰度
+  offscreenCtx.scale(dpr, dpr);
+
+  // 为首行文字预留顶部安全区，避免高亮放大 + 随机偏移导致裁切（纹理写入阶段）
+  // 这与 shaders/fragment.glsl 中 scrolledUv.y 的“顶部对齐采样”相辅相成：
+  // 前者防止文字生成时越界，后者防止显示采样时截断。
+  const maxScale = Math.max(1, props.highlightScale);
+  const maxFontSize = props.fontSize * maxScale;
+  const topSafePadding = Math.ceil(maxFontSize * 0.65) + 6;
+  let y = Math.max(props.lineHeight, topSafePadding);
+  let maxW = 0;
+
+  // 填充整个纹理宽度，确保无缝循环
+  while (y < height) {
+    let x = Math.random() * 100;
+
+    // 注意：这里的 texWidth 是像素值，需要除以 dpr 换算回绘图坐标
+    const drawingWidth = texWidth / dpr;
+
+    while (x < drawingWidth) {
+      const keyword = displayKeywords.value[Math.floor(Math.random() * displayKeywords.value.length)] || '';
+      const scale = Math.random() < props.highlightRatio ? props.highlightScale : 1;
+
+      offscreenCtx.font = `${props.fontSize * scale}px ${fontFamily}, monospace`;
+      const textWidth = offscreenCtx.measureText(keyword).width;
+
+      const yOffset = (Math.random() - 0.5) * 5;
+      const drawY = Math.max(topSafePadding, y + yOffset);
+      offscreenCtx.fillText(keyword, x, drawY);
+
+      // 增加间距随机性，解决过于密集的问题
+      x += textWidth + props.spacing + Math.random() * 100;
+    }
+    y += props.lineHeight + Math.random() * 15; // 增加行间距随机性
+  }
+
+  singleLoopWidth.value = maxW;
+
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreenCanvas);
+}
+
+function nextPowerOfTwo(n: number) {
+  return Math.pow(2, Math.ceil(Math.log2(n)));
 }
 
 // 渲染函数
 function render() {
-  const canvas = canvasRef.value;
-  if (!canvas) return;
+  if (!gl || !program) {
+    animationId.value = requestAnimationFrame(render);
+    return;
+  }
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
+  /* ========== 画布布局与填充控制 ========== */
   const { width, height } = canvasSize.value;
   if (width === 0 || height === 0) {
     animationId.value = requestAnimationFrame(render);
     return;
   }
 
-  // 清空画布
-  ctx.clearRect(0, 0, width, height);
-
-  // 更新滚动偏移（根据方向）
+  // 更新滚动偏移
   const direction = props.scrollDirection === 'left' ? 1 : -1;
-  scrollOffset.value += props.scrollSpeed * direction;
+  // 基于纹理实际宽度的归一化偏移量
+  const texWidth = offscreenCanvas ? offscreenCanvas.width / (window.devicePixelRatio || 1) : width;
+  scrollOffset.value = (scrollOffset.value + (props.scrollSpeed / texWidth) * direction + 1.0) % 1.0;
 
-  // 处理循环（使用模运算）
-  const loopW = singleLoopWidth.value;
-  if (loopW > 0) {
-    scrollOffset.value = ((scrollOffset.value % loopW) + loopW) % loopW;
-  }
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
 
-  ctx.textBaseline = 'middle';
+  gl.useProgram(program);
 
-  // 获取聚光灯位置
-  const { x: spotX, y: spotY } = spotlightPosition.value;
+  /* ========== 聚光灯位置与参数调节 (Uniforms) ========== */
+  const mouseLoc = gl.getUniformLocation(program, 'u_mouse');
+  const radiusLoc = gl.getUniformLocation(program, 'u_radius');
+  const aspectLoc = gl.getUniformLocation(program, 'u_aspect');
+  const brightnessLoc = gl.getUniformLocation(program, 'u_brightness');
+  const dispersionLoc = gl.getUniformLocation(program, 'u_dispersion');
+  const dispersionInnerRatioLoc = gl.getUniformLocation(program, 'u_dispersionInnerRatio');
+  const dispersionOuterRatioLoc = gl.getUniformLocation(program, 'u_dispersionOuterRatio');
+  const scrollOffsetLoc = gl.getUniformLocation(program, 'u_scrollOffset');
+  const enableLensLoc = gl.getUniformLocation(program, 'u_enableLens');
+  const lensMagnificationLoc = gl.getUniformLocation(program, 'u_lensMagnification');
+  const textureRatioLoc = gl.getUniformLocation(program, 'u_textureRatio');
+  const textureHeightRatioLoc = gl.getUniformLocation(program, 'u_textureHeightRatio');
+  const textureLoc = gl.getUniformLocation(program, 'u_texture');
 
-  // 绘制每个关键词
-  for (const item of keywordGrid.value) {
-    // 计算滚动后的 x 位置
-    let drawX = item.x - scrollOffset.value;
+  const spot = spotlightPosition.value;
+  // 将 DOM 坐标映射到 WebGL 归一化坐标 (0-1)，注意 Y 轴翻转
+  gl.uniform2f(mouseLoc, spot.x / width, 1.0 - spot.y / height);
 
-    // 如果超出左边界，加上循环宽度使其从右边进入
-    if (drawX + item.width < 0 && loopW > 0) {
-      drawX += loopW;
-    }
+  // 聚光灯半径：统一使用高度作为基准，确保在不同宽高比下表现一致
+  gl.uniform1f(radiusLoc, props.spotlightRadius / height);
+  gl.uniform1f(aspectLoc, width / height);
+  gl.uniform1f(brightnessLoc, BASE_BRIGHTNESS);
+  gl.uniform1f(dispersionLoc, props.dispersion);
+  gl.uniform1f(dispersionInnerRatioLoc, props.dispersionInnerRatio);
+  gl.uniform1f(dispersionOuterRatioLoc, props.dispersionOuterRatio);
+  gl.uniform1f(scrollOffsetLoc, scrollOffset.value);
+  gl.uniform1f(enableLensLoc, props.enableLens ? 1.0 : 0.0);
+  gl.uniform1f(lensMagnificationLoc, props.lensMagnification);
 
-    // 只绘制在可见范围内的关键词
-    if (drawX > width + 10 || drawX + item.width < -10) continue;
+  // 计算屏幕宽度与纹理宽度的比例，确保文字不被拉伸
+  const dpr = window.devicePixelRatio || 1;
+  const realTexWidth = offscreenCanvas ? offscreenCanvas.width / dpr : width;
+  const realTexHeight = offscreenCanvas ? offscreenCanvas.height / dpr : height;
+  gl.uniform1f(textureRatioLoc, width / realTexWidth);
+  gl.uniform1f(textureHeightRatioLoc, height / realTexHeight);
 
-    // 计算关键词中心点到聚光灯的距离
-    const centerX = drawX + item.width / 2;
-    const centerY = item.y;
-    const distance = getDistance(centerX, centerY, spotX, spotY);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.uniform1i(textureLoc, 0);
 
-    // 计算亮度和颜色
-    const brightness = calculateBrightness(distance, props.spotlightRadius);
-    const color = getGradientColor(distance, props.spotlightRadius);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    // 设置字体（根据 scale 缩放）
-    ctx.font = `${props.fontSize * item.scale}px ${fontFamily}, monospace`;
-    ctx.globalAlpha = brightness;
-    ctx.fillStyle = color;
-
-    // 绘制文字
-    ctx.fillText(item.text, drawX, item.y);
-  }
-
-  // 重置透明度
-  ctx.globalAlpha = 1;
-
-  // 继续下一帧
   animationId.value = requestAnimationFrame(render);
 }
 
-// 处理鼠标移动
 function handleMouseMove(e: MouseEvent) {
   const canvas = canvasRef.value;
   if (!canvas) return;
-
   const rect = canvas.getBoundingClientRect();
   mousePosition.value = {
     x: e.clientX - rect.left,
@@ -287,54 +357,49 @@ function handleMouseMove(e: MouseEvent) {
   };
 }
 
-// 处理鼠标进入
 function handleMouseEnter() {
   isMouseInCanvas.value = true;
 }
-
-// 处理鼠标离开
 function handleMouseLeave() {
   isMouseInCanvas.value = false;
 }
 
-// 调整画布大小
 function resizeCanvas() {
+  /* ========== 容器尺寸监听与自适应 ========== */
   const container = containerRef.value;
   const canvas = canvasRef.value;
   if (!container || !canvas) return;
 
-  const { width, height } = container.getBoundingClientRect();
+  // 获取父容器的实际宽高，确保填满 100%
+  const rect = container.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
   const dpr = window.devicePixelRatio || 1;
 
-  // 保存画布尺寸
   canvasSize.value = { width, height };
 
-  // 设置实际像素大小（高清屏适配）
+  // 设置 Canvas 绘图缓冲区的实际像素大小
   canvas.width = width * dpr;
   canvas.height = height * dpr;
 
-  // 设置 CSS 显示大小
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  // 设置 CSS 显示大小为容器 100%
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
 
-  // 缩放上下文以适配 DPR
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.scale(dpr, dpr);
+  if (gl) {
+    gl.viewport(0, 0, canvas.width, canvas.height);
   }
 
-  // 重新生成关键词网格
-  keywordGrid.value = generateKeywordGrid(width, height);
+  updateTexture();
 }
 
-// ResizeObserver 用于监听容器大小变化
 let resizeObserver: ResizeObserver | null = null;
 
-// 生命周期
 onMounted(() => {
+  initKeywords();
+  initGL();
   resizeCanvas();
 
-  // 使用 ResizeObserver 监听容器大小变化（比 window.resize 更精确）
   resizeObserver = new ResizeObserver(() => {
     resizeCanvas();
   });
@@ -343,17 +408,13 @@ onMounted(() => {
     resizeObserver.observe(containerRef.value);
   }
 
-  // 开始渲染循环
   animationId.value = requestAnimationFrame(render);
 });
 
 onUnmounted(() => {
-  // 断开 ResizeObserver
   if (resizeObserver) {
     resizeObserver.disconnect();
-    resizeObserver = null;
   }
-
   if (animationId.value !== null) {
     cancelAnimationFrame(animationId.value);
   }
@@ -369,13 +430,11 @@ onUnmounted(() => {
   border-radius: 6px;
   background: transparent;
 
-  // 四周渐变遮罩：左右渐隐
   mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
 
   .code-spotlight-canvas {
     display: block;
-    // cursor: crosshair;
   }
 }
 </style>

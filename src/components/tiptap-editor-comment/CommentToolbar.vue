@@ -199,7 +199,7 @@ const confirmInsertLink = () => {
   gap: 4px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--el-border-color);
-  background: var(--bg-secondary);
+  background: var(--bg-color-secondary);
 
   .toolbar-group {
     display: flex;

@@ -18,27 +18,28 @@
   font-weight: normal;
   font-style: italic;
 }
-@font-face {
-  font-family: 'SmileySans';
-  src: url('../font/SmileySans-Oblique.ttf') format('truetype');
-  font-weight: normal;
-  font-style: italic;
-}
 
 :root {
+  /* ========== 字体样式 ========== */
   /* 🎯 响应式基准字体：使用 clamp() 实现平滑缩放 */
   /* 在 320px 屏幕: 1.5vw = 4.8px → 被 min 限制 → 使用 12px */
   /* 在 1440px 屏幕: 1.5vw = 21.6px → 被 max 限制 → 使用 16px */
   /* 在 800px 屏幕: 1.5vw = 12px → 正好符合 → 使用 12px */
   font-size: clamp(12px, 1.5vw, 16px);
   --xfontStyle: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
-  --cursorDefault: url('@/assets/img/cursor.svg'), auto;
-  --pointerDefault: url('@/assets/img/pointer.svg'), auto;
   --navbarHeight: 56px;
+  /* ========== 光标样式 ========== */
+  --cursorDefault: url('@/assets/img/cursor/default.svg'), auto;
+  --cursorPointer: url('@/assets/img/cursor/pointer.svg'), auto;
+  --cursorGrab: url('@/assets/img/cursor/grab.svg'), auto;
   --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
+  /* --bg:
+    linear-gradient(#0066cc0a 1px, transparent 1px), linear-gradient(90deg, #0066cc0a 1px, transparent 1px), linear-gradient(#0066cc14 1px, transparent 1px),
+    linear-gradient(90deg, #0066cc14 1px, transparent 1px);
+  --bg-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px; */
   /* ========== 主题色 - Light Mode ========== */
-  --bg-primary: #f7f7f4;
-  --bg-secondary: #f5f5f5;
+  --bg-color-primary: #f7f7f4;
+  --bg-color-secondary: #f5f5f5;
   --text-primary: #303133;
   --text-secondary: #5f5f5f;
   --text-shadow: rgba(0, 0, 0, 0.2);
@@ -48,9 +49,6 @@
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-bg-popup: rgba(255, 255, 255, 0.92); /* 弹窗用更高不透明度 */
   --glass-blur: blur(10px);
-
-  /* ========== SVG 背景滤镜 ========== */
-  --bg-filter: none;
 
   /* ========== 装饰块背景 ========== */
   --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
@@ -124,18 +122,26 @@
     // 优化：项目自定义组件直接在 元素 上使用 role="button"
     // 这样无需在此处频繁手动添加类名，同时也增加了语义化
     [role='button'] {
-      cursor: var(--pointerDefault) !important;
+      cursor: var(--cursorPointer) !important;
     }
   }
 
   ::selection {
-    background: #81c995;
-    color: #fff;
+    background: #bee0c6;
   }
 
   .el-skeleton {
     margin-top: 20px;
   }
+}
+
+html {
+  scroll-behavior: smooth;
+  /* 确保光标目标不被固定导航栏遮挡 */
+  scroll-padding-top: calc(var(--navbarHeight) + 20px);
+  /* 兜底背景色，在 SVG 背景加载前显示 */
+  background-color: var(--bg-color-primary);
+  transition: background-color 0.3s;
 }
 
 hr {
@@ -145,15 +151,6 @@ hr {
   opacity: 0.8;
   background-image: linear-gradient(90deg, transparent, var(--yellow), var(--red), var(--pink), var(--purple), var(--blue), transparent);
   // background-image: linear-gradient(90deg, transparent, var(--blue), var(--green), var(--blue), transparent);
-}
-
-html {
-  scroll-behavior: smooth;
-  /* Ensure anchor targets are not hidden behind fixed navbar */
-  scroll-padding-top: calc(var(--navbarHeight) + 20px);
-  /* 兜底背景色，在 SVG 背景加载前显示 */
-  background-color: var(--bg-primary);
-  transition: background-color 0.3s;
 }
 
 /* Header Anchor Styles - similar to Vue docs */
@@ -183,8 +180,8 @@ h6 {
 /* ========== Dark Mode ========== */
 html.dark {
   /* 主题色 - Dark Mode (基底 #0f0f0f) */
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #1a1a1a;
+  --bg-color-primary: #0f0f0f;
+  --bg-color-secondary: #1a1a1a;
   --text-primary: #ededed;
   --text-secondary: #a0a0a0;
   --text-shadow: rgba(255, 255, 255, 0.15);

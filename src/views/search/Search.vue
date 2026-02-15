@@ -172,8 +172,6 @@ onUnmounted(() => {
     padding-left: 10px;
     gap: 10px;
     width: 100%;
-    // 使用 CSS 变量，支持 dark 模式
-    background: linear-gradient(to right, var(--bg-primary), transparent);
     z-index: var(--z-sticky);
     .btn {
       display: flex;

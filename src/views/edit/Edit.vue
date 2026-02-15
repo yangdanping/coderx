@@ -168,7 +168,6 @@ const formSubmit = (editData: any) => {
   display: flex;
   flex-direction: column;
   height: 100vh; // 确保占满整个视口高度
-  background: var(--bg-primary);
 
   .submit-btn {
     position: fixed;

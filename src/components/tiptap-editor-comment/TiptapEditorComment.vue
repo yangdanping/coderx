@@ -152,6 +152,6 @@ onBeforeUnmount(() => {
   border: 1px solid var(--el-border-color);
   border-radius: 4px;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--bg-color-primary);
 }
 </style>
