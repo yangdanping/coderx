@@ -1,9 +1,5 @@
 <template>
-  <div class="home-hot-user" id="hot-authors">
-    <h1>
-      热门作者
-      <a href="#hot-authors" class="header-anchor">#</a>
-    </h1>
+  <div class="home-hot-user">
     <div class="scroll-user">
       <ScrollView :data="hotUsers">
         <template #scrollItems="slotProps">

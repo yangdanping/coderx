@@ -1,13 +1,41 @@
 .editor-content-view {
-  p,
-  li {
-    white-space: pre-wrap; /* 保留空格 */
+  padding: 0 10px;
+  font-size: 16px;
+
+  span {
+    // 强制透明背景，防止从其他网页复制内容时带入内联背景样式（如白色背景）导致样式冲突
+    background-color: transparent !important;
+    // color: inherit !important; // 如果需要保留文字颜色则不强制覆盖
   }
-  blockquote {
-    border-left: 8px solid #d0e5f2;
-    padding: 10px 10px;
+
+  p {
+    // font-family: '宋体', sans-serif;
+    line-height: 1.5;
     margin: 10px 0;
+    white-space: pre-wrap; // 保留空格
+  }
+
+  li {
+    line-height: 1.5;
+    white-space: pre-wrap; // 保留空格
+  }
+
+  blockquote {
+    line-height: 1.5;
+    margin: 10px 0;
+    padding: 10px 10px;
+    font-family: '宋体', sans-serif;
+    border-left: 8px solid rgb(201, 246, 200);
     background-color: #f1f1f1;
+    background-image: var(--blockBg);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.5;
+    margin: 20px 0;
   }
 
   // 代码块-----------------------------------------------------------
@@ -19,6 +47,15 @@
     border-radius: 3px;
     font-size: 0.9em;
     color: #e83e8c;
+  }
+
+  // 通用代码样式
+  code {
+    tab-size: 4;
+    white-space: pre;
+    word-break: normal;
+    word-spacing: normal;
+    hyphens: none;
   }
 
   // 代码块
@@ -70,6 +107,7 @@
   // 表格---------------------------------------------------
   table {
     border-collapse: collapse;
+    margin: 10px 0;
   }
 
   td,
@@ -77,13 +115,15 @@
     border: 1px solid #ccc;
     min-width: 50px;
     height: 20px;
+    line-height: 1.5;
+    padding: 3px 5px;
   }
+
   th {
     background-color: #f1f1f1;
   }
 
   // 列表---------------------------------------------------
-
   ul,
   ol {
     padding-left: 20px;
@@ -92,59 +132,8 @@
   input[type='checkbox'] {
     margin-right: 5px;
   }
-}
 
-// 自定义样式-----------------------------------------
-
-// 定义混合指令
-@mixin customCSS {
-  font-size: 16px;
-  blockquote,
-  p {
-    line-height: 1.5;
-    margin: 10px 0;
-    font-family: '宋体', sans-serif;
-  }
-  blockquote {
-    border-left: 8px solid rgb(201, 246, 200);
-    background-image: var(--blockBg);
-  }
-}
-
-.w-e-text-container {
-  @include customCSS; //覆盖掉默认自带的p
-}
-
-.editor-content-view {
-  padding: 0 10px;
-  @include customCSS;
-  h1,
-  h2,
-  h3,
-  h4 {
-    line-height: 1.5;
-    margin: 20px 0;
-  }
-  li {
-    line-height: 1.5;
-  }
-  code {
-    tab-size: 4;
-    white-space: pre;
-    word-break: normal;
-    word-spacing: normal;
-    hyphens: none;
-  }
-
-  table {
-    margin: 10px 0;
-    th,
-    td {
-      line-height: 1.5;
-      padding: 3px 5px;
-    }
-  }
-
+  // 媒体样式-----------------------------------------------
   img {
     max-width: 100%;
     overflow: clip;

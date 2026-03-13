@@ -30,7 +30,7 @@ const { token } = storeToRefs(userStore);
 
 <style lang="scss" scoped>
 .comment {
-  width: 80%;
+  width: 60%;
 }
 
 .showLogin {

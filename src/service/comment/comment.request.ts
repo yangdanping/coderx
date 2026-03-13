@@ -3,6 +3,7 @@ import type { IResData } from '@/service/types';
 import type { IComment, ICommentListResponse, IRepliesResponse, IAddCommentResponse, IAddReplyResponse, IDeleteCommentResponse } from '@/stores/types/comment.result';
 
 export type { IComment, ICommentListResponse, IRepliesResponse };
+export type CommentSortType = 'latest' | 'oldest' | 'hot';
 
 const urlHead = '/comment';
 
@@ -11,9 +12,9 @@ const urlHead = '/comment';
 /**
  * 获取一级评论列表（分页）
  */
-export function getCommentList(params: { articleId: string; cursor?: string | null; limit?: number }) {
-  const { articleId, cursor, limit = 5 } = params;
-  let url = `${urlHead}?articleId=${articleId}&limit=${limit}`;
+export function getCommentList(params: { articleId: string; cursor?: string | null; limit?: number; sort?: CommentSortType }) {
+  const { articleId, cursor, limit = 5, sort = 'latest' } = params;
+  let url = `${urlHead}?articleId=${articleId}&limit=${limit}&sort=${sort}`;
   if (cursor) {
     url += `&cursor=${encodeURIComponent(cursor)}`;
   }

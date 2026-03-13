@@ -1,14 +1,7 @@
 <template>
   <div class="user-avatar">
     <!-- 改为手动触发，不自动上传 -->
-    <el-upload
-      action="#"
-      :auto-upload="false"
-      :show-file-list="false"
-      :disabled="!isMe"
-      :on-change="onFileChange"
-      accept="image/*"
-    >
+    <el-upload action="#" :auto-upload="false" :show-file-list="false" :disabled="!isMe" :on-change="onFileChange" accept="image/*">
       <Avatar :info="currentInfo" :size="size" showSet disabled>
         <template #icon>
           <el-icon><Edit /></el-icon>

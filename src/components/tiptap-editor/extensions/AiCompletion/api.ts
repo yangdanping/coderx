@@ -12,10 +12,7 @@ const REQUEST_TIMEOUT = 5000;
  * @param params 请求参数
  * @param externalSignal 外部传入的 AbortSignal，用于竞态取消
  */
-export async function fetchCompletion(
-  params: CompletionRequest,
-  externalSignal?: AbortSignal,
-): Promise<CompletionSuggestion[]> {
+export async function fetchCompletion(params: CompletionRequest, externalSignal?: AbortSignal): Promise<CompletionSuggestion[]> {
   // 创建超时控制器
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT);

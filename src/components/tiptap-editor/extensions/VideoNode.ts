@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Node, mergeAttributes } from '@tiptap/core';
 
 export const VideoNode = Node.create({
   name: 'video',
@@ -19,13 +19,13 @@ export const VideoNode = Node.create({
         default: true,
         parseHTML: (element) => element.hasAttribute('controls'),
         renderHTML: (attributes) => {
-          return attributes.controls ? { controls: '' } : {}
+          return attributes.controls ? { controls: '' } : {};
         },
       },
       style: {
         default: 'width: 360px; max-width: 100%; height: auto;',
       },
-    }
+    };
   },
 
   parseHTML() {
@@ -33,12 +33,12 @@ export const VideoNode = Node.create({
       {
         tag: 'video[src]',
       },
-    ]
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['video', mergeAttributes(HTMLAttributes)]
+    return ['video', mergeAttributes(HTMLAttributes)];
   },
-})
+});
 
-export default VideoNode
+export default VideoNode;

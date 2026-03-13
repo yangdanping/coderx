@@ -28,7 +28,7 @@ stats.html
 *.sw?
 
 # Documentation
-*文档*/
+*docs*/
 
 # 本地 macOS 10.15 兼容性补丁
 .pnpmfile.cjs

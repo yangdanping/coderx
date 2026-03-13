@@ -6,11 +6,14 @@
           <div class="title-line-1">Welcome to</div>
           <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
         </div>
-        <CodeSpotlight class="code-spotlight" />
+        <RetroComputerShader class="shader" />
+        <!-- <CodeSpotlight class="shader" /> -->
       </div>
       <hr />
+      <SectionTitle id="hot-authors">热门作者</SectionTitle>
       <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
       <hr />
+      <SectionTitle id="hot-news">热门新闻</SectionTitle>
       <HomeSwpier :news="news" />
       <hr />
       <div class="brief">
@@ -25,7 +28,9 @@
 <script lang="ts" setup>
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeSwpier from './cpns/HomeSwpier.vue';
-import CodeSpotlight from '@/components/canvas/CodeSpotlight.vue';
+import SectionTitle from './cpns/SectionTitle.vue';
+import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
+// import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
 
 const counter = ref(1);
@@ -71,7 +76,8 @@ $TitleSize: 2em;
       align-items: center;
       justify-content: space-between;
       gap: 40px;
-      padding: 100px 0;
+      margin: 150px 0 90px 0;
+      // padding: 80px 0;
 
       .title {
         display: flex;
@@ -114,10 +120,10 @@ $TitleSize: 2em;
         }
       }
 
-      .code-spotlight {
+      .shader {
         flex: 1;
         min-width: 300px;
-        height: 480px;
+        height: 600px;
         align-self: stretch;
         max-width: 800px;
       }
@@ -125,12 +131,22 @@ $TitleSize: 2em;
       // 响应式：小屏幕时堆叠显示
       @media screen and (max-width: 900px) {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        text-align: center;
+        padding: 40px 0;
 
-        .code-spotlight {
+        .title {
+          align-items: center;
+        }
+
+        .shader {
           width: 100%;
-          max-width: none;
+          height: auto;
+          aspect-ratio: 1 / 1;
+          max-width: 500px;
           min-width: auto;
+          margin: 0 auto;
+          align-self: center;
         }
       }
     }

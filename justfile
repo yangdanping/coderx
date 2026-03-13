@@ -1,10 +1,10 @@
-# 安装/升级依赖
-i:
-    pnpm i
-
 # 交互式升级所有包到最新版本
 up:
     pnpm up -i --latest
+
+# 安装/升级依赖
+i:
+    pnpm i
 
 # 开发服务器
 dev:
@@ -15,12 +15,12 @@ build:
     pnpm build
 
 # 预览
-preview:
+pre:
     pnpm preview
 
 # 格式化代码
-prettier:
-    pnpm prettier
+p:
+    pnpm prettier --write .
 
 # 仅构建
 build-only:

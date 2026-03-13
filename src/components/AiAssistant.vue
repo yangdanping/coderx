@@ -673,6 +673,11 @@ $shadowColor: #a3dfd0;
       justify-content: space-between;
       align-items: center;
 
+      :where(html.dark) & {
+        background: linear-gradient(to right, rgba(103, 194, 58, 0.15), transparent);
+        box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.3);
+      }
+
       .header-left {
         font-size: 14px;
         font-weight: 700;
@@ -703,7 +708,7 @@ $shadowColor: #a3dfd0;
 
           .model-label {
             font-size: 12px;
-            color: #606266;
+            color: var(--text-secondary);
           }
         }
       }
@@ -753,7 +758,7 @@ $shadowColor: #a3dfd0;
 
       .welcome-message {
         text-align: center;
-        color: #a8a9ab;
+        color: var(--text-secondary);
         font-size: 14px;
         margin-top: 20px;
       }
@@ -825,14 +830,14 @@ $shadowColor: #a3dfd0;
             :deep(blockquote) {
               margin: 8px 0;
               padding: 4px 10px;
-              border-left: 3px solid #eee;
-              color: #606266;
-              background-color: #f2f3f5;
+              border-left: 3px solid var(--el-border-color-lighter);
+              color: var(--text-secondary);
+              background-color: var(--bg-color-secondary);
               border-radius: 0 4px 4px 0;
             }
             :deep(pre) {
-              background: #2d2d2d;
-              color: #e6e6e6;
+              background: #1e1e1e;
+              color: #dcdcdc;
               padding: 12px;
               border-radius: 6px;
               overflow-x: auto;
@@ -840,11 +845,15 @@ $shadowColor: #a3dfd0;
               font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
               font-size: 13px;
               line-height: 1.5;
+
+              :where(html.dark) & {
+                background: #0d0d0d;
+              }
             }
             :deep(code) {
               /* 行内代码样式 */
-              background-color: #f0f2f5;
-              color: #c0392b;
+              background-color: var(--bg-color-secondary);
+              color: var(--el-color-danger);
               padding: 2px 5px;
               border-radius: 4px;
               font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
@@ -884,7 +893,7 @@ $shadowColor: #a3dfd0;
                 border-radius: 6px;
               }
 
-              // 内部遮罩 - 白色背景覆盖中心
+              // 内部遮罩 - 背景覆盖中心
               &::after {
                 content: '';
                 position: absolute;
@@ -892,15 +901,21 @@ $shadowColor: #a3dfd0;
                 left: 2px;
                 right: 2px;
                 bottom: 2px;
-                background: white;
+                background: var(--bg-color-primary);
                 border-radius: 6px;
                 z-index: -1;
+              }
+
+              :where(html.dark) & {
+                &::before {
+                  background: conic-gradient(from 0deg, transparent 0deg 60deg, #008f6a 90deg, #3d6a6b 120deg, #5c7e75 150deg, transparent 180deg 360deg);
+                }
               }
 
               .thinking-content {
                 display: flex;
                 align-items: center;
-                color: #909399;
+                color: var(--text-secondary);
                 font-size: 13px;
                 position: relative;
                 z-index: 1;
@@ -935,28 +950,31 @@ $shadowColor: #a3dfd0;
 
         &.assistant {
           .bubble {
-            background-color: white;
-            color: #333;
-            @include thin-border(all, #eee);
+            background-color: var(--bg-color-secondary);
+            color: var(--text-primary);
+            @include thin-border(all, var(--el-border-color-lighter));
             border-top-left-radius: 2px;
+
+            :where(html.dark) & {
+              background-color: #242424;
+              @include thin-border(all, #333);
+            }
           }
         }
       }
     }
 
     .input-area {
-      // padding: 6px;
-      // background: white;
-      // border-top: 1px solid #f0f2f5;
-
       .input-wrapper {
         position: relative;
-        // background: #f5f7fa;
-        // border-radius: 0 0 8px 8px;
-        border-top: 1px solid #eee;
+        border-top: 1px solid var(--el-border-color-lighter);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         flex-direction: column;
+
+        :where(html.dark) & {
+          border-top-color: #333;
+        }
 
         &:focus-within {
           border-color: var(--el-color-primary);
@@ -973,11 +991,11 @@ $shadowColor: #a3dfd0;
             padding: 10px 12px 45px 12px; // 为底部按钮留出空间
             min-height: 44px;
             font-size: 14px;
-            color: #303133;
+            color: var(--text-primary);
             resize: none;
 
             &::placeholder {
-              color: #a8abb2;
+              color: var(--text-secondary);
             }
           }
         }
@@ -1007,7 +1025,7 @@ $shadowColor: #a3dfd0;
       transform: translateX(-50%);
       width: 30px;
       height: 30px;
-      background-color: white;
+      background-color: var(--bg-color-primary);
       border-radius: 50%;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       display: flex;
@@ -1016,10 +1034,16 @@ $shadowColor: #a3dfd0;
       cursor: pointer;
       color: var(--el-color-primary);
       z-index: var(--z-content);
-      @include thin-border(all, #eee);
+      @include thin-border(all, var(--el-border-color-lighter));
+
+      :where(html.dark) & {
+        background-color: #242424;
+        @include thin-border(all, #333);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
 
       &:hover {
-        background-color: #f5f7fa;
+        background-color: var(--bg-color-secondary);
       }
     }
   }

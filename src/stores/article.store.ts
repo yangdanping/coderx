@@ -374,7 +374,14 @@ const useArticleStore = defineStore('article', {
         this.clearAllPendingFiles();
 
         Msg.showSuccess('修改文章成功');
-        router.push({ path: `/article/${articleId}` });
+        if (window.history.state?.back) {
+          console.log('使用router.back()', window.history.state);
+          router.back();
+        } else {
+          console.log('使用router.replace()');
+          // 兜底方案：如果用户直接通过 url 进入编辑页，没有上一个历史记录时，直接 replace 到详情页
+          router.replace({ path: `/article/${articleId}` });
+        }
       } else {
         Msg.showFail('修改文章失败');
         console.log(res2);

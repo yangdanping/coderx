@@ -10,6 +10,7 @@ import {
   type IComment,
   type ICommentListResponse,
   type IRepliesResponse,
+  type CommentSortType,
 } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request';
 import { Msg, emitter } from '@/utils';
@@ -19,7 +20,8 @@ import type { Ref } from 'vue';
 // ==================== Query Keys ====================
 export const commentKeys = {
   all: ['comments'] as const,
-  list: (articleId: string) => [...commentKeys.all, 'list', articleId] as const,
+  lists: (articleId: string) => [...commentKeys.all, 'list', articleId] as const,
+  list: (articleId: string, sort: CommentSortType) => [...commentKeys.lists(articleId), sort] as const,
   replies: (commentId: number) => [...commentKeys.all, 'replies', commentId] as const,
   userLiked: (userId: number) => [...commentKeys.all, 'userLiked', userId] as const,
 };
@@ -29,16 +31,18 @@ export const commentKeys = {
 /**
  * 获取一级评论列表（分页）
  * @param articleId 文章ID（响应式）
+ * @param sort 排序方式
  * @param limit 每页数量，默认5
  */
-export function useCommentList(articleId: string, limit = 5) {
+export function useCommentList(articleId: string, sort: Ref<CommentSortType>, limit = 5) {
   return useInfiniteQuery({
-    queryKey: commentKeys.list(articleId),
+    queryKey: computed(() => commentKeys.list(articleId, sort.value)),
     queryFn: async ({ pageParam }) => {
       const res = await getCommentList({
         articleId,
         cursor: pageParam as string | null,
         limit,
+        sort: sort.value,
       });
       return res.data;
     },
@@ -131,7 +135,7 @@ export function useAddComment(articleId: Ref<string>) {
       Msg.showSuccess('发表评论成功');
       emitter.emit('cleanContent');
       // 重新获取评论列表
-      queryClient.invalidateQueries({ queryKey: commentKeys.list(articleId.value) });
+      queryClient.invalidateQueries({ queryKey: commentKeys.lists(articleId.value) });
     },
     onError: () => {
       Msg.showFail('发表评论失败');
@@ -158,7 +162,7 @@ export function useAddReply(articleId: Ref<string>) {
       emitter.emit('cleanContent');
       emitter.emit('collapse', null); // 关闭评论框
       // 重新获取评论列表和回复列表
-      queryClient.invalidateQueries({ queryKey: commentKeys.list(articleId.value) });
+      queryClient.invalidateQueries({ queryKey: commentKeys.lists(articleId.value) });
       queryClient.invalidateQueries({ queryKey: commentKeys.replies(variables.commentId) });
     },
     onError: () => {
@@ -181,12 +185,12 @@ export function useLikeComment(articleId: Ref<string>, parentCommentId?: Ref<num
     // 乐观更新
     onMutate: async (commentId) => {
       // 取消正在进行的查询
-      await queryClient.cancelQueries({ queryKey: commentKeys.list(articleId.value) });
+      await queryClient.cancelQueries({ queryKey: commentKeys.lists(articleId.value) });
 
       // 保存之前的数据用于回滚
-      const previousData = queryClient.getQueryData(commentKeys.list(articleId.value));
+      const previousQueries = queryClient.getQueriesData({ queryKey: commentKeys.lists(articleId.value) });
 
-      return { previousData };
+      return { previousQueries };
     },
     onSuccess: (res) => {
       const { liked, likes } = res.data;
@@ -204,14 +208,16 @@ export function useLikeComment(articleId: Ref<string>, parentCommentId?: Ref<num
     },
     onError: (_, __, context) => {
       // 回滚
-      if (context?.previousData) {
-        queryClient.setQueryData(commentKeys.list(articleId.value), context.previousData);
+      if (context?.previousQueries?.length) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
       Msg.showFail('操作失败，请重试');
     },
     onSettled: () => {
       // 重新验证数据
-      queryClient.invalidateQueries({ queryKey: commentKeys.list(articleId.value) });
+      queryClient.invalidateQueries({ queryKey: commentKeys.lists(articleId.value) });
     },
   });
 }
@@ -228,7 +234,7 @@ export function useUpdateComment(articleId: Ref<string>, parentCommentId?: Ref<n
     },
     onSuccess: () => {
       Msg.showSuccess('修改评论成功');
-      queryClient.invalidateQueries({ queryKey: commentKeys.list(articleId.value) });
+      queryClient.invalidateQueries({ queryKey: commentKeys.lists(articleId.value) });
       // 刷新回复列表（如果有父评论ID）
       if (parentCommentId?.value) {
         queryClient.invalidateQueries({ queryKey: commentKeys.replies(parentCommentId.value) });
@@ -250,7 +256,7 @@ export function useDeleteComment(articleId: Ref<string>, parentCommentId?: Ref<n
     mutationFn: (commentId: number) => deleteComment(commentId),
     onSuccess: () => {
       Msg.showSuccess('删除评论成功');
-      queryClient.invalidateQueries({ queryKey: commentKeys.list(articleId.value) });
+      queryClient.invalidateQueries({ queryKey: commentKeys.lists(articleId.value) });
       // 刷新回复列表（如果有父评论ID）
       if (parentCommentId?.value) {
         queryClient.invalidateQueries({ queryKey: commentKeys.replies(parentCommentId.value) });

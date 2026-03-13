@@ -1,6 +1,21 @@
 <template>
   <div class="comment-list">
-    <span ref="listRef" class="comment-title" v-if="totalCount">最新评论({{ totalCount }})</span>
+    <div v-if="totalCount" ref="listRef" class="comment-header">
+      <span class="comment-title">最新评论({{ totalCount }})</span>
+      <el-dropdown trigger="click" @command="handleSortChange">
+        <button class="sort-trigger" type="button" aria-label="切换评论排序">
+          <span>{{ currentSortLabel }}</span>
+          <el-icon><ChevronDown :size="16" /></el-icon>
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item v-for="option in sortOptions" :key="option.value" :command="option.value" :disabled="option.value === sortType">
+              {{ option.label }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
 
     <!-- 首次加载中(查询第一次执行，还没有任何缓存数据) -->
     <template v-if="isPending">
@@ -17,9 +32,7 @@
 
     <!-- 评论列表 -->
     <template v-else-if="comments.length">
-      <template v-for="(item, index) in comments" :key="item.id">
-        <CommentListItem :item="item" :floor="comments.length - index" />
-      </template>
+      <CommentListItem v-for="(item, index) in comments" :key="`${sortType}-${item.id}`" :item="item" :floor="comments.length - index" />
 
       <!-- 底部加载状态 -->
       <el-skeleton v-if="isFetchingNextPage" animated />
@@ -42,12 +55,23 @@ import CommentListItem from './CommentListItem.vue';
 import { emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 import useArticleStore from '@/stores/article.store';
+import useCommentStore from '@/stores/comment.store';
+import type { CommentSortType } from '@/service/comment/comment.request';
+import { ChevronDown } from 'lucide-vue-next';
 
 const route = useRoute();
 const articleStore = useArticleStore();
+const commentStore = useCommentStore();
 const { article } = storeToRefs(articleStore);
+const sortType = ref<CommentSortType>('latest');
+const sortOptions: Array<{ label: string; value: CommentSortType }> = [
+  { label: '最新', value: 'latest' },
+  { label: '最旧', value: 'oldest' },
+  { label: '热门', value: 'hot' },
+];
+const currentSortLabel = computed(() => sortOptions.find((item) => item.value === sortType.value)?.label ?? '最新');
 // 使用 composable 获取评论列表
-const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(route.params.articleId as string);
+const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(route.params.articleId as string, sortType);
 
 // 计算属性：扁平化的评论列表
 const comments = computed(() => flattenComments(data.value));
@@ -65,6 +89,12 @@ watch(
 
 // 滚动到评论区
 const listRef = ref<Element>();
+
+const handleSortChange = (value: CommentSortType) => {
+  if (value === sortType.value) return;
+  commentStore.closeAllForms();
+  sortType.value = value;
+};
 
 // 触底加载更多（Intersection Observer）
 const loadMoreRef = ref<Element>();
@@ -107,10 +137,40 @@ onUnmounted(() => {
   border-radius: 5px;
   padding: 20px;
 
+  .comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .comment-title {
     font-weight: 300;
-    font-size: 24px;
-    padding-top: var(--navbarHeight);
+    font-size: 20px;
+  }
+
+  .sort-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 6px;
+    background-color: transparent;
+    color: var(--el-text-color-primary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease;
+
+    &:hover {
+      color: var(--el-color-primary);
+      border-color: var(--el-color-primary-light-5);
+      background-color: var(--el-color-primary-light-9);
+    }
   }
 
   .error {

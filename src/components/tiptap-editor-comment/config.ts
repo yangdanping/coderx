@@ -2,15 +2,15 @@
  * Tiptap 评论编辑器配置
  * 包含基础富文本功能，不含图片/视频上传、AI补全、Markdown
  */
-import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
-import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { common, createLowlight } from 'lowlight'
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 
 // 创建 lowlight 实例，使用常用语言包
-const lowlight = createLowlight(common)
+const lowlight = createLowlight(common);
 
 /**
  * 获取评论编辑器扩展配置
@@ -47,8 +47,8 @@ export const getCommentEditorExtensions = (placeholder?: string) => {
 
     // 下划线
     Underline,
-  ]
-}
+  ];
+};
 
 /**
  * 编辑器默认配置
@@ -56,4 +56,4 @@ export const getCommentEditorExtensions = (placeholder?: string) => {
 export const defaultCommentEditorConfig = {
   autofocus: false,
   editable: true,
-}
+};

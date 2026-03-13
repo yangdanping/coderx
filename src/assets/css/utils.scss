@@ -13,14 +13,14 @@ $glass-bg-popup-opacity: 0.92;
 @mixin glass-effect {
   background-color: var(--glass-bg);
   backdrop-filter: $glass-blur;
-  -webkit-backdrop-filter: $glass-blur;
+  // -webkit-backdrop-filter: $glass-blur;
 }
 
 // 弹窗专用玻璃效果 - 更高不透明度，避免背景内容干扰
 @mixin glass-effect-popup {
   background-color: var(--glass-bg-popup);
   backdrop-filter: $glass-blur;
-  -webkit-backdrop-filter: $glass-blur;
+  // -webkit-backdrop-filter: $glass-blur;
 }
 
 @mixin thin-border($directions: all, $color: #ebeef5) {

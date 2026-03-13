@@ -55,21 +55,37 @@ const { tags } = storeToRefs(articleStore);
 import type { IArticle } from '@/stores/types/article.result';
 import type { UploadRequestHandler } from 'element-plus';
 import type { UploadUserFile } from 'element-plus';
-const {
-  editData = {},
-  fileList = [],
-  draft = '',
-} = defineProps<{
+const props = defineProps<{
   editData?: IArticle;
   fileList?: UploadUserFile[];
   draft?: string;
+  title?: string;
 }>();
-let form = reactive({ title: '', tags: [] as any[] });
+const { editData = {}, fileList = [], draft = '' } = props;
+let form = reactive({ title: props.title || '', tags: [] as any[] });
 
 const handleFileChange = (file, files) => {
   console.log('handleFileChange', file, files);
 };
-const emit = defineEmits(['formSubmit', 'setCover']);
+const emit = defineEmits(['formSubmit', 'setCover', 'update:title']);
+
+// 监听 props.title 变化并同步到 form
+watch(
+  () => props.title,
+  (newTitle) => {
+    if (newTitle !== form.title) {
+      form.title = newTitle || '';
+    }
+  },
+);
+
+// 监听 form.title 变化并通知外部
+watch(
+  () => form.title,
+  (newTitle) => {
+    emit('update:title', newTitle);
+  },
+);
 
 onMounted(() => {
   articleStore.getTagsAction();

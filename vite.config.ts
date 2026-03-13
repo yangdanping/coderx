@@ -10,15 +10,14 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
 import pxtorem from 'postcss-pxtorem';
 import glsl from 'vite-plugin-glsl';
+import type { UserConfig } from 'vite';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode }): UserConfig => {
   const env = loadEnv(mode, process.cwd(), '');
-
   return {
-    publicDir: 'public', // 作为静态资源服务的文件夹 默认public
     plugins: [
       vue(),
       glsl(),
@@ -28,28 +27,17 @@ export default defineConfig(({ mode }) => {
         open: false, //如果存在本地服务端口,将在打包后自动展示
       }),
       AutoImport({
-        // Auto import functions from Vue, e.g. ref, reactive, toRef...
-        // 自动导入 Vue 相关函数,如：ref, reactive, toRef 等
-        imports: ['vue', 'pinia', 'vue-router'],
-
-        // Auto import functions from Element Plus, e.g. ElMessage, ElMessageBox... (with style)
-        // 自动导入 Element Plus 相关函数,如：ElMessage, ElMessageBox... (带样式)
+        imports: ['vue', 'pinia', 'vue-router'], // 自动导入 Vue 相关函数,如：ref, reactive, toRef 等
         resolvers: [
-          ElementPlusResolver(),
-          // Auto import icon components
-          // 自动导入图标组件
-          IconsResolver({ prefix: 'Icon' }),
+          ElementPlusResolver(), // 自动导入 Element Plus 相关函数,如：ElMessage, ElMessageBox... (带样式)
+          IconsResolver({ prefix: 'Icon' }), // 自动导入图标组件
         ],
         dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
       }),
       Components({
         resolvers: [
-          // Auto register icon components
-          // 自动注册图标组件(自动导入图标需要i-ep-前缀,下面prefix和alias配置使其只用i-前缀)
-          IconsResolver({ enabledCollections: ['ep'], prefix: false, alias: { i: 'ep' } }),
-          // Auto register Element Plus components
-          // 自动导入 Element Plus 组件
-          ElementPlusResolver(),
+          IconsResolver({ enabledCollections: ['ep'], prefix: false, alias: { i: 'ep' } }), // 自动注册图标组件(自动导入图标需要i-ep-前缀,下面prefix和alias配置使其只用i-前缀)
+          ElementPlusResolver(), // 自动导入 Element Plus 组件
         ],
         dts: path.resolve(pathSrc, 'components.d.ts'),
       }),
@@ -57,8 +45,14 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       target: 'baseline-widely-available', // 设置最终构建的浏览器兼容目标。默认值：'baseline-widely-available'
-      rollupOptions: {
+      rolldownOptions: {
         output: {
+          // 清空控制台打印
+          minify: {
+            compress: {
+              dropConsole: true,
+            },
+          },
           // 框架与业务分离
           manualChunks(id) {
             if (id.includes('node_modules')) {
@@ -66,28 +60,21 @@ export default defineConfig(({ mode }) => {
               if (/(^|\/)vue($|\/)|(^|\/)vue-router($|\/)|(^|\/)pinia($|\/)/.test(id)) {
                 return 'vue-core';
               }
-
-              // 2. UI 框架
-              if (id.includes('element-plus')) {
-                return 'element-plus';
-              }
-
-              // 3. 通用工具库 (合并了 @tanstack, axios, dayjs)
+              // 2. 通用工具库 (合并了 @tanstack, axios, dayjs)
               if (id.includes('@tanstack') || id.includes('axios') || id.includes('dayjs')) {
                 return 'common-utils';
               }
-
-              // 4. 巨型编辑器库 (按需加载/独立缓存)
+              // 3. 巨型编辑器库 (按需加载/独立缓存)
               if (id.includes('@tiptap') || id.includes('prosemirror')) {
                 return 'editor-vendor';
               }
-              // 5. 语法高亮
+              // 4. 语法高亮
               if (id.includes('highlight.js')) {
                 return 'syntax-highlight';
               }
-              // 6. 其他带 vue 的小插件 (如 vue-dompurify-html, @ai-sdk/vue等)
-              if (id.includes('vue')) {
-                return 'vue-plugins';
+              // 5. 地址级联选择器
+              if (id.includes('element-china-area-data')) {
+                return 'element-china-area-data';
               }
             }
           },
@@ -111,7 +98,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           // target: 'http://119.91.150.141:8000', // 腾讯云（已下线）
           // target: 'http://8.138.223.188:8000', // 阿里云（已下线）
-          target: 'http://95.40.29.75:8000', // AWS
+          target: 'http://18.166.177.129:8000', // AWS
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
@@ -121,9 +108,6 @@ export default defineConfig(({ mode }) => {
         //   rewrite: (path) => path.replace(/^\/news-api/, ''),
         // },
       },
-    },
-    esbuild: {
-      drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
     // 🎯 CSS 配置：PostCSS pxtorem 自动转换
     css: {

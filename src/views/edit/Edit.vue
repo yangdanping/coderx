@@ -2,8 +2,21 @@
   <div class="edit">
     <!-- 数据就绪后才渲染编辑器 ,即 await 接口返回数据） -->
     <template v-if="isDataReady">
+      <!-- 下拉标题组件 -->
+      <PullDownHeader v-model="articleTitle" v-model:isPulled="isPulled" />
+
       <!-- 直接使用 TiptapEditor -->
-      <TiptapEditor :editData="editData" @update:content="(content) => (preview = content)" />
+      <div class="editor-wrapper" :class="{ 'is-pulled': isPulled }">
+        <!-- 顶部边框触发区 -->
+        <div class="top-border-trigger" @click="isPulled = !isPulled"></div>
+
+        <!-- 绳子图标 -->
+        <div class="rope-icon-wrapper" @click="isPulled = !isPulled">
+          <img src="@/assets/img/pull.png" alt="pull" class="rope-icon" draggable="false" />
+        </div>
+
+        <TiptapEditor :editData="editData" @update:content="(content) => (preview = content)" />
+      </div>
     </template>
     <!-- 编辑模式下数据加载中显示 loading -->
     <div v-else class="editor-loading">
@@ -11,7 +24,7 @@
       <span>正在加载文章数据...</span>
     </div>
     <el-drawer v-if="isDataReady" title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
-      <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" @setCover="handleSetCover" />
+      <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" v-model:title="articleTitle" @setCover="handleSetCover" />
     </el-drawer>
     <el-tooltip content="提交 (⌃Q)" placement="top" :show-after="100">
       <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
@@ -25,6 +38,7 @@ import { Check } from 'lucide-vue-next';
 // 直接使用 TiptapEditor 组件
 import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
 import EditForm from './cpns/EditForm.vue';
+import PullDownHeader from './cpns/PullDownHeader.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
@@ -34,12 +48,32 @@ import type { UploadProps, UploadUserFile } from 'element-plus';
 
 const route = useRoute();
 const router = useRouter();
+interface Props {
+  borderColor?: string;
+  defaultExpose?: number; // 默认露出比例 (0-1)，默认 0.5
+  pulledExpose?: number; // 下拉后露出比例 (0-1)，默认 0.7
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  borderColor: 'var(--el-color-primary)',
+  defaultExpose: 0.6,
+  pulledExpose: 1,
+});
+
 const articleStore = useArticleStore();
 const { article } = storeToRefs(articleStore);
 const isEdit = computed(() => !!route.query.editArticleId);
 const editData = computed(() => (isEdit.value ? article.value : {}));
 const drawer = ref(false);
 const preview = ref('');
+const articleTitle = ref('');
+const isPulled = ref(false);
+
+const ropeTranslateY = computed(() => {
+  const expose = isPulled.value ? props.pulledExpose : props.defaultExpose;
+  return `-${(1 - expose) * 100}%`;
+});
+
 const fileList = ref<UploadUserFile[]>([]);
 const isSubmitting = ref(false); // 标记是否正在提交，用于避免提交时显示离开提示
 // 数据是否就绪：创建模式直接可用，编辑模式需要等待 API 返回
@@ -58,6 +92,8 @@ onMounted(async () => {
       await articleStore.getDetailAction(route.query.editArticleId as any, true);
       console.log('[Edit.vue] API 请求完成，editData:', article.value);
     }
+    // 同步标题
+    articleTitle.value = article.value.title || '';
     // API 返回后设置为 ready
     isDataReady.value = true;
     console.log('[Edit.vue] isDataReady 设置为 true');
@@ -65,12 +101,15 @@ onMounted(async () => {
     console.log('[Edit.vue] 创建模式');
     // 恢复草稿中的文件 ID，防止刷新后丢失关联（否则定时任务会误清理这些文件）
     const draft = LocalCache.getCache('draft');
-    if (draft?.pendingImageIds?.length || draft?.pendingVideoIds?.length) {
-      // 先清空再恢复，避免刷新页面时重复添加
-      articleStore.clearAllPendingFiles();
-      draft.pendingImageIds?.forEach((id: number) => articleStore.addPendingImageId(id));
-      draft.pendingVideoIds?.forEach((id: number) => articleStore.addPendingVideoId(id));
-      console.log('[Edit.vue] 从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
+    if (draft) {
+      if (draft.title) articleTitle.value = draft.title;
+      if (draft.pendingImageIds?.length || draft.pendingVideoIds?.length) {
+        // 先清空再恢复，避免刷新页面时重复添加
+        articleStore.clearAllPendingFiles();
+        draft.pendingImageIds?.forEach((id: number) => articleStore.addPendingImageId(id));
+        draft.pendingVideoIds?.forEach((id: number) => articleStore.addPendingVideoId(id));
+        console.log('[Edit.vue] 从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
+      }
     }
   }
   // 监听页面刷新/关闭，显示提示
@@ -130,6 +169,7 @@ watch(
   (newV) => {
     console.log('[Edit.vue] article watch 触发:', { hasContent: !!newV?.content, contentLength: newV?.content?.length });
     emitter.emit('updateEditorContent', newV.content);
+    if (newV.title) articleTitle.value = newV.title;
   },
 );
 
@@ -206,10 +246,82 @@ const formSubmit = (editData: any) => {
     }
   }
 
+  .editor-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    min-height: 0;
+
+    &.is-pulled {
+      :deep(.tiptap-editor-container) {
+        border-top-color: v-bind('props.borderColor');
+        border-top-width: 2px;
+      }
+    }
+
+    .top-border-trigger {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px; // 更加精确的顶边触发区
+      cursor: pointer;
+      z-index: 105; // 确保在所有内容之上
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: v-bind('props.borderColor');
+      }
+
+      // 只有 hover 触发器时，下方的编辑器边框才变粗
+      &:hover ~ :deep(.tiptap-editor-container) {
+        border-top-width: 4px !important; // 强制覆盖
+        border-top-color: v-bind('props.borderColor') !important;
+      }
+    }
+
+    .rope-icon-wrapper {
+      position: absolute;
+      top: 0;
+      right: 40px;
+      width: 30px;
+      height: 150px; // 维持一定高度以便点击 handle
+      cursor: pointer;
+      z-index: 101;
+      display: flex;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+      transform: translateY(v-bind(ropeTranslateY));
+      pointer-events: none; // 默认禁用，由子元素 handle 响应
+      user-select: none;
+
+      .rope-icon {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: auto; // 只有绳子图标本身响应点击
+        // 使用 drop-shadow 生成与透明 PNG 轮廓完全一致的阴影
+        filter: drop-shadow(4px 5px 5px rgba(0, 0, 0, 0.25)); // 向右偏移  向下偏移 阴影模糊半径
+        transition: filter 0.3s;
+
+        &:hover {
+          // 鼠标悬浮时稍微加深阴影并增加偏移，增加“可拉拽”的立体交互感
+          filter: drop-shadow(4px 7px 6px rgba(0, 0, 0, 0.35));
+        }
+      }
+    }
+  }
+
   // 确保编辑器能占满剩余空间
   :deep(.tiptap-editor-container) {
     flex: 1;
     min-height: 0;
+    transition:
+      border-width 0.2s,
+      border-color 0.2s;
+    border-top: 1px solid var(--el-border-color);
   }
 }
 </style>

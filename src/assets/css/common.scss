@@ -26,12 +26,14 @@
   /* 在 1440px 屏幕: 1.5vw = 21.6px → 被 max 限制 → 使用 16px */
   /* 在 800px 屏幕: 1.5vw = 12px → 正好符合 → 使用 12px */
   font-size: clamp(12px, 1.5vw, 16px);
+  font-family: 'Hiragino Sans GB', sans-serif;
   --xfontStyle: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
   --navbarHeight: 56px;
   /* ========== 光标样式 ========== */
   --cursorDefault: url('@/assets/img/cursor/default.svg'), auto;
   --cursorPointer: url('@/assets/img/cursor/pointer.svg'), auto;
   --cursorGrab: url('@/assets/img/cursor/grab.svg'), auto;
+  --cursorGrabbed: url('@/assets/img/cursor/grabbed.svg'), auto;
   --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
   /* --bg:
     linear-gradient(#0066cc0a 1px, transparent 1px), linear-gradient(90deg, #0066cc0a 1px, transparent 1px), linear-gradient(#0066cc14 1px, transparent 1px),
@@ -145,12 +147,15 @@ html {
 }
 
 hr {
-  margin: 40px auto;
-  border: 0;
-  height: 6px;
-  opacity: 0.8;
-  background-image: linear-gradient(90deg, transparent, var(--yellow), var(--red), var(--pink), var(--purple), var(--blue), transparent);
+  // margin: 40px auto;
+  // border: 0;
+  // height: 6px;
+  // opacity: 0.8;
+  // background-image: linear-gradient(90deg, transparent, var(--yellow), var(--red), var(--pink), var(--purple), var(--blue), transparent);
   // background-image: linear-gradient(90deg, transparent, var(--blue), var(--green), var(--blue), transparent);
+  border: none;
+  border-top: 2px dashed #e5e7eb;
+  margin: 40px auto;
 }
 
 /* Header Anchor Styles - similar to Vue docs */

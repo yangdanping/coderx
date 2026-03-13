@@ -223,31 +223,29 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
           return true;
         },
 
-      dismissCompletion:
-        () =>
-        () => {
-          const storage = this.storage;
+      dismissCompletion: () => () => {
+        const storage = this.storage;
 
-          // 清除定时器
-          if (storage.debounceTimer) {
-            clearTimeout(storage.debounceTimer);
-            storage.debounceTimer = null;
-          }
+        // 清除定时器
+        if (storage.debounceTimer) {
+          clearTimeout(storage.debounceTimer);
+          storage.debounceTimer = null;
+        }
 
-          // 取消正在进行的请求
-          if (storage.abortController) {
-            storage.abortController.abort();
-            storage.abortController = null;
-          }
+        // 取消正在进行的请求
+        if (storage.abortController) {
+          storage.abortController.abort();
+          storage.abortController = null;
+        }
 
-          // 重置状态
-          storage.state = 'idle';
-          storage.suggestions = [];
-          storage.activeIndex = 0;
-          storage.onStateChange?.(storage.state, storage.suggestions, storage.position);
+        // 重置状态
+        storage.state = 'idle';
+        storage.suggestions = [];
+        storage.activeIndex = 0;
+        storage.onStateChange?.(storage.state, storage.suggestions, storage.position);
 
-          return true;
-        },
+        return true;
+      },
     };
   },
 

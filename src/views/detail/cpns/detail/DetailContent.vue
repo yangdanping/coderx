@@ -101,22 +101,42 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+$layout-gap: 20px;
+$side-column-width: 220px;
+$detail-content-padding: 24px;
+$main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 2) - (#{$layout-gap} * 2) - (#{$detail-content-padding} * 2)));
+
 .detail-content {
+  // 桌面端使用三列网格：左侧留白、正文、右侧目录。
+  // 左右两列等宽，可以保证中间正文严格相对整个页面居中。
+  // 这里用 min() 取三个“上限”里的最小值：
+  // 1) 1100px：正文的绝对最大宽度
+  // 2) 60vw：正文随视口缩放的相对宽度上限
+  // 3) calc(...)：扣除左右留白、目录和间距后，当前视口真正还能分给正文的最大宽度
+  // 这个场景核心是在多个上限里选更保守的那个，所以 min() 比 clamp() 更直接。
+  // clamp(min, preferred, max) 更适合“给一个最小值 + 理想值 + 最大值”的连续区间约束。
+  // max() 则是取多个值中的最大值，常用于设置下限；和这里“限制别太宽”的目标相反。
   margin-top: 80px;
-  width: 80%;
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: $detail-content-padding;
 
   .content-layout {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: $side-column-width minmax(0, $main-column-max-width) $side-column-width;
+    justify-content: center;
+    align-items: start;
+    column-gap: $layout-gap;
 
     .main-column {
-      flex: 1;
-      width: 0; // Prevent flex child from overflowing
+      grid-column: 2;
+      min-width: 0;
     }
 
     .side-column {
-      width: 250px;
-      flex-shrink: 0;
+      grid-column: 3;
+      width: $side-column-width;
+      min-width: 0;
     }
   }
 
@@ -145,13 +165,15 @@ watch(
     .hidden-sm-and-down {
       display: none !important;
     }
+    // 小屏下退回单列布局，目录隐藏，正文单独居中。
     .content-layout {
-      flex-direction: column;
+      display: block;
       .side-column {
         display: none;
       }
       .main-column {
-        width: 100%;
+        width: min(90%, 1000px);
+        margin: 0 auto;
       }
     }
   }

@@ -3,11 +3,21 @@ import globals from 'globals';
 import pluginVue from 'eslint-plugin-vue';
 import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import { defineConfig, globalIgnores } from 'eslint/config';
 
-export default tseslint.config(
-  {
-    ignores: ['dist', 'build', 'node_modules', 'public', 'stats.html', 'auto-imports.d.ts', 'components.d.ts', '.DS_Store', '.env.*'],
-  },
+export default defineConfig([
+  // 全局忽略
+  globalIgnores([
+    'dist',
+    'build',
+    'node_modules',
+    'public',
+    'stats.html',
+    'auto-imports.d.ts',
+    'components.d.ts',
+    '.DS_Store',
+    '.env.*',
+  ]),
 
   // 扩展推荐配置
   js.configs.recommended,
@@ -19,6 +29,7 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parser: tseslint.parser,
       globals: {
         ...globals.browser,
         ...globals.node,
@@ -48,13 +59,10 @@ export default tseslint.config(
         toRef: 'readonly',
         toRefs: 'readonly',
       },
-      parserOptions: {
-        parser: tseslint.parser,
-      },
     },
   },
 
-  // 针对 TypeScript 文件的特定配置
+  // 针对 TypeScript / Vue 文件的特定配置
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.vue'],
     rules: {
@@ -97,4 +105,4 @@ export default tseslint.config(
 
   // Prettier 配置放最后
   eslintConfigPrettier,
-);
+]);
