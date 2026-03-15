@@ -1,6 +1,6 @@
 import path from 'path';
 import vue from '@vitejs/plugin-vue';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type UserConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
@@ -10,7 +10,6 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { visualizer } from 'rollup-plugin-visualizer';
 import pxtorem from 'postcss-pxtorem';
 import glsl from 'vite-plugin-glsl';
-import type { UserConfig } from 'vite';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 

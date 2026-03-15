@@ -19,7 +19,6 @@ import 'highlight.js/styles/atom-one-dark.css';
 import { initThemeOnLoad } from '@/composables/useTheme';
 
 import type { App } from 'vue';
-import useSocket from '@/service/socket';
 import initDirective from './directive';
 
 /**
@@ -120,6 +119,4 @@ export default function init(app: App) {
       userStore.initProfile(); //再路由后置守卫中initProfile,防止白屏
     }
   });
-
-  // LocalCache.getCache('token') && rootStore.checkAuthAction(); //每次刷新验证token
 }

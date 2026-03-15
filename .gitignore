@@ -11,7 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-build
 stats.html
 
 
@@ -29,9 +28,6 @@ stats.html
 
 # Documentation
 *docs*/
-
-# 本地 macOS 10.15 兼容性补丁
-.pnpmfile.cjs
 
 # Environment variables
 .env.development
