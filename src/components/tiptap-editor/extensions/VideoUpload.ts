@@ -4,14 +4,13 @@
  */
 import { Extension } from '@tiptap/core';
 import { uploadVideo } from '@/service/file/file.request';
-import useArticleStore from '@/stores/article.store';
+import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
 import type { EditorJsonNode, VideoNodeAttrs } from '../types';
 import { MAX_VIDEO_COUNT } from '../config';
 
 // 声明命令类型扩展
 declare module '@tiptap/core' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Commands<ReturnType> {
     videoUpload: {
       uploadVideo: (file: File) => ReturnType;
@@ -21,6 +20,15 @@ declare module '@tiptap/core' {
 
 // 最大文件大小 20MB
 const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
+interface IUploadVideoResponse {
+  code: number;
+  message?: string;
+  data: {
+    id?: number;
+    url: string;
+    poster?: string | null;
+  };
+}
 
 const countVideoNodes = (node?: EditorJsonNode): number => {
   if (!node) return 0;
@@ -43,7 +51,7 @@ export const VideoUpload = Extension.create({
       uploadVideo:
         (file: File) =>
         ({ editor }) => {
-          const articleStore = useArticleStore();
+          const editorStore = useEditorStore();
 
           // 数量限制校验 (最多3个视频)
           const currentDoc = editor.getJSON() as EditorJsonNode;
@@ -63,7 +71,7 @@ export const VideoUpload = Extension.create({
           Msg.showInfo('视频上传中，请稍候...');
 
           uploadVideo(file)
-            .then((res: any) => {
+            .then((res: IUploadVideoResponse) => {
               console.log('uploadVideo 接口返回:', res);
 
               if (res.code === 0) {
@@ -77,7 +85,7 @@ export const VideoUpload = Extension.create({
                 }
 
                 // 保存视频ID到待清理列表
-                articleStore.addPendingVideoId(id);
+                editorStore.addPendingVideoId(id);
                 console.log('已保存视频ID到待清理列表:', id);
 
                 // 插入结构化 video 节点，避免被解析为纯文本
@@ -100,9 +108,10 @@ export const VideoUpload = Extension.create({
                 Msg.showFail(res.message || '视频上传失败');
               }
             })
-            .catch((error: any) => {
+            .catch((error: unknown) => {
               console.error('视频上传出错:', error);
-              Msg.showFail(error.message || '视频上传失败，请重试');
+              const message = error instanceof Error ? error.message : '视频上传失败，请重试';
+              Msg.showFail(message);
             });
 
           return true;

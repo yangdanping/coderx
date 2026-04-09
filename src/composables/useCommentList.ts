@@ -34,12 +34,12 @@ export const commentKeys = {
  * @param sort 排序方式
  * @param limit 每页数量，默认5
  */
-export function useCommentList(articleId: string, sort: Ref<CommentSortType>, limit = 5) {
+export function useCommentList(articleId: Ref<string>, sort: Ref<CommentSortType>, limit = 5) {
   return useInfiniteQuery({
-    queryKey: computed(() => commentKeys.list(articleId, sort.value)),
+    queryKey: computed(() => commentKeys.list(articleId.value, sort.value)),
     queryFn: async ({ pageParam }) => {
       const res = await getCommentList({
-        articleId,
+        articleId: articleId.value,
         cursor: pageParam as string | null,
         limit,
         sort: sort.value,
@@ -50,7 +50,7 @@ export function useCommentList(articleId: string, sort: Ref<CommentSortType>, li
     getNextPageParam: (lastPage: ICommentListResponse) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    enabled: computed(() => !!articleId),
+    enabled: computed(() => !!articleId.value),
   });
 }
 
@@ -110,7 +110,7 @@ export function useUserLikedComments() {
     return new Set(ids);
   });
 
-  // 判断某条评论是否被点赞
+  // 判断某条评论是否被点赞(在需要频繁判断元素是否存在的场景下（比如列表渲染时判断每条评论是否点赞），使用 Set O(1)的效率显著优于数组 O(n))
   // const isLiked = (commentId: number) => likedCommentIds.value.includes(commentId);
   const isLiked = (commentId: number) => likedCommentIds.value.has(commentId);
 

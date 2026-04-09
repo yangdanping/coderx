@@ -1,18 +1,19 @@
-import { defineStore } from 'pinia';
+import { acceptHMRUpdate, defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect, removeCollectArticle, updateCollect, removeCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
-import { LocalCache, Msg, emitter, dateFormat } from '@/utils';
+import { LocalCache, Msg, emitter } from '@/utils';
 
 import type { IAccount } from '@/service/user/user.types';
-import type { IUserInfo, IFollowInfo, ICacheEntry } from '@/stores/types/user.result';
+import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect, IOnlineUser } from '@/stores/types/user.result';
 import type { RouteParam } from '@/service/types';
 import useArticleStore from './article.store';
 import useRootStore from './index.store';
 
 // 缓存过期时间：30秒内重复 hover 同一用户不会重新请求
 const CACHE_TTL = 30 * 1000;
+const getFollowInfoCacheEntry = (cache: Record<number, ICacheEntry<IFollowInfo>>, userId: number) => cache[userId];
 
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
@@ -23,12 +24,12 @@ const useUserStore = defineStore('user', {
     profile: {} as IUserInfo, //其他用户信息,只有读权限
     // ============ 关注信息缓存 Map ============
     // 使用 Map 按 userId 分别存储每个用户的关注信息，避免 hover 不同用户时状态互相覆盖
-    followInfoCache: new Map<number, ICacheEntry<IFollowInfo>>(),
+    followInfoCache: {} as Record<number, ICacheEntry<IFollowInfo>>,
     // 记录正在请求中的 userId，防止同一用户并发重复请求
-    pendingFollowRequests: new Set<number>(),
+    pendingFollowRequests: [] as number[],
     myFollowInfo: {} as IFollowInfo, // 登录用户的关注/粉丝列表(用于NavBarUser等组件展示)
-    collects: [] as any,
-    onlineUsers: [] as any[],
+    collects: [] as ICollect[],
+    onlineUsers: [] as IOnlineUser[],
   }),
   getters: {
     // ============ 按 userId 获取关注信息（解决状态闪烁问题）============
@@ -37,7 +38,7 @@ const useUserStore = defineStore('user', {
       return (userId: number | string | undefined) => {
         if (userId === undefined) return null;
         const id = Number(userId);
-        const cached = this.followInfoCache.get(id);
+        const cached = getFollowInfoCacheEntry(this.followInfoCache, id);
         // 返回缓存数据（不检查过期，过期逻辑在请求时处理）
         return cached?.data ?? null;
       };
@@ -47,7 +48,7 @@ const useUserStore = defineStore('user', {
       return (targetUserId: number | string | undefined) => {
         if (targetUserId === undefined) return false;
         const id = Number(targetUserId);
-        const info = this.followInfoCache.get(id)?.data;
+        const info = getFollowInfoCacheEntry(this.followInfoCache, id)?.data;
         // 如果目标用户的粉丝列表中包含当前登录用户的 id，则表示已关注
         return info?.follower?.some((item) => item.id === this.userInfo.id) ?? false;
       };
@@ -57,7 +58,7 @@ const useUserStore = defineStore('user', {
       return (userId: number | string | undefined, type: 'following' | 'follower') => {
         if (userId === undefined) return 0;
         const id = Number(userId);
-        const info = this.followInfoCache.get(id)?.data;
+        const info = getFollowInfoCacheEntry(this.followInfoCache, id)?.data;
         return info?.[type]?.length ?? 0;
       };
     },
@@ -70,7 +71,7 @@ const useUserStore = defineStore('user', {
         // 获取当前查看的用户详情页的关注信息
         const profileId = this.profile?.id;
         if (!profileId) return false;
-        const info = this.followInfoCache.get(profileId)?.data;
+        const info = getFollowInfoCacheEntry(this.followInfoCache, profileId)?.data;
         // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
         const followType = type === 'follower' ? 'following' : type;
         return !!info?.[followType]?.some((item) => item.id === id);
@@ -81,7 +82,7 @@ const useUserStore = defineStore('user', {
       return (type: string) => {
         const profileId = this.profile?.id;
         if (!profileId) return 0;
-        const info = this.followInfoCache.get(profileId)?.data;
+        const info = getFollowInfoCacheEntry(this.followInfoCache, profileId)?.data;
         return info?.[type]?.length ?? 0;
       };
     },
@@ -89,13 +90,13 @@ const useUserStore = defineStore('user', {
     followInfo(): IFollowInfo {
       const profileId = this.profile?.id;
       if (!profileId) return {} as IFollowInfo;
-      return this.followInfoCache.get(profileId)?.data ?? ({} as IFollowInfo);
+      return getFollowInfoCacheEntry(this.followInfoCache, profileId)?.data ?? ({} as IFollowInfo);
     },
     // 判断当前登录用户是否关注了当前查看的用户详情页用户
     isFollowed(): boolean {
       const profileId = this.profile?.id;
       if (!profileId) return false;
-      const info = this.followInfoCache.get(profileId)?.data;
+      const info = getFollowInfoCacheEntry(this.followInfoCache, profileId)?.data;
       return info?.follower?.some((item) => item.id === this.userInfo.id) ?? false;
     },
     myFollowCount() {
@@ -110,9 +111,9 @@ const useUserStore = defineStore('user', {
     },
   },
   actions: {
-    updateOnlineUsers(userList) {
+    updateOnlineUsers(userList: IOnlineUser[]) {
       // 将当前用户置顶
-      (userList as any[]).find((user, index) => {
+      userList.find((user, index) => {
         if (user.userName === this.userInfo.name) {
           return userList.unshift(userList.splice(index, 1)[0]);
         }
@@ -171,7 +172,7 @@ const useUserStore = defineStore('user', {
       console.log(res);
       if (res.code === 0) {
         console.log('registerAction!!!!!!!!!!', res.data);
-        this.loginAction(account); //注册成功后自动登陆
+        await this.loginAction(account); //注册成功后自动登陆
       } else {
         Msg.showFail(res.msg);
       }
@@ -265,7 +266,7 @@ const useUserStore = defineStore('user', {
 
       // ============ 步骤1：检查缓存是否有效 ============
       if (!forceRefresh) {
-        const cached = this.followInfoCache.get(id);
+        const cached = getFollowInfoCacheEntry(this.followInfoCache, id);
         const now = Date.now();
         // 如果缓存存在且未过期（在 CACHE_TTL 时间内），直接使用缓存数据
         if (cached && now - cached.timestamp < CACHE_TTL) {
@@ -276,31 +277,31 @@ const useUserStore = defineStore('user', {
 
       // ============ 步骤2：防止并发重复请求 ============
       // 如果同一个用户的请求正在进行中，跳过本次请求
-      if (this.pendingFollowRequests.has(id)) {
+      if (this.pendingFollowRequests.includes(id)) {
         console.log('请求进行中，跳过重复请求', id);
         return;
       }
 
       // ============ 步骤3：发起网络请求 ============
       // 标记该用户正在请求中
-      this.pendingFollowRequests.add(id);
+      this.pendingFollowRequests.push(id);
 
       try {
         const res = await getFollow(id);
         if (res.code === 0) {
           const followInfo = res.data;
           // 将数据存入缓存 Map，同时记录时间戳
-          this.followInfoCache.set(id, {
+          this.followInfoCache[id] = {
             data: followInfo,
             timestamp: Date.now(),
-          });
+          };
           console.log('关注信息已缓存', id);
         } else {
           Msg.showFail('请求用户关注信息失败');
         }
       } finally {
         // 无论成功失败，都移除"请求中"标记
-        this.pendingFollowRequests.delete(id);
+        this.pendingFollowRequests = this.pendingFollowRequests.filter((item) => item !== id);
       }
     },
     /**
@@ -309,7 +310,7 @@ const useUserStore = defineStore('user', {
      */
     invalidateFollowCache(userId: number | string) {
       const id = Number(userId);
-      this.followInfoCache.delete(id);
+      delete this.followInfoCache[id];
       console.log('缓存已失效', id);
     },
     async getMyFollowAction(userId: number | string) {
@@ -418,6 +419,10 @@ const useUserStore = defineStore('user', {
     },
   },
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useUserStore, import.meta.hot));
+}
 
 // 与compositionAPI的用法类似
 export default useUserStore;

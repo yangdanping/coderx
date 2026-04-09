@@ -250,7 +250,7 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
   },
 
   addProseMirrorPlugins() {
-    const extensionThis = this;
+    const { storage, editor, options } = this;
 
     return [
       new Plugin({
@@ -259,8 +259,6 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
         props: {
           // 处理键盘事件
           handleKeyDown(view, event) {
-            const storage = extensionThis.storage;
-
             // 只在显示补全时处理
             if (storage.state !== 'showing' || storage.suggestions.length === 0) {
               return false;
@@ -269,19 +267,20 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
             const { suggestions, activeIndex } = storage;
 
             switch (event.key) {
-              case 'Tab':
+              case 'Tab': {
                 // Tab: 接受当前选中的建议
                 event.preventDefault();
                 const selectedSuggestion = suggestions[activeIndex];
                 if (selectedSuggestion) {
-                  extensionThis.editor?.commands.applyCompletion(selectedSuggestion.text);
+                  editor?.commands.applyCompletion(selectedSuggestion.text);
                 }
                 return true;
+              }
 
               case 'Escape':
                 // ESC: 关闭补全
                 event.preventDefault();
-                extensionThis.editor?.commands.dismissCompletion();
+                editor?.commands.dismissCompletion();
                 return true;
 
               case 'ArrowDown':
@@ -300,19 +299,20 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
 
               case '1':
               case '2':
-              case '3':
+              case '3': {
                 // 数字键：直接选择对应建议
-                const index = parseInt(event.key) - 1;
+                const index = parseInt(event.key, 10) - 1;
                 if (index < suggestions.length) {
                   event.preventDefault();
-                  extensionThis.editor?.commands.applyCompletion(suggestions[index].text);
+                  editor?.commands.applyCompletion(suggestions[index].text);
                   return true;
                 }
                 return false;
+              }
 
               default:
                 // 其他按键：关闭补全并正常输入
-                extensionThis.editor?.commands.dismissCompletion();
+                editor?.commands.dismissCompletion();
                 return false;
             }
           },
@@ -326,14 +326,14 @@ export const AiCompletion = Extension.create<AiCompletionOptions>({
               if (view.state.doc !== prevState.doc) {
                 // 获取当前光标位置的文本
                 const { from } = view.state.selection;
-                const beforeText = view.state.doc.textBetween(Math.max(0, from - extensionThis.options.contextWindow), from);
+                const beforeText = view.state.doc.textBetween(Math.max(0, from - options.contextWindow), from);
 
                 // 检查是否应该触发
-                if (shouldTrigger(beforeText, extensionThis.options.minTriggerLength, extensionThis.options.triggerMode)) {
-                  extensionThis.editor?.commands.triggerCompletion();
-                } else if (extensionThis.storage.state !== 'idle') {
+                if (shouldTrigger(beforeText, options.minTriggerLength, options.triggerMode)) {
+                  editor?.commands.triggerCompletion();
+                } else if (storage.state !== 'idle') {
                   // 不满足条件时关闭补全
-                  extensionThis.editor?.commands.dismissCompletion();
+                  editor?.commands.dismissCompletion();
                 }
               }
             },

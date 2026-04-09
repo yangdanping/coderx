@@ -1,13 +1,6 @@
 @font-face {
   font-family: 'GeistPixel-Line';
-  src: url('../font/GeistPixel-Line.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Gohufont';
-  src: url('../font/GohuFontuni14NerdFont-Regular.ttf') format('truetype');
+  src: url('../font/GeistPixel-Line.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }
@@ -54,6 +47,7 @@
 
   /* ========== 装饰块背景 ========== */
   --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
+  --marker-color: #88feca;
 
   /* ========== 调色板 ========== */
   --red: #ea3329;
@@ -201,6 +195,7 @@ html.dark {
 
   /* 装饰块背景 */
   --blockBg: linear-gradient(90deg, rgba(30, 50, 30, 0.7), rgba(15, 15, 15, 0.7));
+  --marker-color: rgba(136, 254, 202, 0.35);
 
   /* 文字选中颜色 */
   ::selection {

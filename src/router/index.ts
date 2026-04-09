@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
 /**
@@ -6,6 +6,7 @@ import type { RouteRecordRaw } from 'vue-router';
  *
  * meta 字段说明：
  * - title: 页面标题
+ * - devCard: 占位页 Dev.vue 卡片（icon / heading / hint*）
  * - requiresAuth: 是否需要登录才能访问
  * - customNavBar: 是否使用自定义导航栏（设为 true 时，App.vue 中的全局 NavBar 不会显示）
  *
@@ -42,6 +43,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/flow/Flow.vue'),
   },
   {
+    name: 'dev',
+    path: '/dev',
+    meta: {
+      title: '开发中',
+      devCard: {
+        icon: 'Hammer',
+        heading: '开发中',
+        hintBefore: '正式流式页面请访问 ',
+        hintCode: '/flow',
+        hintAfter: '。',
+      },
+    },
+    component: () => import('@/views/Dev.vue'),
+  },
+  {
+    path: '/flow-dev',
+    redirect: '/dev',
+  },
+  {
     name: 'detail',
     path: '/article/:articleId',
     props: true,
@@ -69,6 +89,7 @@ const routes: RouteRecordRaw[] = [
   {
     name: 'notfound',
     path: '/:pathMatch(.*)',
+    meta: { title: '页面不存在' },
     component: () => import('@/views/NotFount.vue'),
   },
 ];

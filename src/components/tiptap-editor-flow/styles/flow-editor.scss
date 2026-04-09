@@ -1,0 +1,182 @@
+/**
+ * Flow 动态编辑区样式（基于 comment 编辑器，独立类名便于扩展）
+ */
+
+.flow-editor-content {
+  padding: 12px 16px;
+  min-height: 100px;
+  max-height: min(320px, 40vh);
+  overflow-y: auto;
+
+  &:focus-within {
+    outline: none;
+  }
+
+  .ProseMirror {
+    outline: none;
+    min-height: 80px;
+
+    > p.is-editor-empty:first-child::before {
+      content: attr(data-placeholder);
+      float: left;
+      color: var(--text-secondary);
+      pointer-events: none;
+      height: 0;
+    }
+
+    p {
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.4;
+      margin: 16px 0 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 1.75em;
+    }
+    h2 {
+      font-size: 1.5em;
+    }
+    h3 {
+      font-size: 1.25em;
+    }
+    h4 {
+      font-size: 1em;
+    }
+
+    blockquote {
+      border-left: 4px solid var(--el-color-primary-light-5);
+      padding: 8px 12px;
+      margin: 12px 0;
+      background-color: var(--bg-color-secondary);
+      color: var(--text-secondary);
+
+      p {
+        margin: 0;
+      }
+    }
+
+    pre {
+      background: #282c34;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      overflow-x: auto;
+
+      code {
+        display: block;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+        color: #abb2bf;
+        tab-size: 4;
+        white-space: pre;
+      }
+    }
+
+    code:not(pre code) {
+      background: var(--bg-color-secondary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.9em;
+      color: var(--el-color-danger);
+    }
+
+    ul,
+    ol {
+      padding-left: 24px;
+      margin: 8px 0;
+
+      li {
+        margin: 4px 0;
+        line-height: 1.6;
+
+        p {
+          margin: 0;
+        }
+      }
+    }
+
+    ul {
+      list-style-type: disc;
+
+      ul {
+        list-style-type: circle;
+
+        ul {
+          list-style-type: square;
+        }
+      }
+    }
+
+    ol {
+      list-style-type: decimal;
+    }
+
+    a {
+      color: #409eff;
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    u {
+      text-decoration: underline;
+    }
+
+    s {
+      text-decoration: line-through;
+    }
+  }
+}
+
+.flow-bubble-menu {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-color-primary);
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+
+  .el-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flow-editor-content {
+    padding: 10px 12px;
+    min-height: 80px;
+    max-height: min(260px, 38vh);
+
+    .ProseMirror {
+      font-size: 15px;
+    }
+  }
+}

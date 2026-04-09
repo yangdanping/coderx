@@ -1,0 +1,44 @@
+{
+  "title": "TypeScript 入门指南",
+  "intro": "这是一篇用于首页功能演示的模拟文章。你可以替换标题、正文、图片与章节结构，目录会跟着一起更新。",
+  "sections": [
+    {
+      "id": "what-is-ts",
+      "heading": "一、是什么",
+      "level": 1,
+      "paragraphs": [
+        "TypeScript 是 JavaScript 的超集，在保留原有灵活性的同时，为大型项目提供更稳定的类型约束。",
+        "它既能与现有 JavaScript 代码渐进式共存，也能在 IDE 中提供更清晰的自动补全、跳转与重构体验。"
+      ]
+    },
+    {
+      "id": "why-use-ts",
+      "heading": "二、为什么值得用",
+      "level": 1,
+      "paragraphs": [
+        "当项目规模不断扩大时，类型系统可以帮助你更早发现问题，减少多人协作中的沟通成本。",
+        "对组件 Props、接口返回值和公共工具函数进行约束后，代码会更容易阅读，也更适合长期维护。"
+      ],
+      "image": {
+        "src": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+        "alt": "桌面上的代码与笔记"
+      }
+    },
+    {
+      "id": "features",
+      "heading": "三、核心特性",
+      "level": 1,
+      "paragraphs": [
+        "类型推断、联合类型、泛型、接口和类型别名是最常见的能力。它们让你既能写出清晰的业务模型，也能保留足够的表达力。",
+        "如果你在社区里编写长文章或教程，合理的类型约束还能让编辑体验更平滑，减少改动时的意外连锁错误。"
+      ],
+      "code": "function add(left: number, right: number) {\n  return left + right;\n}"
+    },
+    {
+      "id": "summary",
+      "heading": "四、小结",
+      "level": 1,
+      "paragraphs": ["对内容社区来说，清晰的内容结构和良好的编辑体验同样重要。目录、AI 助手、Markdown 渲染等特性，都是围绕“更容易写、更容易读”来设计的。"]
+    }
+  ]
+}

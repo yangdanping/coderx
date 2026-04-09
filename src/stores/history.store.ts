@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia';
+import { acceptHMRUpdate, defineStore } from 'pinia';
 import { getUserHistory, deleteHistory, clearUserHistory, addHistory } from '@/service/history/history.request';
-import { Msg, dateFormat } from '@/utils';
+import { Msg } from '@/utils';
 import type { RouteParam } from '@/service/types';
-import type { IHistoryItem, IHistoryState } from '@/stores/types/history.result';
+import type { IHistoryState } from '@/stores/types/history.result';
 const useHistoryStore = defineStore('history', {
   state: (): IHistoryState => ({
     historyList: [],
@@ -67,10 +67,11 @@ const useHistoryStore = defineStore('history', {
     // 删除单个浏览记录
     async deleteHistoryAction(articleId?: RouteParam) {
       try {
+        const targetArticleId = Number(articleId);
         const res = await deleteHistory(articleId);
         if (res.code === 0) {
           // 从本地列表中移除
-          this.historyList = this.historyList.filter((item: any) => item.articleId !== articleId);
+          this.historyList = this.historyList.filter((item) => item.articleId !== targetArticleId);
           this.total = Math.max(0, this.total - 1);
           Msg.showSuccess('删除浏览记录成功');
         } else {
@@ -107,5 +108,9 @@ const useHistoryStore = defineStore('history', {
     },
   },
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useHistoryStore, import.meta.hot));
+}
 
 export default useHistoryStore;

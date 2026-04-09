@@ -61,6 +61,7 @@ import { useQuery } from '@tanstack/vue-query';
 import { debounce } from '@/utils';
 import LocalCache from '@/utils/LocalCache';
 import useRootStore from '@/stores/index.store';
+import useArticleStore from '@/stores/article.store';
 import { search } from '@/service/article/article.request';
 
 // 1. 状态定义
@@ -74,11 +75,13 @@ const hoveredIndex = ref(-1);
 const isComposing = ref(false); // 追踪输入法状态
 
 const rootStore = useRootStore();
+const articleStore = useArticleStore();
 const { isSmallScreen } = storeToRefs(rootStore);
 const router = useRouter();
 const route = useRoute();
 
 // 从 URL 同步搜索词到输入框（当在 /search 页面时）
+// 可选优化点：这里可按需对 query 做 trim 或类型收敛，减少 URL 同步时的边界处理。
 watch(
   () => route.query.q,
   (newQ) => {
@@ -226,7 +229,7 @@ const submitSearch = () => {
   isFocused.value = false;
   if (inputRef.value) inputRef.value.blur();
 
-  rootStore.changeTag('');
+  articleStore.activeTagId = '综合';
 
   // 统一跳转到 /search?q=xxx（单页面路由切换）
   router.push({ path: '/search', query: { q: searchValue.value } });
@@ -409,13 +412,6 @@ $searchWidth: 100%;
         height: 60px; /* Fixed height for loading */
       }
     }
-  }
-}
-
-// 移动端响应式样式
-@media (max-width: 768px) {
-  .search {
-    // 宽度由 JS computed 属性控制
   }
 }
 </style>

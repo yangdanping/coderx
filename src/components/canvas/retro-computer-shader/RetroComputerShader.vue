@@ -23,9 +23,9 @@ import type { Perspective, RetroComputerShaderProps } from './index';
 import vertexShaderSource from './shaders/vertex.glsl';
 import fragmentShaderSource from './shaders/fragment.glsl';
 import { useTheme } from '@/composables/useTheme';
-
+const baseColor = '#94b8ee';
 const props = withDefaults(defineProps<RetroComputerShaderProps>(), {
-  color: '#94b8ee', // 线条颜色（hex）
+  color: baseColor, // 线条颜色（hex）
   showDecorations: true, // 是否显示轨道环、星形、圆点等装饰
   lineWidth: 1.8, // 线条粗细（像素）
   perspective: 'top-right', // 视角预设
@@ -40,14 +40,14 @@ const props = withDefaults(defineProps<RetroComputerShaderProps>(), {
   showCometTrail: true, // 彗星渐变拖影,
   dot1Color: '#bee0c6', //	粒子 1 + 轨道环 1 颜色；'' → 三者全隐
   dot2Color: '#f3b2ac', //	粒子 2 + 轨道环 2
-  dot3Color: '#94b8ee', //粒子 3 + 轨道环 3
+  dot3Color: baseColor, //粒子 3 + 轨道环 3
   trail1Color: '#bee0c6', //	轨道 1 彗星拖影颜色
   trail2Color: '#f3b2ac', //轨道 2 彗星拖影颜色
-  trail3Color: '#94b8ee', //轨道 3 彗星拖影颜色
+  trail3Color: baseColor, //轨道 3 彗星拖影颜色
   screenSaverText: 'coderx',
   showScreenSaver: true,
   screenSaverOpacity: 1,
-  screenSaverColor: '#94b8ee',
+  screenSaverColor: baseColor,
   screenSaverFontSize: 34,
   screenSaverFontFamily: 'GeistPixel-Line',
   screenSaverSpeed: 0.6,

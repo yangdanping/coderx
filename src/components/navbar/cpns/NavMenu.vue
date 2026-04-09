@@ -3,7 +3,7 @@
     <div class="menu">
       <a
         class="menu-item"
-        :class="{ active: activeRoute === item.path, 'special-flow': item.name === 'Flow' }"
+        :class="{ active: isMenuActive(item), 'special-flow': item.name === 'Flow' }"
         v-for="item in menus"
         @click.prevent="handleSelect(item.path)"
         :href="item.path"
@@ -17,32 +17,26 @@
 </template>
 
 <script lang="ts" setup>
-import useArticleStore from '@/stores/article.store';
-const articleStore = useArticleStore();
+import { flowNavPath } from '@/utils/flowNav';
+
 const router = useRouter();
 const route = useRoute();
 
-const menus = ref([
+const menus = [
   { name: '首页', path: '/' },
   { name: '专栏', path: '/article' },
-  { name: 'Flow', path: '/flow' },
+  { name: 'Flow', path: flowNavPath() },
   // { name: '写文章', path: '/edit' },
   // { name: '个人空间', path: '/user' }
-]);
-const activeRoute = ref('/');
-watch(
-  () => route.path,
-  (newPath) => {
-    activeRoute.value = newPath;
-  },
-  { immediate: true },
-);
+];
+
+function isMenuActive(item: (typeof menus)[number]) {
+  const p = route.path;
+  if (item.name === 'Flow') return p === '/flow' || p === '/dev';
+  return p === item.path;
+}
+
 const handleSelect = (key: string) => {
-  activeRoute.value = key;
-  if (key === '/article' && route.query.searchValue) {
-    articleStore.refreshFirstPageAction();
-  }
-  console.log('activeRoute.value', activeRoute.value);
   router.push({ path: key });
 };
 </script>

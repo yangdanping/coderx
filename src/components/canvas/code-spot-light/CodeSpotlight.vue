@@ -77,7 +77,7 @@ const animationId = ref<number | null>(null);
 const scrollOffset = ref(0);
 const canvasSize = ref({ width: 0, height: 0 });
 const singleLoopWidth = ref(0);
-const fontFamily = 'Gohufont';
+const fontFamily = 'GeistPixel-Line';
 
 const displayKeywords = ref<string[]>([]);
 

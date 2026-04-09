@@ -38,8 +38,8 @@ const {
   onLike,
 } = defineProps<{
   article: IArticle;
-  isLiked: (articleId: number) => boolean;
-  onLike;
+  isLiked: (articleId: number | string) => boolean;
+  onLike: (articleId: number) => void;
 }>();
 
 const likeClick = debounce((articleId) => {

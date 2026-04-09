@@ -3,7 +3,7 @@
     <el-pagination
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
-      v-model:current-page="pageNum"
+      v-model:current-page="currentPage"
       :page-size="pageSize"
       :page-sizes="[5, 10]"
       :pager-count="5"
@@ -14,26 +14,23 @@
 </template>
 
 <script lang="ts" setup>
-import useRootStore from '@/stores/index.store';
+const currentPage = defineModel<number>('currentPage', { default: 1 });
+const pageSize = defineModel<number>('pageSize', { default: 10 });
 
 const { total = 0 } = defineProps<{
   total?: number;
 }>();
 
-const rootStore = useRootStore();
-const { pageNum, pageSize } = storeToRefs(rootStore);
 const emit = defineEmits(['changePage']);
 
-const handleCurrentChange = (pageNum) => {
-  console.log('handleCurrentChange pageNum', pageNum);
-  rootStore.changePageNum(pageNum);
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page;
   emit('changePage');
   window.scrollTo(0, 0);
 };
-const handleSizeChange = (pageSize) => {
-  console.log('handleSizeChange pageSize', pageSize);
-  rootStore.changePageNum(1);
-  rootStore.changePageSize(pageSize);
+const handleSizeChange = (size: number) => {
+  currentPage.value = 1;
+  pageSize.value = size;
   emit('changePage');
 };
 </script>

@@ -13,7 +13,7 @@ import glsl from 'vite-plugin-glsl';
 
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
-// https://vitejs.dev/config/
+// https:/vitejs.dev/config/
 export default defineConfig(({ mode }): UserConfig => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
@@ -28,15 +28,15 @@ export default defineConfig(({ mode }): UserConfig => {
       AutoImport({
         imports: ['vue', 'pinia', 'vue-router'], // 自动导入 Vue 相关函数,如：ref, reactive, toRef 等
         resolvers: [
-          ElementPlusResolver(), // 自动导入 Element Plus 相关函数,如：ElMessage, ElMessageBox... (带样式)
+          ElementPlusResolver(), // 样式见全局 index.css，此处不再按需注入
           IconsResolver({ prefix: 'Icon' }), // 自动导入图标组件
         ],
         dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
       }),
       Components({
         resolvers: [
+          ElementPlusResolver(), // 样式见全局 index.css，此处不再按需注入
           IconsResolver({ enabledCollections: ['ep'], prefix: false, alias: { i: 'ep' } }), // 自动注册图标组件(自动导入图标需要i-ep-前缀,下面prefix和alias配置使其只用i-前缀)
-          ElementPlusResolver(), // 自动导入 Element Plus 组件
         ],
         dts: path.resolve(pathSrc, 'components.d.ts'),
       }),

@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia';
+import { acceptHMRUpdate, defineStore } from 'pinia';
 import { getUserCommentList, likeComment } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request';
-import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import { Msg } from '@/utils';
+import type { IComment } from '@/stores/types/comment.result';
 
 /**
  * 评论 Store
@@ -12,7 +12,7 @@ import { Msg } from '@/utils';
  */
 const useCommentStore = defineStore('comment', {
   state: () => ({
-    userComments: [], // 用户历史评论
+    userComments: [] as IComment[], // 用户历史评论
     userLikedCommentIdList: [] as number[], // 用户点赞过的评论ID列表
     // 当前正在回复的评论ID（用于控制回复表单的显示）
     activeReplyId: null as number | null,
@@ -22,7 +22,7 @@ const useCommentStore = defineStore('comment', {
   getters: {
     // 判断某条评论是否被当前用户点赞
     isCommentUserLiked() {
-      return (commentId) => {
+      return (commentId: number) => {
         return this.userLikedCommentIdList.some((id) => id === commentId);
       };
     },
@@ -64,12 +64,7 @@ const useCommentStore = defineStore('comment', {
      * 获取评论列表Action
      * 目前主要用于获取用户历史评论
      */
-    async getCommentAction(articleId = '', userId: number | string = '') {
-      // 1. 获取分页信息
-      const rootStore = useRootStore();
-      const { pageNum, pageSize } = rootStore;
-
-      // 2. 如果指定了 userId，获取用户历史评论
+    async getCommentAction(_articleId = '', userId: number | string = '', pageNum = 1, pageSize = 10) {
       if (userId) {
         const res = await getUserCommentList({
           userId: Number(userId),
@@ -104,7 +99,7 @@ const useCommentStore = defineStore('comment', {
      * @param comment 评论对象
      * @param inArticle 是否在文章详情页（如果在文章页，可能需要更新文章维度的评论点赞信息，目前保留参数兼容性）
      */
-    async likeAction(comment: any, inArticle = true) {
+    async likeAction(comment: IComment, _inArticle = true) {
       const { id } = comment;
       const res = await likeComment(id);
 
@@ -113,9 +108,9 @@ const useCommentStore = defineStore('comment', {
         liked ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
 
         // 1. 更新当前列表中的点赞数
-        const targetComment = this.userComments.find((c: any) => c.id === id);
+        const targetComment = this.userComments.find((c) => c.id === id);
         if (targetComment) {
-          (targetComment as any).likes = likes;
+          targetComment.likes = likes;
         }
 
         // 2. 刷新用户点赞列表状态
@@ -126,5 +121,9 @@ const useCommentStore = defineStore('comment', {
     },
   },
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useCommentStore, import.meta.hot));
+}
 
 export default useCommentStore;

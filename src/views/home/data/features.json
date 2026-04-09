@@ -1,0 +1,22 @@
+[
+  {
+    "id": "article-toc",
+    "title": "浏览文章自动目录划分",
+    "description": "进入文章后，目录会自动提取章节并辅助定位。示例会按章节依次跳转；桌面端也可以手动点击目录。"
+  },
+  {
+    "id": "ai-summary",
+    "title": "AI 助手：文章总结",
+    "description": "模拟用户发起总结请求，展示输入、思考和流式输出的完整体验。"
+  },
+  {
+    "id": "ai-completion",
+    "title": "AI 助手：辅助编写提示",
+    "description": "在编辑器里输入内容后，AI 会弹出续写建议，并自动插入最合适的一条。"
+  },
+  {
+    "id": "markdown-render",
+    "title": "Markdown 实时渲染",
+    "description": "一边书写 Markdown，一边查看渲染结果，标题、列表、代码块等格式同步呈现。"
+  }
+]

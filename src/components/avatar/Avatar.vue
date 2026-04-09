@@ -102,34 +102,17 @@ const mouseenter =
 
 const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   if (disabled) return;
-  console.log('goProfile', route.path, tabName, subTabName);
-  let path = `/user/${info.id}`;
-  if (path === route.path) {
-    router.go(0);
-  } else {
-    if (!tabName && !subTabName) {
-      router.push(path); //不存在tabName,则用户界面默认展示文章列表
-    } else {
-      router.push({
-        path,
-        query: {
-          tabName,
-          subTabName,
-        },
-      });
-    }
-  }
-};
+  const path = `/user/${info.id}`;
+  const query = {
+    ...(tabName ? { tabName } : {}),
+    ...(subTabName ? { subTabName } : {}),
+  };
 
-// const goProfile = () => {
-//   console.log('goProfile route.path', route.path);
-//   const path = `/user/${props.info.id}`;
-//   if (path === route.path) {
-//     router.go(0);
-//   } else {
-//     !props.disabled && router.push(path);
-//   }
-// };
+  const isSameTarget = route.path === path && route.query.tabName === tabName && route.query.subTabName === subTabName;
+  if (isSameTarget) return;
+
+  router.push({ path, query });
+};
 </script>
 
 <style lang="scss" scoped>

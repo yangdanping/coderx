@@ -82,7 +82,7 @@ class MyRequest {
         // }
         return config;
       },
-      (err) => err,
+      (err) => Promise.reject(err),
     );
     this.instance.interceptors.response.use(
       (res: any) => {
@@ -148,8 +148,7 @@ class MyRequest {
         .catch((err) => {
           // 将showLoading设置为默认值,这样不会影响下一个请求
           this.showLoading = DEAFULT_LOADING;
-          resolve(err);
-          return err;
+          reject(err);
         });
     });
   }

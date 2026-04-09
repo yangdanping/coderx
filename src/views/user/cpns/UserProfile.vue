@@ -7,17 +7,17 @@
           <div class="mobile-header-right" v-if="isSmallScreen">
             <div class="name-row">
               <span class="name">{{ profile.name }}</span>
-              <component :is="profile.sex === '女' ? Venus : Mars" :class="['gender-icon', profile.sex === '女' ? 'female' : 'male']" />
-              <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
+              <component :is="genderIcon" :class="['gender-icon', genderClass]" />
+              <el-tag size="small" effect="plain" :type="onlineStatus.type">{{ onlineStatus.msg }}</el-tag>
             </div>
 
             <div class="stats-mobile">
               <div class="stat-item" @click="goFollowTab('following')">
-                <span class="count">{{ followCount('following') }}</span>
+                <span class="count">{{ followingCount }}</span>
                 <span class="label">关注</span>
               </div>
               <div class="stat-item" @click="goFollowTab('follower')">
-                <span class="count">{{ followCount('follower') }}</span>
+                <span class="count">{{ followerCount }}</span>
                 <span class="label">粉丝</span>
               </div>
             </div>
@@ -37,20 +37,20 @@
         <div class="profile-info">
           <div class="name-row" v-if="!isSmallScreen">
             <span class="name">{{ profile.name }}</span>
-            <component :is="profile.sex === '女' ? Venus : Mars" :class="['gender-icon', profile.sex === '女' ? 'female' : 'male']" />
-            <el-tag size="small" effect="plain" :type="userOnlineStatus(profile.name).type">{{ userOnlineStatus(profile.name).msg }}</el-tag>
+            <component :is="genderIcon" :class="['gender-icon', genderClass]" />
+            <el-tag size="small" effect="plain" :type="onlineStatus.type">{{ onlineStatus.msg }}</el-tag>
           </div>
 
           <!-- Desktop Stats -->
           <div class="stats-desktop" v-if="!isSmallScreen">
             <div class="stat-item" @click="goFollowTab('following')">
               <span class="label">关注</span>
-              <span class="count">{{ followCount('following') }}</span>
+              <span class="count">{{ followingCount }}</span>
             </div>
             <div class="divider"></div>
             <div class="stat-item" @click="goFollowTab('follower')">
               <span class="label">粉丝</span>
-              <span class="count">{{ followCount('follower') }}</span>
+              <span class="count">{{ followerCount }}</span>
             </div>
           </div>
 
@@ -76,7 +76,7 @@
 
       <!-- Navigation Tabs -->
       <div class="profile-tabs">
-        <Tabs v-model="activeTab" :direction="isSmallScreen ? 'horizontal' : 'vertical'" @tab-click="handleTabClick">
+        <Tabs v-model="activeTab" :direction="isSmallScreen ? 'horizontal' : 'vertical'">
           <TabItem name="文章" label="文章" />
           <TabItem name="评论" label="评论" />
           <TabItem name="收藏" label="收藏" />
@@ -93,11 +93,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, toRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { Mars, Venus } from 'lucide-vue-next';
-import { emitter, getImageUrl } from '@/utils';
+import { emitter } from '@/utils';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
@@ -113,67 +113,146 @@ import useHistoryStore from '@/stores/history.store';
 import { useAuth } from '@/composables/useAuth';
 import type { IUserInfo } from '@/stores/types/user.result';
 
+type ProfileTabName = '文章' | '评论' | '收藏' | '关注' | '最近浏览';
+type FollowSubTabName = 'following' | 'follower';
+type ProfileInfoItem = {
+  label: string;
+  value: string | number;
+  icon: 'coin' | 'suitcase' | 'coordinate' | 'takeaway-box';
+};
+type ProfileQuery = {
+  tabName?: ProfileTabName;
+  subTabName?: FollowSubTabName;
+};
+
+const DEFAULT_TAB: ProfileTabName = '文章';
+const DEFAULT_FOLLOW_SUB_TAB: FollowSubTabName = 'following';
+const TAB_NAMES: ProfileTabName[] = ['文章', '评论', '收藏', '关注', '最近浏览'];
+
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
 const { isCurrentUser } = useAuth();
+const route = useRoute();
+const router = useRouter();
 
 const { isFollowed, followCount, userOnlineStatus } = storeToRefs(userStore);
 const { isSmallScreen } = storeToRefs(rootStore);
 
-const { profile = {} } = defineProps<{
+const props = defineProps<{
   profile: IUserInfo;
 }>();
+const profile = toRef(props, 'profile');
 
-// 判断是否为当前登录用户（用于控制编辑资料按钮和"最近浏览"标签显示）
-const isMe = computed(() => isCurrentUser(profile.id));
+// 当前访问的用户由路由 params 决定，编辑按钮和“最近浏览”权限都依赖它。
+const currentUserId = computed(() => {
+  const userId = route.params.userId;
+  return typeof userId === 'string' ? userId : '';
+});
+const isMe = computed(() => isCurrentUser(currentUserId.value));
+const currentProfilePath = computed(() => (currentUserId.value ? `/user/${currentUserId.value}` : ''));
 
-const activeTab = ref('文章');
-const route = useRoute();
+const genderIcon = computed(() => (profile.value.sex === '女' ? Venus : Mars));
+const genderClass = computed(() => (profile.value.sex === '女' ? 'female' : 'male'));
+const onlineStatus = computed(() => userOnlineStatus.value(profile.value.name));
+const followingCount = computed(() => followCount.value('following'));
+const followerCount = computed(() => followCount.value('follower'));
 
-const infos = computed(() => {
-  return [
-    { label: '年龄', value: profile.age ?? '无', icon: 'coin' },
-    { label: '职业', value: profile.career ?? 'Coder', icon: 'suitcase' },
-    { label: '居住地', value: profile.address ?? 'CoderX星球', icon: 'coordinate' },
-    { label: '邮箱', value: profile.email ?? '无', icon: 'takeaway-box' },
-  ] as any[];
+const infos = computed<ProfileInfoItem[]>(() => [
+  { label: '年龄', value: profile.value.age ?? '无', icon: 'coin' },
+  { label: '职业', value: profile.value.career ?? 'Coder', icon: 'suitcase' },
+  { label: '居住地', value: profile.value.address ?? 'CoderX星球', icon: 'coordinate' },
+  { label: '邮箱', value: profile.value.email ?? '无', icon: 'takeaway-box' },
+]);
+
+function getQueryString(value: unknown) {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function normalizeTabName(tabName?: string): ProfileTabName {
+  if (tabName && TAB_NAMES.includes(tabName as ProfileTabName)) {
+    if (tabName === '最近浏览' && !isMe.value) {
+      return DEFAULT_TAB;
+    }
+    return tabName as ProfileTabName;
+  }
+
+  return DEFAULT_TAB;
+}
+
+function normalizeFollowSubTab(subTabName?: string): FollowSubTabName {
+  return subTabName === 'follower' ? 'follower' : DEFAULT_FOLLOW_SUB_TAB;
+}
+
+function buildProfileQuery(tabName: ProfileTabName, subTabName?: FollowSubTabName): ProfileQuery {
+  return {
+    ...(tabName !== DEFAULT_TAB ? { tabName } : {}),
+    ...(tabName === '关注' ? { subTabName: normalizeFollowSubTab(subTabName) } : {}),
+  };
+}
+
+function isSameProfileQuery(query: Record<string, unknown>, nextQuery: ProfileQuery) {
+  const currentTabName = getQueryString(query.tabName);
+  const currentSubTabName = getQueryString(query.subTabName);
+  return currentTabName === nextQuery.tabName && currentSubTabName === nextQuery.subTabName;
+}
+
+const normalizedTab = computed(() => normalizeTabName(getQueryString(route.query.tabName)));
+const normalizedFollowSubTab = computed<FollowSubTabName | undefined>(() =>
+  normalizedTab.value === '关注' ? normalizeFollowSubTab(getQueryString(route.query.subTabName)) : undefined,
+);
+const normalizedQuery = computed(() => buildProfileQuery(normalizedTab.value, normalizedFollowSubTab.value));
+
+// Tabs 组件需要一个 v-model，但真正的选中态仍然以 URL 为准。
+const activeTab = computed<ProfileTabName>({
+  get: () => normalizedTab.value,
+  set: (nextTab) => {
+    navigateToTab(normalizeTabName(nextTab));
+  },
 });
 
-const goFollowTab = (subTabName: string) => {
-  activeTab.value = '关注';
-  // Emit event for UserFollow component (if it listens) to switch sub-tab
-  // We need to ensure the tab switch happens first
-  setTimeout(() => {
-    emitter.emit('changeFollowTab', subTabName);
-  }, 0);
+function navigateToTab(tabName: ProfileTabName, subTabName?: FollowSubTabName) {
+  if (!currentUserId.value || !currentProfilePath.value) return;
+
+  const query = buildProfileQuery(tabName, subTabName);
+  if (route.path === currentProfilePath.value && isSameProfileQuery(route.query as Record<string, unknown>, query)) {
+    return;
+  }
+
+  router.push({
+    path: currentProfilePath.value,
+    query,
+  });
+}
+
+const goFollowTab = (subTabName: FollowSubTabName) => {
+  navigateToTab('关注', subTabName);
 };
 
 const updateProfile = () => {
-  emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile)));
+  // 弹窗里编辑的是副本，避免直接改到当前展示中的资料对象。
+  emitter.emit('updateProfile', JSON.parse(JSON.stringify(profile.value)));
 };
 
-// Data fetching logic based on tab
-const fetchTabData = (tabName: string, userId: any) => {
-  rootStore.resetPagination(); // Reset pagination without affecting windowInfo
-  const uid = Number(userId);
+const fetchTabData = (tabName: ProfileTabName, userId: string) => {
+  const numericUserId = Number(userId);
+
   switch (tabName) {
     case '文章':
-      userStore.getProfileAction(userId);
       articleStore.refreshFirstPageAction({ userId });
       break;
     case '评论':
       commentStore.getCommentAction('', userId);
       break;
     case '收藏':
-      // Ensure we pass number if expected, or rely on store handling
-      userStore.getCollectAction(isNaN(uid) ? userId : uid);
-      useArticleStore().initArticle();
+      if (!Number.isNaN(numericUserId)) {
+        userStore.getCollectAction(numericUserId);
+      }
+      articleStore.initArticle();
       break;
     case '关注':
-      emitter.emit('updateFollowList');
       userStore.getFollowAction(userId);
       break;
     case '最近浏览':
@@ -183,37 +262,30 @@ const fetchTabData = (tabName: string, userId: any) => {
   }
 };
 
-const handleTabClick = (name: string) => {
-  fetchTabData(name, route.params.userId);
-};
-
-// Initialize from URL
-onMounted(() => {
-  const tabName = route.query.tabName as string;
-  if (tabName) {
-    activeTab.value = tabName;
-    if (tabName === '收藏') {
-      userStore.getCollectAction(userStore.userInfo.id);
-    } else if (tabName === '最近浏览') {
-      // ...
-    }
-  }
-
-  // Also listen for event to change tab from outside (if needed)
-  emitter.on('changeFollowTab', () => {
-    activeTab.value = '关注';
-  });
-});
-
-// Reset to '文章' when switching users
+// 统一把缺省或非法 query 修正成稳定 URL，保证刷新和分享链接时状态一致。
 watch(
-  () => route.params.userId,
-  (newId) => {
-    if (newId) {
-      activeTab.value = '文章';
-      fetchTabData('文章', newId);
+  [currentUserId, normalizedQuery],
+  ([userId, expectedQuery]) => {
+    if (!userId) return;
+
+    if (!isSameProfileQuery(route.query as Record<string, unknown>, expectedQuery)) {
+      router.replace({
+        path: `/user/${userId}`,
+        query: expectedQuery,
+      });
     }
   },
+  { immediate: true },
+);
+
+// URL 只负责表达当前在哪个 tab，具体数据由 tab 变化后按需拉取。
+watch(
+  [currentUserId, normalizedTab],
+  ([userId, tabName]) => {
+    if (!userId) return;
+    fetchTabData(tabName, userId);
+  },
+  { immediate: true },
 );
 </script>
 

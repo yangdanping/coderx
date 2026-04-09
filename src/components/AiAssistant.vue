@@ -11,7 +11,7 @@
     </el-tooltip>
 
     <!-- 聊天窗口 -->
-    <div class="chat-window" v-show="isOpen" :style="chatWindowStyle" ref="chatWindowRef">
+    <div class="chat-window" v-show="isOpen" :style="chatWindowStyle">
       <!-- 调整大小的手柄 -->
       <div class="resize-handle resize-handle-left" @mousedown="startResize('left', $event)"></div>
       <div class="resize-handle resize-handle-top" @mousedown="startResize('top', $event)"></div>
@@ -37,7 +37,7 @@
       <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
         <div v-if="messages.length === 0" class="welcome-message">
           <p>你好！我是你的 AI 助手。</p>
-          <p>你可以问我关于这篇文章的问题，或者让我解释代码。</p>
+          <p>{{ assistantModeHint }}</p>
         </div>
 
         <div v-for="(m, index) in displayMessages" :key="m.id || index" class="message" :class="m.role">
@@ -46,7 +46,12 @@
           </div>
           <div class="content">
             <!-- V2 中 message.parts 是数组，需要找到 type="text" 的 part -->
-            <div class="bubble" v-html="renderMarkdown(getMessageText(m))"></div>
+            <div v-if="getMessageText(m)" class="bubble" v-dompurify-html="renderMarkdown(getMessageText(m))"></div>
+            <div v-if="m.role === 'assistant' && getToolParts(m).length > 0" class="tool-parts">
+              <div v-for="(part, partIndex) in getToolParts(m)" :key="`${m.id || index}-tool-${partIndex}`" class="tool-part">
+                {{ formatToolPartLabel(part, partIndex) }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -106,7 +111,7 @@ import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
 import { ElMessage } from 'element-plus';
-import { LocalCache, throttle, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut } from '@/utils';
+import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut } from '@/utils';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 
@@ -118,11 +123,11 @@ const props = defineProps<{
 
 const isOpen = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
-const chatWindowRef = ref<HTMLElement | null>(null);
 const { userInfo, token } = storeToRefs(useUserStore());
 const input = ref('');
 const aiServiceStatus = ref<'online' | 'offline' | 'checking'>('checking');
 const showScrollToBottom = ref(false);
+const aiCapability = ref<{ type: string; supportsTools: boolean } | null>(null);
 // 切换 Loading 动画风格: 'wave' | 'shimmer'
 const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
@@ -222,18 +227,9 @@ const stopResize = () => {
   }
 };
 
-// 组件卸载时清理事件监听
-// onUnmounted 处理移到了下方合并处理
-/*
-onUnmounted(() => {
-  document.removeEventListener('mousemove', handleResize);
-  document.removeEventListener('mouseup', stopResize);
-});
-*/
-
-// 初始化 Markdown 解析器
+// 初始化 Markdown 解析器,并且禁用原始 HTML，避免把模型返回内容当成可信 DOM 直接插入页面。
 const md = new MarkdownIt({
-  html: true,
+  html: false,
   linkify: true,
   typographer: true,
 });
@@ -260,6 +256,60 @@ const getMessageText = (message: any) => {
 
   return '';
 };
+
+/**
+ * 助手的一条回复在 SDK 里会拆成很多「零件」（parts），除了正文 text，还可能夹着「正在调哪个工具」「工具跑完了没」之类。
+ * 模板里气泡只显示正文；这个函数负责把「跟工具有关」的零件单独筛出来，下面才能一行行列小灰条（见 template 里 tool-parts）。
+ */
+const getToolParts = (message: any) => {
+  if (!message?.parts || !Array.isArray(message.parts)) return [];
+  return message.parts.filter((part: any) => {
+    const type = part?.type;
+    return typeof type === 'string' && (type === 'tool-call' || type === 'tool-result' || type.startsWith('tool-'));
+  });
+};
+
+/**
+ * 筛出来的每个「工具零件」还是结构化数据；用户看不懂 type/state 字段。
+ * 这个函数把它翻成一句简短中文，例如「调用工具：xxx（已完成）」，方便扫一眼知道模型有没有搜文章、有没有失败。
+ * _partIndex：v-for 传进来的序号，当前文案用不上，保留签名方便以后要做「第几步」再写。
+ */
+const formatToolPartLabel = (part: any, _partIndex: number | string) => {
+  const type = part?.type;
+  const state = part?.state;
+  const suffix =
+    state === 'output-available'
+      ? '（已完成）'
+      : state === 'output-error'
+        ? '（执行失败）'
+        : state === 'input-available'
+          ? '（等待执行）'
+          : state === 'input-streaming'
+            ? '（准备中）'
+            : '';
+
+  if (type === 'tool-call') {
+    return `调用工具：${part.toolName || 'unknown'}${suffix}`;
+  }
+
+  if (type === 'tool-result') {
+    return `工具结果：${part.toolName || 'unknown'}${suffix}`;
+  }
+
+  if (typeof type === 'string' && type.startsWith('tool-')) {
+    return `工具步骤：${type.replace(/^tool-/, '')}${suffix}`;
+  }
+
+  return '工具步骤';
+};
+
+// 根据后端返回的 capability 动态提示当前模式，避免用户误以为它会执行站内操作。
+const assistantModeHint = computed(() => {
+  if (aiCapability.value?.supportsTools) {
+    return '你可以问我关于文章的问题，我会优先做只读检索，不会替你执行发布、修改或删除操作。';
+  }
+  return '你可以问我关于这篇文章的问题，或者让我解释代码；当前模式下我不会自动调用站内工具或执行操作。';
+});
 
 const models: any = ref([]);
 
@@ -319,8 +369,8 @@ const isThinking = computed(() => {
 // 过滤消息列表，替代 template 中的 v-if/v-show 逻辑
 const displayMessages = computed(() => {
   return messages.value.filter((m: any) => {
-    // 显示条件：有内容 OR (是助手消息 AND 不在思考中)
-    return getMessageText(m) || (m.role === 'assistant' && !isThinking.value);
+    // 显示条件：有文本 / 有工具步骤 / (是助手消息且不在思考中)
+    return getMessageText(m) || getToolParts(m).length > 0 || (m.role === 'assistant' && !isThinking.value);
   });
 });
 
@@ -479,6 +529,8 @@ const checkAIServiceStatus = async () => {
       const data = await res.json();
       aiServiceStatus.value = data.status === 'online' ? 'online' : 'offline';
       models.value = data.models;
+      // 这里直接复用服务端返回的能力边界，避免前端自己再猜当前是 assistant 还是 tool 模式。
+      aiCapability.value = data.capability || null;
 
       if (models.value.length > 0) {
         let selected = models.value[0];
@@ -929,6 +981,28 @@ $shadowColor: #a3dfd0;
               100% {
                 transform: translate(-50%, -50%) rotate(360deg);
               }
+            }
+          }
+
+          .tool-parts {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+          }
+
+          .tool-part {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            background-color: var(--bg-color-secondary);
+            @include thin-border(all, var(--el-border-color-lighter));
+
+            :where(html.dark) & {
+              background-color: #242424;
+              @include thin-border(all, #333);
             }
           }
         }

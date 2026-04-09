@@ -7,7 +7,7 @@
           <a class="name">{{ item.name }}</a>
         </div>
         <div class="btn">
-          <FollowButton :isFollowed="isUserFollowed(item.id, followType)" :profile="item" isFollowListItem />
+          <FollowButton :isFollowed="isUserFollowed(item.id, props.followType)" :profile="item" isFollowListItem />
         </div>
       </div>
     </div>
@@ -21,39 +21,26 @@ import FollowButton from '@/components/FollowButton.vue';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 import useUserStore from '@/stores/user.store';
-import { emitter } from '@/utils';
 
 const router = useRouter();
 const userStore = useUserStore();
-const { isUserFollowed, token } = storeToRefs(userStore);
+const { isUserFollowed } = storeToRefs(userStore);
 
-const { followType = '', userFollow = [] } = defineProps<{
-  followType?: string;
-  userFollow?: IUserInfo[];
-}>();
-//定义非响应式常量(涉及以下三次手动更新 1.UserFollow中tab列表切换 2.UserProfile中tab列表切换 3.路由更新后手动清空)
-let userFollowList: IUserInfo[] = userFollow;
-
-onMounted(() => {
-  emitter.on('updateFollowList', () => {
-    console.log('updateFollowList 手动更新userFollowList');
-    userFollowList = userFollow;
-  });
-});
-
-watch(
-  () => followType,
-  (newV) => {
-    console.log('watch切换tab 手动更新userFollowList', newV);
-    userFollowList = userFollow;
+const props = withDefaults(
+  defineProps<{
+    followType?: string;
+    userFollow?: IUserInfo[];
+  }>(),
+  {
+    followType: '',
+    userFollow: () => [],
   },
 );
+const userFollowList = computed(() => props.userFollow);
 
-const goDetail = (userId) => {
+const goDetail = (userId: number) => {
   console.log('UserFollowItem goDetail', userId);
-  router.push(`/user/${userId}`).then(() => {
-    userFollowList = []; //路由跳转手动清空当前组件的关注列表
-  });
+  router.push(`/user/${userId}`);
 };
 </script>
 

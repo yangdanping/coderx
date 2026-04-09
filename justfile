@@ -12,11 +12,7 @@ dev:
 
 # 构建
 build:
-    pnpm build
-
-# 预览
-pre:
-    pnpm preview
+    pnpm build && pnpm preview
 
 # 格式化代码
 p:

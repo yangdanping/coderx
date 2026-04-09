@@ -24,8 +24,6 @@ declare module 'vue' {
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
-    ElCarousel: typeof import('element-plus/es')['ElCarousel']
-    ElCarouselItem: typeof import('element-plus/es')['ElCarouselItem']
     ElCascader: typeof import('element-plus/es')['ElCascader']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
     ElCheckboxGroup: typeof import('element-plus/es')['ElCheckboxGroup']
@@ -85,6 +83,7 @@ declare module 'vue' {
     ThinkingWave: typeof import('./components/icon/cpns/ThinkingWave.vue')['default']
     TiptapEditor: typeof import('./components/tiptap-editor/TiptapEditor.vue')['default']
     TiptapEditorComment: typeof import('./components/tiptap-editor-comment/TiptapEditorComment.vue')['default']
+    TiptapEditorFlow: typeof import('./components/tiptap-editor-flow/TiptapEditorFlow.vue')['default']
     TiptapToolbar: typeof import('./components/tiptap-editor/TiptapToolbar.vue')['default']
   }
   export interface GlobalDirectives {

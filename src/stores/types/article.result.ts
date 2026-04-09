@@ -13,7 +13,7 @@ export interface IArticle {
   author?: IAuthor;
   cover?: string;
   images?: IArticleImg[];
-  tags?: any[];
+  tags?: Itag[];
   likes?: number;
   commentCount?: number;
   status?: string;

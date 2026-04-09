@@ -12,9 +12,22 @@ export interface IUserInfo {
   status?: number;
   onlineStatus?: number;
 }
+
+export interface ICollect {
+  id: number;
+  name: string;
+  count: number[];
+  createAt?: string;
+}
+
+export interface IOnlineUser {
+  userName: string;
+  status?: string;
+}
+
 export interface IFollowInfo {
-  follower?: any[];
-  following?: any[];
+  follower?: IUserInfo[];
+  following?: IUserInfo[];
 }
 
 // 缓存条目的数据结构：包含实际数据和存入时间戳

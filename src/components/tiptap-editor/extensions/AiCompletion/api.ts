@@ -2,6 +2,7 @@
  * AI 补全 API 封装
  */
 import { BASE_URL } from '@/global/request/config';
+import { LocalCache } from '@/utils';
 import type { CompletionRequest, CompletionResponse, CompletionSuggestion } from './types';
 
 // 请求超时时间（毫秒）
@@ -13,6 +14,10 @@ const REQUEST_TIMEOUT = 5000;
  * @param externalSignal 外部传入的 AbortSignal，用于竞态取消
  */
 export async function fetchCompletion(params: CompletionRequest, externalSignal?: AbortSignal): Promise<CompletionSuggestion[]> {
+  // 补全接口改为仅登录可用，前端先做一次快速短路，避免游客模式反复打 401。
+  const token = LocalCache.getCache('token');
+  if (!token) return []; // 如果用户登录失效，则返回空数组
+
   // 创建超时控制器
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT);
@@ -39,6 +44,7 @@ export async function fetchCompletion(params: CompletionRequest, externalSignal?
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: token,
       },
       body: JSON.stringify({
         beforeText: params.beforeText,

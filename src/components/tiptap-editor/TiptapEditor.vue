@@ -1,10 +1,25 @@
 <template>
   <div class="tiptap-editor-container" ref="editorContainerRef">
     <!-- 工具栏 -->
-    <TiptapToolbar :editor="editor" />
+    <TiptapToolbar :editor="editor" :isSplitPreviewActive="isSplitPreviewActive" @toggle-split-preview="toggleSplitPreview" />
+
+    <div v-show="isSplitPreviewActive" class="tiptap-split-preview" data-testid="markdown-split-preview">
+      <section class="markdown-panel markdown-panel--source">
+        <div class="markdown-panel__label">Markdown</div>
+        <textarea v-model="markdownSource" data-testid="markdown-source-input" class="markdown-panel__textarea" spellcheck="false" @input="handleMarkdownSourceInput" />
+      </section>
+
+      <div class="split-preview-divider" data-testid="split-preview-divider" aria-hidden="true"></div>
+
+      <section class="markdown-panel markdown-panel--preview">
+        <div class="markdown-panel__label">Preview</div>
+        <div data-testid="markdown-preview-panel" class="markdown-panel__preview editor-content-view" v-dompurify-html="renderedMarkdownPreview"></div>
+      </section>
+    </div>
 
     <!-- 编辑区域 -->
     <EditorContent
+      v-show="!isSplitPreviewActive"
       :editor="editor"
       class="tiptap-editor-content"
       :class="{ 'is-dragging': isDragging }"
@@ -44,6 +59,8 @@
 </template>
 
 <script lang="ts" setup>
+import MarkdownIt from 'markdown-it';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useEditor, EditorContent, type Extensions } from '@tiptap/vue-3';
 // Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
 import { BubbleMenu } from '@tiptap/vue-3/menus';
@@ -82,6 +99,9 @@ const emit = defineEmits<{
 
 // 拖拽状态管理
 const isDragging = ref(false);
+const isSplitPreviewActive = ref(true);
+const markdownSource = ref('');
+const isApplyingMarkdownSource = ref(false);
 
 // 编辑器容器引用（用于计算弹出框位置）
 const editorContainerRef = ref<HTMLElement | null>(null);
@@ -93,6 +113,13 @@ const completionSuggestions = ref<CompletionSuggestion[]>([]);
 const completionPosition = ref<PopoverPosition | null>(null);
 const completionActiveIndex = ref(0);
 const DEFAULT_VIDEO_WIDTH = 360;
+const markdownRenderer = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+  breaks: true,
+});
+const renderedMarkdownPreview = computed(() => markdownRenderer.render(markdownSource.value || ''));
 
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: EditorInstance) => {
@@ -108,15 +135,68 @@ const getMarkdownContent = (editorInstance: EditorInstance) => {
   return storage?.getMarkdown?.() ?? '';
 };
 
+const getContentType = (content: string) => (/<[a-z][\s\S]*>/i.test(content) ? 'html' : 'markdown');
+
+const syncMarkdownSourceFromEditor = (editorInstance: EditorInstance) => {
+  if (!editorInstance) return;
+
+  const nextMarkdown = getMarkdownContent(editorInstance);
+  if (nextMarkdown !== markdownSource.value) {
+    markdownSource.value = nextMarkdown;
+  }
+};
+
+const setEditorDocumentContent = (editorInstance: EditorInstance, content: string, emitUpdate = true) => {
+  if (!editorInstance || content == null) return;
+
+  editorInstance.commands.setContent(content, {
+    contentType: getContentType(content),
+    emitUpdate,
+  });
+};
+
+const setEditorMarkdownContent = (editorInstance: EditorInstance, content: string) => {
+  if (!editorInstance || content == null) return;
+
+  editorInstance.commands.setContent(content, {
+    contentType: 'markdown',
+    emitUpdate: true,
+  });
+};
+
+const toggleSplitPreview = () => {
+  if (!isSplitPreviewActive.value) {
+    syncMarkdownSourceFromEditor(editor.value);
+  }
+
+  isSplitPreviewActive.value = !isSplitPreviewActive.value;
+};
+
+const handleMarkdownSourceInput = () => {
+  if (!editor.value) return;
+
+  isApplyingMarkdownSource.value = true;
+  setEditorMarkdownContent(editor.value, markdownSource.value);
+
+  nextTick(() => {
+    isApplyingMarkdownSource.value = false;
+  });
+};
+
 // 创建编辑器实例
 const editor: any = useEditor({
   extensions: getTiptapExtensions() as Extensions,
   content: '',
+  contentType: 'markdown',
   autofocus: false,
   onUpdate: ({ editor: editorInstance }: { editor: EditorInstance }) => {
     // 始终发送 HTML 内容给父组件，确保预览和保存的一致性
     const content = editorInstance.getHTML();
     console.log('[TiptapEditor] onUpdate 触发 (HTML):', content);
+
+    if (!isApplyingMarkdownSource.value) {
+      syncMarkdownSourceFromEditor(editorInstance);
+    }
 
     emit('update:content', content || '');
   },
@@ -144,8 +224,10 @@ onMounted(() => {
     }
 
     if (initialContent) {
-      editor.value.chain().setContent(initialContent).run();
+      setEditorDocumentContent(editor.value, initialContent, true);
     }
+
+    syncMarkdownSourceFromEditor(editor.value);
 
     // 注册 AI 补全状态变化回调
     const aiCompletionStorage = editor.value.storage.aiCompletion;
@@ -175,10 +257,8 @@ onMounted(() => {
   // 更新内容事件（用于编辑模式下从 store 获取内容）
   emitter.on('updateEditorContent', (content) => {
     if (editor.value && content) {
-      editor.value
-        .chain()
-        .setContent(content as string)
-        .run();
+      setEditorDocumentContent(editor.value, content as string, true);
+      syncMarkdownSourceFromEditor(editor.value);
     }
   });
 });
@@ -207,7 +287,8 @@ watch(
         currentHTML: currentHTML.substring(0, 20),
         currentMD: currentMD.substring(0, 20),
       });
-      editorInstance.chain().setContent(newContent).run();
+      setEditorDocumentContent(editorInstance, newContent, true);
+      syncMarkdownSourceFromEditor(editorInstance);
     }
   },
   { immediate: true },
@@ -231,12 +312,16 @@ const handleBubbleLink = () => {
 
 const shouldShowTextBubbleMenu = ({ editor: currentEditor, state }: { editor: any; state: any }) => {
   if (!currentEditor || !state) return false;
+  if (isSplitPreviewActive.value) return false;
+  if (!currentEditor.isFocused) return false;
   if (currentEditor.isActive('video')) return false;
   return !state.selection.empty;
 };
 
 const shouldShowVideoBubbleMenu = ({ editor: currentEditor }: { editor: any }) => {
   if (!currentEditor) return false;
+  if (isSplitPreviewActive.value) return false;
+  if (!currentEditor.isFocused) return false;
   return currentEditor.isActive('video');
 };
 
@@ -378,6 +463,86 @@ onBeforeUnmount(() => {
   background: var(--bg-color-primary);
 }
 
+.tiptap-split-preview {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 1;
+  min-height: 0;
+}
+
+.markdown-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 24px;
+
+  &__label {
+    margin-bottom: 16px;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  &__textarea,
+  &__preview {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  &__textarea {
+    resize: none;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font:
+      500 15px/1.8 'SFMono-Regular',
+      Consolas,
+      monospace;
+    white-space: pre-wrap;
+  }
+
+  &__preview {
+    padding-right: 8px;
+  }
+
+  &__preview:deep(h1),
+  &__preview:deep(h2),
+  &__preview:deep(h3),
+  &__preview:deep(p),
+  &__preview:deep(ul),
+  &__preview:deep(ol),
+  &__preview:deep(blockquote),
+  &__preview:deep(pre) {
+    margin-top: 0;
+  }
+
+  &__preview:deep(pre) {
+    padding: 12px 14px;
+    background: #1e1f29;
+    color: #d7e4ff;
+    overflow-x: auto;
+  }
+
+  &__preview:deep(code) {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+}
+
+.split-preview-divider {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 2px dashed #e5e7eb;
+  pointer-events: none;
+}
+
 .tiptap-editor-content {
   flex: 1;
   overflow-y: auto;
@@ -391,6 +556,26 @@ onBeforeUnmount(() => {
     background-color: rgba(64, 158, 255, 0.05);
     // 添加内边距避免内容被边框遮挡
     padding: 8px;
+  }
+}
+
+@media (max-width: 992px) {
+  .tiptap-split-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .split-preview-divider {
+    top: 50%;
+    right: 18px;
+    bottom: auto;
+    left: 18px;
+    transform: translateY(-50%);
+    border-top: 2px dashed #e5e7eb;
+    border-left: 0;
+  }
+
+  .markdown-panel {
+    min-height: 280px;
   }
 }
 </style>

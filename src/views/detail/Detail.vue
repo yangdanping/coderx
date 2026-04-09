@@ -17,21 +17,22 @@ import Comment from './cpns/comment/Comment.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 import useArticleStore from '@/stores/article.store';
 import useUserStore from '@/stores/user.store';
+
 const route = useRoute();
 const articleStore = useArticleStore();
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
-// V1: 旧版评论 store
-// import useCommentStore from '@/stores/comment.store';
-
-// V1: 旧版评论 store
-// const commentStore = useCommentStore();
-// V1: 旧版评论数据
-// const { commentInfo } = storeToRefs(commentStore);
 const { article, isAuthor } = storeToRefs(articleStore);
-onMounted(() => {
-  articleStore.getDetailAction(route.params.articleId);
-});
+const articleId = computed(() => route.params.articleId as string | undefined);
+
+watch(
+  articleId,
+  (newArticleId) => {
+    if (!newArticleId) return;
+    articleStore.getDetailAction(newArticleId);
+  },
+  { immediate: true },
+);
 </script>
 
 <style lang="scss" scoped>

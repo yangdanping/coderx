@@ -8,10 +8,12 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 export default defineConfig([
   // 全局忽略
   globalIgnores([
-    'dist',
-    'build',
-    'node_modules',
-    'public',
+    '**/dist/**',
+    '**/build/**',
+    '**/node_modules/**',
+    'public/**',
+    'docs/**',
+    'coverage/**',
     'stats.html',
     'auto-imports.d.ts',
     'components.d.ts',
@@ -29,7 +31,6 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      parser: tseslint.parser,
       globals: {
         ...globals.browser,
         ...globals.node,
@@ -58,6 +59,27 @@ export default defineConfig([
         unref: 'readonly',
         toRef: 'readonly',
         toRefs: 'readonly',
+      },
+    },
+  },
+
+  // TypeScript 文件使用 TS parser
+  {
+    files: ['**/*.ts', '**/*.tsx', '**/*.mts'],
+    languageOptions: {
+      parser: tseslint.parser,
+    },
+  },
+
+  // Vue SFC 需要交给 vue-eslint-parser，再在 parserOptions 中指定 TS parser
+  {
+    files: ['**/*.vue'],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        extraFileExtensions: ['.vue'],
       },
     },
   },

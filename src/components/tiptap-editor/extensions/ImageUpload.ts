@@ -4,12 +4,11 @@
  */
 import { Extension } from '@tiptap/core';
 import { uploadImg } from '@/service/file/file.request';
-import useArticleStore from '@/stores/article.store';
+import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
 
 // 声明命令类型扩展
 declare module '@tiptap/core' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Commands<ReturnType> {
     imageUpload: {
       uploadImage: (file: File) => ReturnType;
@@ -28,7 +27,7 @@ export const ImageUpload = Extension.create({
       uploadImage:
         (file: File) =>
         ({ editor }) => {
-          const articleStore = useArticleStore();
+          const editorStore = useEditorStore();
 
           // 显示上传提示
           Msg.showInfo('图片上传中...');
@@ -42,7 +41,7 @@ export const ImageUpload = Extension.create({
                 console.log('Tiptap 图片上传成功:', url, imgId);
 
                 // 添加到待清理列表（用于刷新时清理孤儿图片）
-                articleStore.addPendingImageId(imgId);
+                editorStore.addPendingImageId(imgId);
 
                 // 插入图片到编辑器
                 editor.chain().setImage({ src: url, alt: '' }).run();

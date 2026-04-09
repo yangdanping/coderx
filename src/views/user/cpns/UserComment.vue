@@ -12,7 +12,7 @@
             </template>
           </ListItem>
         </template>
-        <Page @changePage="changePage" :total="profile.commentCount" />
+        <Page v-model:currentPage="pageNum" v-model:pageSize="pageSize" @changePage="changePage" :total="profile.commentCount" />
       </template>
       <template v-else><span>这个人未发表过评论</span></template>
     </div>
@@ -21,20 +21,21 @@
 
 <script lang="ts" setup>
 import ListItem from '@/components/list/ListItem.vue';
-// import useCommentStore from '@/stores/comment.store.old';
+import Page from '@/components/Page.vue';
 import CommentAction from '@/components/list/cpns/CommentAction.vue';
 import useCommentStore from '@/stores/comment.store';
 import useUserStore from '@/stores/user.store';
-const router = useRouter();
+
 const userStore = useUserStore();
 const commentStore = useCommentStore();
 const { profile } = storeToRefs(userStore);
 const { userComments } = storeToRefs(useCommentStore());
 
-const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
-const changePage = () => commentStore.getCommentAction('', profile.value.id as any);
+const pageNum = ref(1);
+const pageSize = ref(10);
 
-// const goDetail = (articleId) => router.push({ path: `/article/${articleId}` });
+const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
+const changePage = () => commentStore.getCommentAction('', profile.value.id as any, pageNum.value, pageSize.value);
 </script>
 
 <style lang="scss" scoped>

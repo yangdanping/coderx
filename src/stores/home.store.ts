@@ -1,15 +1,26 @@
+import { acceptHMRUpdate, defineStore } from 'pinia';
 import { getNews, getHotUsers } from '@/service/home/home.request';
 import { LocalCache } from '@/utils';
+import type { IUserInfo } from './types/user.result';
+
+export interface INewsItem {
+  title?: string;
+  url?: string;
+  urlToImage?: string;
+  source?: {
+    name?: string;
+  };
+}
 
 const useHomeStore = defineStore('home', {
   state: () => ({
-    news: [] as any[],
-    hotUsers: [] as any[],
+    news: [] as INewsItem[],
+    hotUsers: [] as IUserInfo[],
   }),
   actions: {
     // 异步请求action---------------------------------------------------
     async getNewsAction() {
-      let articles: any[] = [];
+      let articles: INewsItem[] = [];
       const cachedNews = LocalCache.getCache('news');
 
       if (!cachedNews) {
@@ -36,5 +47,9 @@ const useHomeStore = defineStore('home', {
     },
   },
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useHomeStore, import.meta.hot));
+}
 
 export default useHomeStore;

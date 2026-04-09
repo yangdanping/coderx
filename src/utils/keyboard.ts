@@ -39,14 +39,18 @@
  * ```
  */
 export const isMacOS = (): boolean => {
+  const navigatorWithUserAgentData = navigator as Navigator & {
+    userAgentData?: {
+      platform?: string;
+    };
+  };
+
   // 1️⃣ 优先使用 User-Agent Client Hints API (最现代的方式)
   // Chrome 90+, Edge 90+, Opera 76+ 支持
-  // @ts-ignore - userAgentData 是实验性 API，TypeScript 可能不识别
-  if (navigator.userAgentData?.platform) {
-    // @ts-ignore
-    const platform = navigator.userAgentData.platform;
+  const platformFromUserAgentData = navigatorWithUserAgentData.userAgentData?.platform;
+  if (platformFromUserAgentData) {
     // userAgentData.platform 返回: "macOS", "Windows", "Linux" 等
-    return /mac/i.test(platform);
+    return /mac/i.test(platformFromUserAgentData);
   }
 
   // 2️⃣ 降级到 navigator.platform (已弃用但广泛支持)

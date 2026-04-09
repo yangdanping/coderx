@@ -18,32 +18,44 @@
 </template>
 
 <script lang="ts" setup>
-import { emitter } from '@/utils';
 import UserFollowItem from './UserFollowItem.vue';
 import Tabs from '@/components/common/Tabs.vue';
 import TabItem from '@/components/common/TabItem.vue';
-
 import useUserStore from '@/stores/user.store';
-const userStore = useUserStore();
-const { profile, followInfo } = storeToRefs(userStore);
 
-const followType = ref<any>('following'); //默认显示关注者
-const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
+type FollowTabName = 'following' | 'follower';
+
+const { profile, followInfo } = storeToRefs(useUserStore());
+
+const router = useRouter();
 const route = useRoute();
 
-onMounted(() => {
-  emitter.on('changeFollowTab', (subTabName) => {
-    followType.value = subTabName;
-  });
-  const { tabName, subTabName } = route.query;
-  console.log('UserFollow onMounted', tabName, subTabName);
-  if (subTabName) {
-    followType.value = subTabName;
-  }
-});
+const followType = ref<FollowTabName>('following'); //默认显示关注者
+const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 
-const handleClick = (name) => {
-  console.log('handleClick', name);
+function normalizeFollowType(subTabName?: FollowTabName): FollowTabName {
+  return subTabName === 'follower' ? 'follower' : 'following';
+}
+
+watch(
+  () => route.query.subTabName,
+  (subTabName) => {
+    followType.value = normalizeFollowType(subTabName as FollowTabName);
+  },
+  { immediate: true },
+);
+
+const handleClick = (name: FollowTabName) => {
+  const nextFollowType = normalizeFollowType(name);
+  if (route.query.subTabName === nextFollowType) return;
+  router.replace({
+    path: route.path,
+    query: {
+      ...route.query,
+      tabName: '关注',
+      subTabName: nextFollowType,
+    },
+  });
 };
 </script>
 

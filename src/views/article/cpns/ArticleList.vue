@@ -28,8 +28,8 @@
     -->
     <template v-else>
       <div class="list-order">
-        <div class="btn" role="button" @click="setOrder('date')" :class="{ active: pageOrder === 'date' }">最新</div>
-        <div class="btn" role="button" @click="setOrder('hot')" :class="{ active: pageOrder === 'hot' }">热门</div>
+        <div class="btn" role="button" @click="setOrder('date')" :class="{ active: activeOrder === 'date' }">最新</div>
+        <div class="btn" role="button" @click="setOrder('hot')" :class="{ active: activeOrder === 'hot' }">热门</div>
       </div>
 
       <!-- 
@@ -64,22 +64,19 @@
 <script lang="ts" setup>
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
-import useRootStore from '@/stores/index.store';
 import useArticleStore from '@/stores/article.store';
 import { useArticleList, useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { throttle } from '@/utils';
 import type { IUseArticleListParams } from '@/composables/useArticleList';
 
 // --- 1. 准备参数 ---
-const rootStore = useRootStore();
 const articleStore = useArticleStore();
-const { pageOrder, tagId } = storeToRefs(rootStore);
-const { tags } = storeToRefs(articleStore);
+const { activeOrder, activeTagId, tags } = storeToRefs(articleStore);
 
-// 构建响应式参数对象（仅保留 tagId 和 pageOrder，搜索逻辑已移至 /search 路由）
+// articleStore.activeOrder / activeTagId 是文章列表筛选的单一数据源
 const requestParams = computed<IUseArticleListParams>(() => ({
-  pageOrder: pageOrder.value,
-  tagId: tagId.value,
+  pageOrder: activeOrder.value,
+  tagId: activeTagId.value === '综合' ? '' : (activeTagId.value as number | ''),
 }));
 
 // --- 2. 调用 Composable (核心逻辑) ---
@@ -110,8 +107,8 @@ const isListEmpty = computed(() => {
 
 // 获取当前选中的标签名称
 const currentTagName = computed(() => {
-  if (!tagId.value) return '';
-  const targetTag = tags.value.find((tag) => tag.id === tagId.value);
+  if (!activeTagId.value || activeTagId.value === '综合') return '';
+  const targetTag = tags.value.find((tag) => tag.id === activeTagId.value);
   return targetTag ? targetTag.name : '';
 });
 
@@ -149,9 +146,7 @@ onUnmounted(() => {
 // 这里也不需要手动调 refreshFirstPageAction
 // 因为 pageOrder 变了 -> requestParams 变了 -> useArticleList 自动重置
 const setOrder = throttle(function (order: string) {
-  rootStore.changePageNum(1); // 仅用于同步 Store 里的页码显示(如果有的话)，对请求无影响
-  rootStore.changePageOrder(order);
-  articleStore.activeOrder = order; // 记忆排序方式
+  articleStore.activeOrder = order;
   window.scrollTo(0, 0);
 }, 300);
 </script>

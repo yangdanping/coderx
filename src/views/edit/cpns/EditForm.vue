@@ -45,11 +45,13 @@
 
 <script lang="ts" setup>
 import useArticleStore from '@/stores/article.store';
+import useEditorStore from '@/stores/editor.store';
 import { ElMessageBox } from 'element-plus';
 import { LocalCache, Msg, isEmptyObj, extractImagesFromHtml } from '@/utils';
 import { Plus } from 'lucide-vue-next';
 const router = useRouter();
 const articleStore = useArticleStore();
+const editorStore = useEditorStore();
 const { tags } = storeToRefs(articleStore);
 
 import type { IArticle } from '@/stores/types/article.result';
@@ -62,7 +64,7 @@ const props = defineProps<{
   title?: string;
 }>();
 const { editData = {}, fileList = [], draft = '' } = props;
-let form = reactive({ title: props.title || '', tags: [] as any[] });
+const form = reactive({ title: props.title || '', tags: [] as string[] });
 
 const handleFileChange = (file, files) => {
   console.log('handleFileChange', file, files);
@@ -135,8 +137,10 @@ const beforeCoverUpload = (file) => {
 // 手动上传封面
 const coverUpLoad = (content) => {
   console.log('coverUpLoad', content.file);
-  articleStore.uploadCoverAction(content.file).then((url: string) => {
-    emit('setCover', { url, name: 'img' });
+  editorStore.uploadCoverAction(content.file).then((url) => {
+    if (url) {
+      emit('setCover', { url, name: 'img' });
+    }
   });
 };
 
@@ -178,8 +182,8 @@ const goBack = () => {
           ...form,
           draft: draft,
           fileList: draftFileList,
-          pendingImageIds: [...articleStore.pendingImageIds],
-          pendingVideoIds: [...articleStore.pendingVideoIds],
+          pendingImageIds: [...editorStore.pendingImageIds],
+          pendingVideoIds: [...editorStore.pendingVideoIds],
         };
         console.log('保存草稿:', draftObj);
         LocalCache.setCache('draft', draftObj);
@@ -189,10 +193,10 @@ const goBack = () => {
         // 编辑模式：直接返回
         console.log('取消修改，清理孤儿文件');
         // 清空手动上传的封面ID
-        articleStore.setManualCoverImgId(null);
+        editorStore.setManualCoverImgId(null);
         // 清理编辑过程中上传的孤儿图片和视频
-        articleStore.deletePendingImagesAction();
-        articleStore.deletePendingVideosAction();
+        editorStore.deletePendingImagesAction();
+        editorStore.deletePendingVideosAction();
         router.back();
       }
     })
@@ -202,8 +206,8 @@ const goBack = () => {
         console.log('不保存草稿，直接退出，清理所有孤儿文件');
         LocalCache.removeCache('draft');
         router.push('/article').then(() => {
-          articleStore.deletePendingImagesAction();
-          articleStore.deletePendingVideosAction();
+          editorStore.deletePendingImagesAction();
+          editorStore.deletePendingVideosAction();
         });
       }
     });

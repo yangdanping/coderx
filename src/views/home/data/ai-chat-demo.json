@@ -1,0 +1,16 @@
+{
+  "typingSpeed": 45,
+  "streamSpeed": 20,
+  "thinkingDelay": 900,
+  "loopDelay": 3200,
+  "conversation": [
+    {
+      "role": "user",
+      "content": "请帮我快速总结这篇 TypeScript 入门文章。"
+    },
+    {
+      "role": "assistant",
+      "content": "这篇文章先介绍 TypeScript 的定位，再说明它在大型项目中的价值，接着通过类型推断、接口和泛型等特性展示它如何提升代码可维护性。最后，文章把这些能力和内容社区场景结合起来，强调“更容易写、更容易读”的创作体验。"
+    }
+  ]
+}

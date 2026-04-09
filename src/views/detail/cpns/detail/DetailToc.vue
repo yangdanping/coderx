@@ -86,19 +86,10 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.detail-toc {
-  /* 使得组件不影响文档流，但内部定位基于视口 */
-  height: 100%;
-}
-
-/* Desktop Styles */
 .toc-desktop {
-  position: sticky;
-  top: 80px;
   width: 100%;
   @include glass-effect;
   padding: 20px;
-  border-radius: 6px;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
   transition: all 0.3s ease;

@@ -89,7 +89,7 @@ const animationId = ref<number | null>(null);
 const scrollOffset = ref(0);
 const canvasSize = ref({ width: 0, height: 0 });
 const singleLoopWidth = ref(0); // 单次循环的宽度
-const fontFamily = 'Gohufont';
+const fontFamily = 'GeistPixel-Line';
 
 // 计算聚光灯位置：默认居中，hover 时跟随鼠标
 const spotlightPosition = computed(() => {

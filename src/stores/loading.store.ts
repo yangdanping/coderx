@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { acceptHMRUpdate, defineStore } from 'pinia';
 
 const useLoadingStore = defineStore('loading', {
   /* 
@@ -65,5 +65,9 @@ const useLoadingStore = defineStore('loading', {
     },
   },
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useLoadingStore, import.meta.hot));
+}
 
 export default useLoadingStore;

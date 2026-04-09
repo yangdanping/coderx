@@ -134,6 +134,8 @@ $main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 
     }
 
     .side-column {
+      position: sticky;
+      top: 80px;
       grid-column: 3;
       width: $side-column-width;
       min-width: 0;

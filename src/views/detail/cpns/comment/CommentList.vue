@@ -63,6 +63,7 @@ const route = useRoute();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const { article } = storeToRefs(articleStore);
+const articleId = computed(() => String(route.params.articleId ?? ''));
 const sortType = ref<CommentSortType>('latest');
 const sortOptions: Array<{ label: string; value: CommentSortType }> = [
   { label: '最新', value: 'latest' },
@@ -71,7 +72,7 @@ const sortOptions: Array<{ label: string; value: CommentSortType }> = [
 ];
 const currentSortLabel = computed(() => sortOptions.find((item) => item.value === sortType.value)?.label ?? '最新');
 // 使用 composable 获取评论列表
-const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(route.params.articleId as string, sortType);
+const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(articleId, sortType);
 
 // 计算属性：扁平化的评论列表
 const comments = computed(() => flattenComments(data.value));
@@ -83,9 +84,18 @@ const totalCount = computed(() => getTotalCount(data.value));
 watch(
   () => totalCount.value,
   (newCount) => {
-    article.value.commentCount = newCount;
+    if (article.value) {
+      article.value.commentCount = newCount;
+    }
   },
 );
+
+// 监听文章ID变化，重置评论排序和关闭所有表单
+watch(articleId, (newArticleId, oldArticleId) => {
+  if (!newArticleId || newArticleId === oldArticleId) return;
+  sortType.value = 'latest';
+  commentStore.closeAllForms();
+});
 
 // 滚动到评论区
 const listRef = ref<Element>();

@@ -2,8 +2,8 @@
   <div class="edit">
     <!-- 数据就绪后才渲染编辑器 ,即 await 接口返回数据） -->
     <template v-if="isDataReady">
-      <!-- 下拉标题组件 -->
-      <PullDownHeader v-model="articleTitle" v-model:isPulled="isPulled" />
+      <!-- 下拉标题 + 表单控件区域 -->
+      <PullDownHeader v-model="articleTitle" v-model:isPulled="isPulled" :editData="editData" :draft="preview" @formSubmit="formSubmit" />
 
       <!-- 直接使用 TiptapEditor -->
       <div class="editor-wrapper" :class="{ 'is-pulled': isPulled }">
@@ -23,31 +23,21 @@
       <i-loading class="loading-icon" />
       <span>正在加载文章数据...</span>
     </div>
-    <el-drawer v-if="isDataReady" title="管理您的文章" v-model="drawer" direction="ltr" draggable :size="400">
-      <EditForm @formSubmit="formSubmit" :draft="preview" :editData="editData" :fileList="fileList" v-model:title="articleTitle" @setCover="handleSetCover" />
-    </el-drawer>
-    <el-tooltip content="提交 (⌃Q)" placement="top" :show-after="100">
-      <el-button class="submit-btn" @click="drawer = true" :icon="Check">提交</el-button>
-    </el-tooltip>
     <AiAssistant :context="preview" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Check } from 'lucide-vue-next';
-// 直接使用 TiptapEditor 组件
 import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
-import EditForm from './cpns/EditForm.vue';
 import PullDownHeader from './cpns/PullDownHeader.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
 import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
 
 import useArticleStore from '@/stores/article.store';
-import type { UploadProps, UploadUserFile } from 'element-plus';
+import useEditorStore from '@/stores/editor.store';
 
 const route = useRoute();
-const router = useRouter();
 interface Props {
   borderColor?: string;
   defaultExpose?: number; // 默认露出比例 (0-1)，默认 0.5
@@ -61,10 +51,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const articleStore = useArticleStore();
+const editorStore = useEditorStore();
 const { article } = storeToRefs(articleStore);
 const isEdit = computed(() => !!route.query.editArticleId);
 const editData = computed(() => (isEdit.value ? article.value : {}));
-const drawer = ref(false);
 const preview = ref('');
 const articleTitle = ref('');
 const isPulled = ref(false);
@@ -74,8 +64,7 @@ const ropeTranslateY = computed(() => {
   return `-${(1 - expose) * 100}%`;
 });
 
-const fileList = ref<UploadUserFile[]>([]);
-const isSubmitting = ref(false); // 标记是否正在提交，用于避免提交时显示离开提示
+const isSubmitting = ref(false);
 // 数据是否就绪：创建模式直接可用，编辑模式需要等待 API 返回
 const isDataReady = ref(!isEdit.value);
 console.log('[Edit.vue] 初始化 isDataReady:', isDataReady.value, '编辑模式:', isEdit.value);
@@ -105,9 +94,9 @@ onMounted(async () => {
       if (draft.title) articleTitle.value = draft.title;
       if (draft.pendingImageIds?.length || draft.pendingVideoIds?.length) {
         // 先清空再恢复，避免刷新页面时重复添加
-        articleStore.clearAllPendingFiles();
-        draft.pendingImageIds?.forEach((id: number) => articleStore.addPendingImageId(id));
-        draft.pendingVideoIds?.forEach((id: number) => articleStore.addPendingVideoId(id));
+        editorStore.clearPendingFiles();
+        draft.pendingImageIds?.forEach((id: number) => editorStore.addPendingImageId(id));
+        draft.pendingVideoIds?.forEach((id: number) => editorStore.addPendingVideoId(id));
         console.log('[Edit.vue] 从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
       }
     }
@@ -134,33 +123,10 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   }
 };
 
-// 快捷键监听
 const handleKeyDown = (event: KeyboardEvent) => {
-  // Ctrl+Q (Mac 和 Windows 都使用 Ctrl) - toggle 侧栏显示
   if (event.ctrlKey && event.key === 'q') {
-    event.preventDefault(); // 阻止浏览器默认行为（如关闭窗口）
-    drawer.value = !drawer.value;
-  }
-};
-
-// 退出修改
-const handleExitEdit = async () => {
-  // 如果有未保存的内容，显示确认对话框
-  if ((preview.value || isEdit.value) && !isSubmitting.value) {
-    try {
-      await ElMessageBox.confirm('是否取消修改', '提示', {
-        confirmButtonText: '取消修改',
-        cancelButtonText: '再想想',
-        type: 'warning',
-      });
-      // 用户确认后返回上一页
-      router.back();
-    } catch {
-      // 用户取消操作，不做任何处理
-    }
-  } else {
-    // 没有内容，直接返回
-    router.back();
+    event.preventDefault();
+    isPulled.value = !isPulled.value;
   }
 };
 
@@ -172,12 +138,6 @@ watch(
     if (newV.title) articleTitle.value = newV.title;
   },
 );
-
-const handleSetCover = (file) => {
-  // 设置封面预览
-  fileList.value = [file];
-  console.log('设置封面预览:', file);
-};
 
 const formSubmit = (editData: any) => {
   if (!editData.title) {
@@ -208,18 +168,6 @@ const formSubmit = (editData: any) => {
   display: flex;
   flex-direction: column;
   height: 100vh; // 确保占满整个视口高度
-
-  .submit-btn {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    border: 0;
-    opacity: 0.9;
-  }
-
-  :deep(.el-drawer) {
-    @include glass-effect;
-  }
 
   .editor-loading {
     display: flex;

@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
 import { getList, likeArticle } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
-import { unref, computed, ref } from 'vue';
+import { unref, computed } from 'vue';
 import type { Ref } from 'vue';
 import type { IArticleList } from '@/service/article/article.types';
 import type { RouteParam } from '@/service/types';
@@ -75,7 +75,6 @@ export function useArticleList(params: Ref<IUseArticleListParams> | IUseArticleL
     // lastPage: 刚刚请求回来的那一页数据
     // allPages: 目前已加载的所有页数据数组
     getNextPageParam: (lastPage, allPages) => {
-      const currentListLength = lastPage.result?.length ?? 0;
       const total = lastPage.total ?? 0;
 
       // 计算目前已加载的文章总数
@@ -115,6 +114,7 @@ export function useUserLikedArticles() {
   });
 
   // 提取点赞的文章ID列表
+  // 在需要频繁判断元素是否存在的场景下（比如列表渲染时判断每条评论是否点赞），使用 Set的 has O(1) 的效率显著优于数组 的 includes O(n)
   const likedArticleIds = computed(() => {
     const pages = query.data.value?.pages || [];
     const ids = pages.flatMap((page) => page.articleLiked || []);
@@ -144,7 +144,7 @@ export function useLikeArticle(params?: Ref<IUseArticleListParams> | IUseArticle
   return useMutation({
     mutationFn: (articleId: RouteParam) => likeArticle(articleId),
     onSuccess: (res) => {
-      const { liked, likes } = res.data;
+      const { liked } = res.data;
       liked ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
 
       // 更新用户点赞列表

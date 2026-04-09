@@ -12,7 +12,7 @@
             </template>
           </ListItem>
         </template>
-        <Page @changePage="changePage" :total="profile.articleCount" />
+        <Page v-model:currentPage="pageNum" v-model:pageSize="pageSize" @changePage="changePage" :total="profile.articleCount" />
       </template>
       <template v-else><span>这个人未发表过文章</span></template>
     </div>
@@ -31,6 +31,9 @@ const articleStore = useArticleStore();
 const { profile } = storeToRefs(userStore);
 const { articles } = storeToRefs(articleStore);
 
+const pageNum = ref(1);
+const pageSize = ref(10);
+
 // 用户点赞状态
 const { isLiked } = useUserLikedArticles();
 
@@ -40,13 +43,13 @@ const { mutate: likeArticle } = useLikeArticle();
 watch(
   () => profile.value.id,
   (newV) => {
-    articleStore.refreshFirstPageAction({ userId: newV }); //初始化时获取该用户发表过的文章
+    pageNum.value = 1;
+    articleStore.refreshFirstPageAction({ userId: newV, pageSize: pageSize.value });
   },
 );
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 
-// const changePage = () => userStore.getArticleListAction(profile.value.id);
-const changePage = () => articleStore.getArticleListAction({ userId: profile.value.id });
+const changePage = () => articleStore.getArticleListAction({ userId: profile.value.id, pageNum: pageNum.value, pageSize: pageSize.value });
 </script>
 
 <style lang="scss" scoped>

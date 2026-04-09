@@ -13,8 +13,7 @@
       <SectionTitle id="hot-authors">热门作者</SectionTitle>
       <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
       <hr />
-      <SectionTitle id="hot-news">热门新闻</SectionTitle>
-      <HomeSwpier :news="news" />
+      <FeatureSection :columns="1" />
       <hr />
       <div class="brief">
         <div>Power By ⚡⚡yangdanping⚡⚡</div>
@@ -27,8 +26,8 @@
 
 <script lang="ts" setup>
 import HomeHotUser from './cpns/HomeHotUser.vue';
-import HomeSwpier from './cpns/HomeSwpier.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
+import FeatureSection from './cpns/features/FeatureSection.vue';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
@@ -40,7 +39,7 @@ const githubUrl = ref('https://github.com/yangdanping');
 const isLast = ref(false); //是否激活最后一个字符的class
 let timer = ref();
 const homeStore = useHomeStore();
-const { news, hotUsers } = storeToRefs(homeStore);
+const { hotUsers } = storeToRefs(homeStore);
 onMounted(() => {
   timer.value = setInterval(() => {
     let str = line2.value.slice(0, counter.value);
@@ -56,7 +55,6 @@ onMounted(() => {
     }
     line2Str.value = str;
   }, 200);
-  homeStore.getNewsAction();
   homeStore.getHotUsersAction();
 });
 

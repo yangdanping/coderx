@@ -39,12 +39,11 @@ const tabDirection = computed(() => (isSmallScreen.value ? 'horizontal' : 'verti
 onMounted(() => {
   emitter.on('changeTagInList', (tag: any) => {
     activeId.value = tag.id;
-    articleStore.activeTagId = tag.id; // 确保同步到 store
-    rootStore.changeTag(tag.id);
+    articleStore.activeTagId = tag.id;
   });
   emitter.on('submitSearchValue', () => {
     activeId.value = '综合';
-    articleStore.activeTagId = '综合'; // 确保同步到 store
+    articleStore.activeTagId = '综合';
   });
 
   // 使用 ResizeObserver 监听高度变化
@@ -80,12 +79,7 @@ const updateNavHeightVar = () => {
 
 const handleClick = throttle(function (name: string | number) {
   if (name) {
-    rootStore.changePageNum(1);
-    // 保持当前排序习惯，不强制重置为 'date'
-    rootStore.changeTag(name === '综合' ? '' : name);
-    articleStore.activeTagId = name; // 同步记忆标签
-  } else {
-    rootStore.changePageNum(1);
+    articleStore.activeTagId = name;
   }
   window.scrollTo(0, 0);
 }, 300);
