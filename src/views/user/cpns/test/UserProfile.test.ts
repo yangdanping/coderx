@@ -58,7 +58,7 @@ const tabItemStub = defineComponent({
 
 import useArticleStore from '@/stores/article.store';
 import useUserStore from '@/stores/user.store';
-import UserProfile from './UserProfile.vue';
+import UserProfile from '../UserProfile.vue';
 
 describe('UserProfile', () => {
   beforeEach(() => {

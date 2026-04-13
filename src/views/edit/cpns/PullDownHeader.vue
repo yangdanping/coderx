@@ -27,7 +27,7 @@
             collapse-tags-tooltip
             class="tags-select"
           >
-            <el-option v-for="item in tags" :key="item.id" :label="item.name" :value="item.name ?? ''" />
+            <el-option v-for="item in availableTags" :key="item.id" :label="item.name" :value="item.name ?? ''" />
           </el-select>
 
           <div class="cover-upload-wrapper">
@@ -71,18 +71,26 @@ import { Check, LogOut, ImagePlus, X } from 'lucide-vue-next';
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
 import { ElMessageBox } from 'element-plus';
-import { LocalCache, Msg, isEmptyObj, extractImagesFromHtml } from '@/utils';
+import { deleteDraftRequest } from '@/service/draft/draft.request';
+import { LocalCache, Msg } from '@/utils';
+import { COVER_IMAGE_SIZE_LIMIT_MESSAGE, getCoverImageValidationMessage, MAX_COVER_IMAGE_FILE_SIZE_MB } from '@/components/tiptap-editor/uploadLimits';
 import type { IArticle } from '@/stores/types/article.result';
 import type { UploadUserFile } from 'element-plus';
 
 interface Props {
   modelValue: string;
   isPulled: boolean;
+  tags?: string[];
+  coverPreviewUrl?: string | null;
+  draftId?: number | null;
   editData?: IArticle | Record<string, any>;
   draft?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  tags: () => [],
+  coverPreviewUrl: null,
+  draftId: null,
   editData: () => ({}),
   draft: '',
 });
@@ -90,6 +98,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
   (e: 'update:isPulled', value: boolean): void;
+  (e: 'update:tags', value: string[]): void;
+  (e: 'update:coverPreviewUrl', value: string | null): void;
+  (e: 'discard-draft'): void;
   (e: 'formSubmit', data: { title: string; tags: string[] }): void;
 }>();
 
@@ -97,7 +108,7 @@ const route = useRoute();
 const router = useRouter();
 const articleStore = useArticleStore();
 const editorStore = useEditorStore();
-const { tags } = storeToRefs(articleStore);
+const { tags: availableTags } = storeToRefs(articleStore);
 
 const isEdit = computed(() => !!route.query.editArticleId);
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -105,11 +116,13 @@ const coverInputRef = ref<HTMLInputElement | null>(null);
 const form = reactive({ tags: [] as string[] });
 const coverFileList = ref<UploadUserFile[]>([]);
 
-const coverTooltip = computed(() => (coverFileList.value.length ? '替换封面' : '上传封面'));
+const coverTooltip = computed(() => (coverFileList.value.length ? `替换封面（最大 ${MAX_COVER_IMAGE_FILE_SIZE_MB}MB）` : `上传封面（最大 ${MAX_COVER_IMAGE_FILE_SIZE_MB}MB）`));
 
 const handleInput = (e: Event) => {
   emit('update:modelValue', (e.target as HTMLInputElement).value);
 };
+
+const sameTags = (a: string[], b: string[]) => a.length === b.length && a.every((tag, index) => tag === b[index]);
 
 watch(
   () => props.isPulled,
@@ -120,48 +133,60 @@ watch(
 
 onMounted(() => {
   articleStore.getTagsAction();
-
-  const draftData = LocalCache.getCache('draft');
-  if (draftData && !isEdit.value) {
-    console.log('加载草稿:', draftData);
-    if (draftData.tags) form.tags = draftData.tags;
-    if (draftData.fileList?.length) {
-      coverFileList.value = [{ url: draftData.fileList[0].url, name: 'img' }];
-    }
-    return;
-  }
-
-  if (props.editData && isEmptyObj(props.editData)) {
-    console.log('编辑模式 - 加载文章数据:', props.editData);
-    const { tags: articleTags, images } = props.editData as IArticle;
-    if (articleTags?.length) {
-      form.tags = articleTags.map((tag: any) => tag.name);
-    }
-    if (images?.length) {
-      const url = images[0]?.url?.concat('?type=small');
-      coverFileList.value = [{ url, name: 'img' }];
-    }
-  }
 });
+
+watch(
+  () => props.tags,
+  (value) => {
+    const nextTags = [...(value ?? [])];
+    if (!sameTags(form.tags, nextTags)) {
+      form.tags = nextTags;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [...form.tags],
+  (value) => {
+    if (!sameTags(value, props.tags ?? [])) {
+      emit('update:tags', [...value]);
+    }
+  },
+);
+
+watch(
+  () => props.coverPreviewUrl,
+  (value) => {
+    coverFileList.value = value ? [{ url: value, name: 'img' }] : [];
+  },
+  { immediate: true },
+);
 
 const triggerCoverUpload = () => coverInputRef.value?.click();
 
 const removeCover = () => {
   coverFileList.value = [];
   if (coverInputRef.value) coverInputRef.value.value = '';
+  emit('update:coverPreviewUrl', null);
 };
 
 const handleCoverFileSelect = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
 
-  if (file.size / 1024 / 1024 >= 2) {
-    Msg.showInfo('上传图片大小不能超过 2MB!');
+  const validationMessage = getCoverImageValidationMessage(file);
+  if (validationMessage) {
+    Msg.showInfo(validationMessage === COVER_IMAGE_SIZE_LIMIT_MESSAGE ? COVER_IMAGE_SIZE_LIMIT_MESSAGE : validationMessage);
+    if (coverInputRef.value) coverInputRef.value.value = '';
     return;
   }
 
   editorStore.uploadCoverAction(file).then((url) => {
-    if (url) coverFileList.value = [{ url, name: 'img' }];
+    if (url) {
+      coverFileList.value = [{ url, name: 'img' }];
+      emit('update:coverPreviewUrl', url);
+    }
   });
 
   if (coverInputRef.value) coverInputRef.value.value = '';
@@ -171,6 +196,16 @@ const onSubmit = () => {
   emit('formSubmit', { title: props.modelValue, tags: form.tags });
 };
 
+const clearRemoteDraftIfNeeded = async () => {
+  if (!props.draftId) return;
+
+  try {
+    await deleteDraftRequest(props.draftId);
+  } catch (error) {
+    console.error('退出编辑时删除远端草稿失败:', error);
+  }
+};
+
 const goBack = () => {
   ElMessageBox.confirm(`是否${isEdit.value ? '取消修改' : '退出并保存草稿'}`, '提示', {
     type: 'info',
@@ -178,22 +213,14 @@ const goBack = () => {
     confirmButtonText: isEdit.value ? '取消修改' : '保存退出',
     cancelButtonText: isEdit.value ? '再想想' : '不保存退出',
   })
-    .then(() => {
+    .then(async () => {
       if (!isEdit.value) {
-        let draftFileList: UploadUserFile[] = coverFileList.value;
-
-        if (!coverFileList.value.length && props.draft) {
-          const imageUrls = extractImagesFromHtml(props.draft);
-          if (imageUrls.length > 0) {
-            draftFileList = [{ url: imageUrls[0]?.concat('?type=small'), name: 'img' }];
-          }
-        }
-
         const draftObj = {
+          articleId: null,
           title: props.modelValue,
           tags: form.tags,
           draft: props.draft,
-          fileList: draftFileList,
+          fileList: coverFileList.value,
           pendingImageIds: [...editorStore.pendingImageIds],
           pendingVideoIds: [...editorStore.pendingVideoIds],
         };
@@ -203,16 +230,20 @@ const goBack = () => {
         router.push('/article');
       } else {
         console.log('取消修改，清理孤儿文件');
+        emit('discard-draft');
+        await clearRemoteDraftIfNeeded();
         editorStore.setManualCoverImgId(null);
         editorStore.deletePendingImagesAction();
         editorStore.deletePendingVideosAction();
         router.back();
       }
     })
-    .catch((action) => {
+    .catch(async (action) => {
       if (action === 'cancel' && !isEdit.value) {
         console.log('不保存草稿，直接退出，清理所有孤儿文件');
+        emit('discard-draft');
         LocalCache.removeCache('draft');
+        await clearRemoteDraftIfNeeded();
         router.push('/article').then(() => {
           editorStore.deletePendingImagesAction();
           editorStore.deletePendingVideosAction();

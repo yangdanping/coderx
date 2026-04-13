@@ -30,7 +30,7 @@ vi.mock('@/stores/loading.store', () => ({
   default: vi.fn(() => loadingStore),
 }));
 
-import MyRequest from './index';
+import MyRequest from '../index';
 
 describe('MyRequest', () => {
   beforeEach(() => {

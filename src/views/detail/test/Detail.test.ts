@@ -20,7 +20,7 @@ vi.mock('vue-router', async () => {
 });
 
 import useArticleStore from '@/stores/article.store';
-import Detail from './Detail.vue';
+import Detail from '../Detail.vue';
 
 describe('Detail', () => {
   it('reloads article details when the route articleId changes', async () => {

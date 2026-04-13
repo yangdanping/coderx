@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { handleBeforeEachNavigation } from './index';
+import { handleBeforeEachNavigation } from '../index';
 
 type PartialRoute = {
   path: string;

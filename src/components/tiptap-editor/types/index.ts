@@ -1,1 +1,1 @@
-export type { EditorJsonNode, VideoNodeAttrs } from './video';
+export type { EditorJsonNode, VideoNodeAttrs, VideoRegistryEntry } from './video';

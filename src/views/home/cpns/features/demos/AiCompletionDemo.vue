@@ -143,6 +143,7 @@ watch(
     padding: 14px 16px 18px;
     @include glass-effect;
     border: 1px solid #94b8ee;
+    border-bottom: none;
     overflow: hidden;
 
     :where(html.dark) & {

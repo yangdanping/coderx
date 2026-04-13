@@ -44,10 +44,10 @@ export const likeArticle = (articleId?: RouteParam) => {
 
 // 更新文章
 export const updateArticle = (data: IArticle) => {
-  const { articleId, title, content } = data;
+  const { articleId, title, content, draftId } = data;
   return myRequest.put<IResData>({
     url: `${urlHead}/${articleId}`,
-    data: { title, content },
+    data: { title, content, draftId },
   });
 };
 

@@ -1,12 +1,41 @@
 <template>
   <div class="tiptap-editor-container" ref="editorContainerRef">
     <!-- 工具栏 -->
-    <TiptapToolbar :editor="editor" :isSplitPreviewActive="isSplitPreviewActive" @toggle-split-preview="toggleSplitPreview" />
+    <TiptapToolbar
+      :editor="editor"
+      :isSplitPreviewActive="isSplitPreviewActive"
+      :draftStatus="draftStatus"
+      :lastSavedAt="lastSavedAt"
+      :draftErrorMessage="draftErrorMessage"
+      :resolveImageUploadOptions="resolveToolbarImageUploadOptions"
+      @toggle-split-preview="toggleSplitPreview"
+    />
 
-    <div v-show="isSplitPreviewActive" class="tiptap-split-preview" data-testid="markdown-split-preview">
+    <div
+      v-show="isSplitPreviewActive"
+      class="tiptap-split-preview"
+      :class="{ 'is-dragging': isDragging }"
+      data-testid="markdown-split-preview"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
       <section class="markdown-panel markdown-panel--source">
         <div class="markdown-panel__label">Markdown</div>
-        <textarea v-model="markdownSource" data-testid="markdown-source-input" class="markdown-panel__textarea" spellcheck="false" @input="handleMarkdownSourceInput" />
+        <textarea
+          ref="markdownSourceInputRef"
+          v-model="markdownSource"
+          data-testid="markdown-source-input"
+          class="markdown-panel__textarea"
+          spellcheck="false"
+          @input="handleMarkdownSourceInput"
+          @focus="handleMarkdownSourceFocus"
+          @blur="handleMarkdownSourceBlur"
+          @select="handleMarkdownSourceSelectionChange"
+          @click="handleMarkdownSourceSelectionChange"
+          @keyup="handleMarkdownSourceSelectionChange"
+        />
       </section>
 
       <div class="split-preview-divider" data-testid="split-preview-divider" aria-hidden="true"></div>
@@ -67,9 +96,12 @@ import { BubbleMenu } from '@tiptap/vue-3/menus';
 import TiptapToolbar from './TiptapToolbar.vue';
 import CompletionPopover from './extensions/AiCompletion/CompletionPopover.vue';
 import { getTiptapExtensions } from './config';
-import { LocalCache, isEmptyObj, emitter, Msg } from '@/utils';
+import useEditorStore, { getVideoMetaById } from '@/stores/editor.store';
+import { annotateLegacyVideoIdsInHtml, emitter, Msg, SessionCache } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
+import type { EditorJsonNode, VideoRegistryEntry } from './types';
+import { buildUnresolvedVideoPlaceholderHtml, buildVideoHtml, DEFAULT_VIDEO_STYLE, VIDEO_TOKEN_LINE_GLOBAL_PATTERN } from './extensions/VideoNode';
 // 引入样式
 import './styles/tiptap.scss';
 
@@ -79,29 +111,63 @@ interface MarkdownStorageType {
 }
 
 type EditorInstance = ReturnType<typeof useEditor>['value'] | any;
+type EditorDocumentContent = string | Record<string, unknown>;
+interface UploadInsertSelection {
+  from: number;
+  to: number;
+}
+
+interface MarkdownSourceSelection {
+  start: number;
+  end: number;
+}
+
+interface ToolbarImageUploadOptions {
+  onUploaded?: ((payload: { url: string; imgId: number }) => void) | null;
+}
+
+const SPLIT_PREVIEW_SESSION_KEY = 'tiptap-editor-split-preview-active';
 
 const props = withDefaults(
   defineProps<{
     editData?: IArticle;
     mode?: 'default' | 'simple';
     height?: string;
+    draftStatus?: import('@/composables/useDraftAutosave').DraftAutosaveStatus;
+    lastSavedAt?: string | null;
+    draftErrorMessage?: string;
   }>(),
   {
     editData: () => ({}) as IArticle,
     mode: 'default',
     height: '100vh',
+    draftStatus: 'idle',
+    lastSavedAt: null,
+    draftErrorMessage: '',
   },
 );
 
 const emit = defineEmits<{
   (e: 'update:content', content: string): void;
+  (e: 'update:json-content', content: Record<string, unknown>): void;
+  (e: 'ready'): void;
 }>();
 
 // 拖拽状态管理
 const isDragging = ref(false);
-const isSplitPreviewActive = ref(true);
+const initialSplitPreviewActive = SessionCache.getCache(SPLIT_PREVIEW_SESSION_KEY);
+const isSplitPreviewActive = ref(typeof initialSplitPreviewActive === 'boolean' ? initialSplitPreviewActive : true);
 const markdownSource = ref('');
+const markdownSourceInputRef = ref<HTMLTextAreaElement | null>(null);
+const markdownSourceSelection = ref<MarkdownSourceSelection>({
+  start: 0,
+  end: 0,
+});
+const isMarkdownSourceFocused = ref(false);
 const isApplyingMarkdownSource = ref(false);
+const hasEmittedReady = ref(false);
+const previewVideoRegistryVersion = ref(0);
+const editorStore = useEditorStore();
 
 // 编辑器容器引用（用于计算弹出框位置）
 const editorContainerRef = ref<HTMLElement | null>(null);
@@ -114,12 +180,12 @@ const completionPosition = ref<PopoverPosition | null>(null);
 const completionActiveIndex = ref(0);
 const DEFAULT_VIDEO_WIDTH = 360;
 const markdownRenderer = new MarkdownIt({
-  html: false,
+  // Keep custom node raw HTML (for example <video>) visible in split preview.
+  html: true,
   linkify: true,
   typographer: true,
   breaks: true,
 });
-const renderedMarkdownPreview = computed(() => markdownRenderer.render(markdownSource.value || ''));
 
 // 获取 Markdown 内容的辅助函数
 const getMarkdownContent = (editorInstance: EditorInstance) => {
@@ -135,7 +201,110 @@ const getMarkdownContent = (editorInstance: EditorInstance) => {
   return storage?.getMarkdown?.() ?? '';
 };
 
-const getContentType = (content: string) => (/<[a-z][\s\S]*>/i.test(content) ? 'html' : 'markdown');
+const getContentType = (content: EditorDocumentContent) => {
+  if (typeof content !== 'string') {
+    return 'json';
+  }
+
+  return /<[a-z][\s\S]*>/i.test(content) ? 'html' : 'markdown';
+};
+
+const normalizeVideoId = (videoId: unknown) => {
+  const normalizedId = Number(videoId);
+  return Number.isInteger(normalizedId) && normalizedId > 0 ? normalizedId : null;
+};
+
+const normalizeIncomingDocumentContent = (content: EditorDocumentContent): EditorDocumentContent => {
+  if (typeof content !== 'string') {
+    return content;
+  }
+
+  if (getContentType(content) !== 'html') {
+    return content;
+  }
+
+  return annotateLegacyVideoIdsInHtml(content, props.editData?.videos ?? []);
+};
+
+const collectVideoRegistryEntries = (node?: EditorJsonNode): VideoRegistryEntry[] => {
+  if (!node) return [];
+
+  const entries: VideoRegistryEntry[] = [];
+  const attrs = node.attrs && typeof node.attrs === 'object' ? node.attrs : {};
+  const videoId = normalizeVideoId(attrs.videoId);
+  const src = typeof attrs.src === 'string' ? attrs.src : '';
+
+  if (node.type === 'video' && videoId && src) {
+    entries.push({
+      videoId,
+      src,
+      poster: typeof attrs.poster === 'string' ? attrs.poster : null,
+      controls: attrs.controls !== false,
+      style: typeof attrs.style === 'string' ? attrs.style : DEFAULT_VIDEO_STYLE,
+    });
+  }
+
+  node.content?.forEach((childNode) => {
+    entries.push(...collectVideoRegistryEntries(childNode));
+  });
+
+  return entries;
+};
+
+const syncVideoRegistryFromEditor = (editorInstance: EditorInstance) => {
+  const jsonContent = editorInstance?.getJSON?.() as EditorJsonNode | undefined;
+  if (!jsonContent) return;
+
+  const dedupedEntries = Array.from(
+    new Map(collectVideoRegistryEntries(jsonContent).map((entry) => [entry.videoId, entry] as const)).values(),
+  );
+
+  if (dedupedEntries.length) {
+    editorStore.registerVideoMetas(dedupedEntries);
+    previewVideoRegistryVersion.value += 1;
+  }
+};
+
+const syncArticleVideoRegistryFromProps = () => {
+  const articleVideos = props.editData?.videos ?? [];
+  const nextEntries = articleVideos
+    .map((video) => {
+      const videoId = normalizeVideoId(video?.id);
+      const src = typeof video?.url === 'string' ? video.url : '';
+
+      if (!videoId || !src) {
+        return null;
+      }
+
+      return {
+        videoId,
+        src,
+        poster: null,
+        controls: true,
+        style: DEFAULT_VIDEO_STYLE,
+      };
+    })
+    .filter((entry): entry is VideoRegistryEntry => !!entry);
+
+  if (nextEntries.length) {
+    editorStore.registerVideoMetas(nextEntries);
+    previewVideoRegistryVersion.value += 1;
+  }
+};
+
+const replaceVideoTokensWithPreviewHtml = (markdown: string, videoRegistryById: Record<number, VideoRegistryEntry>) => {
+  VIDEO_TOKEN_LINE_GLOBAL_PATTERN.lastIndex = 0;
+  return markdown.replace(VIDEO_TOKEN_LINE_GLOBAL_PATTERN, (_rawToken, videoIdText: string) => {
+    const videoId = Number(videoIdText);
+    const videoMeta = videoRegistryById[videoId] ?? getVideoMetaById(videoId);
+    return videoMeta?.src ? buildVideoHtml(videoMeta) : buildUnresolvedVideoPlaceholderHtml(videoId);
+  });
+};
+
+const renderedMarkdownPreview = computed(() => {
+  void previewVideoRegistryVersion.value;
+  return markdownRenderer.render(replaceVideoTokensWithPreviewHtml(markdownSource.value || '', editorStore.videoRegistryById));
+});
 
 const syncMarkdownSourceFromEditor = (editorInstance: EditorInstance) => {
   if (!editorInstance) return;
@@ -146,30 +315,169 @@ const syncMarkdownSourceFromEditor = (editorInstance: EditorInstance) => {
   }
 };
 
-const setEditorDocumentContent = (editorInstance: EditorInstance, content: string, emitUpdate = true) => {
+const setEditorDocumentContent = (editorInstance: EditorInstance, content: EditorDocumentContent, emitUpdate = true) => {
   if (!editorInstance || content == null) return;
 
-  editorInstance.commands.setContent(content, {
-    contentType: getContentType(content),
+  const normalizedContent = normalizeIncomingDocumentContent(content);
+
+  editorInstance.commands.setContent(normalizedContent, {
+    contentType: getContentType(normalizedContent),
     emitUpdate,
   });
+
+  // Restoring remote drafts often suppresses onUpdate; keep split preview in sync anyway.
+  syncVideoRegistryFromEditor(editorInstance);
+  syncMarkdownSourceFromEditor(editorInstance);
 };
 
 const setEditorMarkdownContent = (editorInstance: EditorInstance, content: string) => {
   if (!editorInstance || content == null) return;
 
+  // Rebuild the registry before reparsing markdown tokens so existing [[video:id]] values stay resolvable.
+  syncArticleVideoRegistryFromProps();
+  syncVideoRegistryFromEditor(editorInstance);
   editorInstance.commands.setContent(content, {
     contentType: 'markdown',
     emitUpdate: true,
   });
 };
 
+const getCurrentInsertSelection = (editorInstance: EditorInstance): UploadInsertSelection | null => {
+  const selection = editorInstance?.state?.selection;
+  if (!selection) return null;
+
+  const { from, to } = selection;
+  if (!Number.isInteger(from) || !Number.isInteger(to)) {
+    return null;
+  }
+
+  return { from, to };
+};
+
+const getDropInsertSelection = (editorInstance: EditorInstance, event: DragEvent): UploadInsertSelection | null => {
+  const position = editorInstance?.view?.posAtCoords?.({
+    left: event.clientX,
+    top: event.clientY,
+  });
+
+  if (position && Number.isInteger(position.pos)) {
+    return {
+      from: position.pos,
+      to: position.pos,
+    };
+  }
+
+  return getCurrentInsertSelection(editorInstance);
+};
+
+const isExternalFileDrag = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes('Files');
+
+const focusMarkdownSourceToEnd = () => {
+  const textarea = markdownSourceInputRef.value;
+  if (!textarea) return;
+
+  const end = markdownSource.value.length;
+  textarea.focus();
+  textarea.setSelectionRange(end, end);
+  isMarkdownSourceFocused.value = true;
+  updateMarkdownSourceSelection(textarea);
+};
+
+const setSelectionToEnd = () => {
+  if (!editor.value) return;
+
+  const endPosition = editor.value.state?.doc?.content?.size;
+  const hasEndPosition = Number.isInteger(endPosition);
+
+  if (hasEndPosition) {
+    editor.value.commands.setTextSelection(endPosition);
+  }
+
+  if (isSplitPreviewActive.value) {
+    syncMarkdownSourceFromEditor(editor.value);
+    nextTick(() => {
+      focusMarkdownSourceToEnd();
+    });
+    return;
+  }
+
+  if (typeof editor.value.commands?.focus === 'function') {
+    editor.value.commands.focus('end');
+  }
+};
+
+const updateMarkdownSourceSelection = (textarea = markdownSourceInputRef.value): MarkdownSourceSelection | null => {
+  if (!textarea) return null;
+
+  const start = typeof textarea.selectionStart === 'number' ? textarea.selectionStart : 0;
+  const end = typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : start;
+  markdownSourceSelection.value = {
+    start,
+    end,
+  };
+  return markdownSourceSelection.value;
+};
+
+const handleMarkdownSourceFocus = (event: FocusEvent) => {
+  isMarkdownSourceFocused.value = true;
+  updateMarkdownSourceSelection(event.target as HTMLTextAreaElement);
+};
+
+const handleMarkdownSourceBlur = () => {
+  isMarkdownSourceFocused.value = false;
+};
+
+const handleMarkdownSourceSelectionChange = (event: Event) => {
+  updateMarkdownSourceSelection(event.target as HTMLTextAreaElement);
+};
+
+const insertTextIntoMarkdownSource = (text: string, selection: MarkdownSourceSelection) => {
+  const currentMarkdown = markdownSource.value;
+  const safeStart = Math.max(0, Math.min(selection.start, currentMarkdown.length));
+  const safeEnd = Math.max(safeStart, Math.min(selection.end, currentMarkdown.length));
+  const nextMarkdown = `${currentMarkdown.slice(0, safeStart)}${text}${currentMarkdown.slice(safeEnd)}`;
+  const nextCaret = safeStart + text.length;
+
+  markdownSource.value = nextMarkdown;
+  handleMarkdownSourceInput();
+
+  nextTick(() => {
+    const textarea = markdownSourceInputRef.value;
+    if (!textarea) return;
+
+    textarea.focus();
+    textarea.setSelectionRange(nextCaret, nextCaret);
+    isMarkdownSourceFocused.value = true;
+    updateMarkdownSourceSelection(textarea);
+  });
+};
+
+const resolveToolbarImageUploadOptions = (): ToolbarImageUploadOptions | null => {
+  if (!isSplitPreviewActive.value || !isMarkdownSourceFocused.value) {
+    return null;
+  }
+
+  const selectionSnapshot = updateMarkdownSourceSelection();
+  if (!selectionSnapshot) {
+    return null;
+  }
+
+  return {
+    onUploaded: ({ url }) => {
+      insertTextIntoMarkdownSource(`![](${url})`, selectionSnapshot);
+    },
+  };
+};
+
 const toggleSplitPreview = () => {
   if (!isSplitPreviewActive.value) {
+    syncArticleVideoRegistryFromProps();
+    syncVideoRegistryFromEditor(editor.value);
     syncMarkdownSourceFromEditor(editor.value);
   }
 
   isSplitPreviewActive.value = !isSplitPreviewActive.value;
+  SessionCache.setCache(SPLIT_PREVIEW_SESSION_KEY, isSplitPreviewActive.value);
 };
 
 const handleMarkdownSourceInput = () => {
@@ -192,41 +500,48 @@ const editor: any = useEditor({
   onUpdate: ({ editor: editorInstance }: { editor: EditorInstance }) => {
     // 始终发送 HTML 内容给父组件，确保预览和保存的一致性
     const content = editorInstance.getHTML();
+    const jsonContent = editorInstance.getJSON?.() ?? { type: 'doc', content: [{ type: 'paragraph' }] };
     console.log('[TiptapEditor] onUpdate 触发 (HTML):', content);
+
+    syncVideoRegistryFromEditor(editorInstance);
 
     if (!isApplyingMarkdownSource.value) {
       syncMarkdownSourceFromEditor(editorInstance);
     }
 
     emit('update:content', content || '');
+    emit('update:json-content', jsonContent);
   },
 });
+
+watch(
+  () => editor.value,
+  (editorInstance) => {
+    if (!editorInstance || hasEmittedReady.value) return;
+
+    hasEmittedReady.value = true;
+    emit('ready');
+    syncVideoRegistryFromEditor(editorInstance);
+    syncMarkdownSourceFromEditor(editorInstance);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.editData?.videos,
+  () => {
+    syncArticleVideoRegistryFromProps();
+  },
+  { immediate: true, deep: true },
+);
 
 // 初始化内容
 onMounted(() => {
   nextTick(() => {
     if (!editor.value) return;
 
-    const draft = LocalCache.getCache('draft');
-    const isEditMode = !isEmptyObj(props.editData);
-
-    let initialContent = '';
-
-    if (isEditMode && draft) {
-      // 编辑模式 + 有草稿：优先使用草稿
-      initialContent = draft.draft;
-    } else if (isEditMode) {
-      // 编辑模式 + 无草稿：使用原文章内容
-      initialContent = props.editData?.content ?? '';
-    } else if (draft) {
-      // 创建模式 + 有草稿：恢复草稿
-      initialContent = draft.draft;
-    }
-
-    if (initialContent) {
-      setEditorDocumentContent(editor.value, initialContent, true);
-    }
-
+    syncArticleVideoRegistryFromProps();
+    syncVideoRegistryFromEditor(editor.value);
     syncMarkdownSourceFromEditor(editor.value);
 
     // 注册 AI 补全状态变化回调
@@ -257,7 +572,7 @@ onMounted(() => {
   // 更新内容事件（用于编辑模式下从 store 获取内容）
   emitter.on('updateEditorContent', (content) => {
     if (editor.value && content) {
-      setEditorDocumentContent(editor.value, content as string, true);
+      setEditorDocumentContent(editor.value, content as EditorDocumentContent, true);
       syncMarkdownSourceFromEditor(editor.value);
     }
   });
@@ -270,24 +585,25 @@ watch(
   ([editorInstance, newContent]) => {
     if (!editorInstance || !newContent) return;
 
+    const normalizedContent = normalizeIncomingDocumentContent(newContent);
     const currentHTML = editorInstance.getHTML();
     const currentMD = getMarkdownContent(editorInstance);
 
     // 避免重复设置相同内容（防止覆盖用户输入或触发循环更新）
     // 如果新内容与当前 HTML 或当前 Markdown 一致，说明不需要更新
-    if (newContent === currentHTML || newContent === currentMD) {
+    if (normalizedContent === currentHTML || normalizedContent === currentMD) {
       return;
     }
 
     // 注意：空编辑器的 HTML 是 '<p></p>'
     const isEmpty = currentHTML === '<p></p>' || currentHTML === '';
-    if (isEmpty || (currentHTML !== newContent && currentMD !== newContent)) {
+    if (isEmpty || (currentHTML !== normalizedContent && currentMD !== normalizedContent)) {
       console.log('[TiptapEditor] 设置编辑器内容:', {
-        newContentLength: newContent.length,
+        newContentLength: typeof normalizedContent === 'string' ? normalizedContent.length : JSON.stringify(normalizedContent).length,
         currentHTML: currentHTML.substring(0, 20),
         currentMD: currentMD.substring(0, 20),
       });
-      setEditorDocumentContent(editorInstance, newContent, true);
+      setEditorDocumentContent(editorInstance, normalizedContent, true);
       syncMarkdownSourceFromEditor(editorInstance);
     }
   },
@@ -368,17 +684,23 @@ const customVideoSize = () => {
 
 // 拖拽事件处理
 const handleDragEnter = (e: DragEvent) => {
+  if (!isExternalFileDrag(e)) return;
+
   e.preventDefault();
   e.stopPropagation();
   isDragging.value = true;
 };
 
 const handleDragOver = (e: DragEvent) => {
+  if (!isExternalFileDrag(e)) return;
+
   e.preventDefault();
   e.stopPropagation();
 };
 
 const handleDragLeave = (e: DragEvent) => {
+  if (!isExternalFileDrag(e)) return;
+
   e.preventDefault();
   e.stopPropagation();
   // 只有离开编辑器容器时才取消高亮
@@ -388,6 +710,8 @@ const handleDragLeave = (e: DragEvent) => {
 };
 
 const handleDrop = async (e: DragEvent) => {
+  if (!isExternalFileDrag(e)) return;
+
   e.preventDefault();
   e.stopPropagation();
   isDragging.value = false;
@@ -403,14 +727,17 @@ const handleDrop = async (e: DragEvent) => {
     return;
   }
 
+  let insertSelection = getDropInsertSelection(editor.value, e);
+
   // 串行上传所有图片，确保按顺序插入
   for (const file of imageFiles) {
-    editor.value?.commands.uploadImage(file);
+    editor.value?.commands.uploadImage(file, { insertSelection });
     // 等待当前图片上传完成
     const storage = editor.value?.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
     const promise = storage?.imageUpload?.getUploadPromise?.(file);
     if (promise) {
       await promise;
+      insertSelection = getCurrentInsertSelection(editor.value);
     }
   }
 };
@@ -440,7 +767,8 @@ defineExpose({
   // 获取 JSON 内容
   getJSON: () => editor.value?.getJSON(),
   // 设置内容
-  setContent: (content: string) => editor.value?.chain().setContent(content).run(),
+  setContent: (content: EditorDocumentContent, emitUpdate = true) => setEditorDocumentContent(editor.value, content, emitUpdate),
+  setSelectionToEnd,
   // 获取编辑器实例
   getEditor: () => editor.value,
 });
@@ -469,6 +797,12 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   flex: 1;
   min-height: 0;
+
+  &.is-dragging {
+    outline: 2px dashed var(--el-color-primary);
+    outline-offset: -2px;
+    background-color: rgba(64, 158, 255, 0.05);
+  }
 }
 
 .markdown-panel {
@@ -530,6 +864,16 @@ onBeforeUnmount(() => {
 
   &__preview:deep(code) {
     font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+
+  &__preview:deep(.markdown-video-placeholder) {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px dashed #f59e0b;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+    font-size: 14px;
   }
 }
 

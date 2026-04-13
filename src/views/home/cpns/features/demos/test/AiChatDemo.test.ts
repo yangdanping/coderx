@@ -1,7 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-import AiChatDemo from './AiChatDemo.vue';
+import AiChatDemo from '../AiChatDemo.vue';
 
 describe('AiChatDemo', () => {
   it('renders the assistant summary after the thinking state finishes', async () => {

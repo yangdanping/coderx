@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-toolbar" ref="toolbarRef">
+  <div class="tiptap-toolbar" :class="{ 'has-draft-status': showDraftStatus }" @mousedown.prevent="handleToolbarMouseDown">
     <!-- 格式化按钮组 -->
     <div class="toolbar-group">
       <el-tooltip :content="`加粗 (${shortcuts.bold})`" placement="bottom" :show-after="500">
@@ -103,13 +103,13 @@
       </el-tooltip>
 
       <el-tooltip content="插入图片" placement="bottom" :show-after="500">
-        <el-button @click="triggerImageUpload" :disabled="!editor" class="toolbar-btn">
+        <el-button data-testid="image-upload-trigger" @mousedown.prevent="prepareImageUpload" @click="triggerImageUpload" :disabled="!editor" class="toolbar-btn">
           <el-icon><Picture /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip content="插入视频" placement="bottom" :show-after="500">
-        <el-button @click="triggerVideoUpload" :disabled="!editor" class="toolbar-btn">
+        <el-button data-testid="video-upload-trigger" @mousedown.prevent="prepareVideoUpload" @click="triggerVideoUpload" :disabled="!editor" class="toolbar-btn">
           <el-icon><VideoCamera /></el-icon>
         </el-button>
       </el-tooltip>
@@ -127,8 +127,8 @@
       </el-tooltip>
 
       <!-- 隐藏的文件输入 -->
-      <input type="file" ref="imageInputRef" @change="handleImageUpload" accept="image/*" multiple style="display: none" />
-      <input type="file" ref="videoInputRef" @change="handleVideoUpload" accept="video/*" style="display: none" />
+      <input type="file" ref="imageInputRef" data-testid="image-upload-input" @change="handleImageUpload" accept="image/*" multiple style="display: none" />
+      <input type="file" ref="videoInputRef" data-testid="video-upload-input" @change="handleVideoUpload" accept="video/*" style="display: none" />
     </div>
 
     <el-divider direction="vertical" />
@@ -151,6 +151,15 @@
         </el-button>
       </el-tooltip>
     </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <el-tooltip v-if="showDraftStatus" :content="draftStatusTooltip" placement="bottom" :disabled="!draftStatusTooltip">
+      <div v-if="showDraftStatus" class="draft-status" :class="`is-${draftStatus}`" aria-live="polite">
+        <el-icon v-if="draftStatus === 'saving'" class="draft-status__icon is-spinning"><Loading /></el-icon>
+        <span>{{ draftStatusText }}</span>
+      </div>
+    </el-tooltip>
   </div>
 
   <!-- 链接弹窗 -->
@@ -169,19 +178,39 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue';
-import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick, View } from '@element-plus/icons-vue';
+import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick, View, Loading } from '@element-plus/icons-vue';
 import type { Editor } from '@tiptap/vue-3';
 import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
 import { emitter, getAiShortcutText } from '@/utils';
+import type { DraftAutosaveStatus } from '@/composables/useDraftAutosave';
 
 const props = defineProps<{
   editor: Editor | undefined;
   isSplitPreviewActive?: boolean;
+  draftStatus?: DraftAutosaveStatus;
+  lastSavedAt?: string | null;
+  draftErrorMessage?: string;
+  resolveImageUploadOptions?: () => ImageUploadCommandOptions | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'toggle-split-preview'): void;
 }>();
+
+interface UploadInsertSelection {
+  from: number;
+  to: number;
+}
+
+interface UploadedImagePayload {
+  url: string;
+  imgId: number;
+}
+
+interface ImageUploadCommandOptions {
+  insertSelection?: UploadInsertSelection | null;
+  onUploaded?: ((payload: UploadedImagePayload) => void) | null;
+}
 
 // 快捷键显示（根据系统自动适配）
 const shortcuts = {
@@ -193,9 +222,11 @@ const shortcuts = {
 };
 
 // 响应式状态
-const toolbarRef = ref<HTMLElement>();
 const imageInputRef = ref<HTMLInputElement>();
 const videoInputRef = ref<HTMLInputElement>();
+const pendingImageUploadOptions = ref<ImageUploadCommandOptions | null>(null);
+const pendingImageInsertSelection = ref<UploadInsertSelection | null>(null);
+const pendingVideoInsertSelection = ref<UploadInsertSelection | null>(null);
 const linkDialogVisible = ref(false);
 const linkForm = reactive({
   href: '',
@@ -204,6 +235,42 @@ const linkForm = reactive({
 // AI 助手快捷键提示（从全局 utils 获取，根据系统自动适配）
 const aiShortcut = getAiShortcutText();
 const splitPreviewTooltip = computed(() => (props.isSplitPreviewActive ? '关闭 Markdown 分栏预览' : '打开 Markdown 分栏预览'));
+const showDraftStatus = computed(() => ['dirty', 'saving', 'saved', 'error', 'conflict'].includes(props.draftStatus ?? ''));
+const formatSavedTime = (value?: string | null) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleTimeString('zh-CN', {
+    hour12: false,
+  });
+};
+const draftStatusText = computed(() => {
+  switch (props.draftStatus) {
+    case 'dirty':
+      return '未保存';
+    case 'saving':
+      return '正在保存...';
+    case 'saved': {
+      const timeText = formatSavedTime(props.lastSavedAt);
+      return timeText ? `已保存 ${timeText}` : '已保存';
+    }
+    case 'error':
+      return '保存失败';
+    case 'conflict':
+      return '草稿冲突';
+    default:
+      return '';
+  }
+});
+const draftStatusTooltip = computed(() => {
+  if (props.draftStatus === 'error' || props.draftStatus === 'conflict') {
+    return props.draftErrorMessage || draftStatusText.value;
+  }
+
+  return '';
+});
 
 // 标题处理
 const handleHeading = (level: string) => {
@@ -238,32 +305,88 @@ const confirmInsertLink = () => {
 };
 
 // 图片上传
-const triggerImageUpload = () => {
-  imageInputRef.value?.click();
+const handleToolbarMouseDown = () => {};
+
+const getCurrentInsertSelection = (): UploadInsertSelection | null => {
+  const selection = props.editor?.state?.selection;
+  if (!selection) return null;
+
+  const { from, to } = selection;
+  if (!Number.isInteger(from) || !Number.isInteger(to)) {
+    return null;
+  }
+
+  return { from, to };
 };
 
-const handleImageUpload = async (e: Event) => {
-  const files = (e.target as HTMLInputElement).files;
-  if (files && files.length > 0 && props.editor) {
-    // 串行上传所有图片，确保按顺序插入
-    for (const file of Array.from(files)) {
-      props.editor.commands.uploadImage(file);
-      // 等待当前图片上传完成
-      const storage = props.editor.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
-      const promise = storage?.imageUpload?.getUploadPromise?.(file);
-      if (promise) {
-        await promise;
-      }
-    }
+const rememberToolbarInsertSelection = () => {
+  if (!props.editor?.isFocused) {
+    return null;
   }
-  // 清空 input，允许重复选择同一文件
+
+  return getCurrentInsertSelection();
+};
+
+const clearImageInput = () => {
   if (imageInputRef.value) {
     imageInputRef.value.value = '';
   }
 };
 
+const clearVideoInput = () => {
+  if (videoInputRef.value) {
+    videoInputRef.value.value = '';
+  }
+};
+
+const prepareImageUpload = () => {
+  pendingImageUploadOptions.value = props.resolveImageUploadOptions?.() ?? null;
+  pendingImageInsertSelection.value = rememberToolbarInsertSelection();
+};
+
+const triggerImageUpload = () => {
+  if (!pendingImageUploadOptions.value && !pendingImageInsertSelection.value) {
+    prepareImageUpload();
+  }
+  imageInputRef.value?.click();
+};
+
+const handleImageUpload = async (e: Event) => {
+  const files = (e.target as HTMLInputElement).files;
+  let insertSelection = pendingImageInsertSelection.value;
+  let uploadOptions = pendingImageUploadOptions.value ?? (insertSelection ? { insertSelection } : undefined);
+
+  try {
+    if (files && files.length > 0 && props.editor) {
+      // 串行上传所有图片，确保按顺序插入
+      for (const file of Array.from(files)) {
+        props.editor.commands.uploadImage(file, uploadOptions);
+        // 等待当前图片上传完成
+        const storage = props.editor.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
+        const promise = storage?.imageUpload?.getUploadPromise?.(file);
+        if (promise) {
+          await promise;
+          insertSelection = getCurrentInsertSelection();
+          uploadOptions = pendingImageUploadOptions.value ?? (insertSelection ? { insertSelection } : undefined);
+        }
+      }
+    }
+  } finally {
+    pendingImageUploadOptions.value = null;
+    pendingImageInsertSelection.value = null;
+    clearImageInput();
+  }
+};
+
 // 视频上传
+const prepareVideoUpload = () => {
+  pendingVideoInsertSelection.value = rememberToolbarInsertSelection();
+};
+
 const triggerVideoUpload = () => {
+  if (!pendingVideoInsertSelection.value) {
+    prepareVideoUpload();
+  }
   videoInputRef.value?.click();
 };
 
@@ -271,12 +394,13 @@ const handleVideoUpload = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (file && props.editor) {
     // 使用自定义命令上传视频
-    props.editor.commands.uploadVideo(file);
+    props.editor.commands.uploadVideo(file, {
+      insertSelection: pendingVideoInsertSelection.value,
+    });
   }
-  // 清空 input
-  if (videoInputRef.value) {
-    videoInputRef.value.value = '';
-  }
+
+  pendingVideoInsertSelection.value = null;
+  clearVideoInput();
 };
 
 // AI 助手
@@ -295,10 +419,19 @@ const toggleAiAssistant = () => {
   @include thin-border(bottom, var(--el-border-color));
   background: var(--bg-color-secondary);
 
+  &.has-draft-status {
+    padding-right: 88px;
+  }
+
   .toolbar-group {
     display: flex;
     align-items: center;
     gap: 2px;
+  }
+
+  .toolbar-spacer {
+    flex: 1;
+    min-width: 8px;
   }
 
   .toolbar-btn {
@@ -345,6 +478,49 @@ const toggleAiAssistant = () => {
     }
   }
 
+  .draft-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-color-primary);
+    border: 1px solid var(--el-border-color);
+
+    &.is-dirty {
+      color: var(--el-color-warning);
+      border-color: var(--el-color-warning-light-5);
+      background: var(--el-color-warning-light-9);
+    }
+
+    &.is-saving {
+      color: var(--el-color-primary);
+      border-color: var(--el-color-primary-light-5);
+      background: var(--el-color-primary-light-9);
+    }
+
+    &.is-saved {
+      color: var(--el-color-success);
+      border-color: var(--el-color-success-light-5);
+      background: var(--el-color-success-light-9);
+    }
+
+    &.is-error,
+    &.is-conflict {
+      color: var(--el-color-danger);
+      border-color: var(--el-color-danger-light-5);
+      background: var(--el-color-danger-light-9);
+    }
+
+    &__icon.is-spinning {
+      animation: toolbar-status-spin 1s linear infinite;
+    }
+  }
+
   .dropdown-btn {
     min-width: auto;
     padding: 0 12px;
@@ -358,6 +534,16 @@ const toggleAiAssistant = () => {
     @media (max-width: 768px) {
       display: none;
     }
+  }
+}
+
+@keyframes toolbar-status-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 

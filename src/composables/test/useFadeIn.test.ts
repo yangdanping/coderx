@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useFadeIn } from './useFadeIn';
+import { useFadeIn } from '../useFadeIn';
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];

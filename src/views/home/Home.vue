@@ -10,10 +10,10 @@
         <!-- <CodeSpotlight class="shader" /> -->
       </div>
       <hr />
+      <FeatureSection :columns="1" />
+      <hr />
       <SectionTitle id="hot-authors">热门作者</SectionTitle>
       <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
-      <hr />
-      <FeatureSection :columns="1" />
       <hr />
       <div class="brief">
         <div>Power By ⚡⚡yangdanping⚡⚡</div>

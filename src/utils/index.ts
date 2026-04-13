@@ -11,7 +11,7 @@ import bindImagesLayer from './bindImagesLayer';
 import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
 import extractImagesFromHtml from './extractImagesFromHtml';
-import extractVideosFromHtml from './extractVideosFromHtml';
+import extractVideosFromHtml, { annotateLegacyVideoIdsInHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml } from './extractVideosFromHtml';
 import recursiveReplace from './recursiveReplace';
 import throttleByRaf from './throttleByRaf';
 import { extractTocFromElement } from './extractTocFromElement';
@@ -36,6 +36,9 @@ export {
   emitter,
   extractImagesFromHtml,
   extractVideosFromHtml,
+  extractVideoIdsFromHtml,
+  extractVideoReferencesFromHtml,
+  annotateLegacyVideoIdsInHtml,
   recursiveReplace,
   extractTocFromElement,
   renderCopyButtons,

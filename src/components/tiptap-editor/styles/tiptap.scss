@@ -184,6 +184,11 @@
         outline: 2px solid #409eff;
         outline-offset: 2px;
       }
+
+      &.ProseMirror-selectednode {
+        outline: 2px solid #409eff;
+        outline-offset: 2px;
+      }
     }
 
     // 水平分割线

@@ -6,18 +6,46 @@ import { addImgForArticle, addVideoForArticle } from '@/service/file/file.reques
 import useUserStore from '@/stores/user.store';
 import useHistoryStore from './history.store';
 import useEditorStore from './editor.store';
-import { Msg, extractImagesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
-import { MAX_VIDEO_COUNT } from '@/components/tiptap-editor/config';
+import { Msg, extractImagesFromHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
+import { MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '@/components/tiptap-editor/uploadLimits';
 
 import type { RouteParam } from '@/service/types';
-import type { IArticles, IArticle, Itag } from '@/stores/types/article.result';
+import type { IArticles, IArticle, IArticleVideo, Itag } from '@/stores/types/article.result';
 
 const dedupeNumberIds = (ids: number[]) => Array.from(new Set(ids));
+const normalizeMediaUrl = (url?: string | null) => {
+  if (!url) return '';
+  return url.split('?')[0]?.trim() ?? '';
+};
+const resolveExistingVideoIdsByContent = (videoUrls: string[], articleVideos: IArticleVideo[] = []) => {
+  const normalizedVideoUrls = new Set(videoUrls.map((url) => normalizeMediaUrl(url)).filter(Boolean));
+
+  return dedupeNumberIds(
+    articleVideos
+      .map((video) => (normalizedVideoUrls.has(normalizeMediaUrl(video.url)) ? Number(video.id) : NaN))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  );
+};
+const isVideoLimitExceeded = (count: number) => count > MAX_VIDEO_COUNT;
 type ArticleMediaPayload = Array<{ isCover: boolean; id?: number; url?: string }>;
+const buildArticleImagePayload = (imageUrls: string[], manualCoverImgId: number | null): ArticleMediaPayload => {
+  const images: ArticleMediaPayload = [];
+
+  if (manualCoverImgId) {
+    images.push({ id: manualCoverImgId, isCover: true });
+  }
+
+  imageUrls.forEach((url) => {
+    images.push({ url, isCover: false });
+  });
+
+  return images;
+};
 interface IArticleDraftPayload {
   title: string;
   content: string;
   tags: string[];
+  draftId?: number | null;
 }
 
 interface IArticleUpdatePayload extends IArticleDraftPayload {
@@ -146,20 +174,23 @@ const useArticleStore = defineStore('article', {
     /** 发布新文章：创建文章 → 关联图片/视频/标签 → 清除草稿 → 跳转详情页 */
     async createAction(payload: IArticleDraftPayload) {
       const editorStore = useEditorStore();
-      const { title, content, tags } = payload;
+      const { title, content, tags, draftId } = payload;
 
       // 视频数量限制校验
       const videoUrls = extractVideosFromHtml(content);
-      if (videoUrls.length > MAX_VIDEO_COUNT) {
-        Msg.showInfo(`每篇文章最多只能包含 ${MAX_VIDEO_COUNT} 个视频`);
-        return;
+      const explicitVideoIds = extractVideoIdsFromHtml(content);
+      const nextVideoIds = dedupeNumberIds([...explicitVideoIds, ...editorStore.pendingVideoIds]);
+      if (isVideoLimitExceeded(videoUrls.length) || isVideoLimitExceeded(nextVideoIds.length)) {
+        Msg.showInfo(VIDEO_COUNT_LIMIT_MESSAGE);
+        return false;
       }
 
       console.log('创建文章 createAction', { title, content });
-      const res = await createArticle({ title, content });
+      const res = await createArticle({ title, content, draftId });
       console.log('创建文章成功!!!!!!', res);
       if (res.code === -1) {
         Msg.showFail(`发布文章失败 ${res.msg}`);
+        return false;
       } else if (res.code === 0) {
         const articleId = res.data.insertId;
         console.log('文章ID:', articleId);
@@ -170,22 +201,8 @@ const useArticleStore = defineStore('article', {
 
         // 关联图片到文章
         if (imageUrls.length > 0 || editorStore.manualCoverImgId) {
-          const images: ArticleMediaPayload = [];
-
-          // 如果有手动上传的封面，作为第一张（封面）
-          if (editorStore.manualCoverImgId) {
-            images.push({ id: editorStore.manualCoverImgId, isCover: true });
-            console.log('使用手动上传的封面:', editorStore.manualCoverImgId);
-          } else if (imageUrls.length > 0) {
-            // 否则使用第一张图片作为封面
-            images.push({ url: imageUrls[0], isCover: true });
-            console.log('使用第一张图片作为封面:', imageUrls[0]);
-          }
-
-          // 添加其他图片
-          for (let i = editorStore.manualCoverImgId ? 0 : 1; i < imageUrls.length; i++) {
-            images.push({ url: imageUrls[i], isCover: false });
-          }
+          const images = buildArticleImagePayload(imageUrls, editorStore.manualCoverImgId);
+          editorStore.manualCoverImgId && console.log('使用手动上传的封面:', editorStore.manualCoverImgId);
 
           console.log('准备关联的图片:', images);
           const linkRes = await addImgForArticle(articleId, images);
@@ -201,15 +218,9 @@ const useArticleStore = defineStore('article', {
         // 关联视频到文章
         console.log('从内容中提取到的视频:', videoUrls);
 
-        if (videoUrls.length > 0 || editorStore.pendingVideoIds.length > 0) {
-          // 使用pendingVideoIds（已上传的视频ID列表）
-          const videoIds = dedupeNumberIds(editorStore.pendingVideoIds);
+        if (videoUrls.length > 0 || explicitVideoIds.length > 0 || editorStore.pendingVideoIds.length > 0) {
+          const videoIds = nextVideoIds;
           console.log(`文章 ${articleId} 已创建,要为该文章添加以下视频id:`, videoIds);
-
-          if (videoIds.length > MAX_VIDEO_COUNT) {
-            Msg.showInfo(`每篇文章最多只能上传 ${MAX_VIDEO_COUNT} 个视频`);
-            return;
-          }
 
           if (videoIds.length > 0) {
             const res = await addVideoForArticle(articleId, videoIds);
@@ -229,30 +240,39 @@ const useArticleStore = defineStore('article', {
           res.code === 0 && Msg.showSuccess('标签保存成功');
         }
 
-        // 清除草稿
+        // 清除本地兜底草稿
         LocalCache.removeCache('draft');
-        console.log('已清除草稿');
+        console.log('已清除本地兜底草稿');
 
         // 清空所有待清理的文件（封面、图片、视频）
         editorStore.clearPendingFiles();
 
         Msg.showSuccess('发布文章成功');
         router.replace(`/article/${articleId}`);
+        return true;
       } else {
         Msg.showFail('发布文章失败');
+        return false;
       }
     },
     /** 更新已有文章：修改标签 → 修改内容 → 重新关联图片/视频 → 返回上一页 */
     async updateAction(payload: IArticleUpdatePayload) {
       const editorStore = useEditorStore();
       console.log('修改文章 updateAction', payload);
-      const { articleId, title, content, tags } = payload;
+      const { articleId, title, content, tags, draftId } = payload;
 
       // 视频数量限制校验
       const videoUrls = extractVideosFromHtml(content);
-      if (videoUrls.length > MAX_VIDEO_COUNT) {
-        Msg.showInfo(`每篇文章最多只能包含 ${MAX_VIDEO_COUNT} 个视频`);
-        return;
+      const explicitVideoIds = extractVideoIdsFromHtml(content);
+      const legacyVideoUrls = extractVideoReferencesFromHtml(content)
+        .filter((reference) => !reference.videoId)
+        .map((reference) => reference.src)
+        .filter((url): url is string => !!url);
+      const existingVideoIds = resolveExistingVideoIdsByContent(legacyVideoUrls, this.article.videos ?? []);
+      const nextVideoIds = dedupeNumberIds([...explicitVideoIds, ...existingVideoIds, ...editorStore.pendingVideoIds]);
+      if (isVideoLimitExceeded(videoUrls.length) || isVideoLimitExceeded(nextVideoIds.length)) {
+        Msg.showInfo(VIDEO_COUNT_LIMIT_MESSAGE);
+        return false;
       }
 
       // 修改标签（统一处理，无需对比）
@@ -261,86 +281,34 @@ const useArticleStore = defineStore('article', {
       res1.code === 0 && Msg.showSuccess('标签保存成功');
 
       // 修改文章内容
-      const res2 = await updateArticle({ articleId, title, content });
+      const res2 = await updateArticle({ articleId, title, content, draftId });
       if (res2.code === 0) {
         // 从HTML内容中提取新图片
         const imageUrls = extractImagesFromHtml(content);
         console.log('修改后内容中的图片:', imageUrls);
 
-        // 如果有新的图片或手动封面，需要更新关联
-        if (imageUrls.length > 0 || editorStore.manualCoverImgId) {
-          const images: ArticleMediaPayload = [];
+        const images = buildArticleImagePayload(imageUrls, editorStore.manualCoverImgId);
+        editorStore.manualCoverImgId && console.log('使用手动上传的新封面:', editorStore.manualCoverImgId);
 
-          // 获取原文章的封面信息（从images数组中找到带-cover后缀的图片）
-          const originalCoverImage = this.article.images?.find((img) => img.url?.includes('-cover'));
-          let originalCoverUrl = null;
-          if (originalCoverImage) {
-            // 移除URL中的查询参数和-cover后缀，得到原始URL
-            originalCoverUrl = originalCoverImage.url?.split('?')[0].replace('-cover', '') ?? null;
-            console.log('原封面URL:', originalCoverUrl);
-          }
-
-          // 封面优先级：手动上传 > 保留原封面 > 第一张图片
-          if (editorStore.manualCoverImgId) {
-            // 优先级1：使用手动上传的新封面
-            images.push({ id: editorStore.manualCoverImgId, isCover: true });
-            console.log('优先级1 - 使用手动上传的新封面:', editorStore.manualCoverImgId);
-          } else if (originalCoverUrl && imageUrls.some((url) => url.includes(originalCoverUrl))) {
-            // 优先级2：如果原封面仍在内容中，保留原封面
-            images.push({ url: originalCoverUrl, isCover: true });
-            console.log('优先级2 - 保留原封面:', originalCoverUrl);
-          } else if (imageUrls.length > 0) {
-            // 优先级3：使用第一张图片作为封面
-            images.push({ url: imageUrls[0], isCover: true });
-            console.log('优先级3 - 使用第一张图片作为封面:', imageUrls[0]);
-          }
-
-          // 添加其他图片（避免重复添加封面）
-          const coverUrl = images[0]?.url || null;
-
-          for (let i = 0; i < imageUrls.length; i++) {
-            const currentUrl = imageUrls[i];
-            // 跳过已经作为封面的图片（URL匹配）
-            if (coverUrl && currentUrl?.includes(coverUrl)) {
-              continue;
-            }
-            // 如果手动上传的封面也在内容中，跳过（ID匹配）
-            // 这种情况较少，但为了严谨性还是处理一下
-            images.push({ url: currentUrl, isCover: false });
-          }
-
-          console.log('准备更新关联的图片:', images);
-          const linkRes = await addImgForArticle(articleId, images);
-          linkRes.code === 0 && console.log(`文章 ${articleId} 成功更新图片关联`);
-        } else {
-          console.log('没有图片需要更新关联');
-        }
+        console.log('准备更新关联的图片:', images);
+        const linkRes = await addImgForArticle(articleId, images);
+        linkRes.code === 0 && console.log(`文章 ${articleId} 成功更新图片关联`);
 
         // 关联视频到文章（包括新增和删除）
         console.log('修改后内容中的视频:', videoUrls);
 
-        if (videoUrls.length > 0 || editorStore.pendingVideoIds.length > 0) {
-          // 使用pendingVideoIds（本次编辑新上传的视频）
-          const videoIds = dedupeNumberIds(editorStore.pendingVideoIds);
-          console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id:`, videoIds);
+        const videoIds = nextVideoIds;
+        console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id:`, videoIds);
 
-          if (videoIds.length > MAX_VIDEO_COUNT) {
-            Msg.showInfo(`每篇文章最多只能上传 ${MAX_VIDEO_COUNT} 个视频`);
-            return;
-          }
-
-          if (videoIds.length > 0) {
-            const res = await addVideoForArticle(articleId, videoIds);
-            if (res.code === 0) {
-              console.log(`id为${articleId}的文章成功添加${videoIds.length}个视频`);
-            } else {
-              console.error('关联视频失败:', res);
-              Msg.showFail('视频关联失败: ' + (res.msg || '未知错误'));
-            }
-          }
+        const res = await addVideoForArticle(articleId, videoIds);
+        if (res.code === 0) {
+          console.log(`id为${articleId}的文章成功同步${videoIds.length}个视频`);
         } else {
-          console.log('没有视频需要更新关联');
+          console.error('关联视频失败:', res);
+          Msg.showFail('视频关联失败: ' + (res.msg || '未知错误'));
         }
+
+        LocalCache.removeCache('draft');
 
         // 清空所有待清理的文件（封面、图片、视频）
         editorStore.clearPendingFiles();
@@ -354,9 +322,11 @@ const useArticleStore = defineStore('article', {
           // 兜底方案：如果用户直接通过 url 进入编辑页，没有上一个历史记录时，直接 replace 到详情页
           router.replace({ path: `/article/${articleId}` });
         }
+        return true;
       } else {
         Msg.showFail('修改文章失败');
         console.log(res2);
+        return false;
       }
     },
     /** 删除指定文章并跳转回文章列表页 */

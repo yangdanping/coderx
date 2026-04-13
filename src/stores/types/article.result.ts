@@ -13,6 +13,7 @@ export interface IArticle {
   author?: IAuthor;
   cover?: string;
   images?: IArticleImg[];
+  videos?: IArticleVideo[];
   tags?: Itag[];
   likes?: number;
   commentCount?: number;
@@ -23,6 +24,10 @@ export interface IArticle {
 }
 
 export interface IArticleImg {
+  id?: number;
+  url?: string;
+}
+export interface IArticleVideo {
   id?: number;
   url?: string;
 }

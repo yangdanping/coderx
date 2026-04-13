@@ -3,7 +3,17 @@
     <!-- 数据就绪后才渲染编辑器 ,即 await 接口返回数据） -->
     <template v-if="isDataReady">
       <!-- 下拉标题 + 表单控件区域 -->
-      <PullDownHeader v-model="articleTitle" v-model:isPulled="isPulled" :editData="editData" :draft="preview" @formSubmit="formSubmit" />
+      <PullDownHeader
+        v-model="articleTitle"
+        v-model:isPulled="isPulled"
+        v-model:tags="selectedTags"
+        v-model:coverPreviewUrl="coverPreviewUrl"
+        :draftId="autosave.draftId.value"
+        :editData="editData"
+        :draft="preview"
+        @discard-draft="handleDiscardDraft"
+        @formSubmit="formSubmit"
+      />
 
       <!-- 直接使用 TiptapEditor -->
       <div class="editor-wrapper" :class="{ 'is-pulled': isPulled }">
@@ -15,7 +25,16 @@
           <img src="@/assets/img/pull.png" alt="pull" class="rope-icon" draggable="false" />
         </div>
 
-        <TiptapEditor :editData="editData" @update:content="(content) => (preview = content)" />
+        <TiptapEditor
+          ref="editorRef"
+          :editData="editData"
+          :draftStatus="autosave.status.value"
+          :lastSavedAt="autosave.lastSavedAt.value"
+          :draftErrorMessage="autosave.errorMessage.value"
+          @ready="handleEditorReady"
+          @update:content="handleEditorHtmlUpdate"
+          @update:json-content="handleEditorJsonUpdate"
+        />
       </div>
     </template>
     <!-- 编辑模式下数据加载中显示 loading -->
@@ -32,16 +51,28 @@ import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
 import PullDownHeader from './cpns/PullDownHeader.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
-import { Msg, emitter, isEmptyObj, LocalCache } from '@/utils';
+import { useDraftAutosave } from '@/composables/useDraftAutosave';
+import type { DraftLocalFallback, DraftMeta, DraftRecord, TiptapDocContent } from '@/service/draft/draft.types';
+import { Msg, isEmptyObj, LocalCache } from '@/utils';
+import { EMPTY_TIPTAP_DOC, buildDraftMeta, normalizeTiptapDoc, resolveReferencedArticleMediaIds, resolveSelectedTagNames } from './draft.utils';
 
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
 
 const route = useRoute();
+
 interface Props {
   borderColor?: string;
-  defaultExpose?: number; // 默认露出比例 (0-1)，默认 0.5
-  pulledExpose?: number; // 下拉后露出比例 (0-1)，默认 0.7
+  defaultExpose?: number;
+  pulledExpose?: number;
+}
+
+interface EditEditorExpose {
+  getHTML: () => string;
+  getJSON: () => TiptapDocContent | undefined;
+  setContent: (content: string | TiptapDocContent, emitUpdate?: boolean) => void;
+  setSelectionToEnd: () => void;
+  getEditor: () => unknown;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,74 +83,276 @@ const props = withDefaults(defineProps<Props>(), {
 
 const articleStore = useArticleStore();
 const editorStore = useEditorStore();
-const { article } = storeToRefs(articleStore);
+const { article, tags } = storeToRefs(articleStore);
+const { manualCoverImgId, pendingImageIds, pendingVideoIds } = storeToRefs(editorStore);
+
 const isEdit = computed(() => !!route.query.editArticleId);
+const articleId = computed(() => {
+  if (!isEdit.value) return null;
+  const normalizedId = Number(route.query.editArticleId);
+  return Number.isInteger(normalizedId) && normalizedId > 0 ? normalizedId : null;
+});
 const editData = computed(() => (isEdit.value ? article.value : {}));
+
+const editorRef = ref<EditEditorExpose | null>(null);
 const preview = ref('');
+const jsonContent = ref<TiptapDocContent>(EMPTY_TIPTAP_DOC);
 const articleTitle = ref('');
+const selectedTags = ref<string[]>([]);
+const coverPreviewUrl = ref<string | null>(null);
 const isPulled = ref(false);
+const isSubmitting = ref(false);
+const isRestoring = ref(true);
+const isAutosaveReady = ref(false);
+const isDataReady = ref(!isEdit.value);
+const editorReady = ref(false);
+const isDiscardingDraft = ref(false);
+const isLocalFallbackSyncLocked = ref(false);
+
+const editorReadyResolvers: Array<() => void> = [];
+
+const autosave = useDraftAutosave({
+  scopeId: `article-draft:${articleId.value ?? 'new'}`,
+  articleId: articleId.value,
+  debounceMs: 1200,
+});
 
 const ropeTranslateY = computed(() => {
   const expose = isPulled.value ? props.pulledExpose : props.defaultExpose;
   return `-${(1 - expose) * 100}%`;
 });
 
-const isSubmitting = ref(false);
-// 数据是否就绪：创建模式直接可用，编辑模式需要等待 API 返回
-const isDataReady = ref(!isEdit.value);
-console.log('[Edit.vue] 初始化 isDataReady:', isDataReady.value, '编辑模式:', isEdit.value);
+const referencedExistingMediaIds = computed(() =>
+  resolveReferencedArticleMediaIds({
+    htmlContent: preview.value,
+    articleImages: article.value.images ?? [],
+    articleVideos: article.value.videos ?? [],
+  }),
+);
 
-// 通过路由是否传入待修改文章的id来判断是创建还是修改
-onMounted(async () => {
-  console.log('[Edit.vue] onMounted 开始');
-  if (isEdit.value) {
-    const hasData = isEmptyObj(editData.value); // true 表示"不为空"
-    console.log('[Edit.vue] 编辑模式 - 文章ID:', route.query.editArticleId, '已有数据:', hasData, editData.value);
-    // 刷新后 editData 消失，重新获取（注意：isEmptyObj 返回 true 表示"不为空"）
-    if (!hasData) {
-      console.log('[Edit.vue] editData 为空，开始请求 API...');
-      await articleStore.getDetailAction(route.query.editArticleId as any, true);
-      console.log('[Edit.vue] API 请求完成，editData:', article.value);
-    }
-    // 同步标题
-    articleTitle.value = article.value.title || '';
-    // API 返回后设置为 ready
-    isDataReady.value = true;
-    console.log('[Edit.vue] isDataReady 设置为 true');
-  } else {
-    console.log('[Edit.vue] 创建模式');
-    // 恢复草稿中的文件 ID，防止刷新后丢失关联（否则定时任务会误清理这些文件）
-    const draft = LocalCache.getCache('draft');
-    if (draft) {
-      if (draft.title) articleTitle.value = draft.title;
-      if (draft.pendingImageIds?.length || draft.pendingVideoIds?.length) {
-        // 先清空再恢复，避免刷新页面时重复添加
-        editorStore.clearPendingFiles();
-        draft.pendingImageIds?.forEach((id: number) => editorStore.addPendingImageId(id));
-        draft.pendingVideoIds?.forEach((id: number) => editorStore.addPendingVideoId(id));
-        console.log('[Edit.vue] 从草稿恢复文件ID:', { images: draft.pendingImageIds, videos: draft.pendingVideoIds });
-      }
-    }
+const currentDraftMeta = computed<DraftMeta>(() =>
+  buildDraftMeta({
+    selectedTagNames: selectedTags.value,
+    availableTags: tags.value,
+    existingImageIds: referencedExistingMediaIds.value.imageIds,
+    existingVideoIds: referencedExistingMediaIds.value.videoIds,
+    pendingImageIds: pendingImageIds.value,
+    pendingVideoIds: pendingVideoIds.value,
+    coverImageId: manualCoverImgId.value,
+  }),
+);
+
+const currentDraftSnapshot = computed(() => ({
+  articleId: articleId.value,
+  title: articleTitle.value.trim() || null,
+  content: normalizeTiptapDoc(jsonContent.value),
+  meta: currentDraftMeta.value,
+}));
+
+const hasMeaningfulDraft = computed(() => {
+  const normalizedHtml = preview.value.replace(/\s+/g, '').trim();
+  return Boolean(
+    articleTitle.value.trim() ||
+      selectedTags.value.length ||
+      manualCoverImgId.value ||
+      pendingImageIds.value.length ||
+      pendingVideoIds.value.length ||
+      (normalizedHtml && normalizedHtml !== '<p></p>'),
+  );
+});
+
+const localFallbackPayload = computed<DraftLocalFallback>(() => ({
+  title: articleTitle.value,
+  tags: [...selectedTags.value],
+  draft: preview.value,
+  jsonContent: normalizeTiptapDoc(jsonContent.value),
+  fileList: coverPreviewUrl.value ? [{ url: coverPreviewUrl.value, name: 'cover' }] : [],
+  pendingImageIds: [...pendingImageIds.value],
+  pendingVideoIds: [...pendingVideoIds.value],
+  draftId: autosave.draftId.value,
+  articleId: articleId.value,
+  version: autosave.version.value,
+  lastSavedAt: autosave.lastSavedAt.value,
+}));
+
+const syncLocalFallbackCache = () => {
+  if (isDiscardingDraft.value) {
+    LocalCache.removeCache('draft');
+    return;
   }
-  // 监听页面刷新/关闭，显示提示
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  // 监听 Ctrl+Q 快捷键
-  window.addEventListener('keydown', handleKeyDown);
-});
 
-onUnmounted(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload);
-  window.removeEventListener('keydown', handleKeyDown);
-});
+  // 发布/更新过程中，store 会主动清理本地草稿；这里不能再把它写回去。
+  if (isSubmitting.value || isLocalFallbackSyncLocked.value) {
+    return;
+  }
+
+  if (hasMeaningfulDraft.value && (autosave.hasUnsavedChanges.value || !!autosave.draftId.value)) {
+    LocalCache.setCache('draft', localFallbackPayload.value);
+  } else {
+    LocalCache.removeCache('draft');
+  }
+};
+
+const getArticleCoverPreviewUrl = () => {
+  return article.value.cover ?? null;
+};
+
+const syncEditorRefsFromInstance = () => {
+  preview.value = editorRef.value?.getHTML() ?? '';
+  jsonContent.value = normalizeTiptapDoc(editorRef.value?.getJSON());
+};
+
+const resolveEditorReady = () => {
+  if (editorReady.value) return;
+
+  editorReady.value = true;
+  while (editorReadyResolvers.length) {
+    editorReadyResolvers.shift()?.();
+  }
+};
+
+const waitForEditorReady = async () => {
+  await nextTick();
+
+  if (editorReady.value || editorRef.value?.getEditor?.()) {
+    resolveEditorReady();
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    editorReadyResolvers.push(resolve);
+  });
+  await nextTick();
+};
+
+const setEditorDocument = async (content: string | TiptapDocContent, emitUpdate = false) => {
+  await waitForEditorReady();
+  editorRef.value?.setContent(content, emitUpdate);
+  await nextTick();
+  syncEditorRefsFromInstance();
+};
+
+const restoreEditorFiles = (meta: Partial<DraftMeta> = {}) => {
+  editorStore.clearPendingFiles();
+
+  const imageIds = Array.isArray(meta.imageIds) ? meta.imageIds : [];
+  const videoIds = Array.isArray(meta.videoIds) ? meta.videoIds : [];
+  const coverImageId = Number.isInteger(meta.coverImageId) && Number(meta.coverImageId) > 0 ? Number(meta.coverImageId) : null;
+
+  const restoredImageIds = coverImageId ? Array.from(new Set([...imageIds, coverImageId])) : imageIds;
+  restoredImageIds.forEach((id) => editorStore.addPendingImageId(id));
+  videoIds.forEach((id) => editorStore.addPendingVideoId(id));
+  editorStore.setManualCoverImgId(coverImageId);
+};
+
+const applyRemoteDraft = async (draft: DraftRecord, localFallback?: DraftLocalFallback | null) => {
+  articleTitle.value = draft.title ?? '';
+  selectedTags.value = resolveSelectedTagNames(draft.meta.selectedTagIds ?? [], tags.value);
+  coverPreviewUrl.value = localFallback?.draftId === draft.id ? (localFallback.fileList?.[0]?.url ?? null) : getArticleCoverPreviewUrl();
+  restoreEditorFiles(draft.meta);
+  await setEditorDocument(normalizeTiptapDoc(draft.content), false);
+};
+
+const applyLocalFallback = async (draft: DraftLocalFallback) => {
+  articleTitle.value = draft.title ?? '';
+  selectedTags.value = [...(draft.tags ?? [])];
+  coverPreviewUrl.value = draft.fileList?.[0]?.url ?? null;
+  editorStore.clearPendingFiles();
+  draft.pendingImageIds?.forEach((id: number) => editorStore.addPendingImageId(id));
+  draft.pendingVideoIds?.forEach((id: number) => editorStore.addPendingVideoId(id));
+  if (draft.draftId && draft.version) {
+    autosave.hydrateFromDraft({
+      id: draft.draftId,
+      articleId: draft.articleId ?? articleId.value,
+      title: draft.title ?? null,
+      content: normalizeTiptapDoc(draft.jsonContent ?? EMPTY_TIPTAP_DOC),
+      meta: buildDraftMeta({
+        selectedTagNames: draft.tags ?? [],
+        availableTags: tags.value,
+        pendingImageIds: draft.pendingImageIds ?? [],
+        pendingVideoIds: draft.pendingVideoIds ?? [],
+        coverImageId: null,
+      }),
+      version: draft.version,
+      updateAt: draft.lastSavedAt ?? undefined,
+    });
+  }
+  await setEditorDocument(draft.jsonContent ?? draft.draft ?? EMPTY_TIPTAP_DOC, false);
+};
+
+const applyExistingArticle = async () => {
+  articleTitle.value = article.value.title ?? '';
+  selectedTags.value = article.value.tags?.map((tag) => tag.name ?? '').filter(Boolean) ?? [];
+  coverPreviewUrl.value = getArticleCoverPreviewUrl();
+  editorStore.clearPendingFiles();
+
+  if (article.value.content) {
+    await setEditorDocument(article.value.content, false);
+  } else {
+    preview.value = '';
+    jsonContent.value = EMPTY_TIPTAP_DOC;
+  }
+};
+
+const initializeEditorState = async () => {
+  autosave.setHydrating(true);
+  isRestoring.value = true;
+
+  const cachedDraft = (LocalCache.getCache('draft') as DraftLocalFallback | undefined) ?? null;
+  const localFallback = cachedDraft && (cachedDraft.articleId ?? null) === articleId.value ? cachedDraft : null;
+  const remoteDraft = await autosave.loadDraft();
+
+  if (remoteDraft) {
+    await applyRemoteDraft(remoteDraft, localFallback);
+  } else if (localFallback) {
+    await applyLocalFallback(localFallback);
+  } else if (isEdit.value) {
+    await applyExistingArticle();
+  } else {
+    preview.value = '';
+    jsonContent.value = EMPTY_TIPTAP_DOC;
+    editorStore.clearPendingFiles();
+    coverPreviewUrl.value = null;
+  }
+
+  autosave.setHydrating(false);
+  isRestoring.value = false;
+  isAutosaveReady.value = true;
+  syncLocalFallbackCache();
+};
+
+const handleEditorHtmlUpdate = (content: string) => {
+  preview.value = content;
+};
+
+const handleEditorJsonUpdate = (content: Record<string, unknown>) => {
+  jsonContent.value = normalizeTiptapDoc(content);
+};
+
+const handleEditorReady = () => {
+  resolveEditorReady();
+};
+
+const handleDiscardDraft = () => {
+  isDiscardingDraft.value = true;
+  autosave.cancelPendingSave();
+  autosave.resetState();
+  LocalCache.removeCache('draft');
+};
+
+const handlePublishSuccessCleanup = () => {
+  isDiscardingDraft.value = true;
+  autosave.cancelPendingSave();
+  autosave.resetState();
+  LocalCache.removeCache('draft');
+};
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-  // 只有在有内容且不是正在提交时才显示提示
-  if ((preview.value || isEdit.value) && !isSubmitting.value) {
-    // 显示浏览器确认对话框
+  if (autosave.hasUnsavedChanges.value && !isSubmitting.value) {
     const message = '未保存的内容将会丢失，确定要离开吗？';
     event.preventDefault();
-    event.returnValue = message; // 现代浏览器需要设置 returnValue
-    return message; // 旧版浏览器需要返回字符串
+    event.returnValue = message;
+    return message;
   }
 };
 
@@ -130,35 +363,106 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 };
 
+onMounted(async () => {
+  if (!tags.value.length) {
+    await articleStore.getTagsAction();
+  }
+
+  if (isEdit.value) {
+    const hasData = isEmptyObj(editData.value);
+    if (!hasData && articleId.value) {
+      await articleStore.getDetailAction(String(articleId.value), true);
+    }
+    isDataReady.value = true;
+  }
+
+  await nextTick();
+  await initializeEditorState();
+  editorRef.value?.setSelectionToEnd();
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  window.removeEventListener('keydown', handleKeyDown);
+
+  while (editorReadyResolvers.length) {
+    editorReadyResolvers.shift()?.();
+  }
+});
+
 watch(
-  () => article.value,
-  (newV) => {
-    console.log('[Edit.vue] article watch 触发:', { hasContent: !!newV?.content, contentLength: newV?.content?.length });
-    emitter.emit('updateEditorContent', newV.content);
-    if (newV.title) articleTitle.value = newV.title;
+  currentDraftSnapshot,
+  (snapshot) => {
+    if (isDiscardingDraft.value) return;
+    if (!isAutosaveReady.value || isRestoring.value || isSubmitting.value) return;
+    if (!hasMeaningfulDraft.value && !autosave.draftId.value) return;
+    autosave.scheduleSave(snapshot);
   },
+  { deep: true },
 );
 
-const formSubmit = (editData: any) => {
-  if (!editData.title) {
+watch(
+  localFallbackPayload,
+  () => {
+    if (!isAutosaveReady.value) return;
+    syncLocalFallbackCache();
+  },
+  { deep: true },
+);
+
+const formSubmit = async (formData: { title: string; tags: string[] }) => {
+  if (!formData.title) {
     Msg.showFail('请输入标题!');
-  } else if (!preview.value) {
+    return;
+  }
+
+  if (!preview.value || preview.value.replace(/\s+/g, '').trim() === '<p></p>') {
     Msg.showFail('请输入内容!');
-  } else {
-    // 标记正在提交，避免显示离开提示
-    isSubmitting.value = true;
+    return;
+  }
+
+  isSubmitting.value = true;
+  isLocalFallbackSyncLocked.value = true;
+  let submitSucceeded = false;
+
+  try {
+    await autosave.flushPendingSave();
 
     if (!isEdit.value) {
-      //创建文章------------------------------------------
-      const sumbitPayload = { content: preview.value, ...editData };
-      console.log('创建文章', sumbitPayload);
-      articleStore.createAction(sumbitPayload);
+      submitSucceeded = !!(await articleStore.createAction({
+        title: formData.title,
+        content: preview.value,
+        tags: formData.tags,
+        draftId: autosave.draftId.value,
+      }));
     } else {
-      //修改文章------------------------------------------
-      const updatedPayload = { articleId: article.value.id, content: preview.value, ...editData };
-      console.log('修改文章', updatedPayload);
-      articleStore.updateAction(updatedPayload);
+      const currentArticleId = article.value.id;
+      if (!currentArticleId) {
+        Msg.showFail('文章信息缺失，请刷新后重试');
+        return;
+      }
+
+      submitSucceeded = !!(await articleStore.updateAction({
+        articleId: currentArticleId,
+        title: formData.title,
+        content: preview.value,
+        tags: formData.tags,
+        draftId: autosave.draftId.value,
+      }));
     }
+
+    if (submitSucceeded) {
+      handlePublishSuccessCleanup();
+    }
+  } finally {
+    await nextTick();
+    if (!submitSucceeded) {
+      isLocalFallbackSyncLocked.value = false;
+    }
+    isSubmitting.value = false;
   }
 };
 </script>

@@ -7,19 +7,27 @@ import { uploadVideo } from '@/service/file/file.request';
 import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
 import type { EditorJsonNode, VideoNodeAttrs } from '../types';
-import { MAX_VIDEO_COUNT } from '../config';
+import { getVideoValidationMessage, MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '../uploadLimits';
+import { DEFAULT_VIDEO_STYLE } from './VideoNode';
 
 // 声明命令类型扩展
+interface UploadInsertSelection {
+  from: number;
+  to: number;
+}
+
+interface UploadVideoOptions {
+  insertSelection?: UploadInsertSelection | null;
+}
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     videoUpload: {
-      uploadVideo: (file: File) => ReturnType;
+      uploadVideo: (file: File, options?: UploadVideoOptions) => ReturnType;
     };
   }
 }
 
-// 最大文件大小 20MB
-const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
 interface IUploadVideoResponse {
   code: number;
   message?: string;
@@ -49,21 +57,21 @@ export const VideoUpload = Extension.create({
   addCommands() {
     return {
       uploadVideo:
-        (file: File) =>
+        (file: File, options?: UploadVideoOptions) =>
         ({ editor }) => {
           const editorStore = useEditorStore();
 
-          // 数量限制校验 (最多3个视频)
+          // 数量限制校验
           const currentDoc = editor.getJSON() as EditorJsonNode;
           const videoCount = countVideoNodes(currentDoc);
           if (videoCount >= MAX_VIDEO_COUNT) {
-            Msg.showInfo('每篇文章最多只能上传 3 个视频');
+            Msg.showInfo(VIDEO_COUNT_LIMIT_MESSAGE);
             return false;
           }
 
-          // 文件大小校验
-          if (file.size > MAX_VIDEO_SIZE) {
-            Msg.showFail('视频大小不能超过 20MB');
+          const validationMessage = getVideoValidationMessage(file);
+          if (validationMessage) {
+            Msg.showInfo(validationMessage);
             return false;
           }
 
@@ -86,19 +94,33 @@ export const VideoUpload = Extension.create({
 
                 // 保存视频ID到待清理列表
                 editorStore.addPendingVideoId(id);
+                editorStore.registerVideoMeta({
+                  videoId: id,
+                  src: url,
+                  poster: poster || null,
+                  controls: true,
+                  style: DEFAULT_VIDEO_STYLE,
+                });
                 console.log('已保存视频ID到待清理列表:', id);
 
-                // 插入结构化 video 节点，避免被解析为纯文本
-                editor
-                  .chain()
-                  .focus()
+                const chain = editor.chain();
+                if (options?.insertSelection) {
+                  chain.focus();
+                  chain.setTextSelection(options.insertSelection);
+                } else if (editor.isFocused) {
+                  chain.focus();
+                } else {
+                  chain.focus('end');
+                }
+                chain
                   .insertContent({
                     type: 'video',
                     attrs: {
+                      videoId: id,
                       src: url,
                       poster: poster || null,
                       controls: true,
-                      style: 'width: 360px; max-width: 100%; height: auto;',
+                      style: DEFAULT_VIDEO_STYLE,
                     } as VideoNodeAttrs,
                   })
                   .run();

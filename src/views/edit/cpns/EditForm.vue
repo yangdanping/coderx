@@ -20,10 +20,8 @@
         >
           <template #tip>
             <div class="tip">
-              图片大小不能超过2MB<br />
-              <span style="color: #909399; font-size: 12px">
-                {{ isEdit ? '编辑时不上传新封面则保留原封面' : '未手动上传则使用第一张图片作为封面' }}
-              </span>
+              封面图片大小不能超过 {{ MAX_COVER_IMAGE_FILE_SIZE_MB }}MB<br />
+              <span style="color: #909399; font-size: 12px"> 封面仅在手动上传后生效，不再自动从正文图片推断 </span>
             </div>
           </template>
           <img v-if="fileList.length" :src="fileList[0]?.url" class="cover" />
@@ -47,8 +45,9 @@
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
 import { ElMessageBox } from 'element-plus';
-import { LocalCache, Msg, isEmptyObj, extractImagesFromHtml } from '@/utils';
+import { LocalCache, Msg, isEmptyObj } from '@/utils';
 import { Plus } from 'lucide-vue-next';
+import { getCoverImageValidationMessage, MAX_COVER_IMAGE_FILE_SIZE_MB } from '@/components/tiptap-editor/uploadLimits';
 const router = useRouter();
 const articleStore = useArticleStore();
 const editorStore = useEditorStore();
@@ -108,7 +107,7 @@ onMounted(() => {
   // 2. 编辑模式 - 加载已有文章数据
   if (isEmptyObj(editData)) {
     console.log('编辑模式 - 加载文章数据:', editData);
-    const { title, tags, images } = editData;
+    const { title, tags, cover } = editData;
     form.title = title || '';
 
     // 设置标签
@@ -117,9 +116,8 @@ onMounted(() => {
     }
 
     // 设置封面预览
-    if (images && images.length) {
-      const url = images[0]?.url?.concat('?type=small');
-      emit('setCover', { url, name: 'img' });
+    if (cover) {
+      emit('setCover', { url: cover, name: 'img' });
     }
     return;
   }
@@ -129,9 +127,13 @@ onMounted(() => {
 });
 
 const beforeCoverUpload = (file) => {
-  const isLt2M = file.size / 1024 / 1024 < 2;
-  !isLt2M && Msg.showInfo('上传图片大小不能超过 2MB!');
-  return isLt2M;
+  const validationMessage = getCoverImageValidationMessage(file);
+  if (validationMessage) {
+    Msg.showInfo(validationMessage);
+    return false;
+  }
+
+  return true;
 };
 
 // 手动上传封面
@@ -166,22 +168,11 @@ const goBack = () => {
     .then(() => {
       if (!isEdit.value) {
         // 创建模式：保存草稿
-        let draftFileList = fileList;
-
-        // 如果没有手动上传封面，从内容中提取第一张图片
-        if (!fileList.length && draft) {
-          const imageUrls = extractImagesFromHtml(draft);
-          if (imageUrls.length > 0) {
-            draftFileList = [{ url: imageUrls[0]?.concat('?type=small'), name: 'img' }];
-            console.log('从内容提取草稿封面:', imageUrls[0]);
-          }
-        }
-
         // 保存草稿时同时保存已上传文件的 ID，防止被定时任务误清理
         const draftObj = {
           ...form,
           draft: draft,
-          fileList: draftFileList,
+          fileList: fileList,
           pendingImageIds: [...editorStore.pendingImageIds],
           pendingVideoIds: [...editorStore.pendingVideoIds],
         };

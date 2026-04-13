@@ -9,6 +9,7 @@ export interface IArticle {
   articleId?: number;
   title: string;
   content: string;
+  draftId?: number | null;
 }
 
 /**

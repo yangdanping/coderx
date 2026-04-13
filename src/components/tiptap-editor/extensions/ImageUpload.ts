@@ -6,12 +6,28 @@ import { Extension } from '@tiptap/core';
 import { uploadImg } from '@/service/file/file.request';
 import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
+import { getImageValidationMessage } from '../uploadLimits';
 
 // 声明命令类型扩展
+interface UploadInsertSelection {
+  from: number;
+  to: number;
+}
+
+interface UploadedImagePayload {
+  url: string;
+  imgId: number;
+}
+
+interface UploadImageOptions {
+  insertSelection?: UploadInsertSelection | null;
+  onUploaded?: ((payload: UploadedImagePayload) => void) | null;
+}
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     imageUpload: {
-      uploadImage: (file: File) => ReturnType;
+      uploadImage: (file: File, options?: UploadImageOptions) => ReturnType;
     };
   }
 }
@@ -25,9 +41,15 @@ export const ImageUpload = Extension.create({
   addCommands() {
     return {
       uploadImage:
-        (file: File) =>
+        (file: File, options?: UploadImageOptions) =>
         ({ editor }) => {
           const editorStore = useEditorStore();
+          const validationMessage = getImageValidationMessage(file);
+
+          if (validationMessage) {
+            Msg.showInfo(validationMessage);
+            return false;
+          }
 
           // 显示上传提示
           Msg.showInfo('图片上传中...');
@@ -43,10 +65,35 @@ export const ImageUpload = Extension.create({
                 // 添加到待清理列表（用于刷新时清理孤儿图片）
                 editorStore.addPendingImageId(imgId);
 
-                // 插入图片到编辑器
-                editor.chain().setImage({ src: url, alt: '' }).run();
-                // 将光标移动到文档末尾，确保下一张图片在后面插入
-                editor.commands.focus('end');
+                if (options?.onUploaded) {
+                  options.onUploaded({
+                    url,
+                    imgId,
+                  });
+                  Msg.showSuccess('图片上传成功');
+                  return;
+                }
+
+                const chain = editor.chain();
+                if (options?.insertSelection) {
+                  chain.focus();
+                  chain.setTextSelection(options.insertSelection);
+                } else if (editor.isFocused) {
+                  chain.focus();
+                } else {
+                  // 分栏/失焦场景下不要信任旧选区，直接追加到文末
+                  chain.focus('end');
+                }
+
+                chain
+                  .insertContent({
+                    type: 'image',
+                    attrs: {
+                      src: url,
+                      alt: '',
+                    },
+                  })
+                  .run();
                 Msg.showSuccess('图片上传成功');
               } else {
                 Msg.showFail('图片上传失败');

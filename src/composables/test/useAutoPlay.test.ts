@@ -2,7 +2,7 @@ import { flushPromises } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useAutoPlay } from './useAutoPlay';
+import { useAutoPlay } from '../useAutoPlay';
 
 describe('useAutoPlay', () => {
   it('restarts the play callback after each loop delay', async () => {

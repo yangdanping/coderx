@@ -160,7 +160,9 @@ onBeforeUnmount(() => {
   padding: 24px;
   opacity: 0;
   transform: translateY(20px);
-  border: 2px dashed rgba(148, 184, 238, 0.5);
+  border: 1px dashed rgba(148, 184, 238, 0.5);
+  border-top: 2px solid rgba(148, 184, 238, 0.5);
+  border-bottom: none;
   min-height: 540px;
   transition:
     opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
@@ -169,6 +171,12 @@ onBeforeUnmount(() => {
     box-shadow 0.3s ease;
   will-change: transform, opacity;
   overflow: hidden;
+  -webkit-mask-image: radial-gradient(
+    ellipse 90% 70% at 50% 30%,
+    rgba(0, 0, 0, 1) 45%,
+    transparent
+  ); // mask-image 的原理是只读取颜色的 Alpha 通道（透明度），而不关心具体的颜色值是什么,天然同时适配 Dark Mode 和 Light Mode
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, rgba(0, 0, 0, 1) 45%, transparent);
 
   :where(html.dark) & {
     border-color: rgba(148, 184, 238, 0.4);
