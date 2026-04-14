@@ -1,34 +1,44 @@
 <template>
   <div class="detail-content">
-    <template v-if="Object.keys(article).length">
-      <div class="content-layout">
-        <div class="main-column">
-          <el-container>
-            <el-main>
-              <div class="author-info-block">
-                <Avatar :size="90" :info="article.author ?? {}" />
-                <div class="author-info-box">
-                  <h2>{{ article.author?.name ?? '佚名' }}</h2>
-                  <span v-dateformat="article.createAt">创建</span>
-                </div>
-              </div>
-              <hr />
-              <h1 class="article-title">{{ article.title }}</h1>
-              <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
-              <hr />
-            </el-main>
-          </el-container>
+    <el-skeleton :loading="showSkeleton" animated>
+      <template #template>
+        <DetailContentSkeleton />
+      </template>
+
+      <template #default>
+        <template v-if="showArticleContent">
+          <div class="content-layout">
+            <div class="main-column">
+              <el-container>
+                <el-main>
+                  <div class="author-info-block">
+                    <Avatar :size="90" :info="article.author ?? {}" />
+                    <div class="author-info-box">
+                      <h2>{{ article.author?.name ?? '佚名' }}</h2>
+                      <span v-dateformat="article.createAt">创建</span>
+                    </div>
+                  </div>
+                  <hr />
+                  <h1 class="article-title">{{ article.title }}</h1>
+                  <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
+                  <hr />
+                </el-main>
+              </el-container>
+            </div>
+            <div class="side-column hidden-sm-and-down" v-if="tocTitles.length">
+              <DetailToc :titles="tocTitles" />
+            </div>
+          </div>
+        </template>
+
+        <div v-else class="detail-empty">
+          文章内容暂时不可用，请稍后重试。
         </div>
-        <div class="side-column hidden-sm-and-down" v-if="tocTitles.length">
-          <DetailToc :titles="tocTitles" />
-        </div>
-      </div>
-    </template>
-    <template v-else>
-      <el-skeleton animated />
-    </template>
-    <DetailPanel :article="article" />
-    <div class="hidden-md-and-up" v-if="tocTitles.length">
+      </template>
+    </el-skeleton>
+
+    <DetailPanel v-if="showArticleContent" :article="article" />
+    <div class="hidden-md-and-up" v-if="showArticleContent && tocTitles.length">
       <DetailToc :titles="tocTitles" />
     </div>
     <!-- 富文本图片-------------------------------------------------------- -->
@@ -39,6 +49,7 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 import DetailPanel from './DetailPanel.vue';
+import DetailContentSkeleton from './DetailContentSkeleton.vue';
 import DetailToc from './DetailToc.vue';
 
 import { ElImageViewer } from 'element-plus';
@@ -53,12 +64,29 @@ const md = new MarkdownIt({
   typographer: true,
 });
 
-const { article = {} as IArticle } = defineProps<{
-  article?: IArticle;
-}>();
+const props = withDefaults(
+  defineProps<{
+    article?: IArticle;
+    status?: 'pending' | 'error' | 'success';
+  }>(),
+  {
+    article: () => ({} as IArticle),
+    status: 'pending',
+  },
+);
+
+const article = computed(() => props.article);
+
+/*
+ * ======== 正文显示规则 ========
+ * 1. skeleton 只认 query 的 pending 状态，避免 loading 布尔值和状态字符串重复表达同一件事。
+ * 2. 真实正文只在 success 且 article.id 存在时渲染，避免半成品对象被误判成“已加载”。
+ */
+const showSkeleton = computed(() => props.status === 'pending');
+const showArticleContent = computed(() => props.status === 'success' && !!article.value.id);
 
 const renderedContent = computed(() => {
-  const content = article.content || '';
+  const content = article.value.content || '';
   // 如果已经是 HTML (包含 <p, <h, <div, <span 等标签)
   const isHtml = /<[a-z][\s\S]*>/i.test(content);
   if (isHtml) {
@@ -89,9 +117,9 @@ const initContentProcessing = (el: HTMLElement) => {
 
 // 必须同时监听 DOM 挂载和内容变化，确保异步数据加载后能重新执行图片绑定和代码高亮等逻辑
 watch(
-  () => [htmlContentRef.value, article.content],
-  ([el, content]) => {
-    if (el && content) {
+  () => [htmlContentRef.value, article.value.content, showArticleContent.value],
+  ([el, content, ready]) => {
+    if (el && content && ready) {
       // 使用 nextTick 确保在 v-dompurify-html 完成渲染后再进行 DOM 后处理
       nextTick(() => initContentProcessing(el as HTMLElement));
     }
@@ -120,6 +148,15 @@ $main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 
   width: 100%;
   box-sizing: border-box;
   padding-inline: $detail-content-padding;
+
+  .detail-empty {
+    @include glass-effect;
+    width: min(90%, 900px);
+    margin: 0 auto;
+    padding: 48px 32px;
+    text-align: center;
+    color: var(--text-secondary);
+  }
 
   .content-layout {
     display: grid;

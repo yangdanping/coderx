@@ -371,7 +371,7 @@ onMounted(async () => {
   if (isEdit.value) {
     const hasData = isEmptyObj(editData.value);
     if (!hasData && articleId.value) {
-      await articleStore.getDetailAction(String(articleId.value), true);
+      await articleStore.getDetailAction(String(articleId.value));
     }
     isDataReady.value = true;
   }

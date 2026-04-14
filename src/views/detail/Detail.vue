@@ -1,11 +1,11 @@
 <template>
   <div class="detail">
     <NavBar>
-      <template #center> <DetailTools :article="article" :isAuthor="isAuthor(userInfo.id)" /></template>
+      <template #center> <DetailTools :article="article" :isAuthor="isAuthor" /></template>
     </NavBar>
-    <DetailContent :article="article" />
+    <DetailContent :article="article" :status="detailStatus" />
     <Comment />
-    <AiAssistant :context="article?.content" />
+    <AiAssistant v-if="isDetailReady" :context="article?.content" />
   </div>
 </template>
 
@@ -15,24 +15,24 @@ import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
 import Comment from './cpns/comment/Comment.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
-import useArticleStore from '@/stores/article.store';
+import { useArticleDetail } from '@/composables/useArticleDetail';
 import useUserStore from '@/stores/user.store';
 
 const route = useRoute();
-const articleStore = useArticleStore();
 const userStore = useUserStore();
 const { userInfo } = storeToRefs(userStore);
-const { article, isAuthor } = storeToRefs(articleStore);
 const articleId = computed(() => route.params.articleId as string | undefined);
+const detailQuery = useArticleDetail(articleId);
 
-watch(
-  articleId,
-  (newArticleId) => {
-    if (!newArticleId) return;
-    articleStore.getDetailAction(newArticleId);
-  },
-  { immediate: true },
-);
+/*
+ * ======== 详情页状态收口 ========
+ * 1. 页面直接消费 useArticleDetail 暴露的查询状态，不再手写 watch + detailStatus。
+ * 2. 顶部工具栏、正文和 AI 助手都围绕同一份 query 状态做显示判断，边界更稳定。
+ */
+const article = computed(() => detailQuery.article.value);
+const detailStatus = computed(() => detailQuery.status.value);
+const isDetailReady = computed(() => detailQuery.isDetailReady.value);
+const isAuthor = computed(() => article.value.author?.id === userInfo.value.id);
 </script>
 
 <style lang="scss" scoped>

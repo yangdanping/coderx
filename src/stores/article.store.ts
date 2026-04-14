@@ -1,10 +1,9 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转(.push)
-import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, addView, getTags, changeTags, getRecommend } from '@/service/article/article.request';
+import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, getTags, changeTags, getRecommend } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import { addImgForArticle, addVideoForArticle } from '@/service/file/file.request';
 import useUserStore from '@/stores/user.store';
-import useHistoryStore from './history.store';
 import useEditorStore from './editor.store';
 import { Msg, extractImagesFromHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
 import { MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '@/components/tiptap-editor/uploadLimits';
@@ -134,26 +133,28 @@ const useArticleStore = defineStore('article', {
       const res = await getTags();
       res.code === 0 && (this.tags = res.data);
     },
-    /** 获取文章详情，附带浏览量+1、点赞状态、收藏夹、浏览记录等副作用 */
-    async getDetailAction(articleId?: RouteParam, isEditRefresh = false) {
-      if (!isEditRefresh) {
-        await addView(articleId); //新增浏览量
-        this.getUserLikedAction(); //获取点赞信息
-      }
-      const res = await getDetail(articleId);
-      if (res.code === 0) {
-        const userStore = useUserStore();
-        const { userInfo } = userStore;
-        if (userInfo.id) {
-          await userStore.getCollectAction(userInfo.id); //请求收藏夹
-          await useHistoryStore().addHistoryAction(articleId); // 添加浏览记录(会验证token)
+    /**
+     * ======== 编辑页详情预填 ========
+     * 1. 这个 action 只保留“读取详情并写入 store”这一层职责，供编辑页回填使用。
+     * 2. 详情页的加载状态和副作用链路交给 useArticleDetail，避免 store 同时维护两套语义。
+     */
+    async getDetailAction(articleId?: RouteParam) {
+      if (articleId == null || articleId === '') return false;
+
+      try {
+        const res = await getDetail(articleId);
+        if (res.code === 0) {
+          this.article = res.data;
+          return true;
         }
-        const article: IArticle = res.data;
-        this.article = article;
-        // V1: 旧版评论获取（已切换到 V2，由 Comment 组件通过 useCommentList 自动获取）
-        // article.commentCount && !isEditRefresh && useCommentStore().getCommentAction(articleId as any);
-      } else {
+
+        this.article = {};
         Msg.showFail('获取文章详情失败');
+        return false;
+      } catch {
+        this.article = {};
+        Msg.showFail('获取文章详情失败');
+        return false;
       }
     },
     /** 拉取当前登录用户已点赞的文章 ID 列表，供 isArticleUserLiked 判断 */

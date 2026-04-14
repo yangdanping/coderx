@@ -50,11 +50,9 @@ const {
 vi.mock('@/service/article/article.request', () => ({
   createArticle,
   getList: vi.fn(),
-  getDetail: vi.fn(),
   likeArticle: vi.fn(),
   updateArticle,
   removeArticle: vi.fn(),
-  addView: vi.fn(),
   getTags: vi.fn(),
   changeTags,
   getRecommend: vi.fn(),

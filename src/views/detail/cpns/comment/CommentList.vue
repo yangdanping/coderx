@@ -84,7 +84,7 @@ const totalCount = computed(() => getTotalCount(data.value));
 watch(
   () => totalCount.value,
   (newCount) => {
-    if (article.value) {
+    if (article.value?.id != null) {
       article.value.commentCount = newCount;
     }
   },

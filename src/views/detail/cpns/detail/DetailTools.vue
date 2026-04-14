@@ -5,7 +5,7 @@
         <el-icon><ArrowLeft /></el-icon>
       </i>
     </el-tooltip>
-    <template v-if="token && isAuthor">
+    <template v-if="token && hasArticleContext && isAuthor">
       <el-tooltip class="item" effect="dark" content="修改我的文章" placement="bottom">
         <i class="el-icon-edit" @click="goEdit">
           <el-icon><Edit /></el-icon>
@@ -17,7 +17,7 @@
         </i>
       </el-tooltip>
     </template>
-    <template v-else-if="token">
+    <template v-else-if="token && hasArticleContext">
       <el-tooltip class="item" effect="dark" content="举报文章" placement="bottom">
         <i class="el-icon-warning" @click="isShowReport = true">
           <el-icon><AlertTriangle /></el-icon>
@@ -47,6 +47,14 @@ const { isAuthor = false, article = {} } = defineProps<{
 }>();
 const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
+
+/*
+ * ======== 顶部操作按钮显示时机 ========
+ * 1. 自定义顶部栏会比正文更早挂载，慢网下 article 还没 ready 时，isAuthor 默认会先落到 false。
+ * 2. 只有 article.id 就绪后，才展示编辑/删除或举报，避免首屏短暂闪出不属于当前文章状态的按钮。
+ */
+const hasArticleContext = computed(() => article.id != null);
+
 const goBack = () => {
   // 如果有历史记录，则返回；否则跳转到文章列表页
   if (window.history.state && window.history.state.back) {

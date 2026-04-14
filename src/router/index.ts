@@ -50,8 +50,8 @@ const routes: RouteRecordRaw[] = [
       devCard: {
         icon: 'Hammer',
         heading: '开发中',
-        hintBefore: '正式流式页面请访问 ',
-        hintCode: '/flow',
+        hintBefore: '',
+        hintCode: '',
         hintAfter: '。',
       },
     },

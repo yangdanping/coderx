@@ -19,6 +19,12 @@ const { windowInfo, isSmallScreen } = storeToRefs(rootStore);
 // - 详情页面：使用自定义导航栏（插槽），不显示默认导航栏
 const route = useRoute();
 const showNavBar = computed(() => {
+  /*
+   * ======== 初始导航保护 ========
+   * 1. 刷新时 router 的首次导航是异步的，App 可能先拿到一个 matched 为空的启动态路由。
+   * 2. 这时如果直接按 meta 计算，会短暂误渲染出“全局 NavBar”，在详情页慢网刷新时就会看到错误顶部菜单。
+   */
+  if (!route.matched.length) return false;
   return route.name !== 'edit' && !route.meta.customNavBar;
 });
 
