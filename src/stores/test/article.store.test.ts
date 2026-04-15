@@ -111,6 +111,26 @@ vi.mock('@/utils', () => ({
 
 import useArticleStore from '../article.store';
 
+const buildStructuredDoc = (...content: Array<Record<string, unknown>>) => ({
+  type: 'doc',
+  content,
+});
+
+const buildParagraph = (text: string) => ({
+  type: 'paragraph',
+  content: [{ type: 'text', text }],
+});
+
+const buildImageNode = (attrs: Record<string, unknown>) => ({
+  type: 'image',
+  attrs,
+});
+
+const buildVideoNode = (attrs: Record<string, unknown>) => ({
+  type: 'video',
+  attrs,
+});
+
 describe('article.store updateAction', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -148,17 +168,18 @@ describe('article.store updateAction', () => {
 
   it('passes draftId to createArticle and keeps local cleanup without deleting the draft again', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(buildParagraph('发布正文'));
 
     await store.createAction({
       title: '新文章',
-      content: '<p>发布正文</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
 
     expect(createArticle).toHaveBeenCalledWith({
       title: '新文章',
-      content: '<p>发布正文</p>',
+      contentJson,
       draftId: 7,
     });
     expect(deleteDraftRequest).not.toHaveBeenCalled();
@@ -168,26 +189,33 @@ describe('article.store updateAction', () => {
 
   it('does not mark the first body image as cover when creating without a manual cover', async () => {
     const store = useArticleStore();
-    extractImagesFromHtmlMock.mockReturnValue([
-      'https://api.example/article/images/body-1.jpg',
-      'https://api.example/article/images/body-2.jpg',
-    ]);
+    const contentJson = buildStructuredDoc(
+      buildImageNode({
+        imageId: 81,
+        src: 'https://api.example/article/images/body-1.jpg',
+      }),
+      buildImageNode({
+        imageId: 82,
+        src: 'https://api.example/article/images/body-2.jpg',
+      }),
+    );
 
     await store.createAction({
       title: '新文章',
-      content: '<p>带两张正文图</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
 
     expect(addImgForArticle).toHaveBeenCalledWith(42, [
-      { url: 'https://api.example/article/images/body-1.jpg', isCover: false },
-      { url: 'https://api.example/article/images/body-2.jpg', isCover: false },
+      { id: 81, isCover: false },
+      { id: 82, isCover: false },
     ]);
   });
 
   it('passes draftId to updateArticle and keeps local cleanup without deleting the draft again', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(buildParagraph('更新正文'));
     store.article = {
       id: 42,
       title: '已有文章',
@@ -200,7 +228,7 @@ describe('article.store updateAction', () => {
     await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<p>更新正文</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -208,7 +236,7 @@ describe('article.store updateAction', () => {
     expect(updateArticle).toHaveBeenCalledWith({
       articleId: 42,
       title: '更新后',
-      content: '<p>更新正文</p>',
+      contentJson,
       draftId: 7,
     });
     expect(deleteDraftRequest).not.toHaveBeenCalled();
@@ -218,6 +246,7 @@ describe('article.store updateAction', () => {
 
   it('syncs empty media arrays when an edited article no longer references any images or videos', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(buildParagraph('纯文本，无媒体'));
     store.article = {
       id: 42,
       title: '已有文章',
@@ -230,7 +259,7 @@ describe('article.store updateAction', () => {
     await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<p>纯文本，无媒体</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -241,6 +270,14 @@ describe('article.store updateAction', () => {
 
   it('does not preserve or infer a cover when updating without a manual cover', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(
+      buildImageNode({
+        src: 'https://api.example/article/images/body-1.jpg',
+      }),
+      buildImageNode({
+        src: 'https://api.example/article/images/body-2.jpg',
+      }),
+    );
     store.article = {
       id: 42,
       title: '已有文章',
@@ -249,15 +286,11 @@ describe('article.store updateAction', () => {
       videos: [],
       tags: [],
     };
-    extractImagesFromHtmlMock.mockReturnValue([
-      'https://api.example/article/images/body-1.jpg',
-      'https://api.example/article/images/body-2.jpg',
-    ]);
 
     await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<p>正文里仍有两张图</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -270,6 +303,12 @@ describe('article.store updateAction', () => {
 
   it('prefers explicit video ids from html over legacy url matching when syncing edited articles', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(
+      buildVideoNode({
+        videoId: 88,
+        src: 'https://api.example/article/video/removed.mp4',
+      }),
+    );
     store.article = {
       id: 42,
       title: '已有文章',
@@ -282,20 +321,11 @@ describe('article.store updateAction', () => {
       tags: [],
     };
     editorStoreState.pendingVideoIds = [99];
-    extractVideosFromHtmlMock.mockReturnValue(['https://api.example/article/video/removed.mp4']);
-    extractVideoIdsFromHtmlMock.mockReturnValue([88]);
-    extractVideoReferencesFromHtmlMock.mockReturnValue([
-      {
-        rawTag: '<video data-video-id="88" src="https://api.example/article/video/removed.mp4"></video>',
-        videoId: 88,
-        src: 'https://api.example/article/video/removed.mp4',
-      },
-    ]);
 
     await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<video data-video-id="88" src="https://api.example/article/video/removed.mp4"></video>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -305,6 +335,11 @@ describe('article.store updateAction', () => {
 
   it('falls back to legacy url matching when html does not include explicit video ids', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(
+      buildVideoNode({
+        src: 'https://api.example/article/video/keep.mp4',
+      }),
+    );
     store.article = {
       id: 42,
       title: '已有文章',
@@ -313,20 +348,11 @@ describe('article.store updateAction', () => {
       videos: [{ id: 21, url: 'https://api.example/article/video/keep.mp4' }],
       tags: [],
     };
-    extractVideosFromHtmlMock.mockReturnValue(['https://api.example/article/video/keep.mp4']);
-    extractVideoIdsFromHtmlMock.mockReturnValue([]);
-    extractVideoReferencesFromHtmlMock.mockReturnValue([
-      {
-        rawTag: '<video src="https://api.example/article/video/keep.mp4"></video>',
-        videoId: null,
-        src: 'https://api.example/article/video/keep.mp4',
-      },
-    ]);
 
     await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<video src="https://api.example/article/video/keep.mp4"></video>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -336,13 +362,21 @@ describe('article.store updateAction', () => {
 
   it('blocks createAction before creating the article when deduped video ids exceed the limit', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(
+      buildVideoNode({
+        videoId: 1,
+        src: 'https://api.example/article/video/one.mp4',
+      }),
+      buildVideoNode({
+        videoId: 2,
+        src: 'https://api.example/article/video/two.mp4',
+      }),
+    );
     editorStoreState.pendingVideoIds = [3];
-    extractVideosFromHtmlMock.mockReturnValue([]);
-    extractVideoIdsFromHtmlMock.mockReturnValue([1, 2]);
 
     const result = await store.createAction({
       title: '新文章',
-      content: '<p>正文</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });
@@ -355,6 +389,16 @@ describe('article.store updateAction', () => {
 
   it('blocks updateAction before saving the article when deduped video ids exceed the limit', async () => {
     const store = useArticleStore();
+    const contentJson = buildStructuredDoc(
+      buildVideoNode({
+        videoId: 1,
+        src: 'https://api.example/article/video/one.mp4',
+      }),
+      buildVideoNode({
+        videoId: 2,
+        src: 'https://api.example/article/video/two.mp4',
+      }),
+    );
     store.article = {
       id: 42,
       title: '已有文章',
@@ -364,14 +408,11 @@ describe('article.store updateAction', () => {
       tags: [],
     };
     editorStoreState.pendingVideoIds = [3];
-    extractVideosFromHtmlMock.mockReturnValue([]);
-    extractVideoIdsFromHtmlMock.mockReturnValue([1, 2]);
-    extractVideoReferencesFromHtmlMock.mockReturnValue([]);
 
     const result = await store.updateAction({
       articleId: 42,
       title: '更新后',
-      content: '<p>正文</p>',
+      contentJson,
       tags: [],
       draftId: 7,
     });

@@ -51,6 +51,7 @@ import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
 import PullDownHeader from './cpns/PullDownHeader.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
+import { hasMeaningfulArticleContent, resolveArticleEditorContent } from '@/service/article/article.content';
 import { useDraftAutosave } from '@/composables/useDraftAutosave';
 import type { DraftLocalFallback, DraftMeta, DraftRecord, TiptapDocContent } from '@/service/draft/draft.types';
 import { Msg, isEmptyObj, LocalCache } from '@/utils';
@@ -124,7 +125,7 @@ const ropeTranslateY = computed(() => {
 
 const referencedExistingMediaIds = computed(() =>
   resolveReferencedArticleMediaIds({
-    htmlContent: preview.value,
+    contentJson: jsonContent.value,
     articleImages: article.value.images ?? [],
     articleVideos: article.value.videos ?? [],
   }),
@@ -150,14 +151,13 @@ const currentDraftSnapshot = computed(() => ({
 }));
 
 const hasMeaningfulDraft = computed(() => {
-  const normalizedHtml = preview.value.replace(/\s+/g, '').trim();
   return Boolean(
     articleTitle.value.trim() ||
       selectedTags.value.length ||
       manualCoverImgId.value ||
       pendingImageIds.value.length ||
       pendingVideoIds.value.length ||
-      (normalizedHtml && normalizedHtml !== '<p></p>'),
+      hasMeaningfulArticleContent(jsonContent.value),
   );
 });
 
@@ -286,8 +286,10 @@ const applyExistingArticle = async () => {
   coverPreviewUrl.value = getArticleCoverPreviewUrl();
   editorStore.clearPendingFiles();
 
-  if (article.value.content) {
-    await setEditorDocument(article.value.content, false);
+  const content = resolveArticleEditorContent(article.value);
+
+  if (typeof content === 'string' ? content : content?.type) {
+    await setEditorDocument(content, false);
   } else {
     preview.value = '';
     jsonContent.value = EMPTY_TIPTAP_DOC;
@@ -419,7 +421,9 @@ const formSubmit = async (formData: { title: string; tags: string[] }) => {
     return;
   }
 
-  if (!preview.value || preview.value.replace(/\s+/g, '').trim() === '<p></p>') {
+  const normalizedContent = normalizeTiptapDoc(jsonContent.value);
+
+  if (!hasMeaningfulArticleContent(normalizedContent)) {
     Msg.showFail('请输入内容!');
     return;
   }
@@ -434,7 +438,7 @@ const formSubmit = async (formData: { title: string; tags: string[] }) => {
     if (!isEdit.value) {
       submitSucceeded = !!(await articleStore.createAction({
         title: formData.title,
-        content: preview.value,
+        contentJson: normalizedContent,
         tags: formData.tags,
         draftId: autosave.draftId.value,
       }));
@@ -448,7 +452,7 @@ const formSubmit = async (formData: { title: string; tags: string[] }) => {
       submitSucceeded = !!(await articleStore.updateAction({
         articleId: currentArticleId,
         title: formData.title,
-        content: preview.value,
+        contentJson: normalizedContent,
         tags: formData.tags,
         draftId: autosave.draftId.value,
       }));

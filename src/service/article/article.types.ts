@@ -1,4 +1,5 @@
 import type { IPage } from '@/service/types';
+import type { ArticleStructuredContent } from './article.content';
 /**
  * 定义文章
  * @param articleId 文章id
@@ -8,7 +9,10 @@ import type { IPage } from '@/service/types';
 export interface IArticle {
   articleId?: number;
   title: string;
-  content: string;
+  content?: string;
+  contentJson?: ArticleStructuredContent;
+  contentHtml?: string;
+  excerpt?: string;
   draftId?: number | null;
 }
 

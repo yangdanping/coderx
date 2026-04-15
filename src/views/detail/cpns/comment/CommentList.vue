@@ -144,8 +144,8 @@ onUnmounted(() => {
 .comment-list {
   @include glass-effect;
   margin-bottom: 300px;
-  border-radius: 5px;
   padding: 20px;
+  border-top: 2px dashed var(--el-border-color);
 
   .comment-header {
     display: flex;

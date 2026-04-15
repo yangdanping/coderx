@@ -3,15 +3,17 @@ import router from '@/router'; //拿到router对象,进行路由跳转(.push)
 import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, getTags, changeTags, getRecommend } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import { addImgForArticle, addVideoForArticle } from '@/service/file/file.request';
+import { collectArticleMediaRefs, type ArticleStructuredContent } from '@/service/article/article.content';
 import useUserStore from '@/stores/user.store';
 import useEditorStore from './editor.store';
-import { Msg, extractImagesFromHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml, extractVideosFromHtml, LocalCache } from '@/utils';
+import { Msg, LocalCache } from '@/utils';
 import { MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '@/components/tiptap-editor/uploadLimits';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, IArticleVideo, Itag } from '@/stores/types/article.result';
 
 const dedupeNumberIds = (ids: number[]) => Array.from(new Set(ids));
+const dedupeStringValues = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
 const normalizeMediaUrl = (url?: string | null) => {
   if (!url) return '';
   return url.split('?')[0]?.trim() ?? '';
@@ -27,14 +29,29 @@ const resolveExistingVideoIdsByContent = (videoUrls: string[], articleVideos: IA
 };
 const isVideoLimitExceeded = (count: number) => count > MAX_VIDEO_COUNT;
 type ArticleMediaPayload = Array<{ isCover: boolean; id?: number; url?: string }>;
-const buildArticleImagePayload = (imageUrls: string[], manualCoverImgId: number | null): ArticleMediaPayload => {
+const buildArticleImagePayload = (
+  imageRefs: ReturnType<typeof collectArticleMediaRefs>['images'],
+  manualCoverImgId: number | null,
+): ArticleMediaPayload => {
   const images: ArticleMediaPayload = [];
 
   if (manualCoverImgId) {
     images.push({ id: manualCoverImgId, isCover: true });
   }
 
-  imageUrls.forEach((url) => {
+  dedupeNumberIds(
+    imageRefs
+      .map((imageRef) => imageRef.imageId)
+      .filter((imageId): imageId is number => Number.isInteger(imageId) && imageId > 0),
+  ).forEach((id) => {
+    images.push({ id, isCover: false });
+  });
+
+  dedupeStringValues(
+    imageRefs
+      .filter((imageRef) => !imageRef.imageId)
+      .map((imageRef) => imageRef.src ?? ''),
+  ).forEach((url) => {
     images.push({ url, isCover: false });
   });
 
@@ -42,7 +59,7 @@ const buildArticleImagePayload = (imageUrls: string[], manualCoverImgId: number 
 };
 interface IArticleDraftPayload {
   title: string;
-  content: string;
+  contentJson: ArticleStructuredContent;
   tags: string[];
   draftId?: number | null;
 }
@@ -175,19 +192,23 @@ const useArticleStore = defineStore('article', {
     /** 发布新文章：创建文章 → 关联图片/视频/标签 → 清除草稿 → 跳转详情页 */
     async createAction(payload: IArticleDraftPayload) {
       const editorStore = useEditorStore();
-      const { title, content, tags, draftId } = payload;
+      const { title, contentJson, tags, draftId } = payload;
+      const mediaRefs = collectArticleMediaRefs(contentJson);
+      const explicitVideoIds = dedupeNumberIds(
+        mediaRefs.videos
+          .map((videoRef) => videoRef.videoId)
+          .filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
+      );
 
       // 视频数量限制校验
-      const videoUrls = extractVideosFromHtml(content);
-      const explicitVideoIds = extractVideoIdsFromHtml(content);
       const nextVideoIds = dedupeNumberIds([...explicitVideoIds, ...editorStore.pendingVideoIds]);
-      if (isVideoLimitExceeded(videoUrls.length) || isVideoLimitExceeded(nextVideoIds.length)) {
+      if (isVideoLimitExceeded(mediaRefs.videos.length) || isVideoLimitExceeded(nextVideoIds.length)) {
         Msg.showInfo(VIDEO_COUNT_LIMIT_MESSAGE);
         return false;
       }
 
-      console.log('创建文章 createAction', { title, content });
-      const res = await createArticle({ title, content, draftId });
+      console.log('创建文章 createAction', { title, contentJson });
+      const res = await createArticle({ title, contentJson, draftId });
       console.log('创建文章成功!!!!!!', res);
       if (res.code === -1) {
         Msg.showFail(`发布文章失败 ${res.msg}`);
@@ -196,13 +217,11 @@ const useArticleStore = defineStore('article', {
         const articleId = res.data.insertId;
         console.log('文章ID:', articleId);
 
-        // 从HTML内容中提取图片URL
-        const imageUrls = extractImagesFromHtml(content);
-        console.log('从内容中提取到的图片:', imageUrls);
+        const images = buildArticleImagePayload(mediaRefs.images, editorStore.manualCoverImgId);
+        console.log('从结构化正文中提取到的图片引用:', images);
 
         // 关联图片到文章
-        if (imageUrls.length > 0 || editorStore.manualCoverImgId) {
-          const images = buildArticleImagePayload(imageUrls, editorStore.manualCoverImgId);
+        if (images.length > 0) {
           editorStore.manualCoverImgId && console.log('使用手动上传的封面:', editorStore.manualCoverImgId);
 
           console.log('准备关联的图片:', images);
@@ -217,9 +236,9 @@ const useArticleStore = defineStore('article', {
         }
 
         // 关联视频到文章
-        console.log('从内容中提取到的视频:', videoUrls);
+        console.log('从结构化正文中提取到的视频:', mediaRefs.videos);
 
-        if (videoUrls.length > 0 || explicitVideoIds.length > 0 || editorStore.pendingVideoIds.length > 0) {
+        if (mediaRefs.videos.length > 0 || explicitVideoIds.length > 0 || editorStore.pendingVideoIds.length > 0) {
           const videoIds = nextVideoIds;
           console.log(`文章 ${articleId} 已创建,要为该文章添加以下视频id:`, videoIds);
 
@@ -260,18 +279,23 @@ const useArticleStore = defineStore('article', {
     async updateAction(payload: IArticleUpdatePayload) {
       const editorStore = useEditorStore();
       console.log('修改文章 updateAction', payload);
-      const { articleId, title, content, tags, draftId } = payload;
+      const { articleId, title, contentJson, tags, draftId } = payload;
+      const mediaRefs = collectArticleMediaRefs(contentJson);
 
       // 视频数量限制校验
-      const videoUrls = extractVideosFromHtml(content);
-      const explicitVideoIds = extractVideoIdsFromHtml(content);
-      const legacyVideoUrls = extractVideoReferencesFromHtml(content)
-        .filter((reference) => !reference.videoId)
-        .map((reference) => reference.src)
-        .filter((url): url is string => !!url);
+      const explicitVideoIds = dedupeNumberIds(
+        mediaRefs.videos
+          .map((videoRef) => videoRef.videoId)
+          .filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
+      );
+      const legacyVideoUrls = dedupeStringValues(
+        mediaRefs.videos
+          .filter((videoRef) => !videoRef.videoId)
+          .map((videoRef) => videoRef.src ?? ''),
+      );
       const existingVideoIds = resolveExistingVideoIdsByContent(legacyVideoUrls, this.article.videos ?? []);
       const nextVideoIds = dedupeNumberIds([...explicitVideoIds, ...existingVideoIds, ...editorStore.pendingVideoIds]);
-      if (isVideoLimitExceeded(videoUrls.length) || isVideoLimitExceeded(nextVideoIds.length)) {
+      if (isVideoLimitExceeded(mediaRefs.videos.length) || isVideoLimitExceeded(nextVideoIds.length)) {
         Msg.showInfo(VIDEO_COUNT_LIMIT_MESSAGE);
         return false;
       }
@@ -282,13 +306,11 @@ const useArticleStore = defineStore('article', {
       res1.code === 0 && Msg.showSuccess('标签保存成功');
 
       // 修改文章内容
-      const res2 = await updateArticle({ articleId, title, content, draftId });
+      const res2 = await updateArticle({ articleId, title, contentJson, draftId });
       if (res2.code === 0) {
-        // 从HTML内容中提取新图片
-        const imageUrls = extractImagesFromHtml(content);
-        console.log('修改后内容中的图片:', imageUrls);
+        const images = buildArticleImagePayload(mediaRefs.images, editorStore.manualCoverImgId);
+        console.log('修改后结构化正文中的图片引用:', images);
 
-        const images = buildArticleImagePayload(imageUrls, editorStore.manualCoverImgId);
         editorStore.manualCoverImgId && console.log('使用手动上传的新封面:', editorStore.manualCoverImgId);
 
         console.log('准备更新关联的图片:', images);
@@ -296,7 +318,7 @@ const useArticleStore = defineStore('article', {
         linkRes.code === 0 && console.log(`文章 ${articleId} 成功更新图片关联`);
 
         // 关联视频到文章（包括新增和删除）
-        console.log('修改后内容中的视频:', videoUrls);
+        console.log('修改后结构化正文中的视频:', mediaRefs.videos);
 
         const videoIds = nextVideoIds;
         console.log(`articleId为${articleId}的文章已修改,要为该文章添加以下视频id:`, videoIds);

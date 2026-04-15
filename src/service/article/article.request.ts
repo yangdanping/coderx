@@ -29,9 +29,10 @@ export const getDetail = (articleId?: RouteParam) => {
 
 // 创建文章
 export const createArticle = (data: IArticle) => {
+  const { title, contentJson, draftId } = data;
   return myRequest.post<IResData>({
     url: `${urlHead}`,
-    data,
+    data: { title, contentJson, draftId },
   });
 };
 
@@ -44,10 +45,10 @@ export const likeArticle = (articleId?: RouteParam) => {
 
 // 更新文章
 export const updateArticle = (data: IArticle) => {
-  const { articleId, title, content, draftId } = data;
+  const { articleId, title, contentJson, draftId } = data;
   return myRequest.put<IResData>({
     url: `${urlHead}/${articleId}`,
-    data: { title, content, draftId },
+    data: { title, contentJson, draftId },
   });
 };
 

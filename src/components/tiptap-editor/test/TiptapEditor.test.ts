@@ -431,7 +431,7 @@ describe('TiptapEditor', () => {
     );
   });
 
-  it('inserts uploaded image markdown at the current source cursor while split preview is active', async () => {
+  it('inserts uploaded image html with stable imageId at the current source cursor while split preview is active', async () => {
     mockEditorGetMarkdown.mockReturnValue('123\n321');
     mockEditorGetHTML.mockReturnValue('<p>123</p><p>321</p>');
 
@@ -449,9 +449,11 @@ describe('TiptapEditor', () => {
     await wrapper.get('[data-testid="toolbar-image-upload"]').trigger('click');
     await flushPromises();
 
-    expect((wrapper.get('[data-testid="markdown-source-input"]').element as HTMLTextAreaElement).value).toBe('12![](http://example.com/from-toolbar.png)3\n321');
+    expect((wrapper.get('[data-testid="markdown-source-input"]').element as HTMLTextAreaElement).value).toBe(
+      '12<img data-image-id="66" src="http://example.com/from-toolbar.png" alt="" />3\n321',
+    );
     expect(mockCommandSetContent).toHaveBeenLastCalledWith(
-      '12![](http://example.com/from-toolbar.png)3\n321',
+      '12<img data-image-id="66" src="http://example.com/from-toolbar.png" alt="" />3\n321',
       expect.objectContaining({
         contentType: 'markdown',
       }),

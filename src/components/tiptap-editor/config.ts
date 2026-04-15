@@ -2,13 +2,13 @@
  * Tiptap 编辑器配置
  */
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { Markdown } from '@tiptap/markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
+import { ImageNode } from './extensions/ImageNode';
 import { ImageUpload } from './extensions/ImageUpload';
 import { VideoNode } from './extensions/VideoNode';
 import { VideoUpload } from './extensions/VideoUpload';
@@ -48,7 +48,7 @@ export const getTiptapExtensions = () => {
     // 图片扩展
     // inline: true 使图片成为内联元素，可以与其他图片横向排列
     // 这样保证了编辑器回显与详情页显示一致
-    Image.configure({
+    ImageNode.configure({
       inline: true,
       allowBase64: false,
       HTMLAttributes: {

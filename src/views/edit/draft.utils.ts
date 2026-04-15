@@ -1,5 +1,6 @@
 import type { IArticleImg, Itag } from '@/stores/types/article.result';
 import type { DraftMeta, TiptapDocContent } from '@/service/draft/draft.types';
+import { collectArticleMediaRefs, type ArticleStructuredContent } from '@/service/article/article.content';
 import { extractImagesFromHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml } from '@/utils';
 
 export const EMPTY_TIPTAP_DOC: TiptapDocContent = {
@@ -12,7 +13,7 @@ export const EMPTY_TIPTAP_DOC: TiptapDocContent = {
 };
 
 const dedupePositiveIds = (ids: Array<number | null | undefined>) =>
-  Array.from(new Set(ids.filter((id): id is number => Number.isInteger(id) && id > 0)));
+  Array.from(new Set(ids.filter((id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0)));
 
 const normalizeMediaUrl = (url?: string | null) => {
   if (!url) return '';
@@ -75,24 +76,54 @@ export const buildDraftMeta = ({
 };
 
 export const resolveReferencedArticleMediaIds = ({
+  contentJson,
   htmlContent,
   articleImages = [],
   articleVideos = [],
 }: {
-  htmlContent: string;
+  contentJson?: ArticleStructuredContent;
+  htmlContent?: string;
   articleImages?: IArticleImg[];
   articleVideos?: ArticleVideoLike[];
 }) => {
-  const imageUrls = new Set(extractImagesFromHtml(htmlContent).map((url) => normalizeMediaUrl(url)));
-  const explicitVideoIds = new Set(extractVideoIdsFromHtml(htmlContent));
+  const structuredRefs = contentJson ? collectArticleMediaRefs(contentJson) : null;
+  const imageUrls = new Set(
+    structuredRefs
+      ? structuredRefs.images
+          .filter((imageRef) => !imageRef.imageId)
+          .map((imageRef) => normalizeMediaUrl(imageRef.src))
+      : extractImagesFromHtml(htmlContent ?? '').map((url) => normalizeMediaUrl(url)),
+  );
+  const explicitImageIds = new Set(
+    structuredRefs?.images
+      .map((imageRef) => imageRef.imageId)
+      .filter((imageId): imageId is number => typeof imageId === 'number' && Number.isInteger(imageId) && imageId > 0) ?? [],
+  );
+  const explicitVideoIds = new Set(
+    structuredRefs?.videos
+      .map((videoRef) => videoRef.videoId)
+      .filter((videoId): videoId is number => typeof videoId === 'number' && Number.isInteger(videoId) && videoId > 0) ?? extractVideoIdsFromHtml(htmlContent ?? ''),
+  );
   const legacyVideoUrls = new Set(
-    extractVideoReferencesFromHtml(htmlContent)
-      .filter((reference) => !reference.videoId)
-      .map((reference) => normalizeMediaUrl(reference.src)),
+    structuredRefs
+      ? structuredRefs.videos
+          .filter((videoRef) => !videoRef.videoId)
+          .map((videoRef) => normalizeMediaUrl(videoRef.src))
+      : extractVideoReferencesFromHtml(htmlContent ?? '')
+          .filter((reference) => !reference.videoId)
+          .map((reference) => normalizeMediaUrl(reference.src)),
   );
 
   return {
-    imageIds: dedupePositiveIds(articleImages.map((image) => (imageUrls.has(normalizeMediaUrl(image.url)) ? image.id : null))),
+    imageIds: dedupePositiveIds(
+      articleImages.map((image) => {
+        if (image.id && explicitImageIds.has(image.id)) {
+          return image.id;
+        }
+
+        return imageUrls.has(normalizeMediaUrl(image.url)) ? image.id : null;
+      }),
+    ),
     videoIds: dedupePositiveIds(
       articleVideos.map((video) => {
         if (video.id && explicitVideoIds.has(video.id)) {

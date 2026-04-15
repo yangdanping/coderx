@@ -95,12 +95,14 @@ import { useEditor, EditorContent, type Extensions } from '@tiptap/vue-3';
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import TiptapToolbar from './TiptapToolbar.vue';
 import CompletionPopover from './extensions/AiCompletion/CompletionPopover.vue';
+import { resolveArticleEditorContent } from '@/service/article/article.content';
 import { getTiptapExtensions } from './config';
 import useEditorStore, { getVideoMetaById } from '@/stores/editor.store';
 import { annotateLegacyVideoIdsInHtml, emitter, Msg, SessionCache } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
 import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
 import type { EditorJsonNode, VideoRegistryEntry } from './types';
+import { buildImageHtml } from './extensions/ImageNode';
 import { buildUnresolvedVideoPlaceholderHtml, buildVideoHtml, DEFAULT_VIDEO_STYLE, VIDEO_TOKEN_LINE_GLOBAL_PATTERN } from './extensions/VideoNode';
 // 引入样式
 import './styles/tiptap.scss';
@@ -146,6 +148,8 @@ const props = withDefaults(
     draftErrorMessage: '',
   },
 );
+
+const resolvedEditDataContent = computed(() => resolveArticleEditorContent(props.editData));
 
 const emit = defineEmits<{
   (e: 'update:content', content: string): void;
@@ -463,8 +467,15 @@ const resolveToolbarImageUploadOptions = (): ToolbarImageUploadOptions | null =>
   }
 
   return {
-    onUploaded: ({ url }) => {
-      insertTextIntoMarkdownSource(`![](${url})`, selectionSnapshot);
+    onUploaded: ({ url, imgId }) => {
+      insertTextIntoMarkdownSource(
+        buildImageHtml({
+          imageId: imgId,
+          src: url,
+          alt: '',
+        }),
+        selectionSnapshot,
+      );
     },
   };
 };
@@ -581,7 +592,7 @@ onMounted(() => {
 // 监听 editData.content 变化，解决异步加载时序问题
 // 同时监听 editor 和 editData.content，确保两者都准备好后才设置内容
 watch(
-  [() => editor.value, () => props.editData?.content],
+  [() => editor.value, resolvedEditDataContent],
   ([editorInstance, newContent]) => {
     if (!editorInstance || !newContent) return;
 

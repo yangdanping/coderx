@@ -89,6 +89,7 @@ export const ImageUpload = Extension.create({
                   .insertContent({
                     type: 'image',
                     attrs: {
+                      imageId: imgId,
                       src: url,
                       alt: '',
                     },

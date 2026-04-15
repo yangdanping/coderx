@@ -14,7 +14,7 @@
     <a class="content-wrapper" :href="item.articleUrl" @click.stop.prevent="goDetail(item, $event)">
       <div class="content">
         <h2 class="title">{{ !isComment ? item.title : item.article?.title }}</h2>
-        <p class="abstract">{{ item.content }}</p>
+        <p class="abstract">{{ previewText }}</p>
         <slot name="action"></slot>
       </div>
       <div class="cover" role="button">
@@ -29,9 +29,10 @@
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
+import { resolveArticleExcerpt } from '@/service/article/article.content';
 import { emitter, throttle } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
-import type { IComment } from '@/stores/types/comment.result';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -41,6 +42,7 @@ interface IListItemData {
   id?: number;
   title?: string;
   content?: string;
+  excerpt?: string;
   articleUrl?: string;
   author?: { id?: number; name?: string; avatarUrl?: string | null };
   cover?: string;
@@ -49,15 +51,32 @@ interface IListItemData {
   article?: IArticle; // 评论关联的文章
 }
 
-const { isComment = false, showAvatar = true } = defineProps<{
-  item: IListItemData;
-  isComment?: boolean;
-  showAvatar?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: IListItemData;
+    isComment?: boolean;
+    showAvatar?: boolean;
+  }>(),
+  {
+    isComment: false,
+    showAvatar: true,
+  },
+);
+
+const item = computed(() => props.item);
+const isComment = computed(() => props.isComment);
+const showAvatar = computed(() => props.showAvatar);
+
+const previewText = computed(() => {
+  if (isComment.value) {
+    return item.value.content ?? '';
+  }
+
+  return resolveArticleExcerpt(item.value as IArticle) || item.value.content || '';
+});
 
 const goDetail = (item: IListItemData, event: MouseEvent) => {
-  const articleId = isComment ? item.article?.id : item.id;
-  const routeName = isComment ? 'detail' : 'detail'; // 保持一致，但逻辑上可以扩展
+  const articleId = isComment.value ? item.article?.id : item.id;
 
   if (event.metaKey || event.ctrlKey) {
     const routeUrl = router.resolve({ name: 'detail', params: { articleId } });

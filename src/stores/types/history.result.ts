@@ -2,7 +2,8 @@ export interface IHistoryItem {
   id: number;
   articleId: number;
   title: string;
-  content: string;
+  content?: string;
+  excerpt?: string;
   author: {
     id: number;
     name: string;

@@ -480,6 +480,45 @@ describe('Edit', () => {
     expect(pullDownHeaderState.latestCoverPreviewUrl).toBeNull();
   });
 
+  it('prefers contentJson over legacy content when editing an existing article', async () => {
+    routeQuery.editArticleId = '42';
+    articleStoreState.articleValue = {
+      id: 42,
+      title: '已有文章',
+      content: '<p>旧 HTML 正文</p>',
+      contentJson: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: '来自结构化正文' }],
+          },
+        ],
+      },
+      cover: null,
+      images: [],
+      videos: [],
+      tags: [],
+    };
+    loadDraftMock.mockResolvedValue(null);
+
+    mountedWrappers.push(
+      mount(Edit, {
+        global: {
+          stubs: {
+            'i-loading': true,
+          },
+        },
+      }),
+    );
+
+    await flushPromises();
+    await editorHarness.instances[0].makeReady();
+    await flushPromises();
+
+    expect(editorHarness.instances[0].getContent()).toContain('来自结构化正文');
+  });
+
   it('flushes pending autosave before create submit and forwards the current draftId', async () => {
     loadDraftMock.mockResolvedValue(null);
     const deferred = createDeferred<void>();
@@ -514,7 +553,10 @@ describe('Edit', () => {
     expect(flushPendingSaveMock).toHaveBeenCalledTimes(1);
     expect(createActionMock).toHaveBeenCalledWith({
       title: '测试标题',
-      content: '<h2>编辑后内容</h2>',
+      contentJson: {
+        type: 'doc',
+        content: [{ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '编辑后内容' }] }],
+      },
       tags: [],
       draftId: 101,
     });
@@ -565,7 +607,10 @@ describe('Edit', () => {
     expect(updateActionMock).toHaveBeenCalledWith({
       articleId: 42,
       title: '已有文章',
-      content: '<h2>编辑后内容</h2>',
+      contentJson: {
+        type: 'doc',
+        content: [{ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '编辑后内容' }] }],
+      },
       tags: [],
       draftId: 101,
     });

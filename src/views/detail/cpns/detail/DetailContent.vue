@@ -52,6 +52,7 @@ import DetailPanel from './DetailPanel.vue';
 import DetailContentSkeleton from './DetailContentSkeleton.vue';
 import DetailToc from './DetailToc.vue';
 
+import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { ElImageViewer } from 'element-plus';
 import MarkdownIt from 'markdown-it';
 import type { IArticle } from '@/stores/types/article.result';
@@ -86,7 +87,7 @@ const showSkeleton = computed(() => props.status === 'pending');
 const showArticleContent = computed(() => props.status === 'success' && !!article.value.id);
 
 const renderedContent = computed(() => {
-  const content = article.value.content || '';
+  const content = resolveArticleDetailHtml(article.value);
   // 如果已经是 HTML (包含 <p, <h, <div, <span 等标签)
   const isHtml = /<[a-z][\s\S]*>/i.test(content);
   if (isHtml) {
@@ -117,7 +118,7 @@ const initContentProcessing = (el: HTMLElement) => {
 
 // 必须同时监听 DOM 挂载和内容变化，确保异步数据加载后能重新执行图片绑定和代码高亮等逻辑
 watch(
-  () => [htmlContentRef.value, article.value.content, showArticleContent.value],
+  () => [htmlContentRef.value, renderedContent.value, showArticleContent.value],
   ([el, content, ready]) => {
     if (el && content && ready) {
       // 使用 nextTick 确保在 v-dompurify-html 完成渲染后再进行 DOM 后处理

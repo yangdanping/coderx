@@ -125,6 +125,7 @@ describe('ImageUpload', () => {
     expect(chain.insertContent).toHaveBeenCalledWith({
       type: 'image',
       attrs: {
+        imageId: 88,
         src: 'http://example.com/demo.jpg',
         alt: '',
       },
@@ -189,6 +190,7 @@ describe('ImageUpload', () => {
     expect(chain.insertContent).toHaveBeenCalledWith({
       type: 'image',
       attrs: {
+        imageId: 99,
         src: 'http://example.com/focused.jpg',
         alt: '',
       },

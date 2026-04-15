@@ -12,7 +12,6 @@ import codeHeightlight from './codeHeightlight';
 import Msg from './Msg';
 import extractImagesFromHtml from './extractImagesFromHtml';
 import extractVideosFromHtml, { annotateLegacyVideoIdsInHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml } from './extractVideosFromHtml';
-import recursiveReplace from './recursiveReplace';
 import throttleByRaf from './throttleByRaf';
 import { extractTocFromElement } from './extractTocFromElement';
 import { renderCopyButtons } from './renderCopyButtons';
@@ -39,7 +38,6 @@ export {
   extractVideoIdsFromHtml,
   extractVideoReferencesFromHtml,
   annotateLegacyVideoIdsInHtml,
-  recursiveReplace,
   extractTocFromElement,
   renderCopyButtons,
 };

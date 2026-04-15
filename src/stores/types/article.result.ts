@@ -1,3 +1,4 @@
+import type { ArticleStructuredContent } from '@/service/article/article.content';
 import type { IUserInfo } from './user.result';
 
 export interface IArticles {
@@ -9,6 +10,9 @@ export interface IArticle {
   id?: number;
   title?: string;
   content?: string;
+  contentJson?: ArticleStructuredContent;
+  contentHtml?: string;
+  excerpt?: string;
   articleUrl?: string;
   author?: IAuthor;
   cover?: string;

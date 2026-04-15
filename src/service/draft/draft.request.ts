@@ -3,7 +3,7 @@ import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import MyRequest from '@/global/request';
 import { BASE_URL, TIME_OUT } from '@/global/request/config';
 import type { IResData } from '@/service/types';
-import { LocalCache, recursiveReplace } from '@/utils';
+import { LocalCache } from '@/utils';
 
 import type { DeleteDraftResult, DraftRecord, SaveDraftPayload } from './draft.types';
 
@@ -20,10 +20,6 @@ const draftRequest = new MyRequest({
       return config;
     },
     resSuccess: (res: AxiosResponse) => {
-      if (res?.data) {
-        const targetBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-        res.data = recursiveReplace(res.data, targetBaseUrl, ['http://95.40.29.75:8000', 'http://localhost:8000']);
-      }
       return res;
     },
     resFail: (error: unknown) => Promise.reject(error),

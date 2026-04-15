@@ -5,7 +5,7 @@
     </NavBar>
     <DetailContent :article="article" :status="detailStatus" />
     <Comment />
-    <AiAssistant v-if="isDetailReady" :context="article?.content" />
+    <AiAssistant v-if="isDetailReady" :context="detailAiContext" />
   </div>
 </template>
 
@@ -15,6 +15,7 @@ import DetailTools from './cpns/detail/DetailTools.vue';
 import DetailContent from './cpns/detail/DetailContent.vue';
 import Comment from './cpns/comment/Comment.vue';
 import AiAssistant from '@/components/AiAssistant.vue';
+import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { useArticleDetail } from '@/composables/useArticleDetail';
 import useUserStore from '@/stores/user.store';
 
@@ -33,6 +34,7 @@ const article = computed(() => detailQuery.article.value);
 const detailStatus = computed(() => detailQuery.status.value);
 const isDetailReady = computed(() => detailQuery.isDetailReady.value);
 const isAuthor = computed(() => article.value.author?.id === userInfo.value.id);
+const detailAiContext = computed(() => resolveArticleDetailHtml(article.value));
 </script>
 
 <style lang="scss" scoped>
