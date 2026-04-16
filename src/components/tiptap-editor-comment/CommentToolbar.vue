@@ -137,8 +137,9 @@
 
 <script lang="ts" setup>
 import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, RefreshLeft, RefreshRight } from '@element-plus/icons-vue';
-import type { Editor } from '@tiptap/vue-3';
 import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
+
+import type { Editor } from '@tiptap/vue-3';
 
 const props = defineProps<{
   editor: Editor | undefined;

@@ -4,8 +4,9 @@
  */
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import type { EditorView } from '@tiptap/pm/view';
 import { fetchCompletion } from './api';
+
+import type { EditorView } from '@tiptap/pm/view';
 import type { AiCompletionOptions, CompletionSuggestion, CompletionState, PopoverPosition, TriggerMode } from './types';
 
 // Plugin Key

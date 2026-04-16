@@ -22,13 +22,6 @@ import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import { Msg, emitter } from '@/utils';
-const commentStore = useCommentStore();
-const rootStore = useRootStore();
-const articleStore = useArticleStore();
-const userStore = useUserStore();
-const { token } = storeToRefs(userStore);
-const { article } = storeToRefs(articleStore);
-const { isCommentUserLiked } = storeToRefs(commentStore);
 
 import type { IComment } from '@/stores/types/comment.result';
 
@@ -36,6 +29,14 @@ const { inArticle = true, comment } = defineProps<{
   inArticle?: boolean;
   comment: IComment;
 }>();
+
+const commentStore = useCommentStore();
+const rootStore = useRootStore();
+const articleStore = useArticleStore();
+const userStore = useUserStore();
+const { token } = storeToRefs(userStore);
+const { article } = storeToRefs(articleStore);
+const { isCommentUserLiked } = storeToRefs(commentStore);
 
 const wantReply = (comment) => {
   if (token.value) {

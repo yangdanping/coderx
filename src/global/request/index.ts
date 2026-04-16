@@ -1,8 +1,9 @@
 import axios from 'axios'; //对axios做封装只需在这一个文件里引用axios就可以了(相当于当前项目对axios有依赖的只有该文件)
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'; //axios已提供对应的类型(三者缺一不可)
 import { ElLoading } from 'element-plus';
-import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
 import useLoadingStore from '@/stores/loading.store';
+
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'; //axios已提供对应的类型(三者缺一不可)
+import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
 const DEAFULT_LOADING = true;
 
 /* 由于我们对拦截器做了三层封装,所以传类型得一步步传递过去

@@ -16,16 +16,16 @@ const { show = false } = defineProps<{
   show?: boolean;
 }>();
 
-const dialogVisible = computed({
-  get: () => show,
-  set: (val) => emit('update:dialogVisible', val),
-});
+const emit = defineEmits(['submit', 'cancel', 'update:dialogVisible']);
 
 const reportOptions = ref<any[]>([]);
 const reportList = ref(['垃圾广告', '辱骂攻击', '涉嫌违法犯罪', '时政信息不实']);
 const otherReport = ref('');
 
-const emit = defineEmits(['submit', 'cancel', 'update:dialogVisible']);
+const dialogVisible = computed({
+  get: () => show,
+  set: (val) => emit('update:dialogVisible', val),
+});
 
 const submitReport = () => {
   emit('submit', {

@@ -1,6 +1,7 @@
 import myRequest, { newsRequest } from '@/service';
-import type { IResData } from '../types';
 import { NEWS_API_KEY } from '@/global/constants/keys';
+
+import type { IResData } from '../types';
 
 const urlHead = '/user';
 

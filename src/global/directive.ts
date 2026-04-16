@@ -1,7 +1,8 @@
 import { dateFormat } from '@/utils';
+import { ElLoading } from 'element-plus';
+
 import type { App } from 'vue';
 import type { LoadingInstance } from 'element-plus/lib/components/loading/src/loading';
-import { ElLoading } from 'element-plus';
 export default function initDirective(app: App) {
   const dateFormatter = (el: HTMLElement, binding: any) => {
     const time = binding.value;

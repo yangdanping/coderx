@@ -18,15 +18,10 @@ import { Msg } from '@/utils';
 import { Plus } from '@element-plus/icons-vue';
 import { useAuth } from '@/composables/useAuth';
 import debounce from '@/utils/debounce';
-
-import type { IUserInfo } from '@/stores/types/user.result';
-
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
-const rootStore = useRootStore();
-const userStore = useUserStore();
-const { isCurrentUser } = useAuth();
-const { token } = storeToRefs(userStore);
+
+import type { IUserInfo } from '@/stores/types/user.result';
 
 const {
   profile = {},
@@ -41,9 +36,16 @@ const {
   width?: string;
 }>();
 
+const rootStore = useRootStore();
+const userStore = useUserStore();
+const { isCurrentUser } = useAuth();
+const { token } = storeToRefs(userStore);
+
+const isWantToUnFollowed = ref(false);
+
 // 判断是否为当前登录用户（用于控制关注按钮显示）
 const isMe = computed(() => isCurrentUser(profile.id));
-const isWantToUnFollowed = ref(false);
+
 const ToggleUnFollow = (toggle: boolean) => {
   if (isFollowed) {
     isWantToUnFollowed.value = toggle;

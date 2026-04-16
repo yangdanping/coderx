@@ -52,15 +52,17 @@ const btnDisabled = ref(true);
 const newCollect = ref(false);
 const input = ref('');
 
+const isCollected = computed(() => {
+  return (count) => count && count.some((v) => v === article.value.id);
+});
+
 watch(
   () => input.value,
   (newV) => {
     btnDisabled.value = newV ? false : true;
   },
 );
-const isCollected = computed(() => {
-  return (count) => count && count.some((v) => v === article.value.id);
-});
+
 onMounted(() => {
   emitter.on('hideCollect', () => {
     newCollect.value = false;

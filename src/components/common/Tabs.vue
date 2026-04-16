@@ -62,20 +62,6 @@ const handleScroll = () => {
   startHideTimer();
 };
 
-// Clean up
-onUnmounted(() => {
-  if (hideTimer) clearTimeout(hideTimer);
-});
-
-// Initial check
-onMounted(() => {
-  if (props.direction === 'horizontal') {
-    startHideTimer();
-  } else {
-    isScrollbarVisible.value = true; // Always show or let native handle it for vertical? usually vertical is fine.
-  }
-});
-
 // Watch direction change
 watch(
   () => props.direction,
@@ -88,6 +74,20 @@ watch(
     }
   },
 );
+
+// Initial check
+onMounted(() => {
+  if (props.direction === 'horizontal') {
+    startHideTimer();
+  } else {
+    isScrollbarVisible.value = true; // Always show or let native handle it for vertical? usually vertical is fine.
+  }
+});
+
+// Clean up
+onUnmounted(() => {
+  if (hideTimer) clearTimeout(hideTimer);
+});
 </script>
 
 <style lang="scss" scoped>

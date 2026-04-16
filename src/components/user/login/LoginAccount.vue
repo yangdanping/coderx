@@ -25,10 +25,9 @@
 <script lang="ts" setup>
 import { Msg } from '@/utils';
 import { User, Lock } from 'lucide-vue-next';
+import useUserStore from '@/stores/user.store';
 
 import type { ElForm, ElInput } from 'element-plus';
-
-import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 
 const loginFormRef = ref<InstanceType<typeof ElForm>>();

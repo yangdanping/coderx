@@ -40,6 +40,8 @@ const { isLiked } = useUserLikedArticles();
 // 点赞操作
 const { mutate: likeArticle } = useLikeArticle();
 
+const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
+
 watch(
   () => profile.value.id,
   (newV) => {
@@ -47,7 +49,6 @@ watch(
     articleStore.refreshFirstPageAction({ userId: newV, pageSize: pageSize.value });
   },
 );
-const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 
 const changePage = () => articleStore.getArticleListAction({ userId: profile.value.id, pageNum: pageNum.value, pageSize: pageSize.value });
 </script>

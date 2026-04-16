@@ -56,8 +56,15 @@ import { emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
-import type { CommentSortType } from '@/service/comment/comment.request';
 import { ChevronDown } from 'lucide-vue-next';
+
+import type { CommentSortType } from '@/service/comment/comment.request';
+
+const sortOptions: Array<{ label: string; value: CommentSortType }> = [
+  { label: '最新', value: 'latest' },
+  { label: '最旧', value: 'oldest' },
+  { label: '热门', value: 'hot' },
+];
 
 const route = useRoute();
 const articleStore = useArticleStore();
@@ -65,11 +72,6 @@ const commentStore = useCommentStore();
 const { article } = storeToRefs(articleStore);
 const articleId = computed(() => String(route.params.articleId ?? ''));
 const sortType = ref<CommentSortType>('latest');
-const sortOptions: Array<{ label: string; value: CommentSortType }> = [
-  { label: '最新', value: 'latest' },
-  { label: '最旧', value: 'oldest' },
-  { label: '热门', value: 'hot' },
-];
 const currentSortLabel = computed(() => sortOptions.find((item) => item.value === sortType.value)?.label ?? '最新');
 // 使用 composable 获取评论列表
 const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useCommentList(articleId, sortType);

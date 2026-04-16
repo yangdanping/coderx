@@ -30,12 +30,33 @@ const { activeTagId } = storeToRefs(articleStore);
 
 const activeId = ref<string | number>(activeTagId.value);
 const navRef = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+
+const tabDirection = computed(() => (isSmallScreen.value ? 'horizontal' : 'vertical'));
 
 // 同步 activeId 到 store
 watch(activeId, (newVal) => {
   activeTagId.value = newVal;
 });
-const tabDirection = computed(() => (isSmallScreen.value ? 'horizontal' : 'vertical'));
+
+// Update CSS variable for ArticleList to know the nav height
+const updateNavHeightVar = () => {
+  if (isSmallScreen.value && navRef.value) {
+    // 使用 offsetHeight 获取包含 padding/border 的完整高度
+    const height = navRef.value.offsetHeight;
+    document.documentElement.style.setProperty('--article-nav-height', `${height}px`);
+  } else {
+    document.documentElement.style.setProperty('--article-nav-height', '0px');
+  }
+};
+
+const handleClick = throttle(function (name: string | number) {
+  if (name) {
+    articleStore.activeTagId = name;
+  }
+  window.scrollTo(0, 0);
+}, 300);
+
 onMounted(() => {
   emitter.on('changeTagInList', (tag: any) => {
     activeId.value = tag.id;
@@ -57,7 +78,7 @@ onMounted(() => {
   // Initial check
   updateNavHeightVar();
 });
-let resizeObserver: ResizeObserver | null = null;
+
 onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
@@ -65,24 +86,6 @@ onUnmounted(() => {
   }
   document.documentElement.style.removeProperty('--article-nav-height');
 });
-
-// Update CSS variable for ArticleList to know the nav height
-const updateNavHeightVar = () => {
-  if (isSmallScreen.value && navRef.value) {
-    // 使用 offsetHeight 获取包含 padding/border 的完整高度
-    const height = navRef.value.offsetHeight;
-    document.documentElement.style.setProperty('--article-nav-height', `${height}px`);
-  } else {
-    document.documentElement.style.setProperty('--article-nav-height', '0px');
-  }
-};
-
-const handleClick = throttle(function (name: string | number) {
-  if (name) {
-    articleStore.activeTagId = name;
-  }
-  window.scrollTo(0, 0);
-}, 300);
 </script>
 
 <style lang="scss" scoped>

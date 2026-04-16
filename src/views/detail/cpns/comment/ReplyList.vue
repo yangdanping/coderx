@@ -50,11 +50,13 @@
 </template>
 
 <script lang="ts" setup>
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, type CSSProperties } from 'vue';
+
 import ReplyItem from './ReplyItem.vue';
 import { useReplyList, flattenReplies } from '@/composables/useCommentList';
-import type { IComment } from '@/service/comment/comment.request';
-import { ref, computed, watch, nextTick, onMounted, onUnmounted, type CSSProperties } from 'vue';
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-vue-next';
+
+import type { IComment } from '@/service/comment/comment.request';
 
 const props = defineProps<{
   comment: IComment;

@@ -30,14 +30,10 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { List } from '@element-plus/icons-vue';
 
-interface Title {
-  id: string;
-  title: string;
-  level: number;
-}
+import type { DetailTocTitle } from './types/detail-toc.type';
 
 const props = defineProps<{
-  titles: Title[];
+  titles: DetailTocTitle[];
 }>();
 
 const showDrawer = ref(false);

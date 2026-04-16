@@ -31,11 +31,7 @@ import SectionTitle from '../SectionTitle.vue';
 
 import featuresData from '@/views/home/data/features.json';
 
-interface FeatureMeta {
-  id: string;
-  title: string;
-  description: string;
-}
+import type { FeatureMeta } from './types/feature-section.type';
 
 const props = withDefaults(
   defineProps<{

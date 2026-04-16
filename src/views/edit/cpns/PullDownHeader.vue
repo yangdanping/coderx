@@ -74,20 +74,15 @@ import { ElMessageBox } from 'element-plus';
 import { deleteDraftRequest } from '@/service/draft/draft.request';
 import { LocalCache, Msg } from '@/utils';
 import { COVER_IMAGE_SIZE_LIMIT_MESSAGE, getCoverImageValidationMessage, MAX_COVER_IMAGE_FILE_SIZE_MB } from '@/components/tiptap-editor/uploadLimits';
-import type { IArticle } from '@/stores/types/article.result';
+
 import type { UploadUserFile } from 'element-plus';
+import type { PullDownHeaderProps } from './types/pull-down-header.type';
 
-interface Props {
-  modelValue: string;
-  isPulled: boolean;
-  tags?: string[];
-  coverPreviewUrl?: string | null;
-  draftId?: number | null;
-  editData?: IArticle | Record<string, any>;
-  draft?: string;
-}
+defineOptions({
+  name: 'PullDownHeader',
+});
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<PullDownHeaderProps>(), {
   tags: () => [],
   coverPreviewUrl: null,
   draftId: null,
@@ -250,12 +245,6 @@ const goBack = () => {
         });
       }
     });
-};
-</script>
-
-<script lang="ts">
-export default {
-  name: 'PullDownHeader',
 };
 </script>
 

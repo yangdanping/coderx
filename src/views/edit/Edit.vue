@@ -53,30 +53,18 @@ import AiAssistant from '@/components/AiAssistant.vue';
 
 import { hasMeaningfulArticleContent, resolveArticleEditorContent } from '@/service/article/article.content';
 import { useDraftAutosave } from '@/composables/useDraftAutosave';
-import type { DraftLocalFallback, DraftMeta, DraftRecord, TiptapDocContent } from '@/service/draft/draft.types';
 import { Msg, isEmptyObj, LocalCache } from '@/utils';
 import { EMPTY_TIPTAP_DOC, buildDraftMeta, normalizeTiptapDoc, resolveReferencedArticleMediaIds, resolveSelectedTagNames } from './draft.utils';
 
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
 
+import type { DraftLocalFallback, DraftMeta, DraftRecord, TiptapDocContent } from '@/service/draft/draft.types';
+import type { EditEditorExpose, EditViewProps } from './types/edit.type';
+
 const route = useRoute();
 
-interface Props {
-  borderColor?: string;
-  defaultExpose?: number;
-  pulledExpose?: number;
-}
-
-interface EditEditorExpose {
-  getHTML: () => string;
-  getJSON: () => TiptapDocContent | undefined;
-  setContent: (content: string | TiptapDocContent, emitUpdate?: boolean) => void;
-  setSelectionToEnd: () => void;
-  getEditor: () => unknown;
-}
-
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<EditViewProps>(), {
   borderColor: 'var(--el-color-primary)',
   defaultExpose: 0.6,
   pulledExpose: 1,

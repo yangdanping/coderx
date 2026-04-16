@@ -4,12 +4,12 @@ import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProf
 import { getCollect, addCollect, addToCollect, removeCollectArticle, updateCollect, removeCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { LocalCache, Msg, emitter } from '@/utils';
-
-import type { IAccount } from '@/service/user/user.types';
-import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect, IOnlineUser } from '@/stores/types/user.result';
-import type { RouteParam } from '@/service/types';
 import useArticleStore from './article.store';
 import useRootStore from './index.store';
+
+import type { IAccount } from '@/service/user/user.types';
+import type { RouteParam } from '@/service/types';
+import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect, IOnlineUser } from '@/stores/types/user.result';
 
 // 缓存过期时间：30秒内重复 hover 同一用户不会重新请求
 const CACHE_TTL = 30 * 1000;

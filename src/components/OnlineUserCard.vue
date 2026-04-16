@@ -20,8 +20,6 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 
-const router = useRouter();
-
 // 接收用户信息
 const { user } = defineProps<{
   user: {
@@ -32,6 +30,8 @@ const { user } = defineProps<{
     name?: string; // Avatar 组件需要的字段
   };
 }>();
+
+const router = useRouter();
 
 // 为 Avatar 组件准备数据格式
 // Avatar 组件需要 name 和 id 字段，而我们的 user 对象有 userName 和 userId 字段

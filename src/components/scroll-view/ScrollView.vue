@@ -20,11 +20,6 @@ const { data = [] } = defineProps<{
   data?: any[];
 }>();
 
-watch(
-  () => data,
-  () => nextTick(() => initScrollContent()), //nextTick一定要加
-);
-
 const scrollContentRef = ref();
 const showLeft = ref(false);
 const showRight = ref(false);
@@ -37,6 +32,11 @@ const initScrollContent = () => {
   totalDistance.value = scrollWidth - clientWidth; // 当前可滚动的距离
   showRight.value = totalDistance.value > 0;
 };
+
+watch(
+  () => data,
+  () => nextTick(() => initScrollContent()), //nextTick一定要加
+);
 
 // 事件处理逻辑
 const controlbtnClick = (isRright: boolean) => {

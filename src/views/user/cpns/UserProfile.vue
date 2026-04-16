@@ -111,19 +111,9 @@ import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import useHistoryStore from '@/stores/history.store';
 import { useAuth } from '@/composables/useAuth';
-import type { IUserInfo } from '@/stores/types/user.result';
 
-type ProfileTabName = '文章' | '评论' | '收藏' | '关注' | '最近浏览';
-type FollowSubTabName = 'following' | 'follower';
-type ProfileInfoItem = {
-  label: string;
-  value: string | number;
-  icon: 'coin' | 'suitcase' | 'coordinate' | 'takeaway-box';
-};
-type ProfileQuery = {
-  tabName?: ProfileTabName;
-  subTabName?: FollowSubTabName;
-};
+import type { IUserInfo } from '@/stores/types/user.result';
+import type { FollowSubTabName, ProfileInfoItem, ProfileQuery, ProfileTabName } from './types/user-profile.type';
 
 const DEFAULT_TAB: ProfileTabName = '文章';
 const DEFAULT_FOLLOW_SUB_TAB: FollowSubTabName = 'following';

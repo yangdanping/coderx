@@ -23,19 +23,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue';
 import { Hammer } from 'lucide-vue-next';
 import FlowCordWidget from '@/views/flow/cpns/FlowCordWidget.vue';
 import FlowDevConfetti from '@/views/flow/cpns/FlowDevConfetti.vue';
 
-/** 路由 `meta.devCard` 结构*/
-interface DevRouteCardMeta {
-  icon?: string;
-  heading?: string;
-  hintBefore?: string;
-  hintCode?: string;
-  hintAfter?: string;
-}
+import type { Component } from 'vue';
+import type { DevRouteCardMeta } from './types/dev.type';
 
 /** 在 meta.devCard.icon 中使用的 Lucide 名须在此注册，避免 `import *` 整包打进 bundle */
 const DEV_CARD_ICONS: Record<string, Component> = {
@@ -43,6 +36,9 @@ const DEV_CARD_ICONS: Record<string, Component> = {
 };
 
 const route = useRoute();
+
+const cordOpen = ref(false);
+const confettiRef = ref<InstanceType<typeof FlowDevConfetti> | null>(null);
 
 const card = computed(() => {
   const d = route.meta.devCard as DevRouteCardMeta | undefined;
@@ -59,9 +55,6 @@ const card = computed(() => {
 const iconComp = computed(() => DEV_CARD_ICONS[card.value.icon] ?? Hammer);
 
 const hintVisible = computed(() => !!(card.value.hintBefore || card.value.hintCode || card.value.hintAfter));
-
-const cordOpen = ref(false);
-const confettiRef = ref<InstanceType<typeof FlowDevConfetti> | null>(null);
 
 watch(cordOpen, (open) => {
   if (open) {

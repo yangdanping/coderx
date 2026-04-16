@@ -42,23 +42,26 @@ import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 import { debounce } from '@/utils';
 import { PenSquare, MapPin, LogOut } from 'lucide-vue-next';
+
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const { userInfo, myFollowCount } = storeToRefs(userStore);
 const rootStore = useRootStore();
 const { isSmallScreen } = storeToRefs(rootStore);
+
 const isShow = ref(false);
+
+const avatarSize = computed(() => {
+  return isSmallScreen.value ? 30 : 40;
+});
+
 const toggle = debounce(function (toggle) {
   isShow.value = toggle;
   userStore.getMyFollowAction(userInfo.value.id as number);
 }, 200);
 
 const goEdit = () => router.push('/edit');
-
-const avatarSize = computed(() => {
-  return isSmallScreen.value ? 30 : 40;
-});
 
 const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
   const path = `/user/${userInfo.value.id}`;

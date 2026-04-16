@@ -5,13 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-interface KeywordItem {
-  text: string;
-  x: number;
-  y: number;
-  width: number;
-  scale: number; // 字体缩放比例
-}
+import type { KeywordItem } from './types/keyword.type';
 
 // Props 定义
 const props = withDefaults(

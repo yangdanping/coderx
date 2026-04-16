@@ -6,19 +6,11 @@ import { Extension } from '@tiptap/core';
 import { uploadVideo } from '@/service/file/file.request';
 import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
-import type { EditorJsonNode, VideoNodeAttrs } from '../types';
 import { getVideoValidationMessage, MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '../uploadLimits';
 import { DEFAULT_VIDEO_STYLE } from './VideoNode';
 
-// 声明命令类型扩展
-interface UploadInsertSelection {
-  from: number;
-  to: number;
-}
-
-interface UploadVideoOptions {
-  insertSelection?: UploadInsertSelection | null;
-}
+import type { EditorJsonNode, VideoNodeAttrs } from '../types';
+import type { IUploadVideoResponse, UploadVideoOptions } from '../types/video-upload.type';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -26,16 +18,6 @@ declare module '@tiptap/core' {
       uploadVideo: (file: File, options?: UploadVideoOptions) => ReturnType;
     };
   }
-}
-
-interface IUploadVideoResponse {
-  code: number;
-  message?: string;
-  data: {
-    id?: number;
-    url: string;
-    poster?: string | null;
-  };
 }
 
 const countVideoNodes = (node?: EditorJsonNode): number => {

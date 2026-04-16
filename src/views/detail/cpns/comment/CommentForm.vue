@@ -24,13 +24,6 @@ import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import { useAddComment, useAddReply } from '@/composables/useCommentList';
 
-const route = useRoute();
-const userStore = useUserStore();
-const articleStore = useArticleStore();
-const commentStore = useCommentStore();
-const { userInfo } = storeToRefs(userStore);
-const { article } = storeToRefs(articleStore);
-
 const props = defineProps<{
   commentId?: number; // 一级评论ID（回复时使用）
   replyId?: number; // 被回复的回复ID（回复的回复时使用）
@@ -40,6 +33,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
+
+const route = useRoute();
+const userStore = useUserStore();
+const articleStore = useArticleStore();
+const commentStore = useCommentStore();
+const { userInfo } = storeToRefs(userStore);
+const { article } = storeToRefs(articleStore);
 
 const articleId = computed(() => String(route.params.articleId || ''));
 const content = ref('');

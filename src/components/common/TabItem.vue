@@ -23,17 +23,12 @@
 <script lang="ts" setup>
 import { inject, computed } from 'vue';
 
+import type { TabsContext } from './types/tab-item.type';
+
 const { name, label = '' } = defineProps<{
   name: string | number;
   label?: string;
 }>();
-
-// Type the injected context
-interface TabsContext {
-  activeValue: { value: string | number };
-  handleTabClick: (name: string | number) => void;
-  direction: { value: string };
-}
 
 const tabsContext = inject<TabsContext>('tabsContext');
 

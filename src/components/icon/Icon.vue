@@ -38,9 +38,7 @@ import { Eye, ThumbsUp, MessageSquare, Star, Flame, Coins, Briefcase, MapPin, Ma
 import useRootStore from '@/stores/index.store';
 import { storeToRefs } from 'pinia';
 
-type IconType = 'views' | 'like' | 'comment' | 'star' | 'fire' | profileIconType;
-
-type profileIconType = 'coin' | 'suitcase' | 'coordinate' | 'takeaway-box';
+import type { IconType } from './types/icon.type';
 
 const {
   type,
@@ -64,6 +62,8 @@ const {
 
 const rootStore = useRootStore();
 const { isSmallScreen } = storeToRefs(rootStore);
+
+const isHover = ref(false);
 
 // 根据屏幕尺寸动态调整图标大小
 const iconSize = computed(() => {
@@ -89,7 +89,6 @@ const color = computed(() => {
   }
 });
 
-const isHover = ref(false);
 const toggleHover = (toggle: boolean) => {
   isHover.value = toggle;
 };

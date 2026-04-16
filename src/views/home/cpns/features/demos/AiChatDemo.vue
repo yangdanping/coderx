@@ -28,18 +28,7 @@ import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 import { useAutoPlay } from '@/composables/useAutoPlay';
 import aiChatDemoData from '@/views/home/data/ai-chat-demo.json';
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface AiChatDemoData {
-  typingSpeed: number;
-  streamSpeed: number;
-  thinkingDelay: number;
-  loopDelay: number;
-  conversation: ChatMessage[];
-}
+import type { AiChatDemoData, ChatMessage } from './types/ai-chat-demo.type';
 
 const props = defineProps<{
   active: boolean;

@@ -19,10 +19,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { Perspective, RetroComputerShaderProps } from './index';
 import vertexShaderSource from './shaders/vertex.glsl';
 import fragmentShaderSource from './shaders/fragment.glsl';
 import { useTheme } from '@/composables/useTheme';
+
+import type { Perspective, RetroComputerShaderProps } from './index';
 const baseColor = '#94b8ee';
 const props = withDefaults(defineProps<RetroComputerShaderProps>(), {
   color: baseColor, // 线条颜色（hex）

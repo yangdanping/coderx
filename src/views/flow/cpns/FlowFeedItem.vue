@@ -33,10 +33,11 @@
 <script setup lang="ts">
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-vue-next';
 import FlowMediaGallery from './FlowMediaGallery.vue';
-import type { FlowItem } from '@/service/flow/flow.types';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
+
+import type { FlowItem } from '@/service/flow/flow.types';
 
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');

@@ -20,18 +20,22 @@ import AvatarCropper from '@/components/avatar/AvatarCropper.vue';
 import { Msg } from '@/utils';
 import { Edit } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import useUserStore from '@/stores/user.store';
 
 import type { UploadFile } from 'element-plus';
 import type { IUserInfo } from '@/stores/types/user.result';
-
-import useUserStore from '@/stores/user.store';
-const userStore = useUserStore();
-const { isCurrentUser } = useAuth();
 
 const { info = {}, size = 200 } = defineProps<{
   info?: IUserInfo;
   size?: number;
 }>();
+
+const userStore = useUserStore();
+const { isCurrentUser } = useAuth();
+
+// 裁切弹窗状态
+const showCropper = ref(false);
+const imageSrc = ref('');
 
 // 判断是否为当前登录用户（用于控制头像上传权限）
 const isMe = computed(() => isCurrentUser(info.id));
@@ -48,10 +52,6 @@ const currentInfo = computed(() => {
   });
   return result;
 });
-
-// 裁切弹窗状态
-const showCropper = ref(false);
-const imageSrc = ref('');
 
 // 文件选择后打开裁切弹窗
 const onFileChange = (uploadFile: UploadFile) => {

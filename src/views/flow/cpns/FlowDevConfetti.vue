@@ -5,20 +5,7 @@
 <script setup lang="ts">
 /** 中心礼花：Canvas 物理粒子，落地后淡出（类似 🎊 氛围） */
 
-type Particle = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  w: number;
-  h: number;
-  rot: number;
-  vr: number;
-  color: string;
-  landed: boolean;
-  landTime: number;
-  opacity: number;
-};
+import type { ConfettiParticle } from './types/flow-dev-confetti.type';
 
 const COLORS = ['#ff6b9d', '#ffd93d', '#6bcb77', '#4d96ff', '#c084fc', '#ff8e53', '#f472b6', '#38bdf8'];
 const GRAVITY = 0.42;
@@ -29,7 +16,7 @@ const EMOJI_MS = 520;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 let rafId = 0;
-let particles: Particle[] = [];
+let particles: ConfettiParticle[] = [];
 let lastTs = 0;
 let emojiUntil = 0;
 

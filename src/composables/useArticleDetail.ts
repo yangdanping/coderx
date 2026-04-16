@@ -6,10 +6,8 @@ import useUserStore from '@/stores/user.store';
 import useHistoryStore from '@/stores/history.store';
 import { Msg } from '@/utils';
 
-import type { ComputedRef, Ref } from 'vue';
 import type { IArticle } from '@/stores/types/article.result';
-
-type ArticleIdSource = Ref<string | undefined> | ComputedRef<string | undefined>;
+import type { ArticleIdSource } from './types/use-article-detail.type';
 
 export function useArticleDetail(articleId: ArticleIdSource) {
   const articleStore = useArticleStore();

@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import MarkdownIt from 'markdown-it';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useEditor, EditorContent, type Extensions } from '@tiptap/vue-3';
+import { useEditor, EditorContent } from '@tiptap/vue-3';
 // Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import TiptapToolbar from './TiptapToolbar.vue';
@@ -100,37 +100,27 @@ import { resolveArticleEditorContent } from '@/service/article/article.content';
 import { getTiptapExtensions } from './config';
 import useEditorStore, { getVideoMetaById } from '@/stores/editor.store';
 import { annotateLegacyVideoIdsInHtml, emitter, Msg, SessionCache } from '@/utils';
-import type { IArticle } from '@/stores/types/article.result';
-import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
-import type { EditorJsonNode, VideoRegistryEntry } from './types';
 import { buildImageHtml } from './extensions/ImageNode';
 import { buildUnresolvedVideoPlaceholderHtml, buildVideoHtml, DEFAULT_VIDEO_STYLE, VIDEO_TOKEN_LINE_GLOBAL_PATTERN } from './extensions/VideoNode';
 // 引入样式
 import './styles/tiptap.scss';
 
-// Markdown storage 类型（使用 unknown 避免类型冲突）
-interface MarkdownStorageType {
-  getMarkdown?: () => string;
-}
+import type { IArticle } from '@/stores/types/article.result';
+import type { Extensions } from '@tiptap/vue-3';
+import type { CompletionSuggestion, CompletionState, PopoverPosition } from './extensions/AiCompletion/types';
+import type {
+  EditorDocumentContent,
+  EditorInstance,
+  EditorJsonNode,
+  InsertSplitPreviewBlockquote,
+  MarkdownSourceSelection,
+  MarkdownStorageType,
+  ToolbarImageUploadOptions,
+  UploadInsertSelection,
+  VideoRegistryEntry,
+} from './types';
 
-type EditorInstance = ReturnType<typeof useEditor>['value'] | any;
-type EditorDocumentContent = string | Record<string, unknown>;
-interface UploadInsertSelection {
-  from: number;
-  to: number;
-}
-
-interface MarkdownSourceSelection {
-  start: number;
-  end: number;
-}
-
-interface ToolbarImageUploadOptions {
-  onUploaded?: ((payload: { url: string; imgId: number }) => void) | null;
-}
-
-type InsertSplitPreviewBlockquote = (() => void) | null;
-
+// --- 常量与 props / emit -----------------------------------------------------
 const SPLIT_PREVIEW_SESSION_KEY = 'tiptap-editor-split-preview-active';
 
 const props = withDefaults(
@@ -160,7 +150,7 @@ const emit = defineEmits<{
   (e: 'ready'): void;
 }>();
 
-// 拖拽状态管理
+// --- 响应式状态：分屏、编辑器容器、AI 补全 -----------------------------------
 const isDragging = ref(false);
 const initialSplitPreviewActive = SessionCache.getCache(SPLIT_PREVIEW_SESSION_KEY);
 const isSplitPreviewActive = ref(typeof initialSplitPreviewActive === 'boolean' ? initialSplitPreviewActive : true);
@@ -194,7 +184,7 @@ const markdownRenderer = new MarkdownIt({
   breaks: true,
 });
 
-// 获取 Markdown 内容的辅助函数
+// --- 文档类型、Markdown / HTML 解析、视频注册 --------------------------------
 const getMarkdownContent = (editorInstance: EditorInstance) => {
   if (!editorInstance) return '';
 
@@ -519,7 +509,7 @@ const handleMarkdownSourceInput = () => {
   });
 };
 
-// 创建编辑器实例
+// --- 编辑器实例（extensions、onUpdate、就绪与内容同步 watch） ---------------
 const editor: any = useEditor({
   extensions: getTiptapExtensions() as Extensions,
   content: '',
@@ -638,7 +628,7 @@ watch(
   { immediate: true },
 );
 
-// BubbleMenu 链接处理
+// --- BubbleMenu、视频尺寸、拖拽上传、AI 补全交互 ------------------------------
 const handleBubbleLink = () => {
   const previousUrl = editor.value?.getAttributes('link').href;
   const url = window.prompt('请输入链接地址', previousUrl);

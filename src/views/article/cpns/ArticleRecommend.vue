@@ -24,11 +24,13 @@ import useArticleStore from '@/stores/article.store';
 import { useRouter } from 'vue-router';
 import { RefreshCcw } from 'lucide-vue-next';
 
-const router = useRouter();
-const articleStore = useArticleStore();
 const { recommends = [] } = defineProps<{
   recommends?: any[];
 }>();
+
+const router = useRouter();
+const articleStore = useArticleStore();
+
 const pageNum = ref(1);
 const isRotating = ref(false);
 

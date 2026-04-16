@@ -9,13 +9,7 @@ import vertexShaderSource from './shaders/vertex.glsl';
 import fragmentShaderSource from './shaders/fragment.glsl';
 import langKeywords from './lang-keywords.json';
 
-interface KeywordItem {
-  text: string;
-  x: number;
-  y: number;
-  width: number;
-  scale: number;
-}
+import type { KeywordItem } from './types/keyword.type';
 
 const props = withDefaults(
   defineProps<{

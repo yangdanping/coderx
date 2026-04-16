@@ -1,8 +1,9 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 import { deleteImg, deleteVideo, uploadImg } from '@/service/file/file.request';
-import type { VideoRegistryEntry } from '@/components/tiptap-editor/types';
 import { getCoverImageValidationMessage } from '@/components/tiptap-editor/uploadLimits';
 import { Msg } from '@/utils';
+
+import type { VideoRegistryEntry } from '@/components/tiptap-editor/types';
 
 const runtimeVideoRegistryById: Record<number, VideoRegistryEntry> = {};
 

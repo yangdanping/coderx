@@ -1,19 +1,15 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
+import { unref, computed } from 'vue';
 import { getList, likeArticle } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
-import { unref, computed } from 'vue';
-import type { Ref } from 'vue';
-import type { IArticleList } from '@/service/article/article.types';
-import type { RouteParam } from '@/service/types';
-
 import useUserStore from '@/stores/user.store';
 import { Msg } from '@/utils';
 
-// 定义参数类型，继承自原有的请求参数类型（所有属性可选）
-// 注意：这里不需要包含 offset/limit/pageNum，因为这些由 useInfiniteQuery 内部管理
-export interface IUseArticleListParams extends Partial<Omit<IArticleList, 'pageNum' | 'pageSize'>> {
-  pageSize?: number;
-}
+import type { Ref } from 'vue';
+import type { RouteParam } from '@/service/types';
+import type { IUseArticleListParams } from './types/use-article-list.type';
+
+export type { IUseArticleListParams };
 
 // ==================== Query Keys ====================
 export const articleKeys = {

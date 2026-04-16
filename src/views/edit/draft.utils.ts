@@ -1,7 +1,8 @@
-import type { IArticleImg, Itag } from '@/stores/types/article.result';
-import type { DraftMeta, TiptapDocContent } from '@/service/draft/draft.types';
 import { collectArticleMediaRefs, type ArticleStructuredContent } from '@/service/article/article.content';
 import { extractImagesFromHtml, extractVideoIdsFromHtml, extractVideoReferencesFromHtml } from '@/utils';
+
+import type { DraftMeta, TiptapDocContent } from '@/service/draft/draft.types';
+import type { IArticleImg, Itag } from '@/stores/types/article.result';
 
 export const EMPTY_TIPTAP_DOC: TiptapDocContent = {
   type: 'doc',

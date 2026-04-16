@@ -51,10 +51,9 @@
 
 <script lang="ts" setup>
 import { provinceAndCityData, codeToText } from 'element-china-area-data'; // 地址级联选择器
+import useUserStore from '@/stores/user.store';
 
 import type { IUserInfo } from '@/stores/types/user.result';
-
-import useUserStore from '@/stores/user.store';
 const userStore = useUserStore();
 
 const { editForm = {} } = defineProps<{

@@ -17,9 +17,9 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import CommentToolbar from '@/components/tiptap-editor-comment/CommentToolbar.vue';
 import { getCommentEditorExtensions, defaultCommentEditorConfig } from './config';
-import type { Extensions } from '@tiptap/core';
-
 import './styles/flow-editor.scss';
+
+import type { Extensions } from '@tiptap/core';
 
 const props = withDefaults(
   defineProps<{
@@ -54,15 +54,6 @@ const editor: any = useEditor({
   },
 });
 
-onMounted(() => {
-  nextTick(() => {
-    if (!editor.value) return;
-    if (props.editContent) {
-      editor.value.chain().setContent(props.editContent).run();
-    }
-  });
-});
-
 watch(
   () => props.editContent,
   (newContent) => {
@@ -75,6 +66,19 @@ watch(
     }
   },
 );
+
+onMounted(() => {
+  nextTick(() => {
+    if (!editor.value) return;
+    if (props.editContent) {
+      editor.value.chain().setContent(props.editContent).run();
+    }
+  });
+});
+
+onBeforeUnmount(() => {
+  editor.value?.destroy();
+});
 
 const handleBubbleLink = () => {
   const previousUrl = editor.value?.getAttributes('link').href;
@@ -93,10 +97,6 @@ defineExpose({
   getHTML: () => editor.value?.getHTML() ?? '',
   setContent: (content: string) => editor.value?.chain().setContent(content).run(),
   getEditor: () => editor.value,
-});
-
-onBeforeUnmount(() => {
-  editor.value?.destroy();
 });
 </script>
 

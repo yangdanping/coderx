@@ -56,18 +56,18 @@
 </template>
 
 <script lang="ts" setup>
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
+
 import Avatar from '@/components/avatar/Avatar.vue';
 import CommentAction from './CommentAction.vue';
 import CommentForm from './CommentForm.vue';
 import CommentTools from './CommentTools.vue';
-
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import { codeHeightlight } from '@/utils';
+import { CornerDownRight } from 'lucide-vue-next';
 
 import type { IComment } from '@/service/comment/comment.request';
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
-import { CornerDownRight } from 'lucide-vue-next';
 
 const COLLAPSE_HEIGHT = 150; // 折叠阈值（px）
 

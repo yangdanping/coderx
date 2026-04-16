@@ -44,25 +44,7 @@ import { useAutoPlay } from '@/composables/useAutoPlay';
 import codeHeightlight from '@/utils/codeHeightlight';
 import { CopyButton } from '@/views/detail/cpns/detail/CopyButton';
 
-interface DemoImage {
-  src: string;
-  alt: string;
-}
-
-interface DemoSection {
-  id: string;
-  heading: string;
-  level: number;
-  paragraphs: string[];
-  image?: DemoImage;
-  code?: string;
-}
-
-interface ArticleTocDemoData {
-  title: string;
-  intro: string;
-  sections: DemoSection[];
-}
+import type { ArticleTocDemoData } from './types/article-toc-demo.type';
 
 const props = defineProps<{
   active: boolean;

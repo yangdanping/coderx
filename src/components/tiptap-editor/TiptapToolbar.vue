@@ -179,10 +179,12 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue';
 import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick, View, Loading } from '@element-plus/icons-vue';
-import type { Editor } from '@tiptap/vue-3';
 import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
 import { emitter, getAiShortcutText } from '@/utils';
+
+import type { Editor } from '@tiptap/vue-3';
 import type { DraftAutosaveStatus } from '@/composables/useDraftAutosave';
+import type { ImageUploadCommandOptions, UploadInsertSelection } from './types';
 
 const props = defineProps<{
   editor: Editor | undefined;
@@ -197,21 +199,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle-split-preview'): void;
 }>();
-
-interface UploadInsertSelection {
-  from: number;
-  to: number;
-}
-
-interface UploadedImagePayload {
-  url: string;
-  imgId: number;
-}
-
-interface ImageUploadCommandOptions {
-  insertSelection?: UploadInsertSelection | null;
-  onUploaded?: ((payload: UploadedImagePayload) => void) | null;
-}
 
 // 快捷键显示（根据系统自动适配）
 const shortcuts = {

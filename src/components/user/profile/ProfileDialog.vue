@@ -14,16 +14,16 @@ import { emitter } from '@/utils';
 const rootStore = useRootStore();
 const { showProfileDialog, profileEditForm } = storeToRefs(rootStore);
 
+const handleClose = () => {
+  rootStore.toggleProfileDialog();
+};
+
 onMounted(() => {
   emitter.on('updateProfile', (payload: any) => {
     rootStore.setProfileEditForm(payload);
     rootStore.toggleProfileDialog();
   });
 });
-
-const handleClose = () => {
-  rootStore.toggleProfileDialog();
-};
 </script>
 
 <style lang="scss" scoped>

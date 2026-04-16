@@ -28,28 +28,17 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+
 import Avatar from '@/components/avatar/Avatar.vue';
 import { resolveArticleExcerpt } from '@/service/article/article.content';
 import { emitter, throttle } from '@/utils';
 import type { IArticle } from '@/stores/types/article.result';
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+
+import type { IListItemData } from './types/list-item.type';
 
 const router = useRouter();
-
-/** 列表项数据类型 - 兼容文章和评论的通用属性 */
-interface IListItemData {
-  id?: number;
-  title?: string;
-  content?: string;
-  excerpt?: string;
-  articleUrl?: string;
-  author?: { id?: number; name?: string; avatarUrl?: string | null };
-  cover?: string;
-  tags?: { name?: string }[];
-  createAt?: string;
-  article?: IArticle; // 评论关联的文章
-}
 
 const props = withDefaults(
   defineProps<{

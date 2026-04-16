@@ -21,16 +21,10 @@ import ListAction from './ListAction.vue';
 import Icon from '@/components/icon/Icon.vue';
 import { Msg } from '@/utils';
 import debounce from '@/utils/debounce';
-
-import type { IArticle } from '@/stores/types/article.result';
-
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 
-const rootStore = useRootStore();
-const userStore = useUserStore();
-
-const { token } = storeToRefs(userStore);
+import type { IArticle } from '@/stores/types/article.result';
 
 const {
   article = {},
@@ -41,6 +35,11 @@ const {
   isLiked: (articleId: number | string) => boolean;
   onLike: (articleId: number) => void;
 }>();
+
+const rootStore = useRootStore();
+const userStore = useUserStore();
+
+const { token } = storeToRefs(userStore);
 
 const likeClick = debounce((articleId) => {
   if (token.value) {

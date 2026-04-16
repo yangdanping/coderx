@@ -11,6 +11,15 @@
 import NavBar from '@/components/navbar/NavBar.vue';
 import { LocalCache } from '@/utils';
 import useRootStore from '@/stores/index.store';
+// ============== 🔌 在线状态功能开关 ==============
+// 根据需要切换或注释掉任意一行即可：
+// - Socket.IO 版本：自动重连、跨浏览器兼容
+// - WebSocket 版本：原生 API、无依赖
+// - 全部注释：禁用在线状态功能
+import onlineStatusService from '@/service/online/socketio'; // Socket.IO 版本（推荐）
+// import onlineStatusService from '@/service/online/websocket'; // WebSocket 版本
+// ===============================================
+
 const rootStore = useRootStore();
 const { windowInfo, isSmallScreen } = storeToRefs(rootStore);
 
@@ -34,15 +43,6 @@ const backTopPosition = computed(() => {
     bottom: 20,
   };
 });
-
-// ============== 🔌 在线状态功能开关 ==============
-// 根据需要切换或注释掉任意一行即可：
-// - Socket.IO 版本：自动重连、跨浏览器兼容
-// - WebSocket 版本：原生 API、无依赖
-// - 全部注释：禁用在线状态功能
-import onlineStatusService from '@/service/online/socketio'; // Socket.IO 版本（推荐）
-// import onlineStatusService from '@/service/online/websocket'; // WebSocket 版本
-// ===============================================
 
 /**
  * 全局在线状态管理

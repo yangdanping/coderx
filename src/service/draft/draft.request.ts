@@ -1,10 +1,9 @@
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
-
 import MyRequest from '@/global/request';
 import { BASE_URL, TIME_OUT } from '@/global/request/config';
-import type { IResData } from '@/service/types';
 import { LocalCache } from '@/utils';
 
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { IResData } from '@/service/types';
 import type { DeleteDraftResult, DraftRecord, SaveDraftPayload } from './draft.types';
 
 const draftRequest = new MyRequest({

@@ -32,14 +32,18 @@ import RetroComputerShader from '@/components/canvas/retro-computer-shader/Retro
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
 
+const homeStore = useHomeStore();
+const { hotUsers } = storeToRefs(homeStore);
+
 const counter = ref(1);
 const line2 = ref('Coder');
 const line2Str = ref('');
 const githubUrl = ref('https://github.com/yangdanping');
 const isLast = ref(false); //是否激活最后一个字符的class
 let timer = ref();
-const homeStore = useHomeStore();
-const { hotUsers } = storeToRefs(homeStore);
+
+const goGitHub = () => window.open(githubUrl.value);
+
 onMounted(() => {
   timer.value = setInterval(() => {
     let str = line2.value.slice(0, counter.value);
@@ -57,8 +61,6 @@ onMounted(() => {
   }, 200);
   homeStore.getHotUsersAction();
 });
-
-const goGitHub = () => window.open(githubUrl.value);
 </script>
 
 <style lang="scss" scoped>

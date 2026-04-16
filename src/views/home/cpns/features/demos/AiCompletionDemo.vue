@@ -43,19 +43,7 @@ import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 import { useAutoPlay } from '@/composables/useAutoPlay';
 import aiCompletionDemoData from '@/views/home/data/ai-completion-demo.json';
 
-interface CompletionSuggestion {
-  text: string;
-}
-
-interface AiCompletionDemoData {
-  initialText: string;
-  typingText: string;
-  loadingDelay: number;
-  highlightDelay: number;
-  loopDelay: number;
-  suggestions: CompletionSuggestion[];
-  selectedIndex: number;
-}
+import type { AiCompletionDemoData } from './types/ai-completion-demo.type';
 
 const props = defineProps<{
   active: boolean;

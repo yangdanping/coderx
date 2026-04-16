@@ -2,27 +2,16 @@ import { computed, onBeforeUnmount, readonly, ref } from 'vue';
 import { useMutation } from '@tanstack/vue-query';
 
 import { deleteDraftRequest, getDraftByArticleIdRequest, getDraftRequest, saveDraftRequest } from '@/service/draft/draft.request';
-import type { DraftRecord, SaveDraftPayload, TiptapDocContent } from '@/service/draft/draft.types';
+import type { DraftRecord, SaveDraftPayload } from '@/service/draft/draft.types';
 
-export type DraftAutosaveStatus = 'idle' | 'hydrating' | 'dirty' | 'saving' | 'saved' | 'error' | 'conflict';
+import type {
+  DraftAutosaveStatus,
+  DraftSaveSchedulerOptions,
+  DraftSnapshotInput,
+  UseDraftAutosaveOptions,
+} from './types/use-draft-autosave.type';
 
-export interface DraftSnapshotInput {
-  articleId: number | null;
-  title: string | null;
-  content: TiptapDocContent;
-  meta: SaveDraftPayload['meta'];
-}
-
-type SchedulerErrorAction = 'continue' | 'halt';
-
-interface DraftSaveSchedulerOptions<TSnapshot, TResult> {
-  debounceMs?: number;
-  save: (snapshot: TSnapshot) => Promise<TResult>;
-  onDirty?: (snapshot: TSnapshot) => void;
-  onSaving?: (snapshot: TSnapshot) => void;
-  onSaved?: (result: TResult, snapshot: TSnapshot) => void;
-  onError?: (error: unknown, snapshot: TSnapshot) => SchedulerErrorAction | void;
-}
+export type { DraftAutosaveStatus, DraftSnapshotInput, UseDraftAutosaveOptions } from './types/use-draft-autosave.type';
 
 export function createDraftSaveScheduler<TSnapshot, TResult>(options: DraftSaveSchedulerOptions<TSnapshot, TResult>) {
   const { debounceMs = 1200, save, onDirty, onSaving, onSaved, onError } = options;
@@ -128,12 +117,6 @@ const getErrorMessage = (error: unknown) => {
 
   return undefined;
 };
-
-export interface UseDraftAutosaveOptions {
-  scopeId: string;
-  articleId?: number | null;
-  debounceMs?: number;
-}
 
 export function useDraftAutosave(options: UseDraftAutosaveOptions) {
   const status = ref<DraftAutosaveStatus>('idle');

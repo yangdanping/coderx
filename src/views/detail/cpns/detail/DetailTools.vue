@@ -33,18 +33,20 @@ import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 import { ArrowLeft, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
-
-import type { IArticle } from '@/stores/types/article.result';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
-const router = useRouter();
-const userStore = useUserStore();
-const articleStore = useArticleStore();
+
+import type { IArticle } from '@/stores/types/article.result';
 
 const { isAuthor = false, article = {} } = defineProps<{
   isAuthor?: boolean;
   article?: IArticle;
 }>();
+
+const router = useRouter();
+const userStore = useUserStore();
+const articleStore = useArticleStore();
+
 const isShowReport = ref(false);
 const { token } = storeToRefs(userStore);
 

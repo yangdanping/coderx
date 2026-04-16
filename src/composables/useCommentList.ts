@@ -7,15 +7,19 @@ import {
   likeComment,
   updateComment,
   deleteComment,
-  type IComment,
-  type ICommentListResponse,
-  type IRepliesResponse,
-  type CommentSortType,
 } from '@/service/comment/comment.request';
 import { getLiked } from '@/service/user/user.request';
 import { Msg, emitter } from '@/utils';
 import useUserStore from '@/stores/user.store';
+import { computed, ref } from 'vue';
+
 import type { Ref } from 'vue';
+import type {
+  IComment,
+  ICommentListResponse,
+  IRepliesResponse,
+  CommentSortType,
+} from '@/service/comment/comment.request';
 
 // ==================== Query Keys ====================
 export const commentKeys = {

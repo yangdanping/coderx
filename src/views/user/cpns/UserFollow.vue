@@ -23,29 +23,29 @@ import Tabs from '@/components/common/Tabs.vue';
 import TabItem from '@/components/common/TabItem.vue';
 import useUserStore from '@/stores/user.store';
 
-type FollowTabName = 'following' | 'follower';
+import type { FollowSubTabName } from './types/user-profile.type';
 
 const { profile, followInfo } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const route = useRoute();
 
-const followType = ref<FollowTabName>('following'); //默认显示关注者
+const followType = ref<FollowSubTabName>('following'); //默认显示关注者
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
 
-function normalizeFollowType(subTabName?: FollowTabName): FollowTabName {
+function normalizeFollowType(subTabName?: FollowSubTabName): FollowSubTabName {
   return subTabName === 'follower' ? 'follower' : 'following';
 }
 
 watch(
   () => route.query.subTabName,
   (subTabName) => {
-    followType.value = normalizeFollowType(subTabName as FollowTabName);
+    followType.value = normalizeFollowType(subTabName as FollowSubTabName);
   },
   { immediate: true },
 );
 
-const handleClick = (name: FollowTabName) => {
+const handleClick = (name: FollowSubTabName) => {
   const nextFollowType = normalizeFollowType(name);
   if (route.query.subTabName === nextFollowType) return;
   router.replace({

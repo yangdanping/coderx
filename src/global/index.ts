@@ -17,9 +17,9 @@ import 'element-plus/theme-chalk/dark/css-vars.css';
 import 'highlight.js/styles/atom-one-dark.css';
 
 import { initThemeOnLoad } from '@/composables/useTheme';
+import initDirective from './directive';
 
 import type { App } from 'vue';
-import initDirective from './directive';
 import type { RouteLocationNormalized } from 'vue-router';
 const DEFAULT_DOCUMENT_TITLE = 'CoderX';
 type GuardRouteLike = Pick<RouteLocationNormalized, 'path' | 'meta' | 'matched'>;

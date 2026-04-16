@@ -17,14 +17,9 @@
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
 import FollowButton from '@/components/FollowButton.vue';
-
-import type { IUserInfo } from '@/stores/types/user.result';
-
 import useUserStore from '@/stores/user.store';
 
-const router = useRouter();
-const userStore = useUserStore();
-const { isUserFollowed } = storeToRefs(userStore);
+import type { IUserInfo } from '@/stores/types/user.result';
 
 const props = withDefaults(
   defineProps<{
@@ -36,6 +31,11 @@ const props = withDefaults(
     userFollow: () => [],
   },
 );
+
+const router = useRouter();
+const userStore = useUserStore();
+const { isUserFollowed } = storeToRefs(userStore);
+
 const userFollowList = computed(() => props.userFollow);
 
 const goDetail = (userId: number) => {

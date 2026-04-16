@@ -31,18 +31,12 @@
 import FollowButton from '@/components/FollowButton.vue';
 import { Mars, Venus } from 'lucide-vue-next';
 import { debounce, getImageUrl } from '@/utils';
-
-import type { IUserInfo } from '@/stores/types/user.result';
-
 import useUserStore from '@/stores/user.store';
 import { useAuth } from '@/composables/useAuth';
 
-const router = useRouter();
-const route = useRoute();
-const userStore = useUserStore();
-const { isCurrentUser } = useAuth();
-// 使用按 userId 获取的 getters，避免 hover 不同用户时状态互相覆盖
-const { isFollowedById, followCountById, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
+import type { IUserInfo } from '@/stores/types/user.result';
+
+// ============== 头像展示、在线状态与跳转个人页 ==============
 
 const {
   info = {},
@@ -55,6 +49,13 @@ const {
   showSet?: boolean;
   disabled?: boolean;
 }>();
+
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
+const { isCurrentUser } = useAuth();
+// 使用按 userId 获取的 getters，避免 hover 不同用户时状态互相覆盖
+const { isFollowedById, followCountById, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
 
 // 判断是否为当前登录用户（用于控制头像编辑图标显示）
 const isMe = computed(() => isCurrentUser(info.id));

@@ -47,17 +47,18 @@
 </template>
 
 <script lang="ts" setup>
+import { nextTick, computed } from 'vue';
+
 import Avatar from '@/components/avatar/Avatar.vue';
 import DetailPanel from './DetailPanel.vue';
 import DetailContentSkeleton from './DetailContentSkeleton.vue';
 import DetailToc from './DetailToc.vue';
-
 import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { ElImageViewer } from 'element-plus';
 import MarkdownIt from 'markdown-it';
-import type { IArticle } from '@/stores/types/article.result';
 import { codeHeightlight, bindImagesLayer, renderCopyButtons, extractTocFromElement } from '@/utils';
-import { nextTick, computed } from 'vue';
+
+import type { IArticle } from '@/stores/types/article.result';
 
 const md = new MarkdownIt({
   html: true,

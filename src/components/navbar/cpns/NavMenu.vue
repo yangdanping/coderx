@@ -19,9 +19,6 @@
 <script lang="ts" setup>
 import { flowNavPath } from '@/utils/flowNav';
 
-const router = useRouter();
-const route = useRoute();
-
 const menus = [
   { name: '首页', path: '/' },
   { name: '专栏', path: '/article' },
@@ -29,6 +26,9 @@ const menus = [
   // { name: '写文章', path: '/edit' },
   // { name: '个人空间', path: '/user' }
 ];
+
+const router = useRouter();
+const route = useRoute();
 
 function isMenuActive(item: (typeof menus)[number]) {
   const p = route.path;

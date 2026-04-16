@@ -19,11 +19,7 @@ import { computed, ref, watch } from 'vue';
 import { useAutoPlay } from '@/composables/useAutoPlay';
 import markdownDemoData from '@/views/home/data/markdown-demo.json';
 
-interface MarkdownDemoData {
-  typingSpeed: number;
-  loopDelay: number;
-  lines: string[];
-}
+import type { MarkdownDemoData } from './types/markdown-render-demo.type';
 
 const props = defineProps<{
   active: boolean;
