@@ -80,7 +80,7 @@
       </el-tooltip>
 
       <el-tooltip content="引用块" placement="bottom" :show-after="500">
-        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" plain @click="editor?.chain().focus().toggleBlockquote().run()" :disabled="!editor" class="toolbar-btn">
+        <el-button :type="editor?.isActive('blockquote') ? 'primary' : ''" plain @click="handleBlockquoteClick" :disabled="!editor" class="toolbar-btn">
           <el-icon><ChatLineSquare /></el-icon>
         </el-button>
       </el-tooltip>
@@ -191,6 +191,7 @@ const props = defineProps<{
   lastSavedAt?: string | null;
   draftErrorMessage?: string;
   resolveImageUploadOptions?: () => ImageUploadCommandOptions | null;
+  insertSplitPreviewBlockquote?: (() => void) | null;
 }>();
 
 const emit = defineEmits<{
@@ -271,6 +272,17 @@ const draftStatusTooltip = computed(() => {
 
   return '';
 });
+
+const handleBlockquoteClick = () => {
+  if (props.isSplitPreviewActive) {
+    // 分屏预览时实际编辑的是左侧 Markdown textarea，不能再对隐藏的 Tiptap 视图直接切换 blockquote，
+    // 否则点击“引用块”后光标会落到 `>` 的下一行，后续输入就会跑到引用块外。
+    props.insertSplitPreviewBlockquote?.();
+    return;
+  }
+
+  props.editor?.chain().focus().toggleBlockquote().run();
+};
 
 // 标题处理
 const handleHeading = (level: string) => {

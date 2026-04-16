@@ -244,6 +244,10 @@ vi.mock('../TiptapToolbar.vue', () => ({
         type: Function,
         default: undefined,
       },
+      insertSplitPreviewBlockquote: {
+        type: Function,
+        default: undefined,
+      },
     },
     emits: ['toggle-split-preview'],
     setup(props, { emit }) {
@@ -263,6 +267,17 @@ vi.mock('../TiptapToolbar.vue', () => ({
               },
             },
             'image-upload',
+          ),
+          h(
+            'button',
+            {
+              'data-testid': 'toolbar-blockquote',
+              onMousedown: (event: MouseEvent) => event.preventDefault(),
+              onClick: () => {
+                (props.insertSplitPreviewBlockquote as undefined | (() => void))?.();
+              },
+            },
+            'blockquote',
           ),
         ]);
     },
@@ -458,6 +473,40 @@ describe('TiptapEditor', () => {
         contentType: 'markdown',
       }),
     );
+  });
+
+  it('inserts a single-line blockquote marker and keeps the caret after the space when split preview quote is clicked', async () => {
+    mockEditorGetMarkdown.mockReturnValue('');
+    mockEditorGetHTML.mockReturnValue('<p></p>');
+
+    const wrapper = mountEditor({}, { attachTo: document.body });
+
+    await flushPromises();
+
+    const sourceInput = wrapper.get('[data-testid="markdown-source-input"]');
+    const textarea = sourceInput.element as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, 0);
+
+    await sourceInput.trigger('focus');
+    await sourceInput.trigger('select');
+    await wrapper.get('[data-testid="toolbar-blockquote"]').trigger('click');
+    await flushPromises();
+
+    const updatedTextarea = wrapper.get('[data-testid="markdown-source-input"]').element as HTMLTextAreaElement;
+
+    expect(updatedTextarea.value).toBe('> ');
+    expect(updatedTextarea.selectionStart).toBe(2);
+    expect(updatedTextarea.selectionEnd).toBe(2);
+    expect(document.activeElement).toBe(updatedTextarea);
+    expect(mockCommandSetContent).toHaveBeenLastCalledWith(
+      '> ',
+      expect.objectContaining({
+        contentType: 'markdown',
+      }),
+    );
+
+    wrapper.unmount();
   });
 
   it('focuses the markdown source at the end when setSelectionToEnd is called while split preview is visible', async () => {

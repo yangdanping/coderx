@@ -8,6 +8,7 @@
       :lastSavedAt="lastSavedAt"
       :draftErrorMessage="draftErrorMessage"
       :resolveImageUploadOptions="resolveToolbarImageUploadOptions"
+      :insertSplitPreviewBlockquote="insertSplitPreviewBlockquote"
       @toggle-split-preview="toggleSplitPreview"
     />
 
@@ -127,6 +128,8 @@ interface MarkdownSourceSelection {
 interface ToolbarImageUploadOptions {
   onUploaded?: ((payload: { url: string; imgId: number }) => void) | null;
 }
+
+type InsertSplitPreviewBlockquote = (() => void) | null;
 
 const SPLIT_PREVIEW_SESSION_KEY = 'tiptap-editor-split-preview-active';
 
@@ -272,7 +275,7 @@ const syncVideoRegistryFromEditor = (editorInstance: EditorInstance) => {
 const syncArticleVideoRegistryFromProps = () => {
   const articleVideos = props.editData?.videos ?? [];
   const nextEntries = articleVideos
-    .map((video) => {
+    .map((video): VideoRegistryEntry | null => {
       const videoId = normalizeVideoId(video?.id);
       const src = typeof video?.url === 'string' ? video.url : '';
 
@@ -478,6 +481,20 @@ const resolveToolbarImageUploadOptions = (): ToolbarImageUploadOptions | null =>
       );
     },
   };
+};
+
+const insertSplitPreviewBlockquote: InsertSplitPreviewBlockquote = () => {
+  if (!isSplitPreviewActive.value || !isMarkdownSourceFocused.value) {
+    return;
+  }
+
+  const selectionSnapshot = updateMarkdownSourceSelection();
+  if (!selectionSnapshot) {
+    return;
+  }
+
+  // 分屏预览下直接往 Markdown 源码插入 `> `，并复用现有插入逻辑统一处理光标落点。
+  insertTextIntoMarkdownSource('> ', selectionSnapshot);
 };
 
 const toggleSplitPreview = () => {
@@ -864,6 +881,11 @@ onBeforeUnmount(() => {
   &__preview:deep(blockquote),
   &__preview:deep(pre) {
     margin-top: 0;
+  }
+
+  &__preview:deep(blockquote p) {
+    // MarkdownIt 在 breaks 模式下会输出 <br>，这里改回 normal 避免 <br> 后的源码换行空白被 pre-wrap 额外显示成“空一行”。
+    white-space: normal;
   }
 
   &__preview:deep(pre) {
