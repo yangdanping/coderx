@@ -1,7 +1,7 @@
 <template>
   <section class="feature-section">
     <SectionTitle id="features">How to Play</SectionTitle>
-    <p class="feature-section__intro">新访客可以在这里快速感受社区的核心交互。每张卡片在进入视口后会自动播放一次演示，并持续循环展示。</p>
+    <p class="feature-section__intro">快速感受社区的核心交互</p>
 
     <div class="feature-section__grid" :class="[`is-${columns}-col`]">
       <FeatureCard

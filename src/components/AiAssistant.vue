@@ -111,7 +111,7 @@ import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
 import { ElMessage } from 'element-plus';
-import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut } from '@/utils';
+import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 
@@ -236,6 +236,17 @@ const md = new MarkdownIt({
 
 const renderMarkdown = (text: string) => {
   return md.render(text);
+};
+
+/** 与详情页 / 评论区一致：DOMPurify 渲染后对气泡内 `pre > code` 做 hljs 高亮并挂载复制按钮（见 `@/utils/codeHeightlight`、`renderCopyButtons`） */
+const enhanceChatMarkdownCodeBlocks = () => {
+  const root = messagesContainer.value;
+  if (!root) return;
+  root.querySelectorAll('.message .bubble:not(.loading)').forEach((bubble) => {
+    const el = bubble as HTMLElement;
+    codeHeightlight(el);
+    renderCopyButtons(el);
+  });
 };
 
 // 从消息中提取文本内容,从后端返回给我的AI SDK v2 的消息格式中,提取真正要渲染的文本
@@ -502,6 +513,20 @@ watch(
   },
 );
 
+watch(
+  messages,
+  () => {
+    nextTick(() => enhanceChatMarkdownCodeBlocks());
+  },
+  { deep: true },
+);
+
+watch(isOpen, (open) => {
+  if (open) {
+    nextTick(() => enhanceChatMarkdownCodeBlocks());
+  }
+});
+
 // 检查 AI 服务状态
 const checkAIServiceStatus = async () => {
   // 由于原生 fetch 不支持 timeout配置,所以使用 AbortController 配合 setTimeout 实现 5 秒超时控制
@@ -567,6 +592,7 @@ onMounted(() => {
   checkAIServiceStatus();
   emitter.on('toggleAiAssistant', toggleOpen);
   window.addEventListener('keydown', handleKeyDown);
+  nextTick(() => enhanceChatMarkdownCodeBlocks());
 });
 
 onUnmounted(() => {
@@ -888,22 +914,19 @@ $shadowColor: #a3dfd0;
               border-radius: 0 4px 4px 0;
             }
             :deep(pre) {
-              background: #1e1e1e;
-              color: #dcdcdc;
-              padding: 12px;
+              /* 与 `@/assets/css/editor.scss` 中代码块一致，配合全局 atom-one-dark + hljs；复制按钮定位见同文件 `.ai-assistant .bubble pre` */
+              background: #282c34;
               border-radius: 6px;
+              padding: 16px;
               overflow-x: auto;
-              margin: 8px 0;
-              font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+              margin: 12px 0;
+              position: relative;
+              font-family: 'Fira Code', 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
               font-size: 13px;
-              line-height: 1.5;
-
-              :where(html.dark) & {
-                background: #0d0d0d;
-              }
+              line-height: 1.6;
             }
-            :deep(code) {
-              /* 行内代码样式 */
+            :deep(code:not(pre code)) {
+              /* 行内代码（排除代码块内的 code） */
               background-color: var(--bg-color-secondary);
               color: var(--el-color-danger);
               padding: 2px 5px;
@@ -913,12 +936,17 @@ $shadowColor: #a3dfd0;
               margin: 0 2px;
             }
             :deep(pre code) {
-              /* 代码块内的 code 标签复位 */
+              display: block;
+              font-family: inherit;
               background-color: transparent;
-              color: inherit;
               padding: 0;
               margin: 0;
               border-radius: 0;
+              white-space: pre;
+              word-break: normal;
+            }
+            :deep(pre code.hljs) {
+              color: #abb2bf;
             }
 
             &.loading {

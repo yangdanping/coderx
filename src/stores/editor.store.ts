@@ -90,6 +90,22 @@ const useEditorStore = defineStore('editor', {
       this.pendingVideoIds.push(videoId);
       console.log('添加待清理视频ID:', videoId, '当前列表:', this.pendingVideoIds);
     },
+    /**
+     * 从 pendingVideoIds 里移除指定 ID。
+     *
+     * 用于两类场景：
+     * - 上传后轮询发现后端 transcode_status=failed：前端节点已删，这里同步把 pending 中的记录清掉，避免误删已不存在的物理文件
+     * - 草稿加载复核：后端返回 404/missing 的 id 已经不存在实体，也不应再留在 pending 列表
+     */
+    removePendingVideoId(videoId: number) {
+      const normalizedId = Number(videoId);
+      if (!Number.isInteger(normalizedId) || normalizedId <= 0) return;
+      const nextList = this.pendingVideoIds.filter((id) => id !== normalizedId);
+      if (nextList.length !== this.pendingVideoIds.length) {
+        this.pendingVideoIds = nextList;
+        console.log('移除待清理视频ID:', normalizedId, '当前列表:', this.pendingVideoIds);
+      }
+    },
     /** 登记一个可被 token / preview 复用的视频元数据 */
     registerVideoMeta(videoMeta: VideoRegistryEntry) {
       const registeredMeta = registerRuntimeVideoMeta(videoMeta);

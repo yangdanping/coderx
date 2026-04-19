@@ -169,3 +169,36 @@
     }
   }
 }
+
+// AI 助手气泡内 Markdown 代码块复制按钮（与上文 `.editor-content-view pre` 一致；需全局样式以便命中 `render()` 挂载的节点）
+.ai-assistant .bubble pre {
+  position: relative;
+
+  &:hover .code-copy-btn {
+    display: flex;
+  }
+
+  .code-copy-btn {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    left: auto;
+    bottom: auto;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: #3b4048;
+    border: 1px solid #4b5263;
+    border-radius: 4px;
+    padding: 4px;
+    transition: all 0.3s;
+    z-index: 10;
+    width: 28px;
+    height: 28px;
+
+    &:hover {
+      background-color: #4b5263;
+    }
+  }
+}

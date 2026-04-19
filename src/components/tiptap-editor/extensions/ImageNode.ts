@@ -1,11 +1,6 @@
 import Image from '@tiptap/extension-image';
 
-interface ImageNodeAttrs {
-  imageId?: number | null;
-  src?: string | null;
-  alt?: string | null;
-  title?: string | null;
-}
+import type { ImageNodeAttrs } from './types';
 
 const escapeHtmlAttribute = (value: string) =>
   value

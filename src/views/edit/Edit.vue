@@ -55,6 +55,7 @@ import { hasMeaningfulArticleContent, resolveArticleEditorContent } from '@/serv
 import { useDraftAutosave } from '@/composables/useDraftAutosave';
 import { Msg, isEmptyObj, LocalCache } from '@/utils';
 import { EMPTY_TIPTAP_DOC, buildDraftMeta, normalizeTiptapDoc, resolveReferencedArticleMediaIds, resolveSelectedTagNames } from './draft.utils';
+import { revalidateVideoNodesOnLoad } from '@/components/tiptap-editor/extensions/videoTranscodeUtils';
 
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
@@ -99,6 +100,43 @@ const isDiscardingDraft = ref(false);
 const isLocalFallbackSyncLocked = ref(false);
 
 const editorReadyResolvers: Array<() => void> = [];
+
+// 标记组件是否已经卸载，避免 revalidateVideoNodesOnLoad 的长轮询在路由切换后继续动旧的 editor
+const isViewDestroyed = ref(false);
+
+// 保护复核只触发一次：三种来源（remote / local / article）的 applyXxx 完成后集中调一次
+let videoRevalidationTriggered = false;
+
+const notifyVideoNodeFailure = (reason: 'failed' | 'missing') => {
+  const message = reason === 'failed'
+    ? '有视频处理失败（可能文件损坏），已从文章中移除，请重新上传'
+    : '有视频已失效（可能被孤儿清理），已从文章中移除';
+  Msg.showFail(message);
+};
+
+/**
+ * 草稿 / 文章加载完成后：
+ * 1. 扫描编辑器 doc 里的 video 节点
+ * 2. 对每个 videoId 调 GET /video/:id 复核 transcode_status
+ * 3. completed 刷 poster，failed / missing 删节点 + 脱钩 pending，processing / pending 轮询至终态
+ *
+ * 注意这里是 fire-and-forget：不 await，避免阻塞 isRestoring=false 和后续自动保存链路。
+ */
+const scheduleVideoNodesRevalidation = () => {
+  if (videoRevalidationTriggered) return;
+  videoRevalidationTriggered = true;
+
+  const editorInstance = editorRef.value?.getEditor?.();
+  if (!editorInstance) return;
+
+  void revalidateVideoNodesOnLoad(editorInstance, {
+    shouldAbort: () => isViewDestroyed.value,
+    onNodeRemoved: (videoId, reason) => {
+      editorStore.removePendingVideoId(videoId);
+      notifyVideoNodeFailure(reason);
+    },
+  });
+};
 
 const autosave = useDraftAutosave({
   scopeId: `article-draft:${articleId.value ?? 'new'}`,
@@ -309,6 +347,9 @@ const initializeEditorState = async () => {
   isRestoring.value = false;
   isAutosaveReady.value = true;
   syncLocalFallbackCache();
+
+  // 编辑器内容已就绪，对 video 节点做一次状态复核（失败/失效的会在后台静默清理）
+  scheduleVideoNodesRevalidation();
 };
 
 const handleEditorHtmlUpdate = (content: string) => {
@@ -375,6 +416,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  isViewDestroyed.value = true;
   window.removeEventListener('beforeunload', handleBeforeUnload);
   window.removeEventListener('keydown', handleKeyDown);
 

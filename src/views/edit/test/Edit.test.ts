@@ -183,6 +183,10 @@ vi.mock('../cpns/PullDownHeader.vue', async () => {
   };
 });
 
+vi.mock('@/components/tiptap-editor/extensions/videoTranscodeUtils', () => ({
+  revalidateVideoNodesOnLoad: vi.fn(() => Promise.resolve()),
+}));
+
 vi.mock('@/components/AiAssistant.vue', async () => {
   const { defineComponent, h } = await import('vue');
   return {

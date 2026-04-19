@@ -78,10 +78,6 @@ import { COVER_IMAGE_SIZE_LIMIT_MESSAGE, getCoverImageValidationMessage, MAX_COV
 import type { UploadUserFile } from 'element-plus';
 import type { PullDownHeaderProps } from './types/pull-down-header.type';
 
-defineOptions({
-  name: 'PullDownHeader',
-});
-
 const props = withDefaults(defineProps<PullDownHeaderProps>(), {
   tags: () => [],
   coverPreviewUrl: null,

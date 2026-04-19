@@ -3,15 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   uploadVideoMock,
+  getVideoStatusMock,
   addPendingVideoIdMock,
   registerVideoMetaMock,
+  removePendingVideoIdMock,
   showInfoMock,
   showSuccessMock,
   showFailMock,
 } = vi.hoisted(() => ({
   uploadVideoMock: vi.fn(),
+  getVideoStatusMock: vi.fn(),
   addPendingVideoIdMock: vi.fn(),
   registerVideoMetaMock: vi.fn(),
+  removePendingVideoIdMock: vi.fn(),
   showInfoMock: vi.fn(),
   showSuccessMock: vi.fn(),
   showFailMock: vi.fn(),
@@ -19,12 +23,14 @@ const {
 
 vi.mock('@/service/file/file.request', () => ({
   uploadVideo: uploadVideoMock,
+  getVideoStatus: getVideoStatusMock,
 }));
 
 vi.mock('@/stores/editor.store', () => ({
   default: () => ({
     addPendingVideoId: addPendingVideoIdMock,
     registerVideoMeta: registerVideoMetaMock,
+    removePendingVideoId: removePendingVideoIdMock,
   }),
 }));
 
@@ -45,6 +51,20 @@ const createFileWithSize = (name: string, type: string, size: number) => {
     value: size,
   });
   return file;
+};
+
+/**
+ * 构造一个包含合法 ISO BMFF `ftyp` box 的 mp4 假文件，
+ * 让 getVideoMagicNumberMismatchMessage 放行到真实上传逻辑。
+ */
+const createValidMp4File = (name = 'demo.mp4') => {
+  // bytes 0-3: box size(any)；bytes 4-7: 'ftyp'；8-11: major brand 'isom'
+  const header = new Uint8Array([
+    0x00, 0x00, 0x00, 0x20, // size
+    0x66, 0x74, 0x79, 0x70, // 'ftyp'
+    0x69, 0x73, 0x6f, 0x6d, // 'isom'
+  ]);
+  return new File([header], name, { type: 'video/mp4' });
 };
 
 const createUploadVideoCommand = (
@@ -74,11 +94,16 @@ const createUploadVideoCommand = (
 describe('VideoUpload', () => {
   beforeEach(() => {
     uploadVideoMock.mockReset();
+    getVideoStatusMock.mockReset();
     addPendingVideoIdMock.mockReset();
     registerVideoMetaMock.mockReset();
+    removePendingVideoIdMock.mockReset();
     showInfoMock.mockReset();
     showSuccessMock.mockReset();
     showFailMock.mockReset();
+
+    // 默认让 pollTranscodeStatus 第一次轮询就落入 missing，避免后续 setTimeout 污染测试
+    getVideoStatusMock.mockResolvedValue({ code: 1, data: null });
   });
 
   it('appends uploaded video at the document end when the editor is not focused', async () => {
@@ -117,9 +142,7 @@ describe('VideoUpload', () => {
       chain: vi.fn(() => chain),
     };
 
-    const uploadCommand = createUploadVideoCommand(
-      new File(['demo'], 'demo.mp4', { type: 'video/mp4' }),
-    );
+    const uploadCommand = createUploadVideoCommand(createValidMp4File('demo.mp4'));
 
     const result = uploadCommand?.({ editor } as never);
 
@@ -179,15 +202,12 @@ describe('VideoUpload', () => {
       chain: vi.fn(() => chain),
     };
 
-    const uploadCommand = createUploadVideoCommand(
-      new File(['demo'], 'focused.mp4', { type: 'video/mp4' }),
-      {
-        insertSelection: {
-          from: 11,
-          to: 11,
-        },
+    const uploadCommand = createUploadVideoCommand(createValidMp4File('focused.mp4'), {
+      insertSelection: {
+        from: 11,
+        to: 11,
       },
-    );
+    });
 
     const result = uploadCommand?.({ editor } as never);
 
@@ -230,6 +250,34 @@ describe('VideoUpload', () => {
     expect(result).toBe(false);
     expect(uploadVideoMock).not.toHaveBeenCalled();
     expect(showInfoMock).toHaveBeenCalledWith('只能上传视频文件');
+  });
+
+  it('rejects mp4 files whose magic number is not ftyp', async () => {
+    const editor = {
+      isFocused: false,
+      getJSON: vi.fn(() => ({
+        type: 'doc',
+        content: [],
+      })),
+      chain: vi.fn(),
+    };
+
+    // 一个声称是 mp4、但文件头不是 ftyp 的垃圾 File
+    const bogusMp4 = new File([new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])], 'bogus.mp4', {
+      type: 'video/mp4',
+    });
+
+    const uploadCommand = createUploadVideoCommand(bogusMp4);
+
+    const result = uploadCommand?.({ editor } as never);
+
+    // 同步校验是通过的（类型/大小），所以 command 返回 true；magic 校验在 async 里拒绝
+    expect(result).toBe(true);
+
+    await flushPromises();
+
+    expect(uploadVideoMock).not.toHaveBeenCalled();
+    expect(showFailMock).toHaveBeenCalledWith('文件头校验失败，可能不是有效的视频文件');
   });
 
   it('rejects videos larger than 20MB before starting upload', () => {

@@ -7,27 +7,12 @@ import { uploadImg } from '@/service/file/file.request';
 import useEditorStore from '@/stores/editor.store';
 import { Msg } from '@/utils';
 import { getImageValidationMessage } from '../uploadLimits';
-
-// 声明命令类型扩展
-interface UploadInsertSelection {
-  from: number;
-  to: number;
-}
-
-interface UploadedImagePayload {
-  url: string;
-  imgId: number;
-}
-
-interface UploadImageOptions {
-  insertSelection?: UploadInsertSelection | null;
-  onUploaded?: ((payload: UploadedImagePayload) => void) | null;
-}
+import type { ImageUploadCommandOptions } from '../types/upload.type';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     imageUpload: {
-      uploadImage: (file: File, options?: UploadImageOptions) => ReturnType;
+      uploadImage: (file: File, options?: ImageUploadCommandOptions) => ReturnType;
     };
   }
 }
@@ -41,7 +26,7 @@ export const ImageUpload = Extension.create({
   addCommands() {
     return {
       uploadImage:
-        (file: File, options?: UploadImageOptions) =>
+        (file: File, options?: ImageUploadCommandOptions) =>
         ({ editor }) => {
           const editorStore = useEditorStore();
           const validationMessage = getImageValidationMessage(file);

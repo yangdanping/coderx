@@ -1,5 +1,6 @@
 import myRequest from '@/service';
 import type { IResData } from '@/service/types';
+import type { IVideoStatusResponse } from '@/components/tiptap-editor/types/video-upload.type';
 
 export function uploadImg(file: File) {
   const formData = new FormData();
@@ -61,4 +62,16 @@ export function addVideoForArticle(articleId: number, videoIds: number[]) {
  */
 export function deleteVideo(videoIds: number[]) {
   return myRequest.delete<IResData>({ url: '/video', data: { videoIds } });
+}
+
+/**
+ * 查询指定视频的转码状态与元数据
+ *
+ * 用于上传成功后的静默轮询，以及打开草稿时对历史 video 节点做状态复核。
+ * 后端在 file 记录被孤儿清理后可能返回 `code !== 0` 或 `data: null`，调用方需自行处理。
+ *
+ * @param videoId 视频ID
+ */
+export function getVideoStatus(videoId: number) {
+  return myRequest.get<IVideoStatusResponse>({ url: `/video/${videoId}` });
 }

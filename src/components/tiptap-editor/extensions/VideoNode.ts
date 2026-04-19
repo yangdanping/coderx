@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { NodeSelection, Plugin } from '@tiptap/pm/state';
 import { getVideoMetaById } from '@/stores/editor.store';
-import type { VideoNodeAttrs, VideoRegistryEntry } from '../types';
+import type { VideoNodeAttrs, VideoRegistryEntry, VideoSelectionView } from './types';
 
 const escapeHtmlAttribute = (value: string) =>
   value
@@ -14,28 +14,6 @@ const normalizeVideoId = (videoId: unknown) => {
   const normalizedId = Number(videoId);
   return Number.isInteger(normalizedId) && normalizedId > 0 ? normalizedId : null;
 };
-
-interface VideoSelectionView {
-  posAtDOM: (node: globalThis.Node, offset: number, bias?: number) => number;
-  state: {
-    doc: {
-      resolve: (position: number) => {
-        nodeAfter?: {
-          type?: {
-            spec?: {
-              selectable?: boolean;
-            };
-          };
-        } | null;
-      };
-    };
-    tr: {
-      setSelection: (selection: unknown) => unknown;
-    };
-  };
-  dispatch: (transaction: unknown) => void;
-  focus?: () => void;
-}
 
 const getVideoElementFromMouseEvent = (event: MouseEvent) => {
   const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
