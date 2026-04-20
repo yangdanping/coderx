@@ -14,7 +14,7 @@
   "dependencies": {
     "@ai-sdk/vue": "^3.0.168",
     "@element-plus/icons-vue": "^2.3.2",
-    "@tanstack/vue-query": "^5.99.1",
+    "@tanstack/vue-query": "^5.99.2",
     "@tiptap/core": "^3.22.4",
     "@tiptap/extension-code-block-lowlight": "^3.22.4",
     "@tiptap/extension-image": "^3.22.4",
@@ -27,7 +27,7 @@
     "@tiptap/vue-3": "^3.22.4",
     "@types/markdown-it": "^14.1.2",
     "ai": "^6.0.168",
-    "axios": "^1.15.0",
+    "axios": "^1.15.1",
     "cropperjs": "2.1.1",
     "dayjs": "^1.11.19",
     "element-china-area-data": "^6.1.0",
@@ -72,9 +72,9 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.0.0",
-    "vite": "^8.0.8",
+    "vite": "^8.0.9",
     "vite-plugin-glsl": "^1.6.0",
     "vitest": "^4.1.4",
-    "vue-tsc": "^3.2.6"
+    "vue-tsc": "^3.2.7"
   }
 }

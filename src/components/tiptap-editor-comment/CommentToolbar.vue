@@ -32,7 +32,7 @@
     <!-- 标题下拉 -->
     <div class="toolbar-group">
       <el-dropdown @command="handleHeading" trigger="click">
-        <el-button :disabled="!editor" class="toolbar-btn dropdown-btn">
+        <el-button :disabled="!editor" plain class="toolbar-btn dropdown-btn">
           标题 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
         </el-button>
         <template #dropdown>
@@ -108,13 +108,13 @@
     <!-- 撤销/重做 -->
     <div class="toolbar-group">
       <el-tooltip :content="`撤销 (${shortcuts.undo})`" placement="bottom" :show-after="500">
-        <el-button @click="editor?.chain().focus().undo().run()" :disabled="!editor?.can().undo()" class="toolbar-btn">
+        <el-button plain @click="editor?.chain().focus().undo().run()" :disabled="!editor?.can().undo()" class="toolbar-btn">
           <el-icon><RefreshLeft /></el-icon>
         </el-button>
       </el-tooltip>
 
       <el-tooltip :content="`重做 (${shortcuts.redo})`" placement="bottom" :show-after="500">
-        <el-button @click="editor?.chain().focus().redo().run()" :disabled="!editor?.can().redo()" class="toolbar-btn">
+        <el-button plain @click="editor?.chain().focus().redo().run()" :disabled="!editor?.can().redo()" class="toolbar-btn">
           <el-icon><RefreshRight /></el-icon>
         </el-button>
       </el-tooltip>
@@ -193,22 +193,41 @@ const confirmInsertLink = () => {
 </script>
 
 <style lang="scss" scoped>
+/* 工具栏底部分割线：border-bottom；主色浓淡由祖先的 accentStrength（--ce-strength）控制 */
 .comment-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--el-border-color);
-  background: var(--bg-color-secondary);
+  gap: 6px;
+  padding: 8px 10px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--el-color-primary) calc(28% * var(--ce-strength, 1)), transparent) transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--el-color-primary) calc(12% * var(--ce-strength, 1)), var(--el-border-color-lighter, var(--el-border-color)));
+  background: color-mix(in srgb, var(--el-color-primary) calc(9% * var(--ce-strength, 1)), var(--el-fill-color-blank, var(--bg-color-primary)));
+
+  /* 宽屏：横向溢出时再出现滚动条，样式保持轻量 */
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--el-color-primary) calc(35% * var(--ce-strength, 1)), transparent);
+  }
 
   .toolbar-group {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
   }
 
   .toolbar-btn {
+    flex-shrink: 0;
     min-width: 32px;
     height: 32px;
     padding: 0 8px;
@@ -238,8 +257,73 @@ const confirmInsertLink = () => {
   }
 
   :deep(.el-divider--vertical) {
+    flex-shrink: 0;
     height: 20px;
-    margin: 0 8px;
+    margin: 0 4px;
+  }
+
+  /* 工具栏按钮：默认幽灵、悬停与激活更清晰 */
+  :deep(.toolbar-btn.el-button.is-plain) {
+    --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+    --el-button-bg-color: transparent;
+    --el-button-border-color: transparent;
+
+    &:hover:not(.is-disabled) {
+      --el-button-bg-color: color-mix(in srgb, var(--el-color-primary) calc(14% * var(--ce-strength, 1)), transparent);
+      --el-button-text-color: var(--el-color-primary);
+    }
+  }
+
+  :deep(.toolbar-btn.el-button--primary.is-plain) {
+    --el-button-bg-color: color-mix(in srgb, var(--el-color-primary) calc(16% * var(--ce-strength, 1)), transparent);
+    --el-button-border-color: color-mix(in srgb, var(--el-color-primary) calc(35% * var(--ce-strength, 1)), transparent);
+    --el-button-text-color: var(--el-color-primary);
+  }
+}
+
+/* 窄屏：横向滚动条默认可见、更细；仅当指针落在滚动条区域时加粗（WebKit） */
+@container comment-editor (max-width: 640px) {
+  .comment-toolbar {
+    overflow-x: scroll;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--el-color-primary) calc(42% * var(--ce-strength, 1)), transparent)
+      color-mix(in srgb, var(--el-color-primary) calc(10% * var(--ce-strength, 1)), transparent);
+
+    &::-webkit-scrollbar {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: transparent;
+    }
+
+    /* 指针落在滚动条轨道/滑块上时加粗（整根 bar 区域） */
+    &::-webkit-scrollbar:hover {
+      height: 9px;
+    }
+
+    &::-webkit-scrollbar-track {
+      margin: 0 6px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--el-color-primary) calc(12% * var(--ce-strength, 1)), transparent);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--el-color-primary) calc(38% * var(--ce-strength, 1)), transparent);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--el-color-primary) calc(55% * var(--ce-strength, 1)), transparent);
+    }
+
+    &::-webkit-scrollbar-thumb:active {
+      background: color-mix(in srgb, var(--el-color-primary) calc(68% * var(--ce-strength, 1)), transparent);
+    }
+
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
   }
 }
 

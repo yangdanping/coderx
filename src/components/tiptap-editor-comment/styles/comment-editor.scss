@@ -1,14 +1,16 @@
 /**
  * Tiptap 评论编辑器样式
  * 精简版样式，与文章编辑器风格保持一致但更轻量
+ * 主色浓度受祖先节点 --ce-strength（由 TiptapEditorComment 的 accentStrength 设置）
  */
 
-// 编辑区域
+// 编辑区域（正文背景：调深浅可改下面 calc 中的 4）
 .comment-editor-content {
   padding: 12px 16px;
   min-height: 100px;
   max-height: 250px;
   overflow-y: auto;
+  background: color-mix(in srgb, var(--el-color-primary) calc(4% * var(--ce-strength, 1)), var(--el-bg-color, #fff));
 
   // 聚焦时的轮廓
   &:focus-within {
@@ -16,7 +18,7 @@
   }
 
   &.is-focused {
-    // 聚焦时的样式（可选）
+    // 选中态由外层容器 :focus-within 承担
   }
 
   // ProseMirror 编辑器核心样式
@@ -24,11 +26,11 @@
     outline: none;
     min-height: 80px;
 
-    // 占位符样式
+    // 占位符（与 el-input 占位符语气一致，避免沿用正文次级色过深）
     > p.is-editor-empty:first-child::before {
       content: attr(data-placeholder);
       float: left;
-      color: var(--text-secondary);
+      color: var(--el-text-color-placeholder, #a8abb2);
       pointer-events: none;
       height: 0;
     }
@@ -66,10 +68,10 @@
 
     // 引用块
     blockquote {
-      border-left: 4px solid var(--el-color-primary-light-5);
+      border-left: 4px solid color-mix(in srgb, var(--el-color-primary) calc(45% * var(--ce-strength, 1)), var(--el-border-color));
       padding: 8px 12px;
       margin: 12px 0;
-      background-color: var(--bg-color-secondary);
+      background-color: color-mix(in srgb, var(--el-color-primary) calc(7% * var(--ce-strength, 1)), var(--el-bg-color, #fff));
       color: var(--text-secondary);
 
       p {
@@ -101,7 +103,7 @@
 
     // 行内代码
     code:not(pre code) {
-      background: var(--bg-color-secondary);
+      background: color-mix(in srgb, var(--el-color-primary) calc(8% * var(--ce-strength, 1)), var(--el-fill-color-light, #f5f7fa));
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Fira Code', 'Consolas', monospace;
@@ -174,16 +176,27 @@
 // BubbleMenu 样式（选中文字时的浮动菜单）
 .comment-bubble-menu {
   display: flex;
-  gap: 4px;
-  padding: 4px 8px;
-  background: var(--bg-color-primary);
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--el-color-primary) calc(6% * var(--ce-strength, 1)), var(--el-bg-color, #fff));
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) calc(18% * var(--ce-strength, 1)), var(--el-border-color-lighter, var(--el-border-color)));
+  border-radius: 8px;
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--el-color-primary) calc(12% * var(--ce-strength, 1)), rgba(0, 0, 0, 0.08)),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) calc(8% * var(--ce-strength, 1)), transparent);
 
   .el-button {
-    padding: 4px 8px;
+    padding: 4px 10px;
     font-size: 12px;
+  }
+
+  .el-button--default {
+    --el-button-bg-color: transparent;
+    --el-button-border-color: color-mix(in srgb, var(--el-color-primary) calc(22% * var(--ce-strength, 1)), transparent);
+
+    &:hover {
+      --el-button-bg-color: color-mix(in srgb, var(--el-color-primary) calc(12% * var(--ce-strength, 1)), transparent);
+    }
   }
 }
 

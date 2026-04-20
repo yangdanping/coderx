@@ -1,5 +1,5 @@
 <template>
-  <div class="comment-editor-container" ref="editorContainerRef">
+  <div class="comment-editor-container" ref="editorContainerRef" :style="accentVars">
     <!-- 工具栏 -->
     <CommentToolbar :editor="editor" />
 
@@ -8,9 +8,9 @@
 
     <!-- BubbleMenu：选中文字时显示 -->
     <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" v-if="editor" class="comment-bubble-menu">
-      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" plain @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
-      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" plain @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
-      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" plain @click="handleBubbleLink"> 链接 </el-button>
+      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
+      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
+      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" @click="handleBubbleLink"> 链接 </el-button>
     </BubbleMenu>
   </div>
 </template>
@@ -32,13 +32,26 @@ const props = withDefaults(
     editComment?: string;
     placeholder?: string;
     height?: string | number;
+    /**
+     * 评论框主色叠加强度（0–100）。越大则边框/工具栏/正文底上的主题蓝越明显；0 接近中性色。
+     * 与下方样式中的 `calc(…% * var(--ce-strength))` 联动，可在不改组件代码的情况下调外观。
+     */
+    accentStrength?: number;
   }>(),
   {
     editComment: '',
     placeholder: '请输入评论内容...',
     height: 'auto',
+    accentStrength: 30,
   },
 );
+
+/** 0–1，供子节点用 `calc(N% * var(--ce-strength))` 统一调色 */
+const accentVars = computed(() => {
+  const raw = props.accentStrength ?? 50;
+  const s = Math.min(100, Math.max(0, raw)) / 100;
+  return { '--ce-strength': String(s) } as Record<string, string>;
+});
 
 const emit = defineEmits<{
   (e: 'update:content', content: string): void;
@@ -146,12 +159,34 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+/*
+ * 边框与形状（自己改这里即可）：
+ * - 本块：整框描边 border、圆角 border-radius、聚焦环 :focus-within
+ * - 工具栏与编辑区分割线：CommentToolbar.vue → .comment-toolbar → border-bottom
+ * - 正文区域底色：styles/comment-editor.scss → .comment-editor-content
+ * 主色「浓淡」由 props accentStrength（--ce-strength）与各处的 calc(…% * var(--ce-strength)) 控制。
+ */
 .comment-editor-container {
+  /* 无 :style 绑定兜底，与 accentStrength 默认 50 一致 */
+  --ce-strength: 0.5;
+  container-type: inline-size;
+  container-name: comment-editor;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) calc(14% * var(--ce-strength, 1)), var(--el-border-color-lighter, var(--el-border-color)));
   overflow: hidden;
-  background: var(--bg-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) calc(5% * var(--ce-strength, 1)), var(--bg-color-primary));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--el-color-primary) calc(6% * var(--ce-strength, 1)), transparent);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  // &:focus-within {
+  //   border-color: color-mix(in srgb, var(--el-color-primary) calc(38% * var(--ce-strength, 1)), var(--el-border-color));
+  //   box-shadow:
+  //     0 0 0 3px color-mix(in srgb, var(--el-color-primary) calc(20% * var(--ce-strength, 1)), transparent),
+  //     0 1px 0 color-mix(in srgb, var(--el-color-primary) calc(10% * var(--ce-strength, 1)), transparent);
+  // }
 }
 </style>
