@@ -7,9 +7,14 @@
 // 编辑区域（正文背景：调深浅可改下面 calc 中的 4）
 .comment-editor-content {
   padding: 12px 16px;
+  // min/max 决定用户可拖拽的高度区间。默认值（height）会在 TiptapEditorComment 中
+  // 根据 localStorage 中的 comment-editor:content-height 恢复；未设置时退回 min-height。
   min-height: 100px;
-  max-height: 250px;
+  max-height: 600px;
   overflow-y: auto;
+  // 启用原生 resize 手柄（右下角）。参考 Reddit 评论框交互：用户按住右下角拖拽调整高度，
+  // 新高度通过 ResizeObserver 回写 localStorage 持久化。
+  resize: vertical;
   background: color-mix(in srgb, var(--el-color-primary) calc(4% * var(--ce-strength, 1)), var(--el-bg-color, #fff));
 
   // 聚焦时的轮廓

@@ -2,13 +2,18 @@
   <div class="comment-form" :class="{ 'is-reply': isReply }">
     <Avatar v-if="!isReply" :info="userInfo" />
     <div class="input">
-      <TiptapEditorComment @update:content="(valueHtml) => (content = valueHtml)" />
-      <div class="input-action">
-        <el-button v-if="isReply" @click="handleCancel" type="default" plain size="small">取消</el-button>
-        <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
-          {{ isSubmitting ? '提交中' : isReply ? '回复' : '发送' }}
-        </el-button>
-      </div>
+      <!--
+        取消 / 提交按钮通过 #actions slot 交给 TiptapEditorComment，
+        与编辑器的"Aa"工具栏切换按钮同处底部工具条，避免 CommentForm 再用 absolute 悬浮定位。
+      -->
+      <TiptapEditorComment @update:content="(valueHtml) => (content = valueHtml)">
+        <template #actions>
+          <el-button v-if="isReply" @click="handleCancel" type="default" plain size="small">取消</el-button>
+          <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
+            {{ isSubmitting ? '提交中' : isReply ? '回复' : '发送' }}
+          </el-button>
+        </template>
+      </TiptapEditorComment>
     </div>
   </div>
 </template>
@@ -106,50 +111,26 @@ onUnmounted(() => {
 .comment-form {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
   margin-top: 20px;
-  margin-right: 30px;
   margin-bottom: 80px;
 
   .input {
-    position: relative;
+    // 让输入区自适应父容器，不再固定 50vw，避免被收窄时顶出边界
     display: flex;
     flex-direction: column;
-    // margin-left: 20px;
-    width: clamp(400px, 50vw, 1150px);
-    margin-left: 30px;
-
-    .input-action {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      display: flex;
-      gap: 8px;
-    }
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   &.is-reply {
     margin: 10px 0;
+    gap: 0;
+
     .input {
       width: 100%;
-      margin-left: 0;
-
-      .input-action {
-        position: relative;
-        bottom: auto;
-        margin-top: 8px;
-        display: flex;
-        right: auto;
-      }
     }
-  }
-
-  // 避免内容被按钮遮挡
-  :deep(.comment-editor-content) {
-    padding-bottom: 50px;
-  }
-
-  &.is-reply :deep(.comment-editor-content) {
-    padding-bottom: 50px;
   }
 }
 </style>
