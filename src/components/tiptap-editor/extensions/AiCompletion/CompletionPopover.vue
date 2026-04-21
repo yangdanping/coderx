@@ -45,6 +45,8 @@ const props = defineProps<{
   position: PopoverPosition | null;
   activeIndex: number;
   editorRect: DOMRect | null;
+  // 可选：已经换算好的视口绝对坐标（用于分屏预览模式下基于 textarea 光标定位）
+  absolutePosition?: { top: number; left: number } | null;
 }>();
 
 const emit = defineEmits<{
@@ -93,11 +95,22 @@ onBeforeUnmount(() => {
 
 // 是否显示弹出框
 const visible = computed(() => {
-  return (props.state === 'loading' || props.state === 'showing' || props.state === 'error') && props.position !== null;
+  const active = props.state === 'loading' || props.state === 'showing' || props.state === 'error';
+  if (!active) return false;
+  // 分屏预览模式下只依赖 absolutePosition；常规模式下依赖 position
+  return props.absolutePosition != null || props.position !== null;
 });
 
 // 计算位置样式
 const positionStyle = computed(() => {
+  // 分屏预览模式：父组件已算好 textarea 光标对应的视口坐标，直接使用
+  if (props.absolutePosition) {
+    return {
+      top: `${props.absolutePosition.top}px`,
+      left: `${props.absolutePosition.left}px`,
+    };
+  }
+
   if (!props.position || !props.editorRect) {
     return { display: 'none' };
   }

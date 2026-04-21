@@ -82,6 +82,7 @@
       :position="completionPosition"
       :activeIndex="completionActiveIndex"
       :editorRect="editorRect"
+      :absolutePosition="completionAbsolutePosition"
       @select="handleCompletionSelect"
       @hover="handleCompletionHover"
     />
@@ -175,6 +176,8 @@ const completionState = ref<CompletionState>('idle');
 const completionSuggestions = ref<CompletionSuggestion[]>([]);
 const completionPosition = ref<PopoverPosition | null>(null);
 const completionActiveIndex = ref(0);
+// 分屏预览模式下，基于 textarea 光标算出的视口绝对坐标；非分屏模式始终为 null，走原有定位逻辑
+const completionAbsolutePosition = ref<{ top: number; left: number } | null>(null);
 const DEFAULT_VIDEO_WIDTH = 360;
 const markdownRenderer = new MarkdownIt({
   // Keep custom node raw HTML (for example <video>) visible in split preview.
@@ -415,6 +418,94 @@ const updateMarkdownSourceSelection = (textarea = markdownSourceInputRef.value):
   return markdownSourceSelection.value;
 };
 
+// 计算 textarea 光标在视口中的坐标（top / left / height）。
+// 实现思路：创建一个与 textarea 样式完全一致的镜像 div，把光标前文本放进去，
+// 再用一个空 span 标记光标位置，span.getBoundingClientRect() 就是当前光标的 viewport 坐标。
+// 仅在分屏预览模式下为 AI 补全弹框定位使用，使用完即销毁。
+const TEXTAREA_MIRROR_STYLE_PROPS = [
+  'direction',
+  'boxSizing',
+  'width',
+  'height',
+  'overflowX',
+  'overflowY',
+  'borderTopWidth',
+  'borderRightWidth',
+  'borderBottomWidth',
+  'borderLeftWidth',
+  'borderTopStyle',
+  'borderRightStyle',
+  'borderBottomStyle',
+  'borderLeftStyle',
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+  'fontStyle',
+  'fontVariant',
+  'fontWeight',
+  'fontStretch',
+  'fontSize',
+  'fontSizeAdjust',
+  'lineHeight',
+  'fontFamily',
+  'textAlign',
+  'textTransform',
+  'textIndent',
+  'textDecoration',
+  'letterSpacing',
+  'wordSpacing',
+  'tabSize',
+  'MozTabSize',
+] as const;
+
+const getTextareaCaretViewportCoords = (textarea: HTMLTextAreaElement): { top: number; left: number; height: number } | null => {
+  if (!textarea) return null;
+
+  const selectionStart = typeof textarea.selectionStart === 'number' ? textarea.selectionStart : 0;
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement('div');
+  const computedStyle = mirror.style;
+
+  computedStyle.position = 'absolute';
+  computedStyle.top = '0';
+  computedStyle.left = '-9999px';
+  computedStyle.visibility = 'hidden';
+  computedStyle.whiteSpace = 'pre-wrap';
+  computedStyle.wordWrap = 'break-word';
+
+  TEXTAREA_MIRROR_STYLE_PROPS.forEach((prop) => {
+    const value = (style as unknown as Record<string, string>)[prop as string];
+    if (value) {
+      (computedStyle as unknown as Record<string, string>)[prop as string] = value;
+    }
+  });
+
+  mirror.textContent = textarea.value.substring(0, selectionStart);
+
+  const marker = document.createElement('span');
+  // 尾字符兜底：空内容时 span 没有高度，放一个零宽占位让它拿到正确行高
+  marker.textContent = textarea.value.substring(selectionStart) || '.';
+  mirror.appendChild(marker);
+
+  document.body.appendChild(mirror);
+
+  const textareaRect = textarea.getBoundingClientRect();
+  const mirrorRect = mirror.getBoundingClientRect();
+  const markerRect = marker.getBoundingClientRect();
+
+  const parsedLineHeight = parseFloat(style.lineHeight);
+  const fallbackLineHeight = Number.isFinite(parsedLineHeight) ? parsedLineHeight : parseFloat(style.fontSize) * 1.5;
+
+  const top = textareaRect.top + (markerRect.top - mirrorRect.top) - textarea.scrollTop;
+  const left = textareaRect.left + (markerRect.left - mirrorRect.left) - textarea.scrollLeft;
+  const height = markerRect.height || fallbackLineHeight || 16;
+
+  document.body.removeChild(mirror);
+
+  return { top, left, height };
+};
+
 const handleMarkdownSourceFocus = (event: FocusEvent) => {
   isMarkdownSourceFocused.value = true;
   updateMarkdownSourceSelection(event.target as HTMLTextAreaElement);
@@ -571,7 +662,21 @@ onMounted(() => {
         completionPosition.value = position;
         completionActiveIndex.value = aiCompletionStorage.activeIndex || 0;
 
-        // 更新编辑器容器位置
+        // 分屏预览模式下，底层 Tiptap 编辑器被 v-show 隐藏（display:none），
+        // 扩展里算出的 coordsAtPos / view.dom rect 都接近 0，会导致弹框跑到左上角遮挡内容。
+        // 这里改为基于 markdown 源码 textarea 的光标位置，自行换算出视口绝对坐标并交给弹框。
+        if (isSplitPreviewActive.value && markdownSourceInputRef.value) {
+          const caret = getTextareaCaretViewportCoords(markdownSourceInputRef.value);
+          if (caret) {
+            completionAbsolutePosition.value = {
+              top: caret.top + caret.height + 4,
+              left: caret.left,
+            };
+            return;
+          }
+        }
+
+        completionAbsolutePosition.value = null;
         if (editorContainerRef.value) {
           editorRect.value = editorContainerRef.value.getBoundingClientRect();
         }

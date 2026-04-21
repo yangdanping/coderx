@@ -1,0 +1,58 @@
+// ===========================================================================
+// 详情页布局 token（文章详情页 / 评论区共用）
+//
+// 目的:
+//   1. 单点维护"可读列宽度"、"面板最小占位"、"TOC 宽度"等共享量
+//   2. 对外暴露 `@mixin detail-centered-column` 给需要直接对齐正文列的
+//      兄弟组件（目前是 Comment）复用
+//   3. 与 .detail 根节点上的 CSS 自定义属性 `--detail-readable-max` 配合:
+//      SCSS 值作为首屏默认, CSS 变量负责在媒体查询中动态切换
+//
+// 用法:
+//   @use '@/assets/css/detail-layout' as *;
+//   @include detail-centered-column;
+// ===========================================================================
+
+// ---------- 尺寸 token ----------
+
+/// 桌面下正文可读列最大宽度
+/// 两项式: 绝对上限 + 视口相对上限. 去掉了原来为 fixed 面板让位的 calc()
+$detail-readable-max: min(1100px, 60vw);
+
+/// 窄屏下正文可读列最大宽度
+$detail-readable-narrow-max: min(90%, 1000px);
+
+/// 左侧 DetailPanel 所在列的最小宽度(保证 sticky 面板始终有位置)
+$detail-panel-col-min: 90px;
+
+/// 右侧 DetailToc 所在列的固定宽度
+$detail-toc-col-width: 220px;
+
+/// 三列 grid 之间的列间距
+$detail-layout-gap: 20px;
+
+/// 正文/评论区横向内边距(桌面)
+$detail-content-padding: 24px;
+
+// ---------- 断点 ----------
+
+/// 平板及以下断点(与 Element Plus 的 sm-and-down / md-and-up 对齐)
+$detail-breakpoint-tablet: 992px;
+
+// ---------- Mixin ----------
+
+/// 让一个块对齐到正文可读列并水平居中
+///
+/// 读取根节点下发的 `--detail-readable-max` 变量, 在 SCSS 编译期给一个兜底值,
+/// 这样即使消费者没有运行在 .detail 子树中也能得到合理宽度.
+@mixin detail-centered-column {
+  width: 100%;
+  max-width: var(--detail-readable-max, #{$detail-readable-max});
+  margin-inline: auto;
+  padding-inline: $detail-content-padding;
+  box-sizing: border-box;
+
+  @media (max-width: $detail-breakpoint-tablet) {
+    padding-inline: 0;
+  }
+}

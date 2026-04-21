@@ -73,16 +73,18 @@ const onClickOutside = () => {
 </script>
 
 <style lang="scss" scoped>
+// 布局定位(左侧栏 / 水平对齐)由父级 .detail-main grid 负责,
+// 本组件只关心"随阅读滚动时贴在视口偏上中部"这一行为.
+// 因此不再使用 position: fixed + top:50% + translateY(-50%),
+// 而是在父 grid 单元格内 sticky.
 .detail-panel {
-  font-size: 30px;
-  position: fixed;
-  left: 2vw;
-  top: 50%;
-  transform: translateY(-50%);
+  position: sticky;
+  top: 20vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 20px;
+  font-size: 30px;
 }
 </style>

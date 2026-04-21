@@ -4,9 +4,8 @@
     <el-tooltip :content="`AI 助手 (${aiShortcutText})`" placement="left" :disabled="isOpen">
       <div class="ai-trigger" role="button" @click="toggleOpen">
         <el-icon v-if="!isOpen"><MessageCircle /></el-icon>
-        <!-- <el-icon v-if="!isOpen"><span class="trigger-text">chat</span></el-icon> -->
-        <el-icon v-else><X /></el-icon>
-        <span v-if="!isOpen" class="trigger-text">AI助手</span>
+        <el-icon v-else><X color="#f3b2ac" /></el-icon>
+        <span v-if="!isOpen" class="trigger-text">Chat</span>
       </div>
     </el-tooltip>
 
@@ -607,6 +606,7 @@ onUnmounted(() => {
 @use 'sass:color';
 
 $shadowColor: #a3dfd0;
+$shadowColor2: #f3b2ac;
 .ai-assistant {
   position: fixed;
   bottom: 20px;
@@ -619,34 +619,30 @@ $shadowColor: #a3dfd0;
   .ai-trigger {
     width: auto;
     min-width: 50px;
-    height: 40px;
-    padding: 0 15px;
-    border-radius: 25px;
+    height: 25px;
+    padding: 0 10px;
+    // border-radius: 25px;
+    border-radius: 2px;
     background-color: var(--bg-color-primary);
     color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s;
-    box-shadow:
-      0 0 0 2px $shadowColor,
-      0 0 8px 2px color.change($shadowColor, $alpha: 0.6),
-      0 0 16px 4px color.change($shadowColor, $alpha: 0.1),
-      0 0 24px 6px color.change($shadowColor, $alpha: 0.1);
+    box-shadow: 0 0 0 1px $shadowColor;
 
     &:hover {
-      transform: scale(1.1);
+      transform: scale(1.05);
       box-shadow:
-        0 0 0 2px $shadowColor,
-        0 0 8px 8px color.change($shadowColor, $alpha: 0.6),
-        0 0 16px 16px color.change($shadowColor, $alpha: 0.1),
-        0 0 24px 32px color.change($shadowColor, $alpha: 0.1);
+        0 0 0 1px $shadowColor,
+        0 0 8px 4px color.change($shadowColor, $alpha: 0.6),
+        0 0 16px 8px color.change($shadowColor, $alpha: 0.1),
+        0 0 24px 16px color.change($shadowColor, $alpha: 0.1);
     }
 
     .trigger-text {
       margin-left: 5px;
       font-size: 14px;
-      font-weight: bold;
       background: linear-gradient(to right, #00ffbb, #6ec2c4);
       -webkit-background-clip: text;
       background-clip: text;
@@ -655,10 +651,9 @@ $shadowColor: #a3dfd0;
   }
 
   &.is-open .ai-trigger {
-    margin-bottom: 10px;
-    width: 40px;
-    height: 40px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 5px;
+    height: 25px;
+    box-shadow: 0 0 0 1px $shadowColor2;
   }
 
   .chat-window {

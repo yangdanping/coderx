@@ -196,7 +196,7 @@ const handleReducedMotionChange = (ev: MediaQueryListEvent) => {
 };
 
 onMounted(() => {
-  void nextTick(() => {
+  nextTick(() => {
     updateDotGrid();
     if (headerRef.value && typeof ResizeObserver !== 'undefined') {
       ro = new ResizeObserver(() => updateDotGrid());
@@ -311,18 +311,8 @@ onBeforeUnmount(() => {
   will-change: transform, opacity;
   overflow: hidden;
   /* mask-image 只读取 Alpha，与具体颜色无关，天然适配 Dark/Light */
-  -webkit-mask-image: radial-gradient(
-    ellipse 95% 85% at 50% 45%,
-    #000 var(--mask-inner),
-    rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%),
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 95% 85% at 50% 45%,
-    #000 var(--mask-inner),
-    rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%),
-    transparent 100%
-  );
+  -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
+  mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
 
   :where(html.dark) & {
     border-color: rgba(148, 184, 238, 0.4);

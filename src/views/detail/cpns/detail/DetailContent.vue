@@ -7,28 +7,21 @@
 
       <template #default>
         <template v-if="showArticleContent">
-          <div class="content-layout">
-            <div class="main-column">
-              <el-container>
-                <el-main>
-                  <div class="author-info-block">
-                    <Avatar :size="90" :info="article.author ?? {}" />
-                    <div class="author-info-box">
-                      <h2>{{ article.author?.name ?? '佚名' }}</h2>
-                      <span v-dateformat="article.createAt">创建</span>
-                    </div>
-                  </div>
-                  <hr />
-                  <h1 class="article-title">{{ article.title }}</h1>
-                  <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
-                  <hr />
-                </el-main>
-              </el-container>
-            </div>
-            <div class="side-column hidden-sm-and-down" v-if="tocTitles.length">
-              <DetailToc :titles="tocTitles" />
-            </div>
-          </div>
+          <el-container>
+            <el-main>
+              <div class="author-info-block">
+                <Avatar :size="90" :info="article.author ?? {}" />
+                <div class="author-info-box">
+                  <h2>{{ article.author?.name ?? '佚名' }}</h2>
+                  <span v-dateformat="article.createAt">创建</span>
+                </div>
+              </div>
+              <hr />
+              <h1 class="article-title">{{ article.title }}</h1>
+              <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
+              <hr />
+            </el-main>
+          </el-container>
         </template>
 
         <div v-else class="detail-empty">
@@ -37,10 +30,6 @@
       </template>
     </el-skeleton>
 
-    <DetailPanel v-if="showArticleContent" :article="article" />
-    <div class="hidden-md-and-up" v-if="showArticleContent && tocTitles.length">
-      <DetailToc :titles="tocTitles" />
-    </div>
     <!-- 富文本图片-------------------------------------------------------- -->
     <el-image-viewer v-if="imgPreview.show" :url-list="imgPreview.imgs" :initial-index="imgPreview.index" @close="imgPreview.show = false" hide-on-click-modal />
   </div>
@@ -50,15 +39,14 @@
 import { nextTick, computed } from 'vue';
 
 import Avatar from '@/components/avatar/Avatar.vue';
-import DetailPanel from './DetailPanel.vue';
 import DetailContentSkeleton from './DetailContentSkeleton.vue';
-import DetailToc from './DetailToc.vue';
 import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { ElImageViewer } from 'element-plus';
 import MarkdownIt from 'markdown-it';
 import { codeHeightlight, bindImagesLayer, renderCopyButtons, extractTocFromElement } from '@/utils';
 
 import type { IArticle } from '@/stores/types/article.result';
+import type { DetailTocTitle } from './types/detail-toc.type';
 
 const md = new MarkdownIt({
   html: true,
@@ -77,12 +65,18 @@ const props = withDefaults(
   },
 );
 
+// 父级(Detail.vue)在外层 grid 的第 3 列渲染 DetailToc,
+// 所以这里把 HTML 渲染后抽出的标题上抛.
+const emit = defineEmits<{
+  'update:toc': [titles: DetailTocTitle[]];
+}>();
+
 const article = computed(() => props.article);
 
 /*
  * ======== 正文显示规则 ========
  * 1. skeleton 只认 query 的 pending 状态，避免 loading 布尔值和状态字符串重复表达同一件事。
- * 2. 真实正文只在 success 且 article.id 存在时渲染，避免半成品对象被误判成“已加载”。
+ * 2. 真实正文只在 success 且 article.id 存在时渲染，避免半成品对象被误判成"已加载"。
  */
 const showSkeleton = computed(() => props.status === 'pending');
 const showArticleContent = computed(() => props.status === 'success' && !!article.value.id);
@@ -99,7 +93,6 @@ const renderedContent = computed(() => {
 });
 
 const htmlContentRef = ref<null | HTMLElement>();
-const tocTitles = ref<{ id: string; title: string; level: number }[]>([]);
 
 const imgPreview = reactive({
   img: '',
@@ -113,8 +106,8 @@ const initContentProcessing = (el: HTMLElement) => {
   codeHeightlight(el); //代码高亮
   renderCopyButtons(el); // 挂载复制按钮
 
-  // 提取标题生成目录
-  tocTitles.value = extractTocFromElement(el);
+  // 提取标题生成目录, 通过 emit 交给父级渲染 DetailToc
+  emit('update:toc', extractTocFromElement(el));
 };
 
 // 必须同时监听 DOM 挂载和内容变化，确保异步数据加载后能重新执行图片绑定和代码高亮等逻辑
@@ -131,22 +124,12 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-$layout-gap: 20px;
-$side-column-width: 220px;
-$detail-content-padding: 24px;
-$main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 2) - (#{$layout-gap} * 2) - (#{$detail-content-padding} * 2)));
+@use '@/assets/css/detail-layout' as *;
 
+// 本组件不再自己算"扣掉左右面板/TOC 的可用宽度",
+// 外层 .detail-main grid 已经把正文列宽控制在 var(--detail-readable-max).
+// 这里只负责填满所在的中间列 + 保留原有 padding-inline.
 .detail-content {
-  // 桌面端使用三列网格：左侧留白、正文、右侧目录。
-  // 左右两列等宽，可以保证中间正文严格相对整个页面居中。
-  // 这里用 min() 取三个“上限”里的最小值：
-  // 1) 1100px：正文的绝对最大宽度
-  // 2) 60vw：正文随视口缩放的相对宽度上限
-  // 3) calc(...)：扣除左右留白、目录和间距后，当前视口真正还能分给正文的最大宽度
-  // 这个场景核心是在多个上限里选更保守的那个，所以 min() 比 clamp() 更直接。
-  // clamp(min, preferred, max) 更适合“给一个最小值 + 理想值 + 最大值”的连续区间约束。
-  // max() 则是取多个值中的最大值，常用于设置下限；和这里“限制别太宽”的目标相反。
-  margin-top: 80px;
   width: 100%;
   box-sizing: border-box;
   padding-inline: $detail-content-padding;
@@ -160,32 +143,13 @@ $main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 
     color: var(--text-secondary);
   }
 
-  .content-layout {
-    display: grid;
-    grid-template-columns: $side-column-width minmax(0, $main-column-max-width) $side-column-width;
-    justify-content: center;
-    align-items: start;
-    column-gap: $layout-gap;
-
-    .main-column {
-      grid-column: 2;
-      min-width: 0;
-    }
-
-    .side-column {
-      position: sticky;
-      top: 80px;
-      grid-column: 3;
-      width: $side-column-width;
-      min-width: 0;
-    }
-  }
-
   .el-main {
     @include glass-effect;
+
     .author-info-block {
       display: flex;
       align-items: center;
+
       .author-info-box {
         display: flex;
         flex-direction: column;
@@ -194,6 +158,7 @@ $main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 
         margin-left: 20px;
       }
     }
+
     .article-title {
       align-items: center;
       font-size: 50px;
@@ -201,28 +166,8 @@ $main-column-max-width: min(1100px, 60vw, calc(100vw - (#{$side-column-width} * 
     }
   }
 
-  /* Responsive Utilities */
-  @media (max-width: 992px) {
-    .hidden-sm-and-down {
-      display: none !important;
-    }
-    // 小屏下退回单列布局，目录隐藏，正文单独居中。
-    .content-layout {
-      display: block;
-      .side-column {
-        display: none;
-      }
-      .main-column {
-        width: min(90%, 1000px);
-        margin: 0 auto;
-      }
-    }
-  }
-
-  @media (min-width: 993px) {
-    .hidden-md-and-up {
-      display: none !important;
-    }
+  @media (max-width: $detail-breakpoint-tablet) {
+    padding-inline: 0;
   }
 }
 </style>
