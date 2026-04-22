@@ -14,7 +14,7 @@
       <!-- 调整大小的手柄 -->
       <div class="resize-handle resize-handle-left" @mousedown="startResize('left', $event)"></div>
       <div class="resize-handle resize-handle-top" @mousedown="startResize('top', $event)"></div>
-      <div class="resize-handle resize-handle-corner" @mousedown="startResize('corner', $event)"></div>
+      <div class="resize-handle resize-handle-corner" @mousedown="startResize('top-left', $event)"></div>
       <div class="chat-header">
         <div class="header-left">
           <div class="header-title"><span>Coder</span><span class="x">X</span> <span>AI 助手</span></div>
@@ -111,6 +111,7 @@ import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
 import { ElMessage } from 'element-plus';
 import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
+import { useResizable } from '@/composables/useResizable';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 
@@ -131,100 +132,21 @@ const aiCapability = ref<{ type: string; supportsTools: boolean } | null>(null);
 const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
 // ============ 可调整大小功能 ============
-const MIN_WIDTH = 330;
-const MAX_WIDTH = 600;
-const MIN_HEIGHT = 400;
-const MAX_HEIGHT = 700;
-const DEFAULT_WIDTH = 350;
-const DEFAULT_HEIGHT = 500;
+// 通过 useResizable 封装拖拽改尺寸 + localStorage 持久化 + rAF 节流 + 卸载兜底清理
+const { width: chatWidth, height: chatHeight, startResize } = useResizable({
+  initialWidth: 350,
+  initialHeight: 500,
+  minWidth: 330,
+  maxWidth: 600,
+  minHeight: 400,
+  maxHeight: 700,
+  persistKey: 'aiChatWindowSize',
+});
 
-// 从 localStorage 读取保存的尺寸
-const getSavedSize = () => {
-  try {
-    const saved = LocalCache.getCache('aiChatWindowSize');
-    if (saved && saved.width && saved.height) {
-      return {
-        width: Math.min(Math.max(saved.width, MIN_WIDTH), MAX_WIDTH),
-        height: Math.min(Math.max(saved.height, MIN_HEIGHT), MAX_HEIGHT),
-      };
-    }
-  } catch (e) {
-    console.warn('Failed to load saved chat window size');
-  }
-  return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
-};
-
-const savedSize = getSavedSize();
-const chatWidth = ref(savedSize.width);
-const chatHeight = ref(savedSize.height);
-const isResizing = ref(false);
-const resizeDirection = ref<'left' | 'top' | 'corner' | null>(null);
-const startX = ref(0);
-const startY = ref(0);
-const startWidth = ref(0);
-const startHeight = ref(0);
-
-// 聊天窗口动态样式
 const chatWindowStyle = computed(() => ({
   width: `${chatWidth.value}px`,
   height: `${chatHeight.value}px`,
 }));
-
-// 保存尺寸到 localStorage
-const saveSize = () => {
-  LocalCache.setCache('aiChatWindowSize', {
-    width: chatWidth.value,
-    height: chatHeight.value,
-  });
-};
-
-// 开始调整大小
-const startResize = (direction: 'left' | 'top' | 'corner', e: MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation();
-  isResizing.value = true;
-  resizeDirection.value = direction;
-  startX.value = e.clientX;
-  startY.value = e.clientY;
-  startWidth.value = chatWidth.value;
-  startHeight.value = chatHeight.value;
-
-  document.addEventListener('mousemove', handleResize);
-  document.addEventListener('mouseup', stopResize);
-  document.body.style.cursor = direction === 'corner' ? 'nwse-resize' : direction === 'left' ? 'ew-resize' : 'ns-resize';
-  document.body.style.userSelect = 'none';
-};
-
-// 处理调整大小
-const handleResize = (e: MouseEvent) => {
-  if (!isResizing.value) return;
-
-  const deltaX = startX.value - e.clientX; // 左侧拖动，鼠标向左移动 deltaX 为正
-  const deltaY = startY.value - e.clientY; // 顶部拖动，鼠标向上移动 deltaY 为正
-
-  if (resizeDirection.value === 'left' || resizeDirection.value === 'corner') {
-    const newWidth = startWidth.value + deltaX;
-    chatWidth.value = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
-  }
-
-  if (resizeDirection.value === 'top' || resizeDirection.value === 'corner') {
-    const newHeight = startHeight.value + deltaY;
-    chatHeight.value = Math.min(Math.max(newHeight, MIN_HEIGHT), MAX_HEIGHT);
-  }
-};
-
-// 停止调整大小
-const stopResize = () => {
-  if (isResizing.value) {
-    isResizing.value = false;
-    resizeDirection.value = null;
-    document.removeEventListener('mousemove', handleResize);
-    document.removeEventListener('mouseup', stopResize);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    saveSize();
-  }
-};
 
 // 初始化 Markdown 解析器,并且禁用原始 HTML，避免把模型返回内容当成可信 DOM 直接插入页面。
 const md = new MarkdownIt({
@@ -595,8 +517,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', handleResize);
-  document.removeEventListener('mouseup', stopResize);
   emitter.off('toggleAiAssistant', toggleOpen);
   window.removeEventListener('keydown', handleKeyDown);
 });

@@ -2,32 +2,19 @@
   <div class="right">
     <slot name="right"> </slot>
 
-    <!-- 主题切换下拉菜单 -->
-    <el-dropdown @command="handleThemeChange" trigger="click" class="theme-dropdown">
-      <div class="theme-btn-wrapper">
-        <el-icon :size="20">
-          <Sun v-if="mode === 'light'" />
-          <Moon v-else-if="mode === 'dark'" />
-          <Monitor v-else />
-        </el-icon>
-      </div>
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item command="light" :class="{ active: mode === 'light' }">
-            <el-icon><Sun /></el-icon>
-            <span>浅色</span>
-          </el-dropdown-item>
-          <el-dropdown-item command="dark" :class="{ active: mode === 'dark' }">
-            <el-icon><Moon /></el-icon>
-            <span>深色</span>
-          </el-dropdown-item>
-          <el-dropdown-item command="system" :class="{ active: mode === 'system' }">
-            <el-icon><Monitor /></el-icon>
-            <span>跟随系统</span>
-          </el-dropdown-item>
-        </el-dropdown-menu>
+    <!-- 主题切换按钮：点击在 light / dark 间切换，按 D 键同样可切换 -->
+    <el-tooltip effect="dark" placement="bottom" :show-after="300" :hide-after="0">
+      <template #content>
+        <span>切换到{{ isDark ? '浅色' : '深色' }}主题</span>
+        <span class="shortcut-hint"> 按 <kbd class="shortcut-key">d</kbd> 键切换 </span>
       </template>
-    </el-dropdown>
+      <button type="button" class="theme-btn-wrapper" :aria-label="isDark ? '切换到浅色主题' : '切换到深色主题'" @click="handleThemeClick">
+        <Transition name="theme-icon" mode="out-in">
+          <el-icon v-if="isDark" key="moon" :size="20"><Moon /></el-icon>
+          <el-icon v-else key="sun" :size="20"><Sun /></el-icon>
+        </Transition>
+      </button>
+    </el-tooltip>
 
     <template v-if="isMe">
       <NavBarUser />
@@ -38,18 +25,18 @@
 </template>
 
 <script lang="ts" setup>
-import { Sun, Moon, Monitor } from 'lucide-vue-next';
+import { Sun, Moon } from 'lucide-vue-next';
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
 import { useAuth } from '@/composables/useAuth';
-import { useTheme, type ThemeMode } from '@/composables/useTheme';
+import { useTheme } from '@/composables/useTheme';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 
 const rootStore = useRootStore();
 const userStore = useUserStore();
 const { isCurrentUser } = useAuth();
-const { mode, setMode } = useTheme();
+const { isDark, toggleDark } = useTheme();
 const isMe = computed(() => isCurrentUser(userStore.userInfo.id));
 
 const changeDialog = () => {
@@ -57,9 +44,11 @@ const changeDialog = () => {
   rootStore.toggleLoginDialog();
 };
 
-// 主题切换处理
-const handleThemeChange = (command: ThemeMode) => {
-  setMode(command);
+// 鼠标点击切换主题后主动失焦，避免后续按 D 键时浏览器把焦点状态
+// "升级"为 :focus-visible 而出现蓝色描边（键盘 Tab 聚焦时的焦点环仍保留）
+const handleThemeClick = (event: MouseEvent) => {
+  toggleDark();
+  (event.currentTarget as HTMLElement | null)?.blur();
 };
 </script>
 
@@ -77,14 +66,22 @@ const handleThemeChange = (command: ThemeMode) => {
     justify-content: center;
     width: 32px;
     height: 32px;
+    padding: 0;
+    border: none;
     border-radius: 50%;
     cursor: pointer;
     color: var(--text-secondary);
+    background: transparent;
     transition: all 0.3s;
 
     &:hover {
       color: var(--text-primary);
       background: var(--glass-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--el-color-primary);
+      outline-offset: 2px;
     }
   }
 
@@ -103,16 +100,43 @@ const handleThemeChange = (command: ThemeMode) => {
   }
 }
 
-// 主题下拉菜单项样式
-:deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+// 主题图标切换动画
+.theme-icon-enter-active,
+.theme-icon-leave-active {
+  transition:
+    transform 0.25s ease,
+    opacity 0.2s ease;
+}
 
-  &.active {
-    color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
-  }
+.theme-icon-enter-from {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
+}
+
+.theme-icon-leave-to {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
+}
+
+// Tooltip 内的快捷键提示
+.shortcut-hint {
+  margin-left: 8px;
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.shortcut-key {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  margin: 0 2px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 3px;
+  font-family: var(--el-font-family, inherit);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 // 移动端响应式样式
