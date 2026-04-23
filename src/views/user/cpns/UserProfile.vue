@@ -107,6 +107,7 @@ import TabItem from '@/components/common/TabItem.vue';
 
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
+import useOnlineStore from '@/stores/online.store';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import useHistoryStore from '@/stores/history.store';
@@ -121,6 +122,7 @@ const TAB_NAMES: ProfileTabName[] = ['文章', '评论', '收藏', '关注', '�
 
 const rootStore = useRootStore();
 const userStore = useUserStore();
+const onlineStore = useOnlineStore();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
@@ -128,7 +130,8 @@ const { isCurrentUser } = useAuth();
 const route = useRoute();
 const router = useRouter();
 
-const { isFollowed, followCount, userOnlineStatus } = storeToRefs(userStore);
+const { isFollowed, followCount } = storeToRefs(userStore);
+const { userOnlineStatusByUserId } = storeToRefs(onlineStore);
 const { isSmallScreen } = storeToRefs(rootStore);
 
 const props = defineProps<{
@@ -146,7 +149,7 @@ const currentProfilePath = computed(() => (currentUserId.value ? `/user/${curren
 
 const genderIcon = computed(() => (profile.value.sex === '女' ? Venus : Mars));
 const genderClass = computed(() => (profile.value.sex === '女' ? 'female' : 'male'));
-const onlineStatus = computed(() => userOnlineStatus.value(profile.value.name));
+const onlineStatus = computed(() => userOnlineStatusByUserId.value(profile.value.id));
 const followingCount = computed(() => followCount.value('following'));
 const followerCount = computed(() => followCount.value('follower'));
 

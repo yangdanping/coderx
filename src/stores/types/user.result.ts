@@ -21,8 +21,12 @@ export interface ICollect {
 }
 
 export interface IOnlineUser {
+  /** 与后端 socket 广播一致，通常为字符串形式的用户 id */
+  userId: string | number;
   userName: string;
+  avatarUrl?: string;
   status?: string;
+  connectedAt?: string;
 }
 
 export interface IFollowInfo {

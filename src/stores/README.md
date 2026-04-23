@@ -53,11 +53,22 @@
 
 ---
 
-## `user.store.ts` — 用户、关注缓存与收藏夹（19 个 action）
+## `online.store.ts` — 在线用户列表（Socket 广播）
+
+| action                   | 注释                                                                 |
+| ------------------------ | -------------------------------------------------------------------- |
+| `applyOnlineUserList`    | 应用服务端 `online` 事件中的列表，并按 LocalCache 中当前用户置顶     |
+| `clearOnlineUsers`       | 清空列表（如退出登录）                                               |
+| `disconnectAllTransports` | 断开 Socket.IO / WebSocket 在线通道（可插拔，失败则忽略）           |
+
+**Getters**：`userOnlineStatusByUserId` — 按用户 id 返回 Element Plus `el-tag` 用的在线/离线展示。
+
+---
+
+## `user.store.ts` — 用户、关注缓存与收藏夹（18 个 action）
 
 | action                  | 注释                                                                |
 | ----------------------- | ------------------------------------------------------------------- |
-| `updateOnlineUsers`     | 更新在线用户列表，并将当前登录用户置顶                              |
 | `logOut`                | 断开在线连接、清空 token/用户信息缓存；可选整页刷新，否则弹出登录框 |
 | `initProfile`           | 清空当前查看的他人资料页 `profile`                                  |
 | `registerAction`        | 用户注册，成功后自动走登录流程                                      |

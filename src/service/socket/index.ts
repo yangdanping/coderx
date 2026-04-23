@@ -1,7 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
 import { LocalCache, SessionCache } from '@/utils';
-import useUserStore from '@/stores/user.store';
 
 type DisconnectDescription =
   | Error
@@ -11,7 +10,6 @@ type DisconnectDescription =
     };
 
 export default function useSocket(state?: any) {
-  const userStore = useUserStore();
   const socket = io(SOCKET_URL, {
     query: {
       userName: LocalCache.getCache('userInfo')?.name ?? '',
@@ -20,7 +18,9 @@ export default function useSocket(state?: any) {
   })
     // 监听io的online事件----------------------------------
     .on('online', ({ userList }) => {
-      userStore.updateOnlineUsers(userList);
+      void import('@/stores/online.store').then(({ default: useOnlineStore }) => {
+        useOnlineStore().applyOnlineUserList(userList);
+      });
     })
     // 监听targetSocket的receive事件----------------------------------
     .on('receive', (data) => {

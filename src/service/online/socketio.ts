@@ -5,7 +5,6 @@
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
 import { LocalCache } from '@/utils';
-import useUserStore from '@/stores/user.store';
 
 class OnlineStatusService {
   private socket: Socket | null = null;
@@ -79,8 +78,9 @@ class OnlineStatusService {
     // 服务器会在用户上线/下线时广播最新的在线用户列表
     this.socket.on('online', ({ userList }) => {
       console.log('收到在线用户列表:', userList);
-      const userStore = useUserStore();
-      userStore.updateOnlineUsers(userList);
+      void import('@/stores/online.store').then(({ default: useOnlineStore }) => {
+        useOnlineStore().applyOnlineUserList(userList);
+      });
     });
 
     // 监听断开连接事件

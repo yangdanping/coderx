@@ -3,7 +3,7 @@
     <el-popover popper-class="user-popover" :width="`calc(200px + ${nameCount}em)`" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
         <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" :class="{ 'online-border': isOnline }" />
-        <el-tag size="small" effect="plain" :type="userOnlineStatus(info.name).type">{{ userOnlineStatus(info.name).msg }}</el-tag>
+        <el-tag size="small" effect="plain" :type="userOnlineStatusByUserId(info.id).type">{{ userOnlineStatusByUserId(info.id).msg }}</el-tag>
         <div class="user-info">
           <div class="info1">
             <h2>{{ info.name }}</h2>
@@ -32,6 +32,7 @@ import FollowButton from '@/components/FollowButton.vue';
 import { Mars, Venus } from 'lucide-vue-next';
 import { debounce, getImageUrl } from '@/utils';
 import useUserStore from '@/stores/user.store';
+import useOnlineStore from '@/stores/online.store';
 import { useAuth } from '@/composables/useAuth';
 
 import type { IUserInfo } from '@/stores/types/user.result';
@@ -53,9 +54,11 @@ const {
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+const onlineStore = useOnlineStore();
 const { isCurrentUser } = useAuth();
 // 使用按 userId 获取的 getters，避免 hover 不同用户时状态互相覆盖
-const { isFollowedById, followCountById, onlineUsers, userOnlineStatus } = storeToRefs(userStore);
+const { isFollowedById, followCountById } = storeToRefs(userStore);
+const { onlineUsers, userOnlineStatusByUserId } = storeToRefs(onlineStore);
 
 // 判断是否为当前登录用户（用于控制头像编辑图标显示）
 const isMe = computed(() => isCurrentUser(info.id));
@@ -87,7 +90,9 @@ const avatarUrl = computed(() => {
 });
 
 const isOnline = computed(() => {
-  const user = onlineUsers.value.find((user) => user.userName === info.name);
+  if (info.id == null) return false;
+  const id = String(info.id);
+  const user = onlineUsers.value.find((u) => String(u.userId) === id);
   return user?.status === 'online';
 });
 const mouseenter =

@@ -105,6 +105,8 @@ describe('UserProfile', () => {
                 pendingFollowRequests: [],
                 myFollowInfo: {},
                 collects: [],
+              },
+              online: {
                 onlineUsers: [],
               },
               article: {
@@ -186,6 +188,8 @@ describe('UserProfile', () => {
                 pendingFollowRequests: [],
                 myFollowInfo: {},
                 collects: [],
+              },
+              online: {
                 onlineUsers: [],
               },
               article: {

@@ -6,10 +6,11 @@ import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { LocalCache, Msg, emitter } from '@/utils';
 import useArticleStore from './article.store';
 import useRootStore from './index.store';
+import useOnlineStore from './online.store';
 
 import type { IAccount } from '@/service/user/user.types';
 import type { RouteParam } from '@/service/types';
-import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect, IOnlineUser } from '@/stores/types/user.result';
+import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect } from '@/stores/types/user.result';
 
 // 缓存过期时间：30秒内重复 hover 同一用户不会重新请求
 const CACHE_TTL = 30 * 1000;
@@ -29,7 +30,6 @@ const useUserStore = defineStore('user', {
     pendingFollowRequests: [] as number[],
     myFollowInfo: {} as IFollowInfo, // 登录用户的关注/粉丝列表(用于NavBarUser等组件展示)
     collects: [] as ICollect[],
-    onlineUsers: [] as IOnlineUser[],
   }),
   getters: {
     // ============ 按 userId 获取关注信息（解决状态闪烁问题）============
@@ -102,48 +102,15 @@ const useUserStore = defineStore('user', {
     myFollowCount() {
       return (type: string) => this.myFollowInfo[type]?.length ?? 0;
     },
-    userOnlineStatus() {
-      return (userName: string | undefined) => {
-        if (!userName) return { type: 'info', msg: '离线' } as const;
-        const user = this.onlineUsers.find((user) => user.userName === userName);
-        return user?.status === 'online' ? ({ type: 'success', msg: '在线' } as const) : ({ type: 'info', msg: '离线' } as const);
-      };
-    },
   },
   actions: {
-    updateOnlineUsers(userList: IOnlineUser[]) {
-      // 将当前用户置顶
-      userList.find((user, index) => {
-        if (user.userName === this.userInfo.name) {
-          return userList.unshift(userList.splice(index, 1)[0]);
-        }
-      });
-      this.onlineUsers = userList;
-      console.log('当前在线用户列表', this.onlineUsers);
-    },
     // 除非用户主动退出登录,否则默认不刷新页面,默认弹出登录框
     logOut(refresh = false) {
-      // 1. 断开在线连接
-      // 动态导入以避免循环依赖，支持可插拔切换
+      // 1. 断开在线连接并清空在线列表
       try {
-        // 优先尝试 Socket.IO 版本
-        import('@/service/online/socketio')
-          .then((module) => {
-            module.default.disconnect();
-            console.log('Socket.IO 连接已断开（退出登录）');
-          })
-          .catch(() => {
-            // 如果 Socket.IO 未启用，尝试 WebSocket 版本
-            import('@/service/online/websocket')
-              .then((module) => {
-                module.default.disconnect();
-                console.log('WebSocket 连接已断开（退出登录）');
-              })
-              .catch(() => {
-                // 两者都未启用，跳过
-                console.log('在线状态功能未启用');
-              });
-          });
+        const onlineStore = useOnlineStore();
+        void onlineStore.disconnectAllTransports();
+        onlineStore.clearOnlineUsers();
       } catch (error) {
         console.warn('断开在线连接失败:', error);
       }

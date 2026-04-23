@@ -3,7 +3,6 @@
  * 特点：原生 API、无依赖、需要手动处理重连
  */
 import { LocalCache } from '@/utils';
-import useUserStore from '@/stores/user.store';
 
 // 从环境变量获取 WebSocket 地址（需要将 http 转为 ws）
 const getWsUrl = () => {
@@ -69,9 +68,9 @@ class WebSocketService {
 
         // 处理不同类型的消息
         if (data.type === 'online') {
-          // 在线用户列表更新
-          const userStore = useUserStore();
-          userStore.updateOnlineUsers(data.userList);
+          void import('@/stores/online.store').then(({ default: useOnlineStore }) => {
+            useOnlineStore().applyOnlineUserList(data.userList);
+          });
         }
       } catch (error) {
         console.error('解析消息失败:', error);
