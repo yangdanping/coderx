@@ -36,7 +36,7 @@ import DetailContent from './cpns/detail/DetailContent.vue';
 import DetailPanel from './cpns/detail/DetailPanel.vue';
 import DetailToc from './cpns/detail/DetailToc.vue';
 import Comment from './cpns/comment/Comment.vue';
-import AiAssistant from '@/components/AiAssistant.vue';
+import AiAssistant from '@/components/ai/AiAssistant.vue';
 import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { useArticleDetail } from '@/composables/useArticleDetail';
 import useUserStore from '@/stores/user.store';

@@ -44,7 +44,7 @@
             <el-avatar :size="30" :icon="m.role === 'user' ? User : Bot" :src="m.role === 'user' ? userInfo.avatarUrl : ''" />
           </div>
           <div class="content">
-            <!-- V2 中 message.parts 是数组，需要找到 type="text" 的 part -->
+            <!-- 当前 UIMessage 通过 message.parts 承载正文，需要提取 type="text" 的 part -->
             <div v-if="getMessageText(m)" class="bubble" v-dompurify-html="renderMarkdown(getMessageText(m))"></div>
             <div v-if="m.role === 'assistant' && getToolParts(m).length > 0" class="tool-parts">
               <div v-for="(part, partIndex) in getToolParts(m)" :key="`${m.id || index}-tool-${partIndex}`" class="tool-part">
@@ -114,6 +114,7 @@ import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortc
 import { useResizable } from '@/composables/useResizable';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
+import { getAiAssistantMessageText } from './AiAssistant.message';
 
 // AI 助手快捷键提示文本（根据系统自动适配）
 const aiShortcutText = getAiShortcutText();
@@ -133,7 +134,11 @@ const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
 // ============ 可调整大小功能 ============
 // 通过 useResizable 封装拖拽改尺寸 + localStorage 持久化 + rAF 节流 + 卸载兜底清理
-const { width: chatWidth, height: chatHeight, startResize } = useResizable({
+const {
+  width: chatWidth,
+  height: chatHeight,
+  startResize,
+} = useResizable({
   initialWidth: 350,
   initialHeight: 500,
   minWidth: 330,
@@ -170,24 +175,8 @@ const enhanceChatMarkdownCodeBlocks = () => {
   });
 };
 
-// 从消息中提取文本内容,从后端返回给我的AI SDK v2 的消息格式中,提取真正要渲染的文本
-const getMessageText = (message: any) => {
-  // 如果有 content 字段，直接返回
-  if (message.content) {
-    return message.content;
-  }
-
-  // 如果有 parts 数组，查找 type="text" 的 part
-  if (message.parts && Array.isArray(message.parts)) {
-    // 合并所有文本类型的 part
-    return message.parts
-      .filter((part: any) => part.type === 'text' && part.text)
-      .map((part: any) => part.text)
-      .join('\n');
-  }
-
-  return '';
-};
+// 当前 AI SDK 的 UIMessage 已经以 parts 作为公开结构，正文需要从 type="text" 的 part 中提取。
+const getMessageText = getAiAssistantMessageText;
 
 /**
  * 助手的一条回复在 SDK 里会拆成很多「零件」（parts），除了正文 text，还可能夹着「正在调哪个工具」「工具跑完了没」之类。
@@ -426,9 +415,9 @@ watch(
   },
 );
 
-// 监听最后一条消息内容变化（流式输出时）
+// 监听最后一条消息的文本 parts 变化（流式输出时）
 watch(
-  () => messages.value[messages.value.length - 1]?.content,
+  () => getMessageText(messages.value[messages.value.length - 1]),
   () => {
     scrollToBottom();
   },

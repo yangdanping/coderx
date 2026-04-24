@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
-import { LocalCache, SessionCache } from '@/utils';
+import { LocalCache } from '@/utils';
 
 type DisconnectDescription =
   | Error
@@ -10,10 +10,15 @@ type DisconnectDescription =
     };
 
 export default function useSocket(state?: any) {
+  const token = LocalCache.getCache('token') ?? '';
+  const isGuest = !token;
+
   const socket = io(SOCKET_URL, {
+    auth: {
+      token,
+    },
     query: {
-      userName: LocalCache.getCache('userInfo')?.name ?? '',
-      userId: LocalCache.getCache('userInfo')?.id ?? '',
+      isGuest: isGuest ? 'true' : 'false',
     },
   })
     // 监听io的online事件----------------------------------

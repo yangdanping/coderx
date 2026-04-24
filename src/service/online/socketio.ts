@@ -23,10 +23,10 @@ class OnlineStatusService {
     }
 
     const token = LocalCache.getCache('token');
-    const userInfo = LocalCache.getCache('userInfo');
+    const userInfo = LocalCache.getCache('userInfo') ?? {};
 
     // 调试：打印用户信息
-    console.log('调试信息：');
+    console.log('='.repeat(50), ' OnlineStatusService 调试信息 start ', '='.repeat(50));
     console.log('  - token:', token ? '存在' : '不存在');
     console.log('  - userInfo:', userInfo);
     console.log('  - SOCKET_URL:', SOCKET_URL);
@@ -39,12 +39,13 @@ class OnlineStatusService {
       console.log('连接参数：游客模式（只接收在线列表，不显示在列表中）');
     } else {
       console.log('正在以"在线用户"模式连接 Socket.IO 服务器...');
-      console.log('连接参数：', {
+      console.log('本地用户信息（实际身份以后端 JWT 验签为准）：', {
         userName: userInfo.name,
         userId: userInfo.id,
         avatarUrl: userInfo.avatarUrl,
       });
     }
+    console.log('='.repeat(50), ' OnlineStatusService 调试信息 end ', '='.repeat(50));
 
     // 🟢【新增逻辑】自动适配跨设备访问
     // 如果配置的是 localhost，但当前是通过 IP 访问的，则自动替换为当前 IP
@@ -55,12 +56,12 @@ class OnlineStatusService {
       console.log(`🔄 检测到跨设备访问，自动修正 Socket 地址为: ${connectionUrl}`);
     }
 
-    // 创建 Socket.IO 连接(连接时已传递身份信息,后端通过io.on('connection')的回调,拿到socket.handshake.query,再解构拿到这些信息)
+    // 创建 Socket.IO 连接：登录身份只通过 auth.token 交给后端验签，query 不再作为用户身份来源
     this.socket = io(connectionUrl, {
+      auth: {
+        token: token || '',
+      },
       query: {
-        userName: isGuest ? '' : userInfo.name, // 游客不传用户名
-        userId: isGuest ? '' : userInfo.id, // 游客不传用户 ID
-        avatarUrl: isGuest ? '' : userInfo.avatarUrl || '', // 游客不传头像
         isGuest: isGuest ? 'true' : 'false', // 标识是否为游客
       },
       // 自动重连配置

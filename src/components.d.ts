@@ -11,7 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AiAssistant: typeof import('./components/AiAssistant.vue')['default']
+    AiAssistant: typeof import('./components/ai/AiAssistant.vue')['default']
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     AvatarCropper: typeof import('./components/avatar/AvatarCropper.vue')['default']

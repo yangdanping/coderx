@@ -49,7 +49,7 @@
 <script lang="ts" setup>
 import TiptapEditor from '@/components/tiptap-editor/TiptapEditor.vue';
 import PullDownHeader from './cpns/PullDownHeader.vue';
-import AiAssistant from '@/components/AiAssistant.vue';
+import AiAssistant from '@/components/ai/AiAssistant.vue';
 
 import { hasMeaningfulArticleContent, resolveArticleEditorContent } from '@/service/article/article.content';
 import { useDraftAutosave } from '@/composables/useDraftAutosave';
@@ -108,9 +108,7 @@ const isViewDestroyed = ref(false);
 let videoRevalidationTriggered = false;
 
 const notifyVideoNodeFailure = (reason: 'failed' | 'missing') => {
-  const message = reason === 'failed'
-    ? '有视频处理失败（可能文件损坏），已从文章中移除，请重新上传'
-    : '有视频已失效（可能被孤儿清理），已从文章中移除';
+  const message = reason === 'failed' ? '有视频处理失败（可能文件损坏），已从文章中移除，请重新上传' : '有视频已失效（可能被孤儿清理），已从文章中移除';
   Msg.showFail(message);
 };
 
@@ -179,11 +177,11 @@ const currentDraftSnapshot = computed(() => ({
 const hasMeaningfulDraft = computed(() => {
   return Boolean(
     articleTitle.value.trim() ||
-      selectedTags.value.length ||
-      manualCoverImgId.value ||
-      pendingImageIds.value.length ||
-      pendingVideoIds.value.length ||
-      hasMeaningfulArticleContent(jsonContent.value),
+    selectedTags.value.length ||
+    manualCoverImgId.value ||
+    pendingImageIds.value.length ||
+    pendingVideoIds.value.length ||
+    hasMeaningfulArticleContent(jsonContent.value),
   );
 });
 

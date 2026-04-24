@@ -14,7 +14,7 @@ import glsl from 'vite-plugin-glsl';
 const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 
 // https:/vitejs.dev/config/
-export default defineConfig(({ mode }): UserConfig => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [
@@ -137,5 +137,5 @@ export default defineConfig(({ mode }): UserConfig => {
         '@': pathSrc,
       },
     },
-  };
+  } as UserConfig;
 });
