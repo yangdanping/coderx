@@ -72,6 +72,7 @@ const useArticleStore = defineStore('article', {
   state: () => ({
     articles: {} as IArticles,
     recommends: [] as IArticle[],
+    recommendLoading: true,
     article: {} as IArticle,
     userLikedArticleIdList: [] as number[], //该用户点赞过的文章id,通过computed计算是否有点赞
     tags: [] as Itag[],
@@ -142,8 +143,13 @@ const useArticleStore = defineStore('article', {
     },
     /** 获取推荐文章列表（侧边栏展示） */
     async getRecommendAction(pageNum = 1, pageSize = 10) {
-      const res = await getRecommend({ pageNum, pageSize });
-      res.code === 0 && (this.recommends = res.data);
+      this.recommendLoading = true;
+      try {
+        const res = await getRecommend({ pageNum, pageSize });
+        res.code === 0 && (this.recommends = res.data);
+      } finally {
+        this.recommendLoading = false;
+      }
     },
     /** 获取全部文章标签（导航栏标签列表） */
     async getTagsAction() {

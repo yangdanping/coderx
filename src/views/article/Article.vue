@@ -7,7 +7,7 @@
       <ArticleList />
     </div>
     <div class="article-recommends">
-      <ArticleRecommend v-show="toggleRec" :recommends="recommends" />
+      <ArticleRecommend v-show="toggleRec" :recommends="recommends" :loading="recommendLoading" />
     </div>
   </div>
 </template>
@@ -20,7 +20,7 @@ import useRootStore from '@/stores/index.store';
 import useArticleStore from '@/stores/article.store';
 const rootStore = useRootStore();
 const articleStore = useArticleStore();
-const { recommends, tags } = storeToRefs(articleStore);
+const { recommends, recommendLoading, tags } = storeToRefs(articleStore);
 const { isSmallScreen } = storeToRefs(rootStore);
 
 // toggle左侧推荐文章可见性
