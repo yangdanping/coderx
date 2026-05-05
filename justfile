@@ -10,6 +10,10 @@ i:
 dev:
     pnpm dev
 
+# tiptap 分片 demo：用 HTTP 打开，勿用 file://（否则 ES Module 会被拦截）
+chunk-demo:
+    cd src/components/tiptap-editor/demo && python3 -m http.server 8765
+
 # 构建
 build:
     pnpm build && pnpm preview

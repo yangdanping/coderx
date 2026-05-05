@@ -34,3 +34,6 @@ stats.html
 .env.development
 .env.production
 .env.*.local
+
+# demo
+*demo
