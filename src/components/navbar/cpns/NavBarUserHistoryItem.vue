@@ -22,9 +22,10 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
 import Avatar from '@/components/avatar/Avatar.vue';
+import type { IHistoryItem } from '@/stores/types/history.result';
 
 const props = defineProps<{
-  item: any;
+  item: IHistoryItem;
 }>();
 
 const router = useRouter();
@@ -43,11 +44,14 @@ const handleClick = () => {
   display: flex;
   gap: 12px;
   padding: 8px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 8px;
+  transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--glass-bg);
   }
 
   &:last-child {
@@ -91,6 +95,7 @@ const handleClick = () => {
     .item-title {
       font-size: 13px;
       font-weight: 600;
+      color: var(--text-primary);
       display: -webkit-box;
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
@@ -106,6 +111,7 @@ const handleClick = () => {
       .item-time {
         font-size: 11px;
         color: #7f8c8d;
+        white-space: nowrap;
         font-weight: 500;
       }
 
@@ -113,8 +119,15 @@ const handleClick = () => {
         display: flex;
         align-items: center;
         gap: 6px;
+        min-width: 0;
         font-size: 11px;
         color: #95a5a6;
+
+        span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
       }
     }
   }

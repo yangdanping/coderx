@@ -4,7 +4,9 @@
  */
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/global/request/config';
+import useNotificationStore from '@/stores/notification.store';
 import { LocalCache } from '@/utils';
+import type { INotification } from '@/stores/types/notification.result';
 
 class OnlineStatusService {
   private socket: Socket | null = null;
@@ -47,12 +49,18 @@ class OnlineStatusService {
     }
     console.log('='.repeat(50), ' OnlineStatusService 调试信息 end ', '='.repeat(50));
 
+    const configuredSocketUrl = typeof SOCKET_URL === 'string' ? SOCKET_URL : '';
+    if (!configuredSocketUrl) {
+      console.warn('Socket.IO 地址未配置，已跳过在线状态和通知实时连接');
+      return;
+    }
+
     // 🟢【新增逻辑】自动适配跨设备访问
     // 如果配置的是 localhost，但当前是通过 IP 访问的，则自动替换为当前 IP
     // 这样在笔记本访问 http://192.168.3.96 时，会自动去连 192.168.3.96:8001
-    let connectionUrl = SOCKET_URL;
-    if (SOCKET_URL.includes('localhost') && window.location.hostname !== 'localhost') {
-      connectionUrl = SOCKET_URL.replace('localhost', window.location.hostname);
+    let connectionUrl = configuredSocketUrl;
+    if (configuredSocketUrl.includes('localhost') && window.location.hostname !== 'localhost') {
+      connectionUrl = configuredSocketUrl.replace('localhost', window.location.hostname);
       console.log(`🔄 检测到跨设备访问，自动修正 Socket 地址为: ${connectionUrl}`);
     }
 
@@ -73,6 +81,9 @@ class OnlineStatusService {
     // 监听连接成功事件
     this.socket.on('connect', () => {
       console.log('Socket.IO 连接成功！socketId:', this.socket?.id);
+      if (!isGuest) {
+        void useNotificationStore().refreshAction(true);
+      }
     });
 
     // 监听在线用户列表更新事件
@@ -82,6 +93,11 @@ class OnlineStatusService {
       void import('@/stores/online.store').then(({ default: useOnlineStore }) => {
         useOnlineStore().applyOnlineUserList(userList);
       });
+    });
+
+    this.socket.on('notification:new', (notification: INotification) => {
+      console.log('收到新通知:', notification);
+      useNotificationStore().applyIncomingNotification(notification);
     });
 
     // 监听断开连接事件
