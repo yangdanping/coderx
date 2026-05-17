@@ -18,6 +18,7 @@
 
     <template v-if="isMe">
       <NavBarUser />
+      <NavBarNotification />
       <NavBarUserHistory />
     </template>
     <el-button @click="changeDialog" class="register-btn" v-else><span>Hello Coder</span> <span class="x">X</span></el-button>
@@ -28,6 +29,7 @@
 import { Sun, Moon } from 'lucide-vue-next';
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
+import NavBarNotification from './NavBarNotification.vue';
 import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';
 import useUserStore from '@/stores/user.store';

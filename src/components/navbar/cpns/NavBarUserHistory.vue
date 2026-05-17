@@ -1,37 +1,37 @@
 <template>
-  <div class="history-icon" @mouseenter="toggle(true)" @mouseleave="toggle(false)">
-    <el-icon class="clock-icon"><Clock /></el-icon>
-    <div class="history-box" v-show="isShow">
-      <div class="panel-history">
-        <div class="history-header">
-          <div class="history-title">
-            <el-icon><Clock /></el-icon>
-            <span>浏览记录</span>
-          </div>
-        </div>
-        <div class="history-content">
-          <div class="history-list">
-            <template v-for="item in historyStore.historyList.slice(0, 5)" :key="item.id">
-              <NavBarUserHistoryItem :item="item" />
-            </template>
-          </div>
-          <div v-if="!historyStore.historyList.length" class="empty">
-            <el-icon><AlertTriangle /></el-icon>
-            <span>暂无浏览记录</span>
-          </div>
-        </div>
-        <div class="full-history-btn" role="button" v-if="historyStore.historyList.length > 5" @click="goToHistoryPage">查看更多</div>
+  <NavBarActionPanel title="浏览记录" aria-label="打开浏览记录" @open="handleOpen">
+    <template #trigger>
+      <Clock :size="20" />
+    </template>
+
+    <template #title-icon>
+      <Clock :size="18" class="history-title-icon" />
+    </template>
+
+    <template #default>
+      <div v-if="historyStore.historyList.length" class="history-list">
+        <template v-for="item in historyStore.historyList.slice(0, 5)" :key="item.id">
+          <NavBarUserHistoryItem :item="item" />
+        </template>
       </div>
-    </div>
-  </div>
+
+      <div v-else class="history-empty">
+        <AlertTriangle :size="22" />
+        <span>暂无浏览记录</span>
+      </div>
+    </template>
+
+    <template v-if="historyStore.historyList.length > 5" #footer="{ close }">
+      <button type="button" class="full-history-btn" @click="goToHistoryPage(close)">查看更多</button>
+    </template>
+  </NavBarActionPanel>
 </template>
 
 <script lang="ts" setup>
+import NavBarActionPanel from './NavBarActionPanel.vue';
 import NavBarUserHistoryItem from './NavBarUserHistoryItem.vue';
-
 import useHistoryStore from '@/stores/history.store';
 import useUserStore from '@/stores/user.store';
-import { debounce } from '@/utils';
 import { Clock, AlertTriangle } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -39,19 +39,12 @@ const userStore = useUserStore();
 const historyStore = useHistoryStore();
 const { userInfo } = storeToRefs(userStore);
 
-const isShow = ref(false);
+const handleOpen = () => {
+  void historyStore.getHistoryAction(true);
+};
 
-const toggle = debounce(async function (show: boolean) {
-  isShow.value = show;
-
-  // 当显示面板时，获取浏览记录
-  if (show) {
-    await historyStore.getHistoryAction(true);
-  }
-}, 200);
-
-// 跳转到个人空间的浏览记录
-const goToHistoryPage = () => {
+const goToHistoryPage = (close: () => void) => {
+  close();
   router.push({
     path: `/user/${userInfo.value.id}`,
     query: { tabName: '最近浏览' },
@@ -60,137 +53,42 @@ const goToHistoryPage = () => {
 </script>
 
 <style lang="scss" scoped>
-.history-icon {
-  position: relative;
+.history-title-icon {
+  color: var(--yellow);
+}
+
+.history-list {
+  padding: 8px;
+}
+
+.history-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    background: var(--glass-bg);
-    .clock-icon {
-      color: var(--el-color-primary);
-    }
-  }
-
-  .clock-icon {
-    font-size: 20px;
-    color: var(--text-secondary);
-    transition: color 0.3s;
-  }
-
-  .history-box {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 40px;
-    margin-top: 10px;
-    width: 380px;
-    height: 400px;
-    @include glass-effect-popup;
-    border-radius: 6px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: var(--z-navbar-popup);
-    animation: boxDown 0.3s forwards;
-
-    // 通过伪元素创建透明桥接区域，避免鼠标从图标移向面板时经过间隙触发 mouseleave
-    &::before {
-      content: '';
-      position: absolute;
-      top: -20px;
-      left: 0;
-      right: 0;
-      height: 20px;
-    }
-    .panel-history {
-      width: 100%;
-      height: calc(100% - 40px);
-      display: flex;
-      flex-direction: column;
-
-      .history-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        @include thin-border(bottom, #eee);
-        margin-bottom: 10px;
-
-        .history-title {
-          display: flex;
-          align-items: center;
-          padding: 15px;
-
-          gap: 8px;
-          font-weight: 600;
-          color: var(--text-primary);
-          flex: 1;
-
-          .el-icon {
-            color: var(--yellow);
-            transition: color 0.3s;
-          }
-        }
-      }
-
-      .history-content {
-        flex: 1;
-        overflow-y: auto;
-        overflow-x: hidden;
-        // 通过 overscroll-behavior: contain，避免滚动到边界时触发父级滚动（滚动穿透）
-        overscroll-behavior: contain;
-
-        .empty {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          height: 100%;
-          font-size: 14px;
-          color: #999;
-        }
-
-        .history-list {
-          padding: 0 10px;
-          /* padding-bottom: 10px; // 为查看更多按钮预留空间 */
-        }
-
-        .more-btn {
-          text-align: center;
-          padding: 10px 0;
-          @include thin-border(top, #f0f0f0);
-        }
-      }
-      .full-history-btn {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        text-align: center;
-        padding: 10px 0;
-        @include thin-border(top, var(--el-border-color));
-        cursor: pointer;
-        font-size: 14px;
-        &:hover {
-          color: var(--el-color-success);
-        }
-      }
-    }
-  }
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 260px;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
-// 动画关键帧
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+.full-history-btn {
+  width: 100%;
+  padding: 11px 0;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: transparent;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    color: var(--el-color-success);
+    background: var(--glass-bg);
   }
 }
 </style>
+
