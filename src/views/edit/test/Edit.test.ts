@@ -70,11 +70,15 @@ vi.mock('pinia', async () => {
   };
 });
 
-vi.mock('vue-router', () => ({
-  useRoute: () => ({
-    query: routeQuery,
-  }),
-}));
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual<typeof import('vue-router')>('vue-router');
+  return {
+    ...actual,
+    useRoute: () => ({
+      query: routeQuery,
+    }),
+  };
+});
 
 vi.mock('@/components/tiptap-editor/TiptapEditor.vue', async () => {
   const { defineComponent, h, nextTick, onMounted, ref } = await import('vue');
@@ -187,7 +191,7 @@ vi.mock('@/components/tiptap-editor/extensions/videoTranscodeUtils', () => ({
   revalidateVideoNodesOnLoad: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('@/components/AiAssistant.vue', async () => {
+vi.mock('@/components/ai/AiAssistant.vue', async () => {
   const { defineComponent, h } = await import('vue');
   return {
     default: defineComponent({

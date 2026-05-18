@@ -19,7 +19,9 @@
 
       <div class="detail-main__content">
         <DetailContent :article="article" :status="detailStatus" @update:toc="tocTitles = $event" />
-        <Comment />
+        <div ref="commentSectionRef" class="detail-main__comments">
+          <Comment />
+        </div>
       </div>
 
       <DetailToc v-if="isDetailReady && tocTitles.length" :titles="tocTitles" class="detail-main__toc" />
@@ -59,11 +61,31 @@ const detailStatus = computed(() => detailQuery.status.value);
 const isDetailReady = computed(() => detailQuery.isDetailReady.value);
 const isAuthor = computed(() => article.value.author?.id === userInfo.value.id);
 const detailAiContext = computed(() => resolveArticleDetailHtml(article.value));
+const commentSectionRef = ref<HTMLElement | null>(null);
+const notificationCommentId = computed(() => {
+  const value = route.query.commentId;
+  return Array.isArray(value) ? value[0] : value;
+});
+let lastScrolledCommentId = '';
 
 // TOC 标题由 DetailContent 从已渲染 HTML 中提取后上抛。
 // 放在 Detail.vue 是因为 DetailToc 组件需要作为外层 grid 的第 3 列直接参与布局，
 // 不再作为 DetailContent 的内部子元素。
 const tocTitles = ref<DetailTocTitle[]>([]);
+
+watch(
+  [isDetailReady, notificationCommentId],
+  async ([ready, commentId]) => {
+    if (!ready || !commentId || commentId === lastScrolledCommentId) return;
+    lastScrolledCommentId = commentId;
+    await nextTick();
+    commentSectionRef.value?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  },
+  { immediate: true },
+);
 </script>
 
 <style lang="scss" scoped>

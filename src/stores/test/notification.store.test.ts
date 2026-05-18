@@ -70,10 +70,21 @@ describe('notification.store', () => {
     store.notificationList = [buildNotification({ id: 1, readAt: '2026-05-14T08:10:00.000Z' })];
     store.unreadCount = 0;
 
-    store.applyIncomingNotification(buildNotification({ id: 2 }));
-    store.applyIncomingNotification(buildNotification({ id: 2 }));
+    const articleCommentNotification = buildNotification({
+      id: 2,
+      type: 'article_comment',
+      commentId: 40,
+      metadata: { commentExcerpt: 'hello' },
+    });
+    store.applyIncomingNotification(articleCommentNotification);
+    store.applyIncomingNotification(articleCommentNotification);
 
     expect(store.notificationList.map((item) => item.id)).toEqual([2, 1]);
+    expect(store.notificationList[0]).toMatchObject({
+      type: 'article_comment',
+      commentId: 40,
+      metadata: { commentExcerpt: 'hello' },
+    });
     expect(store.unreadCount).toBe(1);
   });
 

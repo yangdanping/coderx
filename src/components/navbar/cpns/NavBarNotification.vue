@@ -25,13 +25,20 @@
           :class="{ 'is-unread': !item.readAt }"
           @click="handleItemClick(item, close)"
         >
-          <span class="notification-item__icon">
-            <Heart :size="16" />
+          <span class="notification-item__avatar">
+            <Avatar :info="getActorInfo(item)" :size="38" disabled />
+            <span
+              class="notification-item__action-badge"
+              :class="{ 'notification-item__like-badge': getNotificationIconType(item) === 'like' }"
+              aria-hidden="true"
+            >
+              <Icon :type="getNotificationIconType(item)" :is-active="true" :size="18" :show-label="false" :responsive="false" />
+            </span>
           </span>
           <span class="notification-item__content">
-            <span class="notification-item__title">用户 #{{ item.actorId }} 点赞了你的文章</span>
+            <span class="notification-item__title">{{ getActorName(item) }} {{ getNotificationTitle(item) }}</span>
             <span class="notification-item__meta">
-              文章 #{{ item.articleId }}
+              {{ getNotificationMeta(item) }}
               <span aria-hidden="true">·</span>
               {{ formatTime(item.createdAt) }}
             </span>
@@ -49,11 +56,15 @@
 </template>
 
 <script lang="ts" setup>
-import { Bell, BellOff, Heart } from 'lucide-vue-next';
+import { Bell, BellOff } from 'lucide-vue-next';
+import Avatar from '@/components/avatar/Avatar.vue';
+import Icon from '@/components/icon/Icon.vue';
 import NavBarActionPanel from './NavBarActionPanel.vue';
 import useNotificationStore from '@/stores/notification.store';
 import dateFormat from '@/utils/dateFormat';
 import type { INotification } from '@/stores/types/notification.result';
+import type { IUserInfo } from '@/stores/types/user.result';
+import type { IconType } from '@/components/icon/types/icon.type';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -68,6 +79,52 @@ const handleOpen = () => {
 };
 
 const formatTime = (time: string) => dateFormat(time);
+const truncateTitle = (title = '', limit = 20) => {
+  const chars = Array.from(title.trim());
+  return chars.length > limit ? `${chars.slice(0, limit).join('')}...` : chars.join('');
+};
+
+const getActorInfo = (item: INotification): IUserInfo => ({
+  id: item.actor?.id ?? item.actorId,
+  name: item.actor?.name || `用户 #${item.actorId}`,
+  avatarUrl: item.actor?.avatarUrl,
+});
+
+const getActorName = (item: INotification) => getActorInfo(item).name || `用户 #${item.actorId}`;
+
+const getArticleTitle = (item: INotification) => {
+  const title = truncateTitle(item.article?.title || '');
+  return title || `文章 #${item.articleId}`;
+};
+
+const getNotificationTitle = (item: INotification) => {
+  if (item.type === 'article_comment') return '评论了你的文章';
+  return '点赞了你的文章';
+};
+
+const getNotificationIconType = (item: INotification): IconType => {
+  if (item.type === 'article_comment') return 'comment';
+  return 'like';
+};
+
+const getCommentExcerpt = (item: INotification) => {
+  const excerpt = item.metadata?.commentExcerpt;
+  return typeof excerpt === 'string' ? excerpt.trim() : '';
+};
+
+const getNotificationMeta = (item: INotification) => {
+  if (item.type === 'article_comment') {
+    return getCommentExcerpt(item) || getArticleTitle(item);
+  }
+  return getArticleTitle(item);
+};
+
+const getNotificationQuery = (item: INotification) => {
+  if (item.type === 'article_comment' && item.commentId != null) {
+    return { commentId: String(item.commentId) };
+  }
+  return undefined;
+};
 
 const handleItemClick = async (item: INotification, close: () => void) => {
   await notificationStore.markReadAction(item.id);
@@ -76,6 +133,7 @@ const handleItemClick = async (item: INotification, close: () => void) => {
   const routeUrl = router.resolve({
     name: 'detail',
     params: { articleId: item.articleId },
+    query: getNotificationQuery(item),
   });
   window.open(routeUrl.href, '_blank');
 };
@@ -157,16 +215,39 @@ const handleItemClick = async (item: INotification, close: () => void) => {
     }
   }
 
-  &__icon {
-    display: flex;
+  &__avatar {
+    position: relative;
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
     flex-shrink: 0;
-    color: var(--el-color-danger);
-    background: color-mix(in srgb, var(--el-color-danger) 12%, transparent);
+  }
+
+  &__action-badge {
+    position: absolute;
+    right: -1px;
+    bottom: -2px;
+    display: flex;
+    width: auto;
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    color: var(--el-color-primary);
+    filter:
+      drop-shadow(0 0 1px var(--el-bg-color))
+      drop-shadow(0 1px 4px color-mix(in srgb, var(--el-color-primary) 26%, transparent));
+    pointer-events: none;
+
+    :deep(.icon) {
+      gap: 0;
+      line-height: 1;
+    }
+  }
+
+  &__like-badge {
+    color: var(--el-color-primary);
   }
 
   &__content {
@@ -191,6 +272,9 @@ const handleItemClick = async (item: INotification, close: () => void) => {
     align-items: center;
     gap: 6px;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 12px;
     color: var(--text-secondary);
   }
@@ -223,4 +307,3 @@ const handleItemClick = async (item: INotification, close: () => void) => {
   }
 }
 </style>
-
