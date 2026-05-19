@@ -124,7 +124,12 @@ const getNotificationMeta = (item: INotification) => {
 
 const getNotificationQuery = (item: INotification) => {
   if (isCommentNotification(item) && item.commentId != null) {
-    return { commentId: String(item.commentId) };
+    const query: Record<string, string> = { commentId: String(item.commentId) };
+    const replyId = item.metadata?.replyId;
+    if (item.type === 'comment_reply' && (typeof replyId === 'number' || typeof replyId === 'string') && String(replyId).trim()) {
+      query.replyId = String(replyId);
+    }
+    return query;
   }
   return undefined;
 };

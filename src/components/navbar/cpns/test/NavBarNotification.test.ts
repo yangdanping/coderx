@@ -166,13 +166,14 @@ describe('NavBarNotification', () => {
         },
         metadata: {
           commentExcerpt: '回复里有新的想法',
+          replyId: 104,
         },
         readAt: null,
         createdAt: '2026-05-14T08:00:00.000Z',
         lastOccurredAt: '2026-05-14T08:00:00.000Z',
       },
     ];
-    routerResolve.mockReturnValue({ href: '/article/32?commentId=42' });
+    routerResolve.mockReturnValue({ href: '/article/32?commentId=42&replyId=104' });
 
     const wrapper = mount(NavBarNotification);
 
@@ -188,7 +189,7 @@ describe('NavBarNotification', () => {
     expect(routerPush).toHaveBeenCalledWith({
       name: 'detail',
       params: { articleId: 32 },
-      query: { commentId: '42' },
+      query: { commentId: '42', replyId: '104' },
     });
     expect(openMock).not.toHaveBeenCalled();
   });

@@ -3,6 +3,7 @@ export type NotificationTargetType = 'article';
 
 export interface INotificationMetadata {
   commentExcerpt?: string;
+  replyId?: number;
   [key: string]: unknown;
 }
 

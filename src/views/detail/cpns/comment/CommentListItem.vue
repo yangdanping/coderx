@@ -26,7 +26,7 @@
       <CommentForm v-if="isReplying" :commentId="item.id" isReply @cancel="closeReplyForm" />
 
       <!-- 回复列表 -->
-      <ReplyList :comment="item" />
+      <ReplyList :comment="item" :target-reply-id="targetReplyId ?? null" />
     </div>
 
     <!-- 工具栏 -->
@@ -47,9 +47,10 @@ import { codeHeightlight, renderCopyButtons } from '@/utils';
 
 import type { IComment } from '@/service/comment/comment.request';
 
-const { item, floor } = defineProps<{
+const { item, floor, targetReplyId } = defineProps<{
   item: IComment;
   floor?: number;
+  targetReplyId?: number | null;
 }>();
 
 const articleStore = useArticleStore();
