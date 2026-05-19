@@ -99,11 +99,14 @@ const getArticleTitle = (item: INotification) => {
 
 const getNotificationTitle = (item: INotification) => {
   if (item.type === 'article_comment') return '评论了你的文章';
+  if (item.type === 'comment_reply') return '回复了你的评论';
   return '点赞了你的文章';
 };
 
+const isCommentNotification = (item: INotification) => item.type === 'article_comment' || item.type === 'comment_reply';
+
 const getNotificationIconType = (item: INotification): IconType => {
-  if (item.type === 'article_comment') return 'comment';
+  if (isCommentNotification(item)) return 'comment';
   return 'like';
 };
 
@@ -113,29 +116,35 @@ const getCommentExcerpt = (item: INotification) => {
 };
 
 const getNotificationMeta = (item: INotification) => {
-  if (item.type === 'article_comment') {
+  if (isCommentNotification(item)) {
     return getCommentExcerpt(item) || getArticleTitle(item);
   }
   return getArticleTitle(item);
 };
 
 const getNotificationQuery = (item: INotification) => {
-  if (item.type === 'article_comment' && item.commentId != null) {
-    return { commentId: String(item.commentId) };
+  if (isCommentNotification(item) && item.commentId != null) {
+    const query: Record<string, string> = { commentId: String(item.commentId) };
+    const replyId = item.metadata?.replyId;
+    if (item.type === 'comment_reply' && (typeof replyId === 'number' || typeof replyId === 'string') && String(replyId).trim()) {
+      query.replyId = String(replyId);
+    }
+    return query;
   }
   return undefined;
 };
 
-const handleItemClick = async (item: INotification, close: () => void) => {
-  await notificationStore.markReadAction(item.id);
-  close();
-
-  const routeUrl = router.resolve({
+const handleItemClick = (item: INotification, close: () => void) => {
+  const query = getNotificationQuery(item);
+  const routeLocation = {
     name: 'detail',
     params: { articleId: item.articleId },
-    query: getNotificationQuery(item),
-  });
-  window.open(routeUrl.href, '_blank');
+    ...(query ? { query } : {}),
+  };
+  void router.push(routeLocation);
+
+  void notificationStore.markReadAction(item.id);
+  close();
 };
 </script>
 

@@ -88,6 +88,28 @@ describe('notification.store', () => {
     expect(store.unreadCount).toBe(1);
   });
 
+  it('prepends comment-reply socket notifications and keeps reply metadata', () => {
+    const store = useNotificationStore();
+    store.notificationList = [buildNotification({ id: 1, readAt: '2026-05-14T08:10:00.000Z' })];
+    store.unreadCount = 0;
+
+    const commentReplyNotification = buildNotification({
+      id: 3,
+      type: 'comment_reply',
+      commentId: 40,
+      metadata: { commentExcerpt: 'reply excerpt' },
+    });
+    store.applyIncomingNotification(commentReplyNotification);
+
+    expect(store.notificationList.map((item) => item.id)).toEqual([3, 1]);
+    expect(store.notificationList[0]).toMatchObject({
+      type: 'comment_reply',
+      commentId: 40,
+      metadata: { commentExcerpt: 'reply excerpt' },
+    });
+    expect(store.unreadCount).toBe(1);
+  });
+
   it('marks one notification as read optimistically after API success', async () => {
     markNotificationRead.mockResolvedValue({ code: 0, data: {} });
     const store = useNotificationStore();

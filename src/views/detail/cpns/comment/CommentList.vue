@@ -32,7 +32,13 @@
 
     <!-- 评论列表 -->
     <template v-else-if="comments.length">
-      <CommentListItem v-for="(item, index) in comments" :key="`${sortType}-${item.id}`" :item="item" :floor="comments.length - index" />
+      <CommentListItem
+        v-for="(item, index) in comments"
+        :key="`${sortType}-${item.id}`"
+        :item="item"
+        :floor="comments.length - index"
+        :target-reply-id="getTargetReplyIdForComment(item.id)"
+      />
 
       <!-- 底部加载状态 -->
       <el-skeleton v-if="isFetchingNextPage" animated />
@@ -79,6 +85,26 @@ const { data, isPending, isError, isFetchingNextPage, hasNextPage, fetchNextPage
 // 计算属性：扁平化的评论列表
 const comments = computed(() => flattenComments(data.value));
 
+const getRouteQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+const parseRouteQueryId = (value: unknown) => {
+  const queryValue = getRouteQueryValue(value);
+  if (queryValue == null || queryValue === '') return null;
+
+  const id = Number(queryValue);
+  return Number.isFinite(id) ? id : null;
+};
+
+const targetCommentId = computed(() => parseRouteQueryId(route.query.commentId));
+const targetReplyId = computed(() => parseRouteQueryId(route.query.replyId));
+const targetCommentLoadKey = computed(() => {
+  if (targetCommentId.value == null) return '';
+  return `${articleId.value}:${sortType.value}:${targetCommentId.value}`;
+});
+
+const getTargetReplyIdForComment = (commentId: number) => {
+  return commentId === targetCommentId.value ? targetReplyId.value : null;
+};
+
 // 计算属性：评论总数
 const totalCount = computed(() => getTotalCount(data.value));
 
@@ -107,6 +133,44 @@ const handleSortChange = (value: CommentSortType) => {
   commentStore.closeAllForms();
   sortType.value = value;
 };
+
+const completedTargetCommentLoads = new Set<string>();
+let isEnsuringTargetComment = false;
+
+const hasLoadedTargetComment = (commentId: number) => comments.value.some((comment) => comment.id === commentId);
+
+const ensureTargetCommentLoaded = async () => {
+  const commentId = targetCommentId.value;
+  const key = targetCommentLoadKey.value;
+  if (commentId == null || !key || completedTargetCommentLoads.has(key) || isEnsuringTargetComment) return;
+  if (!data.value?.pages?.length) return;
+
+  isEnsuringTargetComment = true;
+
+  try {
+    let remainingFetches = 20;
+    while (targetCommentId.value === commentId && !hasLoadedTargetComment(commentId) && hasNextPage.value && remainingFetches > 0) {
+      await fetchNextPage();
+      await nextTick();
+      remainingFetches -= 1;
+    }
+
+    if (targetCommentId.value !== commentId) return;
+    if (hasLoadedTargetComment(commentId) || !hasNextPage.value || remainingFetches === 0) {
+      completedTargetCommentLoads.add(key);
+    }
+  } finally {
+    isEnsuringTargetComment = false;
+  }
+};
+
+watch(
+  [targetCommentLoadKey, comments, hasNextPage],
+  () => {
+    void ensureTargetCommentLoaded();
+  },
+  { immediate: true, flush: 'post' },
+);
 
 // 触底加载更多（Intersection Observer）
 const loadMoreRef = ref<Element>();

@@ -60,6 +60,7 @@ import type { IComment } from '@/service/comment/comment.request';
 
 const props = defineProps<{
   comment: IComment;
+  targetReplyId?: number | null;
 }>();
 
 // 状态
@@ -109,6 +110,56 @@ const expandReplies = () => {
 const collapseReplies = () => {
   isExpanded.value = false;
   activeReplyId.value = null;
+};
+
+const completedTargetReplyScrolls = new Set<string>();
+let isEnsuringTargetReply = false;
+const targetReplyKey = computed(() => {
+  if (props.targetReplyId == null) return '';
+  return `${commentId.value}:${props.targetReplyId}`;
+});
+
+const hasLoadedFullReplyPage = computed(() => (data.value?.pages?.length ?? 0) > 0);
+const hasDisplayedReply = (replyId: number) => displayedReplies.value.some((reply) => reply.id === replyId);
+
+const scrollToReply = async (replyId: number) => {
+  activeReplyId.value = replyId;
+  await nextTick();
+  itemRefs.get(replyId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+const ensureTargetReplyVisible = async () => {
+  const replyId = props.targetReplyId;
+  const key = targetReplyKey.value;
+  if (replyId == null || !key || completedTargetReplyScrolls.has(key) || isEnsuringTargetReply) return;
+
+  isEnsuringTargetReply = true;
+  isExpanded.value = true;
+
+  try {
+    await nextTick();
+
+    let remainingFetches = 20;
+    while (props.targetReplyId === replyId && !hasDisplayedReply(replyId) && hasNextPage.value && remainingFetches > 0) {
+      await fetchNextPage();
+      await nextTick();
+      remainingFetches -= 1;
+    }
+
+    if (props.targetReplyId !== replyId) return;
+
+    if (hasDisplayedReply(replyId)) {
+      await scrollToReply(replyId);
+      completedTargetReplyScrolls.add(key);
+      return;
+    }
+
+    if ((hasLoadedFullReplyPage.value && !hasNextPage.value) || remainingFetches === 0) {
+      completedTargetReplyScrolls.add(key);
+    }
+  } finally {
+    isEnsuringTargetReply = false;
+  }
 };
 
 // ------------------------------------------------------
@@ -216,6 +267,14 @@ const updateLinePosition = async () => {
 };
 
 watch(currentFocusId, updateLinePosition);
+
+watch(
+  [targetReplyKey, displayedReplies, hasNextPage],
+  () => {
+    void ensureTargetReplyVisible();
+  },
+  { immediate: true, flush: 'post' },
+);
 
 // 从 ReplyItem 触发的滚动到父元素事件
 const handleScrollToParent = (replyId: number) => {
