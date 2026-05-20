@@ -23,7 +23,9 @@ import type { App } from 'vue';
 import type { RouteLocationNormalized } from 'vue-router';
 const DEFAULT_DOCUMENT_TITLE = 'CoderX';
 type GuardRouteLike = Pick<RouteLocationNormalized, 'path' | 'meta' | 'matched'>;
-type GuardRootStoreLike = Pick<ReturnType<typeof useRootStore>, 'showLoginDialog' | 'toggleLoginDialog' | 'checkAuthAction'>;
+type GuardRootStoreLike = Pick<ReturnType<typeof useRootStore>, 'showLoginDialog' | 'toggleLoginDialog' | 'checkAuthAction'> & {
+  openLoginDialog?: () => void;
+};
 type GuardArticleStoreLike = Pick<ReturnType<typeof useArticleStore>, 'initArticle'>;
 type GuardCommentStoreLike = Pick<ReturnType<typeof useCommentStore>, '$reset'>;
 
@@ -55,8 +57,15 @@ function setDocumentTitle(to: RouteLocationNormalized) {
   document.title = matchedTitle ? `${matchedTitle} - ${DEFAULT_DOCUMENT_TITLE}` : DEFAULT_DOCUMENT_TITLE;
 }
 
-function ensureLoginDialogOpen(rootStore: ReturnType<typeof useRootStore>) {
-  !rootStore.showLoginDialog && rootStore.toggleLoginDialog();
+function ensureLoginDialogOpen(rootStore: GuardRootStoreLike) {
+  if (rootStore.showLoginDialog) return;
+
+  if (typeof rootStore.openLoginDialog === 'function') {
+    rootStore.openLoginDialog();
+    return;
+  }
+
+  rootStore.toggleLoginDialog();
 }
 
 export async function handleBeforeEachNavigation({
@@ -105,21 +114,25 @@ export async function handleBeforeEachNavigation({
 
   let nextHasVerifiedOnce = hasVerifiedOnce;
 
-  // 已登录用户访问受保护路由时,验证token有效性
-  if (token && requiresAuth) {
+  // 本地缓存只能代表“候选登录态”：首次进入任意路由时都向服务端确认，避免公共页继续显示假登录 UI。
+  if (token) {
+    // 第一次进站必须查；之后只在 token 快过期时再查，避免每次跳转都打接口。
     const needsVerification = !hasVerifiedOnce || checkTokenExpiringSoon(token);
     if (needsVerification) {
       console.log('[路由前置守卫 beforeEach] 验证用户', hasVerifiedOnce ? '(切换路由,token即将过期)' : '(首次进入页面,验证token)');
       const isValid = await rootStore.checkAuthAction();
       nextHasVerifiedOnce = true;
 
-      // 验证失败: 阻止导航 (弹出登录框已由响应拦截器处理)
+      // 验证失败: 公共页面保留背景访问，受保护页面继续阻止导航。
       if (!isValid) {
-        console.log('[路由前置守卫 beforeEach] token无效,拦截访问:', to.path);
-        return {
-          navigationResult: false as const,
-          hasVerifiedOnce: nextHasVerifiedOnce,
-        };
+        openLoginDialog(rootStore);
+        console.log('[路由前置守卫 beforeEach] token无效:', to.path);
+        if (requiresAuth) {
+          return {
+            navigationResult: false as const,
+            hasVerifiedOnce: nextHasVerifiedOnce,
+          };
+        }
       }
     }
   }

@@ -12,6 +12,22 @@ import type { IAccount } from '@/service/user/user.types';
 import type { RouteParam } from '@/service/types';
 import type { IUserInfo, IFollowInfo, ICacheEntry, ICollect } from '@/stores/types/user.result';
 
+type LogOutOptions = boolean | { refresh?: boolean; prompt?: boolean };
+
+function normalizeLogOutOptions(options: LogOutOptions = {}) {
+  if (typeof options === 'boolean') {
+    return {
+      refresh: options,
+      prompt: !options,
+    };
+  }
+
+  return {
+    refresh: options.refresh ?? false,
+    prompt: options.prompt ?? true,
+  };
+}
+
 // 缓存过期时间：30秒内重复 hover 同一用户不会重新请求
 const CACHE_TTL = 30 * 1000;
 const getFollowInfoCacheEntry = (cache: Record<number, ICacheEntry<IFollowInfo>>, userId: number) => cache[userId];
@@ -104,8 +120,8 @@ const useUserStore = defineStore('user', {
     },
   },
   actions: {
-    // 除非用户主动退出登录,否则默认不刷新页面,默认弹出登录框
-    logOut(refresh = false) {
+    // 只负责“清干净登录数据”；是否刷新页面或弹登录框交给 logOut / 调用方决定。
+    clearAuthState() {
       // 1. 断开在线连接并清空在线列表
       try {
         const onlineStore = useOnlineStore();
@@ -117,16 +133,26 @@ const useUserStore = defineStore('user', {
 
       // 2. 清除登录状态
       this.token = '';
-      this.userInfo = {};
+      this.userInfo = {} as IUserInfo;
+      this.myFollowInfo = {} as IFollowInfo;
+      this.collects = [];
       LocalCache.removeCache('token'); //退出登录要清除token和用户信息
       LocalCache.removeCache('userInfo');
       LocalCache.removeCache('socketUser'); // 清理遗留缓存（如果存在）
 
+      useRootStore().setAuthStatus('guest');
+    },
+    // 除非用户主动退出登录,否则默认不刷新页面,默认弹出登录框
+    logOut(options: LogOutOptions = {}) {
+      const { refresh, prompt } = normalizeLogOutOptions(options);
+
+      this.clearAuthState();
+
       // 3. 刷新页面或直接弹出登录框
       if (refresh) {
         router.go(0);
-      } else {
-        useRootStore().toggleLoginDialog();
+      } else if (prompt) {
+        useRootStore().openLoginDialog();
       }
     },
     initProfile() {
@@ -160,6 +186,7 @@ const useUserStore = defineStore('user', {
           LocalCache.setCache('userInfo', userInfo);
           this.token = token;
           LocalCache.setCache('token', token); //注意拿到token第一时间先做缓存,然后就可以在axios实例拦截器中getCache了
+          useRootStore().setAuthStatus('authenticated');
           // 3.成功登录后刷新页面-----------------------------------------------------
           LocalCache.getCache('token') ? router.go(0) : Msg.showFail('请求登录用户信息失败'); //若是登录用户信息则不用再请求了
         }

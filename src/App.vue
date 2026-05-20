@@ -9,7 +9,6 @@
 
 <script lang="ts" setup>
 import NavBar from '@/components/navbar/NavBar.vue';
-import { LocalCache } from '@/utils';
 import useRootStore from '@/stores/index.store';
 // ============== 🔌 在线状态功能开关 ==============
 // 根据需要切换或注释掉任意一行即可：
@@ -21,7 +20,8 @@ import onlineStatusService from '@/service/online/socketio'; // Socket.IO 版本
 // ===============================================
 
 const rootStore = useRootStore();
-const { windowInfo, isSmallScreen } = storeToRefs(rootStore);
+const { windowInfo, isSmallScreen, authStatus } = storeToRefs(rootStore);
+let stopOnlineStatusWatch: (() => void) | undefined;
 
 // 根据路由判断是否显示导航栏
 // - 编辑页面：完全不需要导航栏
@@ -58,17 +58,21 @@ const backTopPosition = computed(() => {
  * - 应用销毁（App.vue unmounted）
  */
 onMounted(() => {
-  // 无论是否登录，都建立连接以接收在线用户列表
-  const token = LocalCache.getCache('token');
+  // 在线身份跟着 authStatus 走，避免过期 token 在校验前把用户挂成“在线”。
+  stopOnlineStatusWatch = watch(
+    authStatus,
+    (status) => {
+      if (status === 'checking') {
+        console.log('登录态校验中，暂缓建立在线状态连接...');
+        return;
+      }
 
-  if (token) {
-    console.log('检测到用户已登录（存在 token），以"在线用户"模式连接...');
-  } else {
-    console.log('用户未登录（无 token），以"观察者"模式连接（可查看在线用户，但自己不显示为在线）...');
-  }
-
-  // 建立连接（前端服务会自动判断是否为游客）
-  onlineStatusService.connect();
+      onlineStatusService.disconnect();
+      console.log(status === 'authenticated' ? '登录态已确认，以"在线用户"模式连接...' : '未登录或登录态已失效，以"观察者"模式连接...');
+      onlineStatusService.connect();
+    },
+    { immediate: true },
+  );
 
   // 监听标签页/浏览器关闭事件，断开连接
   window.addEventListener('beforeunload', handleBeforeUnload);
@@ -76,6 +80,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   // 清理事件监听
+  stopOnlineStatusWatch?.();
   window.removeEventListener('beforeunload', handleBeforeUnload);
 
   // 组件销毁时断开连接

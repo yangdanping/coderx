@@ -87,4 +87,43 @@ describe('handleBeforeEachNavigation', () => {
       hasVerifiedOnce: true,
     });
   });
+
+  it('verifies cached tokens on first public-route visits without blocking the public page when invalid', async () => {
+    const checkAuthAction = vi.fn().mockResolvedValue(false);
+    const toggleLoginDialog = vi.fn();
+
+    const result = await handleBeforeEachNavigation({
+      to: {
+        path: '/user/12',
+        meta: { title: '用户主页' },
+        matched: [{ meta: { title: '用户主页' } }],
+      } as PartialRoute,
+      from: {
+        path: '',
+        matched: [],
+      } as PartialRoute,
+      rootStore: {
+        showLoginDialog: false,
+        toggleLoginDialog,
+        checkAuthAction,
+      },
+      articleStore: {
+        initArticle: vi.fn(),
+      },
+      commentStore: {
+        $reset: vi.fn(),
+      },
+      token: 'expired.jwt.token',
+      hasVerifiedOnce: false,
+      setDocumentTitle: vi.fn(),
+      isTokenExpiringSoon: vi.fn(() => false),
+    });
+
+    expect(checkAuthAction).toHaveBeenCalledTimes(1);
+    expect(toggleLoginDialog).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      navigationResult: undefined,
+      hasVerifiedOnce: true,
+    });
+  });
 });

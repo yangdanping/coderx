@@ -23,9 +23,11 @@ import { Loading, CircleCloseFilled } from '@element-plus/icons-vue';
 import { LocalCache, Msg } from '@/utils';
 import { getUserInfoById } from '@/service/user/user.request';
 import useUserStore from '@/stores/user.store';
+import useRootStore from '@/stores/index.store';
 import router from '@/router';
 
 const userStore = useUserStore();
+const rootStore = useRootStore();
 
 const loading = ref(true);
 const error = ref(false);
@@ -70,6 +72,7 @@ const handleOAuthCallback = async () => {
       const userInfo = res.data;
       userStore.userInfo = userInfo;
       LocalCache.setCache('userInfo', userInfo);
+      rootStore.setAuthStatus('authenticated');
 
       Msg.showSuccess('登录成功');
 
@@ -82,8 +85,7 @@ const handleOAuthCallback = async () => {
     error.value = true;
     errorMessage.value = '登录过程中发生错误，请重试';
     // 清理可能存储的无效数据
-    LocalCache.removeCache('token');
-    LocalCache.removeCache('userInfo');
+    userStore.clearAuthState();
   } finally {
     loading.value = false;
   }

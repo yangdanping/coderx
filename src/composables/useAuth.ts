@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 
 /**
@@ -21,8 +22,12 @@ import useUserStore from '@/stores/user.store';
  * ```
  */
 export function useAuth() {
+  const rootStore = useRootStore();
   const userStore = useUserStore();
+  const { authStatus } = storeToRefs(rootStore);
   const { token, userInfo } = storeToRefs(userStore);
+  // 只有后端确认过 authenticated，导航栏/个人页这类 UI 才能当作“已登录”。
+  const isAuthenticated = computed(() => authStatus.value === 'authenticated' && Boolean(token.value));
 
   /**
    * 判断指定用户 ID 是否为当前已登录用户
@@ -31,7 +36,7 @@ export function useAuth() {
    * @returns 如果是当前登录用户返回 true，否则返回 false
    *
    * @remarks
-   * - 需要用户已登录（token 存在）
+   * - 需要后端已确认登录（不能只看本地 token）
    * - 通过对比 userId 与当前登录用户的 ID 来判断
    * - 支持 number 和 string 类型的用户 ID
    *
@@ -44,12 +49,14 @@ export function useAuth() {
    */
   const isCurrentUser = (userId: number | string | undefined) => {
     // 未登录或 userId 不存在，返回 false
-    if (!token.value || !userId) return false;
+    if (!isAuthenticated.value || !userId) return false;
     // 对比用户 ID（支持数字和字符串类型）
     return String(userId) === String(userInfo.value.id);
   };
 
   return {
+    /** 服务端已确认的登录状态 */
+    isAuthenticated,
     /** 判断是否为当前登录用户 */
     isCurrentUser,
   };

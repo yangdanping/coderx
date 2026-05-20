@@ -3,6 +3,8 @@ import { checkAuth } from '@/service/user/user.request';
 import { LocalCache } from '@/utils';
 import useUserStore from '@/stores/user.store';
 import type { IUserInfo } from '@/stores/types/user.result';
+
+export type AuthStatus = 'checking' | 'authenticated' | 'guest';
 /* 
 Root Store 只保留 `showLoginDialog`/`showProfileDialog`/`profileEditForm`/`windowInfo` 
 这四个真正的全局 UI 状态
@@ -32,6 +34,8 @@ const useRootStore = defineStore('root', {
   state: () => ({
     showLoginDialog: false as boolean,
     showProfileDialog: false as boolean,
+    // token 只代表“本地可能登录过”；authStatus 才是当前 UI 判断登录态的依据。
+    authStatus: 'guest' as AuthStatus,
     profileEditForm: {} as Partial<IUserInfo>,
     windowInfo: {
       width: 0,
@@ -49,8 +53,17 @@ const useRootStore = defineStore('root', {
     toggleLoginDialog() {
       this.showLoginDialog = !this.showLoginDialog;
     },
+    openLoginDialog() {
+      this.showLoginDialog = true;
+    },
+    closeLoginDialog() {
+      this.showLoginDialog = false;
+    },
     toggleProfileDialog() {
       this.showProfileDialog = !this.showProfileDialog;
+    },
+    setAuthStatus(status: AuthStatus) {
+      this.authStatus = status;
     },
     setProfileEditForm(form: Partial<IUserInfo>) {
       this.profileEditForm = form;
@@ -70,27 +83,50 @@ const useRootStore = defineStore('root', {
      * @returns 验证是否通过
      */
     async checkAuthAction(): Promise<boolean> {
+      const userStore = useUserStore();
+      const token = userStore.token || LocalCache.getCache('token');
+      if (!token) {
+        this.authStatus = 'guest';
+        return false;
+      }
+
+      // 有 token 时先进入校验中，等后端确认后再显示已登录 UI。
+      this.authStatus = 'checking';
       try {
         const res = await checkAuth();
         console.log('checkAuthAction res-----------------', res);
         if (res?.code !== 0) {
-          // 针对 Token 过期 ,Axios 的响应拦截器（src/service/index.ts 中的 resFail）会在 这里checkAuth 返回结果之前执行
-          // useUserStore().logOut();
+          // 后端明确说 token 无效：清掉缓存，避免页面继续装作已登录。
+          userStore.clearAuthState();
+          this.openLoginDialog();
           return false;
         }
+        this.authStatus = 'authenticated';
         return true;
       } catch (error: unknown) {
         console.error('Token验证请求失败:', error);
         const status = typeof error === 'object' && error !== null && 'response' in error ? (error as { response?: { status?: number } }).response?.status : undefined;
-        if (status === 401) return false;
+        if (status === 401) {
+          userStore.clearAuthState();
+          this.openLoginDialog();
+          return false;
+        }
         // 网络错误时不强制登出,返回true允许继续使用
+        // 这里保守放行，避免临时断网把用户误踢下线。
+        this.authStatus = token ? 'authenticated' : 'guest';
         return true;
       }
     },
     async loadLoginAction() {
       const userStore = useUserStore();
       const token = LocalCache.getCache('token');
-      token && (userStore.token = token);
+      if (token) {
+        // 启动时只恢复“候选 token”，先不直接认定用户已登录。
+        userStore.token = token;
+        this.authStatus = 'checking';
+      } else {
+        this.authStatus = 'guest';
+      }
       const userInfo = normalizeCachedUserInfo(LocalCache.getCache('userInfo'));
       if (userInfo) {
         userStore.userInfo = userInfo;
