@@ -4,6 +4,7 @@ export type NotificationTargetType = 'article';
 export interface INotificationMetadata {
   commentExcerpt?: string;
   replyId?: number;
+  recipientRole?: 'comment_author' | 'article_author';
   [key: string]: unknown;
 }
 

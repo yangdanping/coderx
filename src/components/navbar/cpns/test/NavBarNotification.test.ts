@@ -194,6 +194,45 @@ describe('NavBarNotification', () => {
     expect(openMock).not.toHaveBeenCalled();
   });
 
+  it('renders article-author reply notifications with article reply copy', async () => {
+    notificationStore.notificationList = [
+      {
+        id: 6,
+        recipientId: 10,
+        actorId: 22,
+        actor: {
+          id: 22,
+          name: 'grace',
+          avatarUrl: 'https://api.example/user/22/avatar',
+        },
+        type: 'comment_reply',
+        targetType: 'article',
+        targetId: 32,
+        articleId: 32,
+        commentId: 42,
+        article: {
+          id: 32,
+          title: '回复通知文章',
+        },
+        metadata: {
+          commentExcerpt: '回复里有新的想法',
+          replyId: 104,
+          recipientRole: 'article_author',
+        },
+        readAt: null,
+        createdAt: '2026-05-14T08:00:00.000Z',
+        lastOccurredAt: '2026-05-14T08:00:00.000Z',
+      },
+    ];
+
+    const wrapper = mount(NavBarNotification);
+
+    await wrapper.get('.navbar-action-panel__trigger').trigger('click');
+
+    expect(wrapper.text()).toContain('grace 在你的文章下发表了回复');
+    expect(wrapper.text()).not.toContain('grace 回复了你的评论');
+  });
+
   it('navigates to the notification target before waiting for mark-as-read to finish', async () => {
     let resolveMarkRead: () => void = () => {};
     notificationStore.markReadAction.mockImplementation(

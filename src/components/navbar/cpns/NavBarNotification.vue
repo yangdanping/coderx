@@ -99,7 +99,9 @@ const getArticleTitle = (item: INotification) => {
 
 const getNotificationTitle = (item: INotification) => {
   if (item.type === 'article_comment') return '评论了你的文章';
-  if (item.type === 'comment_reply') return '回复了你的评论';
+  if (item.type === 'comment_reply') {
+    return item.metadata?.recipientRole === 'article_author' ? '在你的文章下发表了回复' : '回复了你的评论';
+  }
   return '点赞了你的文章';
 };
 
