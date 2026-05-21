@@ -233,6 +233,49 @@ describe('NavBarNotification', () => {
     expect(wrapper.text()).not.toContain('grace 回复了你的评论');
   });
 
+  it('renders follow notifications and navigates to the actor profile', async () => {
+    notificationStore.notificationList = [
+      {
+        id: 7,
+        recipientId: 10,
+        actorId: 25,
+        actor: {
+          id: 25,
+          name: 'nina',
+          avatarUrl: 'https://api.example/user/25/avatar',
+        },
+        type: 'follow',
+        targetType: 'user',
+        targetId: 10,
+        articleId: null,
+        article: null,
+        commentId: null,
+        comment: null,
+        metadata: {},
+        readAt: null,
+        createdAt: '2026-05-14T08:00:00.000Z',
+        lastOccurredAt: '2026-05-14T08:00:00.000Z',
+      },
+    ];
+
+    const wrapper = mount(NavBarNotification);
+
+    await wrapper.get('.navbar-action-panel__trigger').trigger('click');
+
+    expect(wrapper.text()).toContain('nina 关注了你');
+    expect(wrapper.text()).toContain('查看 Ta 的主页');
+    expect(wrapper.find('.icon-stub').attributes('data-type')).toBe('follow');
+
+    await wrapper.get('.notification-item').trigger('click');
+
+    expect(notificationStore.markReadAction).toHaveBeenCalledWith(7);
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'user',
+      params: { userId: 25 },
+    });
+    expect(openMock).not.toHaveBeenCalled();
+  });
+
   it('navigates to the notification target before waiting for mark-as-read to finish', async () => {
     let resolveMarkRead: () => void = () => {};
     notificationStore.markReadAction.mockImplementation(

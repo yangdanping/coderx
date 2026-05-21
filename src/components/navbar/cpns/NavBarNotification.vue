@@ -94,10 +94,12 @@ const getActorName = (item: INotification) => getActorInfo(item).name || `用户
 
 const getArticleTitle = (item: INotification) => {
   const title = truncateTitle(item.article?.title || '');
+  if (!title && item.articleId == null) return '';
   return title || `文章 #${item.articleId}`;
 };
 
 const getNotificationTitle = (item: INotification) => {
+  if (item.type === 'follow') return '关注了你';
   if (item.type === 'article_comment') return '评论了你的文章';
   if (item.type === 'comment_reply') {
     return item.metadata?.recipientRole === 'article_author' ? '在你的文章下发表了回复' : '回复了你的评论';
@@ -106,8 +108,10 @@ const getNotificationTitle = (item: INotification) => {
 };
 
 const isCommentNotification = (item: INotification) => item.type === 'article_comment' || item.type === 'comment_reply';
+const isFollowNotification = (item: INotification) => item.type === 'follow';
 
 const getNotificationIconType = (item: INotification): IconType => {
+  if (isFollowNotification(item)) return 'follow';
   if (isCommentNotification(item)) return 'comment';
   return 'like';
 };
@@ -118,6 +122,9 @@ const getCommentExcerpt = (item: INotification) => {
 };
 
 const getNotificationMeta = (item: INotification) => {
+  if (isFollowNotification(item)) {
+    return '查看 Ta 的主页';
+  }
   if (isCommentNotification(item)) {
     return getCommentExcerpt(item) || getArticleTitle(item);
   }
@@ -137,6 +144,16 @@ const getNotificationQuery = (item: INotification) => {
 };
 
 const handleItemClick = (item: INotification, close: () => void) => {
+  if (isFollowNotification(item)) {
+    void router.push({
+      name: 'user',
+      params: { userId: item.actor?.id ?? item.actorId },
+    });
+    void notificationStore.markReadAction(item.id);
+    close();
+    return;
+  }
+
   const query = getNotificationQuery(item);
   const routeLocation = {
     name: 'detail',

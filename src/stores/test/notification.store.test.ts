@@ -110,6 +110,34 @@ describe('notification.store', () => {
     expect(store.unreadCount).toBe(1);
   });
 
+  it('prepends follow socket notifications', () => {
+    const store = useNotificationStore();
+    store.notificationList = [buildNotification({ id: 1, readAt: '2026-05-14T08:10:00.000Z' })];
+    store.unreadCount = 0;
+
+    const followNotification = buildNotification({
+      id: 4,
+      type: 'follow',
+      targetType: 'user',
+      targetId: 10,
+      articleId: null,
+      article: null,
+      commentId: null,
+      comment: null,
+      metadata: {},
+    });
+    store.applyIncomingNotification(followNotification);
+
+    expect(store.notificationList.map((item) => item.id)).toEqual([4, 1]);
+    expect(store.notificationList[0]).toMatchObject({
+      type: 'follow',
+      targetType: 'user',
+      targetId: 10,
+      articleId: null,
+    });
+    expect(store.unreadCount).toBe(1);
+  });
+
   it('marks one notification as read optimistically after API success', async () => {
     markNotificationRead.mockResolvedValue({ code: 0, data: {} });
     const store = useNotificationStore();

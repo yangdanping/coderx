@@ -9,6 +9,9 @@
     <template v-else-if="type === 'comment'">
       <MessageSquare :size="iconSize" :color="color" />
     </template>
+    <template v-else-if="type === 'follow'">
+      <UserPlus :size="iconSize" :color="color" />
+    </template>
     <template v-else-if="type === 'star'">
       <Star :size="iconSize" :color="color" />
     </template>
@@ -34,7 +37,7 @@
 
 <script lang="ts" setup>
 import { activeColor, defaultColor } from '@/global/constants/color';
-import { Eye, ThumbsUp, MessageSquare, Star, Flame, Coins, Briefcase, MapPin, Mail } from 'lucide-vue-next';
+import { Eye, ThumbsUp, MessageSquare, UserPlus, Star, Flame, Coins, Briefcase, MapPin, Mail } from 'lucide-vue-next';
 import useRootStore from '@/stores/index.store';
 import { storeToRefs } from 'pinia';
 

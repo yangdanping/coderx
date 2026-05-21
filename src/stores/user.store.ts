@@ -200,9 +200,13 @@ const useUserStore = defineStore('user', {
       console.log('followAction res', res);
       const queryId = !isFollowListItem ? userId : this.userInfo.id;
       if (res.code === 0) {
-        Msg.showSuccess('关注成功');
+        if (res.data?.action === 'unfollowed') {
+          Msg.showWarn('取关成功');
+        } else {
+          Msg.showSuccess('关注成功');
+        }
       } else {
-        Msg.showWarn('取关成功');
+        Msg.showFail(res.msg ?? '关注操作失败');
       }
       // 关注/取关后使相关用户的缓存失效，强制下次请求刷新
       this.invalidateFollowCache(userId);
