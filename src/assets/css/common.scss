@@ -21,6 +21,7 @@
   font-size: clamp(12px, 1.5vw, 16px);
   font-family: 'Hiragino Sans GB', sans-serif;
   --xfontStyle: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
+  // --xfontStyle: linear-gradient(to bottom right, #70b8ff, #edeef0);
   --navbarHeight: 56px;
   /* ========== 光标样式 ========== */
   --cursorDefault: url('@/assets/img/cursor/default.svg'), auto;
