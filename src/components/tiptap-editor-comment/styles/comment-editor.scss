@@ -8,7 +8,7 @@
 .comment-editor-content {
   padding: 12px 16px;
   // min/max 决定用户可拖拽的高度区间。默认值（height）会在 TiptapEditorComment 中
-  // 根据 localStorage 中的 comment-editor:content-height 恢复；未设置时退回 min-height。
+  // 根据传入的 heightStorageKey 从 localStorage 恢复；未设置时退回 min-height。
   min-height: 100px;
   max-height: 600px;
   overflow-y: auto;

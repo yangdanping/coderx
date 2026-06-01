@@ -53,6 +53,10 @@ const props = withDefaults(
     placeholder?: string;
     height?: string | number;
     /**
+     * 编辑区高度偏好存储 key。文章评论框与回复框需要分开传入，避免 resize 高度互相联动。
+     */
+    heightStorageKey?: string;
+    /**
      * 评论框主色叠加强度（0–100）。越大则边框/工具栏/正文底上的主题蓝越明显；0 接近中性色。
      * 与下方样式中的 `calc(…% * var(--ce-strength))` 联动，可在不改组件代码的情况下调外观。
      */
@@ -62,6 +66,7 @@ const props = withDefaults(
     editComment: '',
     placeholder: '请输入评论内容...',
     height: 'auto',
+    heightStorageKey: 'comment-editor:content-height',
     accentStrength: 30,
   },
 );
@@ -113,14 +118,13 @@ const toggleToolbar = () => {
  *
  * 允许范围由 comment-editor.scss 中的 min-height / max-height 约束，这里只做读写与防御。
  */
-const HEIGHT_PREF_KEY = 'comment-editor:content-height';
 const MIN_HEIGHT = 100;
 const MAX_HEIGHT = 600;
 
-const readHeightPref = (): number | null => {
+const readHeightPref = (storageKey: string): number | null => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(HEIGHT_PREF_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return null;
     const n = parseInt(raw, 10);
     return Number.isFinite(n) && n >= MIN_HEIGHT && n <= MAX_HEIGHT ? n : null;
@@ -130,12 +134,12 @@ const readHeightPref = (): number | null => {
 };
 
 let heightPersistTimer: number | undefined;
-const persistHeight = (h: number) => {
+const persistHeight = (storageKey: string, h: number) => {
   if (typeof window === 'undefined') return;
   window.clearTimeout(heightPersistTimer);
   heightPersistTimer = window.setTimeout(() => {
     try {
-      window.localStorage.setItem(HEIGHT_PREF_KEY, String(h));
+      window.localStorage.setItem(storageKey, String(h));
     } catch {
       // 忽略不可写入场景（隐私模式等）
     }
@@ -215,7 +219,8 @@ onMounted(() => {
     const contentEl = editorContainerRef.value?.querySelector<HTMLElement>('.comment-editor-content');
     if (!contentEl) return;
 
-    const saved = readHeightPref();
+    const storageKey = props.heightStorageKey || 'comment-editor:content-height';
+    const saved = readHeightPref(storageKey);
     if (saved != null) contentEl.style.height = `${saved}px`;
 
     let lastPersisted = saved ?? Math.round(contentEl.getBoundingClientRect().height);
@@ -225,7 +230,7 @@ onMounted(() => {
       // 超界值直接丢弃：CSS 已经用 min/max 兜住，这里是双保险
       if (h < MIN_HEIGHT || h > MAX_HEIGHT) return;
       lastPersisted = h;
-      persistHeight(h);
+      persistHeight(storageKey, h);
     });
     heightResizeObserver.observe(contentEl);
   });

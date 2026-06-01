@@ -6,7 +6,7 @@
         取消 / 提交按钮通过 #actions slot 交给 TiptapEditorComment，
         与编辑器的"Aa"工具栏切换按钮同处底部工具条，避免 CommentForm 再用 absolute 悬浮定位。
       -->
-      <TiptapEditorComment @update:content="(valueHtml) => (content = valueHtml)">
+      <TiptapEditorComment :height-storage-key="heightStorageKey" @update:content="(valueHtml) => (content = valueHtml)">
         <template #actions>
           <el-button v-if="isReply" @click="handleCancel" type="default" plain size="small">取消</el-button>
           <el-button :disabled="isSubmitting || !content" :loading="isSubmitting" @click="handleSubmit" type="primary" :size="isReply ? 'small' : 'default'">
@@ -49,6 +49,7 @@ const { article } = storeToRefs(articleStore);
 const articleId = computed(() => String(route.params.articleId || ''));
 const content = ref('');
 const isSubmitting = ref(false);
+const heightStorageKey = computed(() => (props.isReply ? 'comment-editor:reply-content-height' : 'comment-editor:article-content-height'));
 
 // Mutations
 const addCommentMutation = useAddComment(articleId);
