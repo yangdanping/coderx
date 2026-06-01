@@ -18,7 +18,7 @@
       <DetailPanel v-if="isDetailReady" class="detail-main__panel" :article="article" />
 
       <div class="detail-main__content">
-        <DetailContent :article="article" :status="detailStatus" @update:toc="tocTitles = $event" />
+        <DetailContent :article="article" :status="detailStatus" @update:toc="tocTitles = $event" @add:selection-context="addSelectionContext" />
         <div ref="commentSectionRef" class="detail-main__comments">
           <Comment />
         </div>
@@ -27,7 +27,15 @@
       <DetailToc v-if="isDetailReady && tocTitles.length" :titles="tocTitles" class="detail-main__toc" />
     </div>
 
-    <AiAssistant v-if="isDetailReady" :context="detailAiContext" />
+    <AiAssistant
+      v-if="isDetailReady"
+      :key="`article-ai-${articleId}`"
+      :context="detailAiContext"
+      :conversation-scope="`article:${articleId}`"
+      :selection-contexts="selectionContexts"
+      @remove:selection-context="removeSelectionContext"
+      @clear:selection-contexts="clearSelectionContexts"
+    />
   </div>
 </template>
 
@@ -42,6 +50,7 @@ import AiAssistant from '@/components/ai/AiAssistant.vue';
 import { resolveArticleDetailHtml } from '@/service/article/article.content';
 import { useArticleDetail } from '@/composables/useArticleDetail';
 import useUserStore from '@/stores/user.store';
+import type { AiSelectionContext } from '@/components/ai/AiAssistant.message';
 
 import type { DetailTocTitle } from './cpns/detail/types/detail-toc.type';
 
@@ -62,6 +71,7 @@ const isDetailReady = computed(() => detailQuery.isDetailReady.value);
 const isAuthor = computed(() => article.value.author?.id === userInfo.value.id);
 const detailAiContext = computed(() => resolveArticleDetailHtml(article.value));
 const commentSectionRef = ref<HTMLElement | null>(null);
+const selectionContexts = ref<AiSelectionContext[]>([]);
 const notificationCommentId = computed(() => {
   const value = route.query.commentId;
   return Array.isArray(value) ? value[0] : value;
@@ -72,6 +82,29 @@ let lastScrolledCommentId = '';
 // 放在 Detail.vue 是因为 DetailToc 组件需要作为外层 grid 的第 3 列直接参与布局，
 // 不再作为 DetailContent 的内部子元素。
 const tocTitles = ref<DetailTocTitle[]>([]);
+
+const addSelectionContext = (text: string) => {
+  const normalizedText = text.replace(/\s+/g, ' ').trim();
+  if (!normalizedText || selectionContexts.value.some((item) => item.text === normalizedText)) return;
+
+  selectionContexts.value = [
+    ...selectionContexts.value,
+    {
+      id: `selection-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text: normalizedText,
+    },
+  ].slice(-10);
+};
+
+const removeSelectionContext = (id: string) => {
+  selectionContexts.value = selectionContexts.value.filter((item) => item.id !== id);
+};
+
+const clearSelectionContexts = () => {
+  selectionContexts.value = [];
+};
+
+watch(articleId, clearSelectionContexts);
 
 watch(
   [isDetailReady, notificationCommentId],

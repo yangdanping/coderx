@@ -139,6 +139,7 @@ const useUserStore = defineStore('user', {
       LocalCache.removeCache('token'); //退出登录要清除token和用户信息
       LocalCache.removeCache('userInfo');
       LocalCache.removeCache('socketUser'); // 清理遗留缓存（如果存在）
+      LocalCache.removeCachesByPrefix('coderx_ai_chat_');
 
       useRootStore().setAuthStatus('guest');
     },

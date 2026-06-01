@@ -27,6 +27,12 @@ class LocalCache {
     window.localStorage.removeItem(key);
   }
 
+  static removeCachesByPrefix(prefix: string) {
+    const keys = Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index)).filter((key): key is string => !!key && key.startsWith(prefix));
+
+    keys.forEach((key) => window.localStorage.removeItem(key));
+  }
+
   /**
    * 清除所有本地数据缓存
    */

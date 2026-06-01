@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
-const { follow, getFollow, showSuccess, showWarn, showFail } = vi.hoisted(() => ({
+const { follow, getFollow, showSuccess, showWarn, showFail, removeCachesByPrefix } = vi.hoisted(() => ({
   follow: vi.fn(),
   getFollow: vi.fn(),
   showSuccess: vi.fn(),
   showWarn: vi.fn(),
   showFail: vi.fn(),
+  removeCachesByPrefix: vi.fn(),
 }));
 
 vi.mock('@/router', () => ({
@@ -44,6 +45,7 @@ vi.mock('@/utils', () => ({
     getCache: vi.fn(),
     setCache: vi.fn(),
     removeCache: vi.fn(),
+    removeCachesByPrefix,
   },
   Msg: {
     showSuccess,
@@ -65,6 +67,7 @@ describe('user.store followAction', () => {
     showSuccess.mockReset();
     showWarn.mockReset();
     showFail.mockReset();
+    removeCachesByPrefix.mockReset();
     getFollow.mockResolvedValue({ code: 0, data: { following: [], follower: [] } });
   });
 
@@ -100,5 +103,13 @@ describe('user.store followAction', () => {
 
     expect(showWarn).toHaveBeenCalledWith('取关成功');
     expect(showSuccess).not.toHaveBeenCalled();
+  });
+
+  it('clears local AI chat cache when auth state is cleared', () => {
+    const store = useUserStore();
+
+    store.clearAuthState();
+
+    expect(removeCachesByPrefix).toHaveBeenCalledWith('coderx_ai_chat_');
   });
 });

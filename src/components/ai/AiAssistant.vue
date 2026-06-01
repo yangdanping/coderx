@@ -44,6 +44,11 @@
             <el-avatar :size="30" :icon="m.role === 'user' ? User : Bot" :src="m.role === 'user' ? userInfo.avatarUrl : ''" />
           </div>
           <div class="content">
+            <div v-if="getMessageSelectionContexts(m).length > 0" class="message-contexts">
+              <span v-for="context in getMessageSelectionContexts(m)" :key="context.id" class="context-chip is-readonly" :title="context.text">
+                {{ getSelectionContextPreview(context.text) }}
+              </span>
+            </div>
             <!-- 当前 UIMessage 通过 message.parts 承载正文，需要提取 type="text" 的 part -->
             <div v-if="getMessageText(m)" class="bubble" v-dompurify-html="renderMarkdown(getMessageText(m))"></div>
             <div v-if="m.role === 'assistant' && getToolParts(m).length > 0" class="tool-parts">
@@ -79,6 +84,12 @@
 
       <form @submit.prevent="handleSubmit" class="input-area">
         <div class="input-wrapper">
+          <div v-if="pendingSelectionContexts.length > 0" class="selection-context-bar" aria-label="已加入上下文">
+            <button v-for="context in pendingSelectionContexts" :key="context.id" class="context-chip" type="button" :title="context.text" @click="removeSelectionContext(context.id)">
+              <span>{{ getSelectionContextPreview(context.text) }}</span>
+              <el-icon><X /></el-icon>
+            </button>
+          </div>
           <el-input
             v-model="input"
             type="textarea"
@@ -114,12 +125,25 @@ import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortc
 import { useResizable } from '@/composables/useResizable';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
-import { getAiAssistantMessageText } from './AiAssistant.message';
+import {
+  createAiChatStorageKey,
+  getAiAssistantMessageText,
+  getAiAssistantSelectionContexts,
+  getSelectionContextPreview,
+  normalizeSelectionContexts,
+  type AiSelectionContext,
+} from './AiAssistant.message';
 
 // AI 助手快捷键提示文本（根据系统自动适配）
 const aiShortcutText = getAiShortcutText();
 const props = defineProps<{
   context?: string; // 可选：传入文章内容作为上下文
+  selectionContexts?: AiSelectionContext[]; // 可选：用户在文章里划词加入的本轮上下文
+  conversationScope?: string; // 可选：用于区分文章详情/编辑页等本地聊天缓存
+}>();
+const emit = defineEmits<{
+  'remove:selection-context': [id: string];
+  'clear:selection-contexts': [];
 }>();
 
 const isOpen = ref(false);
@@ -163,6 +187,47 @@ const md = new MarkdownIt({
 const renderMarkdown = (text: string) => {
   return md.render(text);
 };
+
+const pendingSelectionContexts = computed(() => normalizeSelectionContexts(props.selectionContexts ?? []));
+const requestSelectionContexts = ref<AiSelectionContext[]>([]);
+const getMessageSelectionContexts = getAiAssistantSelectionContexts;
+
+const removeSelectionContext = (id: string) => {
+  emit('remove:selection-context', id);
+};
+
+const conversationStorageKey = computed(() =>
+  createAiChatStorageKey({
+    userId: token.value ? userInfo.value.id : undefined,
+    scope: props.conversationScope,
+  }),
+);
+
+const normalizeCachedMessages = (messages: unknown) => {
+  if (!Array.isArray(messages)) return [];
+
+  return messages
+    .filter((message) => message && typeof message === 'object' && 'role' in message && 'parts' in message && Array.isArray((message as any).parts))
+    .slice(-40);
+};
+
+const loadCachedMessages = (key = conversationStorageKey.value) => {
+  try {
+    return normalizeCachedMessages(LocalCache.getCache(key));
+  } catch (error) {
+    console.warn('读取 AI 聊天缓存失败，已忽略本地缓存:', error);
+    LocalCache.removeCache(key);
+    return [];
+  }
+};
+
+const serializeMessagesForCache = (value: any[]) =>
+  value.slice(-40).map((message) => ({
+    id: message.id,
+    role: message.role,
+    parts: message.parts,
+    metadata: message.metadata,
+  }));
 
 /** 与详情页 / 评论区一致：DOMPurify 渲染后对气泡内 `pre > code` 做 hljs 高亮并挂载复制按钮（见 `@/utils/codeHeightlight`、`renderCopyButtons`） */
 const enhanceChatMarkdownCodeBlocks = () => {
@@ -246,6 +311,7 @@ watch(activeModel, (newVal) => {
 // 使用 Vercel AI SDK v2 Chat 类
 // 必须使用 DefaultChatTransport 来配置 api 和 headers
 const chat = new Chat({
+  messages: loadCachedMessages() as any,
   transport: new DefaultChatTransport({
     api: `${BASE_URL}/ai/chat`, // 走代理
     headers: () => {
@@ -259,6 +325,7 @@ const chat = new Chat({
     // 在每次请求时传递文章上下文
     body: () => ({
       context: props.context || null,
+      selectionContexts: requestSelectionContexts.value.length > 0 ? requestSelectionContexts.value : pendingSelectionContexts.value,
       model: activeModel.value?.value,
     }),
   }),
@@ -295,6 +362,24 @@ const displayMessages = computed(() => {
   });
 });
 
+watch(conversationStorageKey, (newKey) => {
+  chat.messages = loadCachedMessages(newKey) as any;
+  scrollToBottom();
+});
+
+watch(
+  messages,
+  (value) => {
+    if (!Array.isArray(value) || value.length === 0) {
+      LocalCache.removeCache(conversationStorageKey.value);
+      return;
+    }
+
+    LocalCache.setCache(conversationStorageKey.value, serializeMessagesForCache(value));
+  },
+  { deep: true },
+);
+
 watch(
   () => chat.status,
   (newVal) => {
@@ -315,16 +400,22 @@ const handleSubmit = async () => {
   }
 
   const userMessage = input.value;
+  const selectionSnapshot = pendingSelectionContexts.value;
   input.value = ''; // 立即清空输入框
+  requestSelectionContexts.value = selectionSnapshot;
 
   // 发送消息
   // 使用 Vercel AI SDK v2 的 sendMessage 方法
   try {
     await chat.sendMessage({
       text: userMessage,
-    });
+      metadata: selectionSnapshot.length > 0 ? { selectionContexts: selectionSnapshot } : undefined,
+    } as any);
     // 发送成功，更新状态为在线
     aiServiceStatus.value = 'online';
+    if (selectionSnapshot.length > 0) {
+      emit('clear:selection-contexts');
+    }
   } catch (error: any) {
     console.error('Error sending message:', error);
 
@@ -354,6 +445,8 @@ const handleSubmit = async () => {
 
     // 恢复用户输入
     input.value = userMessage;
+  } finally {
+    requestSelectionContexts.value = [];
   }
 
   scrollToBottom();
@@ -756,6 +849,24 @@ $shadowColor2: #f3b2ac;
         .content {
           max-width: 80%;
 
+          .message-contexts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+          }
+
+          .context-chip {
+            max-width: 120px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.35;
+            color: var(--el-color-primary);
+            background: color-mix(in srgb, var(--el-color-primary) 10%, var(--bg-color-primary));
+            @include thin-border(all, color-mix(in srgb, var(--el-color-primary) 35%, transparent));
+          }
+
           .bubble {
             padding: 10px 14px;
             border-radius: 6px;
@@ -952,6 +1063,10 @@ $shadowColor2: #f3b2ac;
             color: white;
             border-top-right-radius: 2px;
           }
+
+          .message-contexts {
+            justify-content: flex-end;
+          }
         }
 
         &.assistant {
@@ -985,6 +1100,47 @@ $shadowColor2: #f3b2ac;
         &:focus-within {
           border-color: var(--el-color-primary);
           box-shadow: 0 0 0 3px rgba(var(--el-color-primary-rgb), 0.1);
+        }
+
+        .selection-context-bar {
+          display: flex;
+          gap: 6px;
+          max-width: 100%;
+          overflow-x: auto;
+          padding: 8px 10px 0;
+          scrollbar-width: thin;
+        }
+
+        .context-chip {
+          flex: 0 0 auto;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          max-width: 126px;
+          height: 26px;
+          padding: 0 7px;
+          border: 1px solid color-mix(in srgb, var(--el-color-primary) 35%, transparent);
+          border-radius: 4px;
+          color: var(--el-color-primary);
+          background: color-mix(in srgb, var(--el-color-primary) 9%, var(--bg-color-primary));
+          font-size: 12px;
+          white-space: nowrap;
+          cursor: var(--cursorPointer);
+
+          span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .el-icon {
+            width: 12px;
+            height: 12px;
+            color: var(--text-secondary);
+          }
+
+          &:hover {
+            background: color-mix(in srgb, var(--el-color-primary) 15%, var(--bg-color-primary));
+          }
         }
 
         .input-textarea {

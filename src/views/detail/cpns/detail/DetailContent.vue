@@ -19,6 +19,18 @@
               <hr />
               <h1 class="article-title">{{ article.title }}</h1>
               <div ref="htmlContentRef" class="editor-content-view" v-dompurify-html="renderedContent"></div>
+              <Teleport to="body">
+                <button
+                  v-show="selectionTooltip.visible"
+                  class="selection-context-tooltip"
+                  type="button"
+                  :style="selectionTooltipStyle"
+                  @mousedown.prevent
+                  @click="addCurrentSelectionContext"
+                >
+                  加入上下文
+                </button>
+              </Teleport>
               <hr />
             </el-main>
           </el-container>
@@ -36,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { nextTick, computed } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive } from 'vue';
 
 import Avatar from '@/components/avatar/Avatar.vue';
 import DetailContentSkeleton from './DetailContentSkeleton.vue';
@@ -69,6 +81,7 @@ const props = withDefaults(
 // 所以这里把 HTML 渲染后抽出的标题上抛.
 const emit = defineEmits<{
   'update:toc': [titles: DetailTocTitle[]];
+  'add:selection-context': [text: string];
 }>();
 
 const article = computed(() => props.article);
@@ -93,6 +106,19 @@ const renderedContent = computed(() => {
 });
 
 const htmlContentRef = ref<null | HTMLElement>();
+let selectionFrame = 0;
+
+const selectionTooltip = reactive({
+  visible: false,
+  text: '',
+  left: 0,
+  top: 0,
+});
+
+const selectionTooltipStyle = computed(() => ({
+  left: `${selectionTooltip.left}px`,
+  top: `${selectionTooltip.top}px`,
+}));
 
 const imgPreview = reactive({
   img: '',
@@ -109,6 +135,102 @@ const initContentProcessing = (el: HTMLElement) => {
   // 提取标题生成目录, 通过 emit 交给父级渲染 DetailToc
   emit('update:toc', extractTocFromElement(el));
 };
+
+const hideSelectionTooltip = () => {
+  selectionTooltip.visible = false;
+  selectionTooltip.text = '';
+};
+
+const hasVisibleRect = (rect: Pick<DOMRect, 'width' | 'height'>) => rect.width > 0 || rect.height > 0;
+
+const isNodeInsideArticle = (root: HTMLElement, node: Node | null | undefined) => {
+  if (!node) return false;
+
+  const textNodeType = typeof Node === 'undefined' ? 3 : Node.TEXT_NODE;
+  const target = node.nodeType === textNodeType ? node.parentNode : node;
+  return !!target && root.contains(target);
+};
+
+const isSelectionInsideArticle = (selection: Selection, range: Range, root: HTMLElement) => {
+  if (isNodeInsideArticle(root, range.commonAncestorContainer)) return true;
+  if (isNodeInsideArticle(root, selection.anchorNode) || isNodeInsideArticle(root, selection.focusNode)) return true;
+
+  try {
+    return typeof range.intersectsNode === 'function' && range.intersectsNode(root);
+  } catch {
+    return false;
+  }
+};
+
+const getRangeVisibleRect = (range: Range) => {
+  const boundingRect = range.getBoundingClientRect();
+  if (hasVisibleRect(boundingRect)) return boundingRect;
+
+  const clientRects = Array.from(range.getClientRects()).filter(hasVisibleRect);
+  return clientRects[clientRects.length - 1] ?? null;
+};
+
+const getSelectionWithinArticle = () => {
+  const root = htmlContentRef.value;
+  const selection = window.getSelection();
+  if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+
+  const text = selection.toString().replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+
+  const range = selection.getRangeAt(0);
+  if (!isSelectionInsideArticle(selection, range, root)) return null;
+
+  const rect = getRangeVisibleRect(range);
+  if (!rect) return null;
+
+  return { text, rect };
+};
+
+const updateSelectionTooltip = () => {
+  const selected = getSelectionWithinArticle();
+  if (!selected) {
+    hideSelectionTooltip();
+    return;
+  }
+
+  selectionTooltip.text = selected.text;
+  selectionTooltip.left = Math.max(8, Math.min(window.innerWidth - 120, selected.rect.right + 8));
+  selectionTooltip.top = Math.max(8, Math.min(window.innerHeight - 36, selected.rect.bottom + 8));
+  selectionTooltip.visible = true;
+};
+
+const scheduleSelectionTooltipUpdate = () => {
+  cancelAnimationFrame(selectionFrame);
+  selectionFrame = requestAnimationFrame(updateSelectionTooltip);
+};
+
+const addCurrentSelectionContext = () => {
+  if (!selectionTooltip.text) return;
+
+  emit('add:selection-context', selectionTooltip.text);
+  hideSelectionTooltip();
+  window.getSelection()?.removeAllRanges();
+};
+
+onMounted(() => {
+  document.addEventListener('selectionchange', scheduleSelectionTooltipUpdate);
+  document.addEventListener('pointerup', scheduleSelectionTooltipUpdate);
+  document.addEventListener('touchend', scheduleSelectionTooltipUpdate);
+  document.addEventListener('mouseup', scheduleSelectionTooltipUpdate);
+  document.addEventListener('keyup', scheduleSelectionTooltipUpdate);
+  window.addEventListener('scroll', hideSelectionTooltip, true);
+});
+
+onUnmounted(() => {
+  cancelAnimationFrame(selectionFrame);
+  document.removeEventListener('selectionchange', scheduleSelectionTooltipUpdate);
+  document.removeEventListener('pointerup', scheduleSelectionTooltipUpdate);
+  document.removeEventListener('touchend', scheduleSelectionTooltipUpdate);
+  document.removeEventListener('mouseup', scheduleSelectionTooltipUpdate);
+  document.removeEventListener('keyup', scheduleSelectionTooltipUpdate);
+  window.removeEventListener('scroll', hideSelectionTooltip, true);
+});
 
 // 必须同时监听 DOM 挂载和内容变化，确保异步数据加载后能重新执行图片绑定和代码高亮等逻辑
 watch(
@@ -133,6 +255,7 @@ watch(
   width: 100%;
   box-sizing: border-box;
   padding-inline: $detail-content-padding;
+  position: relative;
 
   .detail-empty {
     @include glass-effect;
@@ -168,6 +291,25 @@ watch(
 
   @media (max-width: $detail-breakpoint-tablet) {
     padding-inline: 0;
+  }
+}
+
+.selection-context-tooltip {
+  position: fixed;
+  z-index: var(--z-popover, 2100);
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 45%, transparent);
+  border-radius: 4px;
+  background: var(--bg-color-primary);
+  color: var(--el-color-primary);
+  font-size: 12px;
+  line-height: 26px;
+  cursor: var(--cursorPointer);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+
+  &:hover {
+    background: color-mix(in srgb, var(--el-color-primary) 10%, var(--bg-color-primary));
   }
 }
 </style>
