@@ -217,12 +217,8 @@ const handleHover = (index: number) => {
   display: flex;
   gap: 12px;
   padding: 6px 12px;
-  @include thin-border(top, #eee);
+  @include thin-border(top, var(--border-color-list));
   color: var(--text-secondary);
-
-  :where(html.dark) & {
-    @include thin-border(top, #333);
-  }
 
   .hint-item {
     display: flex;

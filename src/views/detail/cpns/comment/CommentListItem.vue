@@ -86,7 +86,7 @@ watch(
 <style lang="scss" scoped>
 .comment-list-item {
   display: flex;
-  @include thin-border(bottom, #eee);
+  @include thin-border(bottom, var(--border-color-list));
   margin-top: 20px;
   position: relative;
 

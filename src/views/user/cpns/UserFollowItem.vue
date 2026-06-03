@@ -49,7 +49,7 @@ const goDetail = (userId: number) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  @include thin-border(bottom, #eee);
+  @include thin-border(bottom, var(--border-color-list));
   padding: 15px;
   cursor: pointer;
   .content {

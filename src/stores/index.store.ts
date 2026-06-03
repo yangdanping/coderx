@@ -62,6 +62,12 @@ const useRootStore = defineStore('root', {
     toggleProfileDialog() {
       this.showProfileDialog = !this.showProfileDialog;
     },
+    openProfileDialog() {
+      this.showProfileDialog = true;
+    },
+    closeProfileDialog() {
+      this.showProfileDialog = false;
+    },
     setAuthStatus(status: AuthStatus) {
       this.authStatus = status;
     },

@@ -41,6 +41,11 @@
   --text-shadow: rgba(0, 0, 0, 0.2);
   --fontColor: var(--text-secondary);
 
+  /* ========== 分隔线 ========== */
+  --border-color-default: #ebeef5;
+  --border-color-list: #eee;
+  --border-shadow-list-bottom: 0 0.5px 0 0 var(--border-color-list);
+
   /* ========== 玻璃效果 ========== */
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-bg-popup: rgba(255, 255, 255, 0.92); /* 弹窗用更高不透明度 */
@@ -134,11 +139,17 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
   /* 确保光标目标不被固定导航栏遮挡 */
   scroll-padding-top: calc(var(--navbarHeight) + 20px);
   /* 兜底背景色，在 SVG 背景加载前显示 */
   background-color: var(--bg-color-primary);
   transition: background-color 0.3s;
+}
+
+body {
+  /* Keep body transparent so App.vue's negative z-index SVG background stays visible. */
+  color: var(--fontColor);
 }
 
 hr {
@@ -179,6 +190,8 @@ h6 {
 
 /* ========== Dark Mode ========== */
 html.dark {
+  color-scheme: dark;
+
   /* 主题色 - Dark Mode (基底 #0f0f0f) */
   --bg-color-primary: #0f0f0f;
   --bg-color-secondary: #1a1a1a;
@@ -186,6 +199,9 @@ html.dark {
   --text-secondary: #a0a0a0;
   --text-shadow: rgba(255, 255, 255, 0.15);
   --fontColor: var(--text-secondary);
+  --border-color-default: rgba(147, 161, 178, 0.2);
+  --border-color-list: rgba(147, 161, 178, 0.24);
+  --border-shadow-list-bottom: 0 0.5px 0 0 var(--border-color-list);
 
   /* 玻璃效果 - dark 模式使用深色半透明背景 */
   --glass-bg: rgba(15, 15, 15, 0.6);
@@ -228,12 +244,6 @@ html.dark {
   }
 
   .hot-user-card-item {
-    border: 1px solid rgba(216, 216, 216, 0.2);
-  }
-
-  .list-item {
-    .content-wrapper {
-      border-bottom: 1px solid rgba(216, 216, 216, 0.2);
-    }
+    border: 1px solid var(--border-color-default);
   }
 }

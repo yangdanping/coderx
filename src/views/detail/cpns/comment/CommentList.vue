@@ -211,7 +211,7 @@ onUnmounted(() => {
   @include glass-effect;
   margin-bottom: 300px;
   padding: 20px;
-  border-top: 2px dashed var(--el-border-color);
+  border-top: 1px dashed var(--border-color-list);
 
   .comment-header {
     display: flex;

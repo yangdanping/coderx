@@ -101,7 +101,7 @@ const goTag = throttle((tag) => emitter.emit('changeTagInList', tag), 300);
   .content-wrapper {
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #eee;
+    @include thin-border(bottom, var(--border-color-list));
     padding-bottom: 10px;
     margin-top: 10px;
     cursor: pointer;

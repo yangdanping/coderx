@@ -1,118 +1,274 @@
 <template>
-  <div class="profile-panel">
-    <div v-if="active === 0" class="sex-info">
-      <h2>您的性别</h2>
-      <div class="sex-select">
-        <div @click="handleSelect('男')" class="icon" role="button" :class="{ active: form.sex === '男' }">
-          <h1>男</h1>
-          <img src="@/assets/img/user/male.svg" alt="" />
+  <div ref="panelRef" class="profile-panel">
+    <header class="profile-panel__header">
+      <h2>编辑资料</h2>
+    </header>
+
+    <el-form ref="profileFormRef" :model="form" :rules="rules" label-width="72px" status-icon class="profile-form profile-form--compact">
+      <el-form-item label="性别" prop="sex">
+        <div class="gender-select" role="group" aria-label="选择性别">
+          <button
+            v-for="option in genderOptions"
+            :key="option.value"
+            type="button"
+            :class="['gender-option', `gender-option--${option.tone}`, { active: form.sex === option.value }]"
+            :aria-pressed="form.sex === option.value"
+            :data-test="option.testId"
+            @click="selectGender(option.value)"
+          >
+            <component :is="option.icon" class="gender-option__icon" :stroke-width="2.4" aria-hidden="true" />
+            <span>{{ option.label }}</span>
+          </button>
         </div>
-        <div @click="handleSelect('女')" class="icon" role="button" :class="{ active: form.sex === '女' }">
-          <h1>女</h1>
-          <img src="@/assets/img/user/female.svg" alt="" />
-        </div>
-      </div>
-    </div>
-    <div v-else-if="active === 1" class="career-info">
-      <h2>您的职业</h2>
-      <el-select v-model="form.career" placeholder="请选择" clearable>
-        <el-option v-for="item in career" :key="item" :label="item" :value="item"> </el-option>
-      </el-select>
-    </div>
-    <div v-else-if="active === 2" class="more-info">
-      <h2>更多信息</h2>
-      <el-form :rules="rules" :model="form" status-icon ref="infoForm" label-width="90px">
+      </el-form-item>
+
+      <div class="form-stack">
         <el-form-item label="年龄" prop="age">
-          <el-input v-model.number="form.age" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="email" prop="email">
-          <el-input v-model.trim="form.email" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="address" prop="address">
-          <el-cascader
-            :options="provinceAndCityData as any"
-            @change="handleAddressChange"
-            class="full-width"
-            size="large"
-            v-model="selectedOptions"
-            placeholder="请选择您所在的城市"
+          <el-input
+            v-model="form.age"
+            data-test="profile-age"
+            name="profile-age"
+            type="number"
+            placeholder="例如 23…"
+            inputmode="numeric"
+            autocomplete="off"
+            clearable
           />
         </el-form-item>
-      </el-form>
-    </div>
-    <el-steps :active="active" finish-status="success">
-      <el-step title="步骤 1"></el-step>
-      <el-step title="步骤 2"></el-step>
-      <el-step title="步骤 3"></el-step>
-    </el-steps>
-    <el-button style="margin-top: 12px" type="primary" plain @click="next">{{ active <= 2 ? '下一步' : '完成' }}</el-button>
+
+        <el-form-item label="职业" prop="career">
+          <el-select
+            v-model="form.career"
+            data-test="profile-career"
+            name="profile-career"
+            placeholder="请选择职业…"
+            autocomplete="off"
+            clearable
+            class="full-width"
+          >
+            <el-option v-for="item in careerOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="邮箱" prop="email">
+          <el-input
+            v-model.trim="form.email"
+            data-test="profile-email"
+            name="profile-email"
+            type="email"
+            placeholder="例如 name@example.com…"
+            autocomplete="off"
+            spellcheck="false"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="所在地" prop="address">
+          <el-cascader
+            v-model="selectedOptions"
+            :options="provinceAndCityData as any"
+            data-test="profile-address"
+            name="profile-address"
+            placeholder="请选择省市…"
+            autocomplete="off"
+            clearable
+            filterable
+            class="full-width"
+            @change="handleAddressChange"
+          />
+        </el-form-item>
+      </div>
+
+      <div class="profile-actions">
+        <el-button type="primary" data-test="profile-submit" :loading="submitting" @click="submit">保存</el-button>
+      </div>
+
+      <p class="sr-only" aria-live="polite">{{ formStatus }}</p>
+    </el-form>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { provinceAndCityData, codeToText } from 'element-china-area-data'; // 地址级联选择器
+import { provinceAndCityData, codeToText } from 'element-china-area-data';
+import type { FormInstance, FormItemRule, FormRules } from 'element-plus';
+import { Mars, Venus } from 'lucide-vue-next';
 import useUserStore from '@/stores/user.store';
-
 import type { IUserInfo } from '@/stores/types/user.result';
+
+type GenderValue = '男' | '女';
+
+interface ProfileFormModel {
+  sex: GenderValue;
+  age: number | string | null;
+  email: string;
+  career: string;
+  address: string;
+}
+
+const props = withDefaults(
+  defineProps<{
+    editForm?: IUserInfo;
+  }>(),
+  {
+    editForm: () => ({}),
+  },
+);
+
 const userStore = useUserStore();
+const panelRef = ref<HTMLElement>();
+const profileFormRef = ref<FormInstance>();
+const selectedOptions = ref<Array<string | number>>([]);
+const submitting = ref(false);
+const formStatus = ref('');
 
-const { editForm = {} } = defineProps<{
-  editForm?: IUserInfo;
-}>();
+const careerOptions = ['自由职业者', '前端', '后端', 'UI设计', '运维', '测试', '产品经理'];
+const genderOptions = [
+  { label: '男', value: '男' as const, icon: Mars, tone: 'male', testId: 'profile-gender-male' },
+  { label: '女', value: '女' as const, icon: Venus, tone: 'female', testId: 'profile-gender-female' },
+];
 
-const active = ref(0);
-const career = ref(['自由职业者', '前端', '后端', 'UI设计', '运维', '测试', '产品经理']);
-const selectedOptions = ref<any[]>([]);
-const form = ref<any>({
-  sex: '男',
-  age: null,
-  email: null,
-  career: null,
-  address: null,
+const createFormModel = (editForm: IUserInfo = {}): ProfileFormModel => ({
+  sex: editForm.sex === '女' ? '女' : '男',
+  age: editForm.age ?? null,
+  email: editForm.email ?? '',
+  career: editForm.career ?? '',
+  address: editForm.address ?? '',
 });
-const rules = ref({
-  age: [{ pattern: /^(?:[1-9][0-9]?|1[01][0-9]|120)$/, message: '请输入正确的年龄', trigger: 'blur' }],
-  email: [{ pattern: /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/, message: '请输入正确的邮箱格式', trigger: 'blur' }],
-});
 
-onMounted(() => {
-  console.log('profile-panel 传来的所有信息:', editForm);
-  if (Object.keys(editForm).length) {
-    let { sex, age, email, career, address } = editForm;
-    if (address) {
-      const [province, city] = address.split(' ');
-      formatCity(province || '', city || '');
-    }
-    form.value = { sex, age, email, career, address };
+const form = ref<ProfileFormModel>(createFormModel(props.editForm));
+
+const validateSex: FormItemRule['validator'] = (_rule, value, callback) => {
+  if (value === '男' || value === '女') {
+    callback();
+    return;
   }
-  console.log('profile-panel 目前可编辑的信息:', form.value);
-});
-const formatCity = (province: string, city: string) => {
-  // v6.1.0 移除了 TextToCode，需要从 provinceAndCityData 中查找
+
+  callback(new Error('请选择性别'));
+};
+
+const validateCareer: FormItemRule['validator'] = (_rule, value, callback) => {
+  if (!value || careerOptions.includes(value)) {
+    callback();
+    return;
+  }
+
+  callback(new Error('请选择正确的职业'));
+};
+
+const validateAge: FormItemRule['validator'] = (_rule, value, callback) => {
+  if (value === null || value === undefined || value === '') {
+    callback();
+    return;
+  }
+
+  const age = Number(value);
+  if (Number.isInteger(age) && age >= 1 && age <= 120) {
+    callback();
+    return;
+  }
+
+  callback(new Error('年龄需为 1-120 的整数'));
+};
+
+const validateEmail: FormItemRule['validator'] = (_rule, value, callback) => {
+  if (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) {
+    callback();
+    return;
+  }
+
+  callback(new Error('请输入正确的邮箱'));
+};
+
+const validateAddress: FormItemRule['validator'] = (_rule, value, callback) => {
+  if (!value || String(value).trim().split(/\s+/).length >= 2) {
+    callback();
+    return;
+  }
+
+  callback(new Error('请选择省市'));
+};
+
+const rules: FormRules<ProfileFormModel> = {
+  sex: [{ validator: validateSex, trigger: 'change' }],
+  career: [{ validator: validateCareer, trigger: 'change' }],
+  age: [{ validator: validateAge, trigger: 'blur' }],
+  email: [{ validator: validateEmail, trigger: 'blur' }],
+  address: [{ validator: validateAddress, trigger: 'change' }],
+};
+
+const resolveAddressCodes = (address?: string) => {
+  if (!address) return [];
+
+  const [province, city] = address.split(/\s+/);
   const provinceItem = provinceAndCityData.find((item) => item.label === province);
-  if (provinceItem) {
-    const provinceCode = provinceItem.value;
-    const cityItem = provinceItem.children?.find((item) => item.label === city);
-    const cityCode = cityItem ? cityItem.value : '';
-    selectedOptions.value = [provinceCode, cityCode];
-  }
+  const cityItem = provinceItem?.children?.find((item) => item.label === city);
+
+  return provinceItem && cityItem ? [provinceItem.value, cityItem.value] : [];
 };
-const handleAddressChange = () => {
-  var provinceCode = selectedOptions.value[0];
-  var cityCode = selectedOptions.value[1];
-  // codeToText属性是区域码,属性值是汉字 codeToText['110000']输出北京市
-  form.value.address = `${codeToText[provinceCode]}` + ` ${codeToText[cityCode]}`;
-  console.log('选择的省市:', form.value.address);
-};
-const handleSelect = (value) => {
+
+watch(
+  () => props.editForm,
+  (editForm) => {
+    form.value = createFormModel(editForm);
+    selectedOptions.value = resolveAddressCodes(form.value.address);
+  },
+  { immediate: true, deep: true },
+);
+
+const selectGender = (value: GenderValue) => {
   form.value.sex = value;
-  console.log('handleSelect', form.value.sex);
+  void profileFormRef.value?.validateField('sex');
 };
-const next = () => {
-  if (active.value++ > 1) {
-    console.log('next', active.value);
-    Object.keys(form.value).forEach((key) => !form.value[key] && delete form.value[key]);
-    userStore.updateProfileAction(form.value);
+
+const handleAddressChange = (value: Array<string | number>) => {
+  if (!value.length) {
+    form.value.address = '';
+    return;
+  }
+
+  const [provinceCode, cityCode] = value;
+  const province = codeToText[provinceCode];
+  const city = codeToText[cityCode];
+
+  form.value.address = province && city ? `${province} ${city}` : '';
+};
+
+const createProfilePayload = (model: ProfileFormModel) => {
+  const payload: Partial<IUserInfo> = {
+    sex: model.sex,
+  };
+
+  const age = Number(model.age);
+  if (model.age !== null && model.age !== '' && Number.isInteger(age)) payload.age = age;
+  if (model.email.trim()) payload.email = model.email.trim();
+  if (model.career) payload.career = model.career;
+  if (model.address) payload.address = model.address;
+
+  return payload;
+};
+
+const focusFirstInvalidField = async () => {
+  await nextTick();
+
+  const firstInvalid = panelRef.value?.querySelector<HTMLElement>('.el-form-item.is-error input, .el-form-item.is-error button, .el-form-item.is-error [tabindex]');
+  firstInvalid?.focus();
+};
+
+const submit = async () => {
+  const isValid = await profileFormRef.value?.validate().catch(() => false);
+  if (!isValid) {
+    formStatus.value = '请检查表单错误';
+    await focusFirstInvalidField();
+    return;
+  }
+
+  submitting.value = true;
+  formStatus.value = '正在保存资料…';
+
+  try {
+    await userStore.updateProfileAction(createProfilePayload(form.value));
+  } finally {
+    submitting.value = false;
   }
 };
 </script>
@@ -120,50 +276,169 @@ const next = () => {
 <style lang="scss" scoped>
 .profile-panel {
   width: 100%;
-  display: flex;
-  flex-direction: column;
+}
 
-  .sex-info,
-  .career-info,
-  .more-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.profile-panel__header {
+  margin-bottom: 20px;
+  text-align: center;
 
-    .sex-select {
-      display: flex;
-      justify-content: space-around;
-      width: 100%;
-      margin: 40px 0;
-      .icon {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 200px;
-        // background: pink;
-        border-radius: 6px;
-        transition: all 0.3s;
-        cursor: pointer;
-      }
-      .icon:hover {
-        transform: scale(1.2);
-        box-shadow:
-          2px 4px 20px #c8d0e7,
-          2px 4px 20px #fff;
-      }
-      .icon.active {
-        transform: scale(1.2);
-        box-shadow:
-          2px 4px 10px #5e86ff,
-          2px 4px 10px #fff;
-      }
+  h2 {
+    margin: 0;
+    color: var(--el-text-color-primary);
+    font-size: 24px;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+}
+
+.profile-form {
+  width: min(360px, 100%);
+  margin: 0 auto;
+
+  :deep(.el-form-item__content) {
+    min-width: 0;
+  }
+}
+
+.form-stack {
+  :deep(.el-input),
+  :deep(.el-select),
+  :deep(.el-cascader) {
+    width: 100%;
+  }
+}
+
+.gender-select {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: fit-content;
+}
+
+.gender-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 78px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  span {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .gender-option__icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+  }
+
+  &:hover {
+    border-color: var(--el-color-primary-light-3);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+
+  &.active {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+  }
+
+  &.gender-option--male {
+    .gender-option__icon {
+      color: #409eff;
+    }
+
+    &:hover,
+    &.active {
+      border-color: #409eff;
+    }
+
+    &.active {
+      background: rgba(64, 158, 255, 0.12);
+      box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.45);
     }
   }
-  .career-info {
-    .el-select {
-      margin: 40px 0;
+
+  &.gender-option--female {
+    .gender-option__icon {
+      color: #f56c6c;
     }
+
+    &:hover,
+    &.active {
+      border-color: #f56c6c;
+    }
+
+    &.active {
+      background: rgba(245, 108, 108, 0.12);
+      box-shadow: 0 0 0 1px rgba(245, 108, 108, 0.45);
+    }
+  }
+}
+
+.form-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gender-option {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-form {
+    width: 100%;
+  }
+
+  .profile-actions {
+    justify-content: center;
   }
 }
 </style>

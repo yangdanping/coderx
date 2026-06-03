@@ -3,7 +3,8 @@
     <div class="list-header">
       <div v-if="articles.result?.length">
         <h2>
-          <el-icon class="back" @click="clearResultAndBack"><ChevronLeft /></el-icon>收藏夹"{{ activeCollect.name }}"下的文章({{ articles.result?.length }})
+          <button type="button" class="back" aria-label="返回收藏夹列表" @click="clearResultAndBack"><ChevronLeft aria-hidden="true" /></button>
+          收藏夹"{{ activeCollect.name }}"下的文章({{ articles.result?.length }})
         </h2>
       </div>
       <div v-else>
@@ -12,12 +13,12 @@
       <div class="btn">
         <template v-if="isMe && !showSetup">
           <el-tooltip effect="dark" content="新建收藏夹" placement="right">
-            <el-button @click="showNewInput = !showNewInput" :icon="Plus" circle></el-button>
+            <el-button :aria-label="showNewInput ? '收起新建收藏夹输入框' : '新建收藏夹'" @click="showNewInput = !showNewInput" :icon="Plus" circle></el-button>
           </el-tooltip>
         </template>
         <template v-if="showSetup">
           <el-tooltip effect="dark" content="批量操作" placement="right">
-            <el-button @click="handleCollect" :icon="Settings" circle></el-button>
+            <el-button :aria-label="showCheckBox ? '退出批量操作' : '进入批量操作'" @click="handleCollect" :icon="Settings" circle></el-button>
           </el-tooltip>
         </template>
       </div>
@@ -25,7 +26,17 @@
     <div class="list">
       <!-- 新建收藏夹 inline 输入 -->
       <div v-if="showNewInput" class="new-collect-input">
-        <el-input ref="newInputRef" v-model="newCollectName" placeholder="输入收藏夹名称" clearable @keyup.enter="createCollect" @keyup.escape="cancelCreate">
+        <el-input
+          ref="newInputRef"
+          v-model="newCollectName"
+          aria-label="新收藏夹名称"
+          autocomplete="off"
+          name="newCollectName"
+          placeholder="输入收藏夹名称..."
+          clearable
+          @keyup.enter="createCollect"
+          @keyup.escape="cancelCreate"
+        >
           <template #append>
             <el-button @click="createCollect" :disabled="!newCollectName.trim()">确定</el-button>
           </template>
@@ -37,7 +48,11 @@
         <ul class="setting">
           <li><input id="all" type="checkbox" @change="handleCheckboxAll" /> <label for="all">全选</label></li>
           <li>
-            <el-button @click="remove" :disabled="!!!manageArr.length" type="danger" plain>移除</el-button>
+            <el-popconfirm title="确定移除已选文章吗？" confirm-button-text="确定" cancel-button-text="取消" @confirm="remove">
+              <template #reference>
+                <el-button :disabled="!manageArr.length" type="danger" plain>移除</el-button>
+              </template>
+            </el-popconfirm>
           </li>
           <li v-if="manageArr.length">已选择{{ manageArr.length }}个文章</li>
         </ul>
@@ -49,7 +64,16 @@
               <!-- 编辑模式 -->
               <template v-if="editingCollectId === item.id">
                 <div class="edit-collect-input">
-                  <el-input ref="editInputRef" v-model="editCollectName" size="default" @keyup.enter="confirmEdit(item.id)" @keyup.escape="cancelEdit" />
+                  <el-input
+                    ref="editInputRef"
+                    v-model="editCollectName"
+                    aria-label="收藏夹名称"
+                    autocomplete="off"
+                    name="editCollectName"
+                    size="default"
+                    @keyup.enter="confirmEdit(item.id)"
+                    @keyup.escape="cancelEdit"
+                  />
                   <div class="edit-btns">
                     <el-button type="primary" plain size="small" @click="confirmEdit(item.id)">保存</el-button>
                     <el-button size="small" @click="cancelEdit">取消</el-button>
@@ -58,23 +82,23 @@
               </template>
               <!-- 正常展示模式 -->
               <template v-else>
-                <div class="collect-header" @click="goCollectDetial(item)">
+                <button type="button" class="collect-header" :aria-label="`查看收藏夹${item.name}`" @click="goCollectDetial(item)">
                   <span class="name">{{ item.name }}</span>
                   <span v-if="item.count" class="count">{{ item.count.length }}</span>
-                </div>
+                </button>
 
                 <!-- 编辑/删除操作按钮（仅自己可见） -->
                 <div v-if="isMe" class="item-actions">
                   <el-tooltip effect="dark" content="编辑" placement="bottom">
-                    <el-icon class="action-icon" @click.stop="startEdit(item)"><Pencil /></el-icon>
+                    <button type="button" class="action-icon" :aria-label="`编辑收藏夹${item.name}`" @click.stop="startEdit(item)"><Pencil aria-hidden="true" /></button>
                   </el-tooltip>
                   <el-popconfirm title="确定删除该收藏夹吗？" confirm-button-text="确定" cancel-button-text="取消" @confirm="deleteCollect(item.id)">
                     <template #reference>
-                      <div @click.stop>
+                      <span @click.stop>
                         <el-tooltip effect="dark" content="删除" placement="bottom">
-                          <el-icon class="action-icon delete"><Trash2 /></el-icon>
+                          <button type="button" class="action-icon delete" :aria-label="`删除收藏夹${item.name}`"><Trash2 aria-hidden="true" /></button>
                         </el-tooltip>
-                      </div>
+                      </span>
                     </template>
                   </el-popconfirm>
                 </div>
@@ -91,7 +115,7 @@
           <template v-for="item in articles.result" :key="item.id">
             <ListItem :item="item">
               <template v-if="showCheckBox" #checkbox>
-                <input name="one" type="checkbox" :value="item.id" v-model="manageArr" @change="handleCheckbox" />
+                <input name="one" type="checkbox" :value="item.id" v-model="manageArr" :aria-label="`选择文章${item.title ?? item.id}`" @change="handleCheckbox" />
               </template>
               <template #action>
                 <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
@@ -277,35 +301,105 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.user-collect {
+  --collect-card-bg: rgba(255, 255, 255, 0.92);
+  --collect-card-bg-hover: #fff;
+  --collect-card-border: #d0d7de;
+  --collect-card-border-hover: #409eff;
+  --collect-divider: #eceff3;
+  --collect-title: var(--text-primary);
+  --collect-muted: #7e8792;
+  --collect-count-bg: #eef1f5;
+  --collect-count-text: #606266;
+  --collect-icon-bg-hover: #eef5ff;
+  --collect-danger-bg-hover: #fff0f0;
+  --collect-danger-text: #f56c6c;
+  --collect-shadow-hover: 0 10px 24px rgba(31, 45, 61, 0.1);
+  --collect-focus-ring: rgba(64, 158, 255, 0.36);
+
+  color: var(--collect-title);
+
+  :where(html.dark) & {
+    --collect-card-bg: rgba(22, 25, 30, 0.86);
+    --collect-card-bg-hover: rgba(28, 33, 39, 0.94);
+    --collect-card-border: var(--border-color-list);
+    --collect-card-border-hover: rgba(129, 201, 149, 0.78);
+    --collect-divider: var(--border-color-list);
+    --collect-title: #f2f5f7;
+    --collect-muted: #9aa6b2;
+    --collect-count-bg: rgba(64, 158, 255, 0.16);
+    --collect-count-text: #bcd6f7;
+    --collect-icon-bg-hover: rgba(64, 158, 255, 0.14);
+    --collect-danger-bg-hover: rgba(245, 108, 108, 0.15);
+    --collect-danger-text: #ff8d8d;
+    --collect-shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.34);
+    --collect-focus-ring: rgba(129, 201, 149, 0.44);
+  }
+}
+
 .list-header {
   display: flex;
   align-items: center;
-  @include thin-border(bottom, #eee);
+  @include thin-border(bottom, var(--border-color-list));
   padding-bottom: 10px;
   padding-left: 10px;
+
   h2 {
     display: flex;
     align-items: center;
+    min-width: 0;
+    color: var(--collect-title);
+    line-height: 1.35;
   }
+
   .btn {
     margin-left: 10px;
   }
 
   .back {
-    font-size: 25px;
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
     margin-right: 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--collect-muted);
     cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+
+    svg {
+      width: 25px;
+      height: 25px;
+    }
+
+    &:hover {
+      background-color: var(--collect-icon-bg-hover);
+      color: var(--collect-card-border-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--collect-focus-ring);
+      outline-offset: 2px;
+    }
   }
 }
+
 .list {
   padding: 0 20px;
+  color: var(--collect-title);
 
   .new-collect-input {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 12px 0;
-    @include thin-border(bottom, #eee);
+    @include thin-border(bottom, var(--border-color-list));
 
     .el-input {
       flex: 1;
@@ -313,7 +407,7 @@ onUnmounted(() => {
     }
 
     .cancel-btn {
-      color: #909399;
+      color: var(--collect-muted);
     }
   }
 
@@ -322,8 +416,14 @@ onUnmounted(() => {
     align-items: center;
     list-style: none;
     padding: 10px 0;
+    color: var(--collect-muted);
+
     li {
       margin-right: 20px;
+    }
+
+    input[type='checkbox'] {
+      accent-color: var(--el-color-primary);
     }
   }
 
@@ -335,36 +435,57 @@ onUnmounted(() => {
   }
 
   .item.card-style {
-    border: 1px solid #d0d7de;
+    min-height: 128px;
+    border: 1px solid var(--collect-card-border);
     border-radius: 6px;
     padding: 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 12px;
-    background-color: #fff;
-    transition: all 0.2s ease-in-out;
+    background-color: var(--collect-card-bg);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+
     /* Reset thin-border mixin if it was applied via class */
     &::after {
       display: none;
     }
 
     &:hover {
-      border-color: #409eff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: var(--collect-card-border-hover);
+      background-color: var(--collect-card-bg-hover);
+      box-shadow: var(--collect-shadow-hover);
       transform: translateY(-2px);
     }
 
     .collect-header {
+      width: 100%;
+      min-width: 0;
       display: flex;
       align-items: center;
+      justify-content: flex-start;
+      border: 0;
+      padding: 0;
+      background: transparent;
       cursor: pointer;
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: var(--collect-title);
+      text-align: left;
+
+      &:focus-visible {
+        outline: 2px solid var(--collect-focus-ring);
+        outline-offset: 4px;
+        border-radius: 6px;
+      }
 
       .name {
         margin-right: 8px;
+        min-width: 0;
         word-break: break-all;
         line-height: 1.4;
       }
@@ -376,8 +497,8 @@ onUnmounted(() => {
         line-height: 20px;
         text-align: center;
         font-size: 12px;
-        color: #606266;
-        background-color: #f0f2f5;
+        color: var(--collect-count-text);
+        background-color: var(--collect-count-bg);
         border-radius: 6px;
         padding: 0 6px;
         flex-shrink: 0;
@@ -390,21 +511,38 @@ onUnmounted(() => {
       gap: 12px;
 
       .action-icon {
-        font-size: 16px;
-        color: #909399;
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        color: var(--collect-muted);
+        background: transparent;
         cursor: pointer;
-        padding: 4px;
         border-radius: 4px;
-        transition: all 0.2s;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
 
         &:hover {
-          background-color: #f2f6fc;
-          color: #409eff;
+          background-color: var(--collect-icon-bg-hover);
+          color: var(--collect-card-border-hover);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--collect-focus-ring);
+          outline-offset: 2px;
         }
 
         &.delete:hover {
-          color: #f56c6c;
-          background-color: #fef0f0;
+          color: var(--collect-danger-text);
+          background-color: var(--collect-danger-bg-hover);
         }
       }
     }
@@ -413,7 +551,7 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       font-size: 12px;
-      color: #909399;
+      color: var(--collect-muted);
       margin-top: auto;
 
       .label {
@@ -444,7 +582,7 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     padding: 60px 20px;
-    color: #909399;
+    color: var(--collect-muted);
 
     p {
       margin-bottom: 16px;
@@ -455,6 +593,16 @@ onUnmounted(() => {
       .el-icon {
         margin-right: 4px;
       }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list .item.card-style {
+    transition: none;
+
+    &:hover {
+      transform: none;
     }
   }
 }

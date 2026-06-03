@@ -62,7 +62,9 @@ function getStoredThemeMode(): ThemeMode {
 }
 
 function applyTheme() {
+  const nextColorScheme = isDark.value ? 'dark' : 'light';
   document.documentElement.classList.toggle('dark', isDark.value);
+  document.documentElement.style.colorScheme = nextColorScheme;
 }
 
 /**

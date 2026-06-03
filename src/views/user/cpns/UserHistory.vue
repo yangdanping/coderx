@@ -165,7 +165,7 @@ const handleClearAll = async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    @include thin-border(bottom, #eee);
+    @include thin-border(bottom, var(--border-color-list));
     padding-bottom: 10px;
     padding-left: 10px;
 
@@ -186,13 +186,13 @@ const handleClearAll = async () => {
     flex-direction: column;
     .select-all-wrapper {
       padding: 15px 0;
-      @include thin-border(bottom, #f0f0f0);
+      @include thin-border(bottom, var(--border-color-list));
     }
 
     .history-item {
       width: 100%;
       height: 100%;
-      @include thin-border(bottom, #f0f0f0);
+      @include thin-border(bottom, var(--border-color-list));
 
       :deep(.el-checkbox__label) {
         width: 96%;

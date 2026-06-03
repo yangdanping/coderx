@@ -367,7 +367,7 @@ $searchWidth: 100%;
     .search-result-content {
       min-height: 30px;
       &.showborder {
-        @include thin-border(top, #eee);
+        @include thin-border(top, var(--border-color-list));
       }
 
       .result-item-wrapper {

@@ -97,7 +97,7 @@ onUnmounted(() => {
     /* position: sticky;  Moved to Article.vue */
     /* top: var(--navbarHeight); */
     @include glass-effect;
-    @include thin-border(bottom, #eee);
+    @include thin-border(bottom, var(--border-color-list));
     /* Ensure full width on small screens */
     width: 100%;
     /* Add some padding for horizontal scroll mode */

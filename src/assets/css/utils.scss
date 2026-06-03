@@ -23,7 +23,7 @@ $glass-bg-popup-opacity: 0.92;
   // -webkit-backdrop-filter: $glass-blur;
 }
 
-@mixin thin-border($directions: all, $color: #ebeef5) {
+@mixin thin-border($directions: all, $color: var(--border-color-default)) {
   $shadows: ();
   @if meta.type-of($directions) == 'string' {
     $directions: ($directions);

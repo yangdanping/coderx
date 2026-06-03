@@ -216,7 +216,7 @@ const closeReplyForm = () => {
         justify-content: space-between;
         margin-bottom: 8px;
         padding-bottom: 6px;
-        @include thin-border(bottom, rgba(255, 255, 255, 0.1));
+        @include thin-border(bottom, var(--border-color-list));
 
         .quoted-author {
           font-size: 13px;

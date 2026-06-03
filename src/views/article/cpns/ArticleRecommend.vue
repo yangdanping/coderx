@@ -116,7 +116,7 @@ const goToArticle = (item: IArticle) => {
     justify-content: start;
     gap: 2px;
     list-style: none;
-    @include thin-border(bottom, #eee);
+    @include thin-border(bottom, var(--border-color-list));
     padding-bottom: 10px;
     margin-bottom: 10px;
     width: 300px;
