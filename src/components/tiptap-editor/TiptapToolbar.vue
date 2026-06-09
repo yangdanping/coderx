@@ -184,7 +184,7 @@ import { emitter, getAiShortcutText } from '@/utils';
 
 import type { Editor } from '@tiptap/vue-3';
 import type { DraftAutosaveStatus } from '@/composables/useDraftAutosave';
-import type { ImageUploadCommandOptions, UploadInsertSelection } from './types';
+import type { ImageUploadCommandOptions, UploadInsertSelection, UploadVideoOptions } from './types';
 
 const props = defineProps<{
   editor: Editor | undefined;
@@ -193,6 +193,7 @@ const props = defineProps<{
   lastSavedAt?: string | null;
   draftErrorMessage?: string;
   resolveImageUploadOptions?: () => ImageUploadCommandOptions | null;
+  resolveVideoUploadOptions?: () => UploadVideoOptions | null;
   insertSplitPreviewBlockquote?: (() => void) | null;
 }>();
 
@@ -214,6 +215,7 @@ const imageInputRef = ref<HTMLInputElement>();
 const videoInputRef = ref<HTMLInputElement>();
 const pendingImageUploadOptions = ref<ImageUploadCommandOptions | null>(null);
 const pendingImageInsertSelection = ref<UploadInsertSelection | null>(null);
+const pendingVideoUploadOptions = ref<UploadVideoOptions | null>(null);
 const pendingVideoInsertSelection = ref<UploadInsertSelection | null>(null);
 const linkDialogVisible = ref(false);
 const linkForm = reactive({
@@ -379,11 +381,12 @@ const handleImageUpload = async (e: Event) => {
 
 // 视频上传
 const prepareVideoUpload = () => {
+  pendingVideoUploadOptions.value = props.resolveVideoUploadOptions?.() ?? null;
   pendingVideoInsertSelection.value = rememberToolbarInsertSelection();
 };
 
 const triggerVideoUpload = () => {
-  if (!pendingVideoInsertSelection.value) {
+  if (!pendingVideoUploadOptions.value && !pendingVideoInsertSelection.value) {
     prepareVideoUpload();
   }
   videoInputRef.value?.click();
@@ -392,12 +395,16 @@ const triggerVideoUpload = () => {
 const handleVideoUpload = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (file && props.editor) {
-    // 使用自定义命令上传视频
-    props.editor.commands.uploadVideo(file, {
-      insertSelection: pendingVideoInsertSelection.value,
-    });
+    const uploadOptions = pendingVideoUploadOptions.value ??
+      (pendingVideoInsertSelection.value
+        ? {
+            insertSelection: pendingVideoInsertSelection.value,
+          }
+        : undefined);
+    props.editor.commands.uploadVideo(file, uploadOptions);
   }
 
+  pendingVideoUploadOptions.value = null;
   pendingVideoInsertSelection.value = null;
   clearVideoInput();
 };

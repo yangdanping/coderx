@@ -299,4 +299,75 @@ describe('TiptapToolbar', () => {
       onUploaded: onUploadedMock,
     });
   });
+
+  it('uses split-preview video upload options when a markdown-side insertion callback is provided', async () => {
+    const onUploadedMock = vi.fn();
+    const resolveVideoUploadOptionsMock = vi.fn(() => ({
+      onUploaded: onUploadedMock,
+    }));
+    const uploadVideoMock = vi.fn();
+
+    const wrapper = shallowMount(TiptapToolbar, {
+      props: {
+        editor: {
+          isFocused: false,
+          isActive: () => false,
+          can: () => ({
+            undo: () => false,
+            redo: () => false,
+          }),
+          state: {
+            selection: {
+              from: 1,
+              to: 1,
+            },
+          },
+          commands: {
+            uploadImage: vi.fn(),
+            uploadVideo: uploadVideoMock,
+          },
+          storage: {
+            imageUpload: {
+              getUploadPromise: vi.fn(),
+            },
+          },
+        },
+        isSplitPreviewActive: true,
+        resolveVideoUploadOptions: resolveVideoUploadOptionsMock,
+      },
+      global: {
+        stubs: {
+          ElTooltip: passthroughStub,
+          ElButton: buttonStub,
+          ElDivider: true,
+          ElDropdown: passthroughStub,
+          ElDropdownMenu: passthroughStub,
+          ElDropdownItem: passthroughStub,
+          ElDialog: passthroughStub,
+          ElForm: passthroughStub,
+          ElFormItem: passthroughStub,
+          ElInput: true,
+          ElIcon: passthroughStub,
+        },
+      },
+    });
+
+    await wrapper.get('[data-testid="video-upload-trigger"]').trigger('mousedown');
+    await wrapper.get('[data-testid="video-upload-trigger"]').trigger('click');
+
+    const input = wrapper.get('[data-testid="video-upload-input"]');
+    const file = new File(['split'], 'split.webm', { type: 'video/webm' });
+    Object.defineProperty(input.element, 'files', {
+      configurable: true,
+      value: [file],
+    });
+
+    await input.trigger('change');
+    await flushPromises();
+
+    expect(resolveVideoUploadOptionsMock).toHaveBeenCalledTimes(1);
+    expect(uploadVideoMock).toHaveBeenCalledWith(file, {
+      onUploaded: onUploadedMock,
+    });
+  });
 });

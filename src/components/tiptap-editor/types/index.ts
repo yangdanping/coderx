@@ -11,7 +11,12 @@ export type {
   EditorInstance,
   MarkdownStorageType,
 } from './editor-instance.type';
-export type { InsertSplitPreviewBlockquote, MarkdownSourceSelection, ToolbarImageUploadOptions } from './markdown-split-preview.type';
+export type {
+  InsertSplitPreviewBlockquote,
+  MarkdownSourceSelection,
+  ToolbarImageUploadOptions,
+  ToolbarVideoUploadOptions,
+} from './markdown-split-preview.type';
 export type { ImageUploadCommandOptions, UploadInsertSelection, UploadedImagePayload } from './upload.type';
 export type {
   IUploadVideoResponse,

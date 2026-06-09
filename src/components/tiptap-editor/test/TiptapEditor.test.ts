@@ -59,6 +59,7 @@ const {
   mockChainClearContent,
   mockChainRun,
   mockGetImageUploadPromise,
+  mockGetVideoUploadPromise,
   mockPosAtCoords,
   mockEditorState,
   capturedEditorOptions,
@@ -67,6 +68,7 @@ const {
   editorStoreState,
   sessionCacheGetMock,
   sessionCacheSetMock,
+  showWarnMock,
 } = vi.hoisted(() => ({
   mockEditorGetMarkdown: vi.fn(),
   mockEditorGetHTML: vi.fn(),
@@ -79,6 +81,7 @@ const {
   mockChainClearContent: vi.fn(),
   mockChainRun: vi.fn(),
   mockGetImageUploadPromise: vi.fn(),
+  mockGetVideoUploadPromise: vi.fn(),
   mockPosAtCoords: vi.fn(),
   mockEditorState: {
     selection: {
@@ -101,6 +104,7 @@ const {
   },
   sessionCacheGetMock: vi.fn(),
   sessionCacheSetMock: vi.fn(),
+  showWarnMock: vi.fn(),
 }));
 
 // =================================================================================
@@ -202,6 +206,9 @@ vi.mock('@tiptap/vue-3', () => {
           imageUpload: {
             getUploadPromise: mockGetImageUploadPromise,
           },
+          videoUpload: {
+            getUploadPromise: mockGetVideoUploadPromise,
+          },
           aiCompletion: {
             activeIndex: 0,
             onStateChange: undefined,
@@ -241,6 +248,10 @@ vi.mock('../TiptapToolbar.vue', () => ({
         default: false,
       },
       resolveImageUploadOptions: {
+        type: Function,
+        default: undefined,
+      },
+      resolveVideoUploadOptions: {
         type: Function,
         default: undefined,
       },
@@ -312,7 +323,7 @@ vi.mock('@/utils', () => ({
   },
   Msg: {
     showFail: vi.fn(),
-    showWarn: vi.fn(),
+    showWarn: showWarnMock,
   },
 }));
 
@@ -365,11 +376,13 @@ describe('TiptapEditor', () => {
     mockChainClearContent.mockReset();
     mockChainRun.mockReset();
     mockGetImageUploadPromise.mockReset();
+    mockGetVideoUploadPromise.mockReset();
     mockPosAtCoords.mockReset();
     registerVideoMetaMock.mockReset();
     registerVideoMetasMock.mockReset();
     sessionCacheGetMock.mockReset();
     sessionCacheSetMock.mockReset();
+    showWarnMock.mockReset();
     Object.keys(editorStoreState.videoRegistryById).forEach((key) => {
       delete editorStoreState.videoRegistryById[Number(key)];
     });
@@ -379,6 +392,7 @@ describe('TiptapEditor', () => {
     mockChainSetContent.mockReturnValue({ run: mockChainRun });
     mockChainClearContent.mockReturnValue({ run: mockChainRun });
     mockGetImageUploadPromise.mockResolvedValue(undefined);
+    mockGetVideoUploadPromise.mockResolvedValue(undefined);
     mockPosAtCoords.mockReturnValue(null);
     sessionCacheGetMock.mockReturnValue(undefined);
     capturedEditorOptions.current = null;
@@ -695,6 +709,7 @@ describe('TiptapEditor', () => {
 
   it('uploads dropped images at the resolved drop position instead of always appending to the end', async () => {
     mockPosAtCoords.mockReturnValue({ pos: 17 });
+    sessionCacheGetMock.mockReturnValue(false);
 
     const wrapper = mountEditor();
     const file = new File(['demo'], 'drop.jpg', { type: 'image/jpeg' });
@@ -718,6 +733,122 @@ describe('TiptapEditor', () => {
     });
   });
 
+  it('uploads a dropped video at the resolved rich-text position', async () => {
+    mockPosAtCoords.mockReturnValue({ pos: 17 });
+    sessionCacheGetMock.mockReturnValue(false);
+
+    const wrapper = mountEditor();
+    const file = new File(['video'], 'drop.webm', { type: 'video/webm' });
+
+    await flushPromises();
+    await wrapper.get('[data-testid="editor-content-stub"]').trigger('drop', {
+      clientX: 120,
+      clientY: 240,
+      dataTransfer: {
+        files: [file],
+        types: ['Files'],
+      },
+    });
+    await flushPromises();
+
+    expect(mockCommandUploadVideo).toHaveBeenCalledWith(file, {
+      insertSelection: {
+        from: 17,
+        to: 17,
+      },
+    });
+  });
+
+  it('waits for each dropped media upload before starting the next file', async () => {
+    sessionCacheGetMock.mockReturnValue(false);
+    let resolveImageUpload: (() => void) | undefined;
+    const imageUploadPromise = new Promise<void>((resolve) => {
+      resolveImageUpload = resolve;
+    });
+    const callOrder: string[] = [];
+    mockCommandUploadImage.mockImplementation(() => {
+      callOrder.push('image');
+    });
+    mockCommandUploadVideo.mockImplementation(() => {
+      callOrder.push('video');
+    });
+    mockGetImageUploadPromise.mockReturnValue(imageUploadPromise);
+
+    const wrapper = mountEditor();
+    const image = new File(['image'], 'first.jpg', { type: 'image/jpeg' });
+    const video = new File(['video'], 'second.webm', { type: 'video/webm' });
+
+    await flushPromises();
+    const dropPromise = wrapper.get('[data-testid="editor-content-stub"]').trigger('drop', {
+      dataTransfer: {
+        files: [image, video],
+        types: ['Files'],
+      },
+    });
+    await flushPromises();
+
+    expect(callOrder).toEqual(['image']);
+
+    resolveImageUpload?.();
+    await dropPromise;
+    await flushPromises();
+
+    expect(callOrder).toEqual(['image', 'video']);
+  });
+
+  it('skips unsupported dropped files with one warning while uploading valid media', async () => {
+    sessionCacheGetMock.mockReturnValue(false);
+    const wrapper = mountEditor();
+    const image = new File(['image'], 'valid.jpg', { type: 'image/jpeg' });
+    const text = new File(['text'], 'notes.txt', { type: 'text/plain' });
+
+    await flushPromises();
+    await wrapper.get('[data-testid="editor-content-stub"]').trigger('drop', {
+      dataTransfer: {
+        files: [text, image],
+        types: ['Files'],
+      },
+    });
+    await flushPromises();
+
+    expect(mockCommandUploadImage).toHaveBeenCalledWith(image, expect.any(Object));
+    expect(showWarnMock).toHaveBeenCalledTimes(1);
+    expect(showWarnMock).toHaveBeenCalledWith('已跳过不支持的文件，仅支持图片或视频');
+  });
+
+  it('inserts a dropped video token at the active markdown selection', async () => {
+    mockEditorGetMarkdown.mockReturnValue('hello');
+    mockEditorGetHTML.mockReturnValue('<p>hello</p>');
+    mockCommandUploadVideo.mockImplementation((_file, options) => {
+      options?.onUploaded?.({
+        id: 88,
+        url: 'http://example.com/drop.mp4',
+        poster: 'http://example.com/drop.jpg',
+      });
+    });
+
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    const sourceInput = wrapper.get('[data-testid="markdown-source-input"]');
+    const textarea = sourceInput.element as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(2, 2);
+    await sourceInput.trigger('focus');
+    await sourceInput.trigger('select');
+
+    const video = new File(['video'], 'split.webm', { type: 'video/webm' });
+    await wrapper.get('[data-testid="markdown-split-preview"]').trigger('drop', {
+      dataTransfer: {
+        files: [video],
+        types: ['Files'],
+      },
+    });
+    await flushPromises();
+
+    expect((sourceInput.element as HTMLTextAreaElement).value).toBe('he\n\n[[video:88]]\n\nllo');
+  });
+
   it('shows drag upload highlight only for external file drags, not when reordering existing editor nodes', async () => {
     const wrapper = mountEditor();
     const editorContent = wrapper.get('[data-testid="editor-content-stub"]');
@@ -738,6 +869,8 @@ describe('TiptapEditor', () => {
     });
 
     expect(wrapper.get('[data-testid="editor-content-stub"]').classes()).toContain('is-dragging');
+    expect(wrapper.get('[data-testid="media-drop-overlay"]').text()).toContain('释放以上传图片或视频');
+    expect(wrapper.get('[data-testid="media-drop-overlay"]').text()).toContain('视频最大 20MB，每篇最多 2 个');
   });
 
   it('shows drag upload highlight in split preview mode for external file drags too', async () => {

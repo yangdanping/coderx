@@ -8,56 +8,71 @@
       :lastSavedAt="lastSavedAt"
       :draftErrorMessage="draftErrorMessage"
       :resolveImageUploadOptions="resolveToolbarImageUploadOptions"
+      :resolveVideoUploadOptions="resolveToolbarVideoUploadOptions"
       :insertSplitPreviewBlockquote="insertSplitPreviewBlockquote"
       @toggle-split-preview="toggleSplitPreview"
     />
 
     <div
-      v-show="isSplitPreviewActive"
-      class="tiptap-split-preview"
-      :class="{ 'is-dragging': isDragging }"
-      data-testid="markdown-split-preview"
+      class="tiptap-editor-body"
       @dragenter="handleDragEnter"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
     >
-      <section class="markdown-panel markdown-panel--source">
-        <div class="markdown-panel__label">Markdown</div>
-        <textarea
-          ref="markdownSourceInputRef"
-          v-model="markdownSource"
-          data-testid="markdown-source-input"
-          class="markdown-panel__textarea"
-          spellcheck="false"
-          @input="handleMarkdownSourceInput"
-          @focus="handleMarkdownSourceFocus"
-          @blur="handleMarkdownSourceBlur"
-          @select="handleMarkdownSourceSelectionChange"
-          @click="handleMarkdownSourceSelectionChange"
-          @keyup="handleMarkdownSourceSelectionChange"
-        />
-      </section>
+      <div
+        v-if="isDragging"
+        class="media-drop-overlay"
+        data-testid="media-drop-overlay"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="media-drop-overlay__content">
+          <span class="media-drop-overlay__icon" aria-hidden="true">↑</span>
+          <strong>释放以上传图片或视频</strong>
+          <span>视频最大 20MB，每篇最多 2 个</span>
+        </div>
+      </div>
 
-      <div class="split-preview-divider" data-testid="split-preview-divider" aria-hidden="true"></div>
+      <div
+        v-show="isSplitPreviewActive"
+        class="tiptap-split-preview"
+        :class="{ 'is-dragging': isDragging }"
+        data-testid="markdown-split-preview"
+      >
+        <section class="markdown-panel markdown-panel--source">
+          <div class="markdown-panel__label">Markdown</div>
+          <textarea
+            ref="markdownSourceInputRef"
+            v-model="markdownSource"
+            data-testid="markdown-source-input"
+            class="markdown-panel__textarea"
+            spellcheck="false"
+            @input="handleMarkdownSourceInput"
+            @focus="handleMarkdownSourceFocus"
+            @blur="handleMarkdownSourceBlur"
+            @select="handleMarkdownSourceSelectionChange"
+            @click="handleMarkdownSourceSelectionChange"
+            @keyup="handleMarkdownSourceSelectionChange"
+          />
+        </section>
 
-      <section class="markdown-panel markdown-panel--preview">
-        <div class="markdown-panel__label">Preview</div>
-        <div data-testid="markdown-preview-panel" class="markdown-panel__preview editor-content-view" v-dompurify-html="renderedMarkdownPreview"></div>
-      </section>
+        <div class="split-preview-divider" data-testid="split-preview-divider" aria-hidden="true"></div>
+
+        <section class="markdown-panel markdown-panel--preview">
+          <div class="markdown-panel__label">Preview</div>
+          <div data-testid="markdown-preview-panel" class="markdown-panel__preview editor-content-view" v-dompurify-html="renderedMarkdownPreview"></div>
+        </section>
+      </div>
+
+      <!-- 编辑区域 -->
+      <EditorContent
+        v-show="!isSplitPreviewActive"
+        :editor="editor"
+        class="tiptap-editor-content"
+        :class="{ 'is-dragging': isDragging }"
+      />
     </div>
-
-    <!-- 编辑区域 -->
-    <EditorContent
-      v-show="!isSplitPreviewActive"
-      :editor="editor"
-      class="tiptap-editor-content"
-      :class="{ 'is-dragging': isDragging }"
-      @dragenter="handleDragEnter"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop"
-    />
 
     <!-- BubbleMenu：仅选中文字时显示 -->
     <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" :should-show="shouldShowTextBubbleMenu" v-if="editor" class="tiptap-bubble-menu">
@@ -102,7 +117,13 @@ import { getTiptapExtensions } from './config';
 import useEditorStore, { getVideoMetaById } from '@/stores/editor.store';
 import { annotateLegacyVideoIdsInHtml, emitter, Msg, SessionCache } from '@/utils';
 import { buildImageHtml } from './extensions/ImageNode';
-import { buildUnresolvedVideoPlaceholderHtml, buildVideoHtml, DEFAULT_VIDEO_STYLE, VIDEO_TOKEN_LINE_GLOBAL_PATTERN } from './extensions/VideoNode';
+import {
+  buildUnresolvedVideoPlaceholderHtml,
+  buildVideoHtml,
+  buildVideoToken,
+  DEFAULT_VIDEO_STYLE,
+  VIDEO_TOKEN_LINE_GLOBAL_PATTERN,
+} from './extensions/VideoNode';
 // 引入样式
 import './styles/tiptap.scss';
 
@@ -117,6 +138,7 @@ import type {
   MarkdownSourceSelection,
   MarkdownStorageType,
   ToolbarImageUploadOptions,
+  ToolbarVideoUploadOptions,
   UploadInsertSelection,
   VideoRegistryEntry,
 } from './types';
@@ -540,6 +562,28 @@ const insertTextIntoMarkdownSource = (text: string, selection: MarkdownSourceSel
   });
 };
 
+const createMarkdownImageUploadOptions = (selection: MarkdownSourceSelection): ToolbarImageUploadOptions => ({
+  onUploaded: ({ url, imgId }) => {
+    insertTextIntoMarkdownSource(
+      buildImageHtml({
+        imageId: imgId,
+        src: url,
+        alt: '',
+      }),
+      selection,
+    );
+  },
+});
+
+const createMarkdownVideoUploadOptions = (selection: MarkdownSourceSelection): ToolbarVideoUploadOptions => ({
+  onUploaded: ({ id }) => {
+    const token = buildVideoToken(id);
+    if (!token) return;
+
+    insertTextIntoMarkdownSource(`\n\n${token}\n\n`, selection);
+  },
+});
+
 const resolveToolbarImageUploadOptions = (): ToolbarImageUploadOptions | null => {
   if (!isSplitPreviewActive.value || !isMarkdownSourceFocused.value) {
     return null;
@@ -550,17 +594,34 @@ const resolveToolbarImageUploadOptions = (): ToolbarImageUploadOptions | null =>
     return null;
   }
 
+  return createMarkdownImageUploadOptions(selectionSnapshot);
+};
+
+const resolveToolbarVideoUploadOptions = (): ToolbarVideoUploadOptions | null => {
+  if (!isSplitPreviewActive.value || !isMarkdownSourceFocused.value) {
+    return null;
+  }
+
+  const selectionSnapshot = updateMarkdownSourceSelection();
+  if (!selectionSnapshot) {
+    return null;
+  }
+
+  return createMarkdownVideoUploadOptions(selectionSnapshot);
+};
+
+const getMarkdownDropSelection = (): MarkdownSourceSelection => {
+  if (isMarkdownSourceFocused.value) {
+    const selectionSnapshot = updateMarkdownSourceSelection();
+    if (selectionSnapshot) {
+      return { ...selectionSnapshot };
+    }
+  }
+
+  const end = markdownSource.value.length;
   return {
-    onUploaded: ({ url, imgId }) => {
-      insertTextIntoMarkdownSource(
-        buildImageHtml({
-          imageId: imgId,
-          src: url,
-          alt: '',
-        }),
-        selectionSnapshot,
-      );
-    },
+    start: end,
+    end,
   };
 };
 
@@ -826,8 +887,12 @@ const handleDragLeave = (e: DragEvent) => {
 
   e.preventDefault();
   e.stopPropagation();
-  // 只有离开编辑器容器时才取消高亮
-  if (e.target === e.currentTarget) {
+  const currentTarget = e.currentTarget;
+  const relatedTarget = e.relatedTarget;
+  if (
+    currentTarget instanceof HTMLElement &&
+    (!(relatedTarget instanceof Node) || !currentTarget.contains(relatedTarget))
+  ) {
     isDragging.value = false;
   }
 };
@@ -842,26 +907,61 @@ const handleDrop = async (e: DragEvent) => {
   const files = e.dataTransfer?.files;
   if (!files || files.length === 0) return;
 
-  // 过滤出图片文件
-  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-
-  if (imageFiles.length === 0) {
-    Msg.showWarn('请拖入图片文件');
-    return;
+  const droppedFiles = Array.from(files);
+  const mediaFiles = droppedFiles.filter((file) => file.type.startsWith('image/') || file.type.startsWith('video/'));
+  if (mediaFiles.length !== droppedFiles.length) {
+    Msg.showWarn('已跳过不支持的文件，仅支持图片或视频');
   }
 
-  let insertSelection = getDropInsertSelection(editor.value, e);
+  if (!mediaFiles.length) return;
 
-  // 串行上传所有图片，确保按顺序插入
-  for (const file of imageFiles) {
-    editor.value?.commands.uploadImage(file, { insertSelection });
-    // 等待当前图片上传完成
-    const storage = editor.value?.storage as { imageUpload?: { getUploadPromise?: (file: File) => Promise<void> } };
-    const promise = storage?.imageUpload?.getUploadPromise?.(file);
+  let insertSelection = isSplitPreviewActive.value
+    ? null
+    : getDropInsertSelection(editor.value, e);
+
+  for (const file of mediaFiles) {
+    let promise: Promise<void> | undefined;
+
+    if (file.type.startsWith('image/')) {
+      const uploadOptions = isSplitPreviewActive.value
+        ? createMarkdownImageUploadOptions(getMarkdownDropSelection())
+        : insertSelection
+          ? { insertSelection }
+          : undefined;
+      const started = editor.value?.commands.uploadImage(file, uploadOptions);
+      if (started === false) continue;
+
+      const storage = editor.value?.storage as {
+        imageUpload?: {
+          getUploadPromise?: (incomingFile: File) => Promise<void> | undefined;
+        };
+      };
+      promise = storage?.imageUpload?.getUploadPromise?.(file);
+    } else {
+      const uploadOptions = isSplitPreviewActive.value
+        ? createMarkdownVideoUploadOptions(getMarkdownDropSelection())
+        : insertSelection
+          ? { insertSelection }
+          : undefined;
+      const started = editor.value?.commands.uploadVideo(file, uploadOptions);
+      if (started === false) continue;
+
+      const storage = editor.value?.storage as {
+        videoUpload?: {
+          getUploadPromise?: (incomingFile: File) => Promise<void> | undefined;
+        };
+      };
+      promise = storage?.videoUpload?.getUploadPromise?.(file);
+    }
+
     if (promise) {
       await promise;
-      insertSelection = getCurrentInsertSelection(editor.value);
     }
+
+    await nextTick();
+    insertSelection = isSplitPreviewActive.value
+      ? null
+      : getCurrentInsertSelection(editor.value);
   }
 };
 
@@ -912,6 +1012,58 @@ onBeforeUnmount(() => {
   height: 100%;
   border: 1px solid var(--el-border-color);
   background: var(--bg-color-primary);
+}
+
+.tiptap-editor-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.media-drop-overlay {
+  position: absolute;
+  inset: 6px;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--el-color-primary);
+  background: color-mix(in srgb, var(--bg-color-primary) 92%, var(--el-color-primary));
+  pointer-events: none;
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    color: var(--text-primary);
+    text-align: center;
+
+    strong {
+      margin-top: 12px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    > span:last-child {
+      margin-top: 6px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--el-color-primary);
+    color: var(--el-color-white);
+    font-size: 24px;
+    line-height: 1;
+  }
 }
 
 .tiptap-split-preview {
