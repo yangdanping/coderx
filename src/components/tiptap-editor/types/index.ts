@@ -13,4 +13,10 @@ export type {
 } from './editor-instance.type';
 export type { InsertSplitPreviewBlockquote, MarkdownSourceSelection, ToolbarImageUploadOptions } from './markdown-split-preview.type';
 export type { ImageUploadCommandOptions, UploadInsertSelection, UploadedImagePayload } from './upload.type';
-export type { IUploadVideoResponse, IVideoStatusResponse, UploadVideoOptions, VideoTranscodeStatus } from './video-upload.type';
+export type {
+  IUploadVideoResponse,
+  IVideoStatusResponse,
+  UploadedVideoPayload,
+  UploadVideoOptions,
+  VideoTranscodeStatus,
+} from './video-upload.type';

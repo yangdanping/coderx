@@ -1,7 +1,14 @@
 import type { UploadInsertSelection } from './upload.type';
 
+export interface UploadedVideoPayload {
+  id: number;
+  url: string;
+  poster: string | null;
+}
+
 export interface UploadVideoOptions {
   insertSelection?: UploadInsertSelection | null;
+  onUploaded?: ((payload: UploadedVideoPayload) => void) | null;
 }
 
 export type VideoTranscodeStatus = 'pending' | 'processing' | 'completed' | 'failed';

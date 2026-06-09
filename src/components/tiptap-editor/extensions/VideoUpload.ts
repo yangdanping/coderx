@@ -51,6 +51,8 @@ const countVideoNodes = (node?: EditorJsonNode): number => {
   return count;
 };
 
+const uploadPromises = new Map<File, Promise<void>>();
+
 export const VideoUpload = Extension.create({
   name: 'videoUpload',
 
@@ -77,9 +79,9 @@ export const VideoUpload = Extension.create({
 
           console.log('准备上传视频:', file.name, '大小:', (file.size / 1024 / 1024).toFixed(2), 'MB');
 
-          // 剩余流程（magic number 预检 + 上传 + 静默轮询）全部走异步，
-          // tiptap command 必须同步返回 boolean，因此在此之后立即 `return true`
-          void (async () => {
+          // 剩余流程（magic number 预检 + 上传 + 节点插入）走可等待 Promise，
+          // 静默轮询保持独立，避免混合媒体队列等待完整转码。
+          const promise = (async () => {
             const magicMismatch = await getVideoMagicNumberMismatchMessage(file);
             if (magicMismatch) {
               Msg.showFail(magicMismatch);
@@ -88,14 +90,7 @@ export const VideoUpload = Extension.create({
 
             Msg.showInfo('视频上传中，请稍候...');
 
-            let uploadRes: IUploadVideoResponse;
-            try {
-              uploadRes = (await uploadVideo(file)) as IUploadVideoResponse;
-            } catch (error: unknown) {
-              console.error('视频上传出错:', error);
-              Msg.showFail('视频上传失败，请重试');
-              return;
-            }
+            const uploadRes = (await uploadVideo(file)) as IUploadVideoResponse;
 
             console.log('uploadVideo 接口返回:', uploadRes);
 
@@ -123,27 +118,35 @@ export const VideoUpload = Extension.create({
             });
             console.log('已保存视频ID到待清理列表:', id);
 
-            const chain = editor.chain();
-            if (options?.insertSelection) {
-              chain.focus();
-              chain.setTextSelection(options.insertSelection);
-            } else if (editor.isFocused) {
-              chain.focus();
+            if (options?.onUploaded) {
+              options.onUploaded({
+                id,
+                url,
+                poster: poster || null,
+              });
             } else {
-              chain.focus('end');
+              const chain = editor.chain();
+              if (options?.insertSelection) {
+                chain.focus();
+                chain.setTextSelection(options.insertSelection);
+              } else if (editor.isFocused) {
+                chain.focus();
+              } else {
+                chain.focus('end');
+              }
+              chain
+                .insertContent({
+                  type: 'video',
+                  attrs: {
+                    videoId: id,
+                    src: url,
+                    poster: poster || null,
+                    controls: true,
+                    style: DEFAULT_VIDEO_STYLE,
+                  } as VideoNodeAttrs,
+                })
+                .run();
             }
-            chain
-              .insertContent({
-                type: 'video',
-                attrs: {
-                  videoId: id,
-                  src: url,
-                  poster: poster || null,
-                  controls: true,
-                  style: DEFAULT_VIDEO_STYLE,
-                } as VideoNodeAttrs,
-              })
-              .run();
 
             Msg.showSuccess('视频上传成功!');
 
@@ -165,10 +168,24 @@ export const VideoUpload = Extension.create({
               .catch((error) => {
                 console.warn(`[VideoUpload] 轮询 videoId=${id} 状态时出错:`, error);
               });
-          })();
+          })()
+            .catch((error: unknown) => {
+              console.error('视频上传出错:', error);
+              Msg.showFail('视频上传失败，请重试');
+            })
+            .finally(() => {
+              uploadPromises.delete(file);
+            });
 
+          uploadPromises.set(file, promise);
           return true;
         },
+    };
+  },
+
+  addStorage() {
+    return {
+      getUploadPromise: (file: File) => uploadPromises.get(file),
     };
   },
 });

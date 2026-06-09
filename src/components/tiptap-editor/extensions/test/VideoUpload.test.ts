@@ -74,6 +74,11 @@ const createUploadVideoCommand = (
       from: number;
       to: number;
     } | null;
+    onUploaded?: ((payload: {
+      id: number;
+      url: string;
+      poster: string | null;
+    }) => void) | null;
   },
 ) => {
   const addCommands = VideoUpload.config.addCommands as unknown as () => {
@@ -84,11 +89,26 @@ const createUploadVideoCommand = (
           from: number;
           to: number;
         } | null;
+        onUploaded?: ((payload: {
+          id: number;
+          url: string;
+          poster: string | null;
+        }) => void) | null;
       },
     ) => (props: unknown) => boolean;
   };
 
   return addCommands().uploadVideo(file, options);
+};
+
+const getVideoUploadPromise = (file: File) => {
+  const addStorage = VideoUpload.config.addStorage as unknown as
+    | (() => {
+        getUploadPromise: (incomingFile: File) => Promise<void> | undefined;
+      })
+    | undefined;
+
+  return addStorage?.().getUploadPromise(file);
 };
 
 describe('VideoUpload', () => {
@@ -231,6 +251,106 @@ describe('VideoUpload', () => {
       },
     });
     expect(chain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('exposes the in-flight upload promise so mixed media drops can wait for insertion', async () => {
+    let resolveUpload: ((value: {
+      code: number;
+      data: {
+        id: number;
+        url: string;
+        poster: string | null;
+      };
+    }) => void) | undefined;
+    uploadVideoMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpload = resolve;
+      }),
+    );
+
+    const chain = {
+      focus: vi.fn(),
+      setTextSelection: vi.fn(),
+      insertContent: vi.fn(),
+      run: vi.fn(),
+    };
+    chain.focus.mockReturnValue(chain);
+    chain.setTextSelection.mockReturnValue(chain);
+    chain.insertContent.mockReturnValue(chain);
+
+    const editor = {
+      isFocused: false,
+      getJSON: vi.fn(() => ({
+        type: 'doc',
+        content: [],
+      })),
+      chain: vi.fn(() => chain),
+    };
+    const file = createValidMp4File('queued.mp4');
+    const uploadCommand = createUploadVideoCommand(file);
+
+    expect(uploadCommand?.({ editor } as never)).toBe(true);
+    await flushPromises();
+
+    const uploadPromise = getVideoUploadPromise(file);
+    expect(uploadPromise).toBeInstanceOf(Promise);
+
+    resolveUpload?.({
+      code: 0,
+      data: {
+        id: 101,
+        url: 'http://example.com/queued.mp4',
+        poster: null,
+      },
+    });
+    await uploadPromise;
+
+    expect(getVideoUploadPromise(file)).toBeUndefined();
+    expect(chain.insertContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('delegates successful insertion to onUploaded without inserting a duplicate video node', async () => {
+    uploadVideoMock.mockResolvedValue({
+      code: 0,
+      data: {
+        id: 102,
+        url: 'http://example.com/split.mp4',
+        poster: 'http://example.com/split.jpg',
+      },
+    });
+    const onUploaded = vi.fn();
+    const chain = {
+      focus: vi.fn(),
+      setTextSelection: vi.fn(),
+      insertContent: vi.fn(),
+      run: vi.fn(),
+    };
+    chain.focus.mockReturnValue(chain);
+    chain.setTextSelection.mockReturnValue(chain);
+    chain.insertContent.mockReturnValue(chain);
+
+    const editor = {
+      isFocused: false,
+      getJSON: vi.fn(() => ({
+        type: 'doc',
+        content: [],
+      })),
+      chain: vi.fn(() => chain),
+    };
+    const uploadCommand = createUploadVideoCommand(createValidMp4File('split.mp4'), {
+      onUploaded,
+    });
+
+    expect(uploadCommand?.({ editor } as never)).toBe(true);
+    await flushPromises();
+
+    expect(onUploaded).toHaveBeenCalledWith({
+      id: 102,
+      url: 'http://example.com/split.mp4',
+      poster: 'http://example.com/split.jpg',
+    });
+    expect(chain.insertContent).not.toHaveBeenCalled();
+    expect(chain.run).not.toHaveBeenCalled();
   });
 
   it('rejects non-video files before starting upload', () => {
