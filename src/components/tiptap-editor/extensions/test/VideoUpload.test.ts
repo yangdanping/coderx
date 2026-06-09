@@ -353,6 +353,59 @@ describe('VideoUpload', () => {
     expect(chain.run).not.toHaveBeenCalled();
   });
 
+  it('refreshes registered video metadata when transcoding produces the final poster', async () => {
+    uploadVideoMock.mockResolvedValue({
+      code: 0,
+      data: {
+        id: 103,
+        url: 'http://example.com/split-poster.mp4',
+        poster: null,
+      },
+    });
+    getVideoStatusMock.mockResolvedValue({
+      code: 0,
+      data: {
+        id: 103,
+        poster: 'http://example.com/split-poster.jpg',
+        transcode_status: 'completed',
+      },
+    });
+    const chain = {
+      focus: vi.fn(),
+      setTextSelection: vi.fn(),
+      insertContent: vi.fn(),
+      run: vi.fn(),
+    };
+    chain.focus.mockReturnValue(chain);
+    chain.setTextSelection.mockReturnValue(chain);
+    chain.insertContent.mockReturnValue(chain);
+
+    const editor = {
+      isFocused: false,
+      getJSON: vi.fn(() => ({
+        type: 'doc',
+        content: [],
+      })),
+      chain: vi.fn(() => chain),
+    };
+    const file = createValidMp4File('split-poster.mp4');
+    const uploadCommand = createUploadVideoCommand(file, {
+      onUploaded: vi.fn(),
+    });
+
+    expect(uploadCommand?.({ editor } as never)).toBe(true);
+    await getVideoUploadPromise(file);
+    await flushPromises();
+
+    expect(registerVideoMetaMock).toHaveBeenLastCalledWith({
+      videoId: 103,
+      src: 'http://example.com/split-poster.mp4',
+      poster: 'http://example.com/split-poster.jpg',
+      controls: true,
+      style: 'width: 360px; max-width: 100%; height: auto;',
+    });
+  });
+
   it('rejects non-video files before starting upload', () => {
     const editor = {
       getJSON: vi.fn(() => ({

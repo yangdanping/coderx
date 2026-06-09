@@ -156,6 +156,13 @@ export const VideoUpload = Extension.create({
                 if (result.outcome === 'completed') {
                   // 不弹 toast（避免打扰），仅把 poster 刷成真实可访问的 URL
                   if (result.poster) {
+                    editorStore.registerVideoMeta({
+                      videoId: id,
+                      src: url,
+                      poster: result.poster,
+                      controls: true,
+                      style: DEFAULT_VIDEO_STYLE,
+                    });
                     refreshVideoNodePoster(editor, id, result.poster);
                   }
                 } else if (result.outcome === 'failed') {
