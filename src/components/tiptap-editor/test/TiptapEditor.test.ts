@@ -31,6 +31,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { defineComponent, h, ref } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 // =================================================================================
 // 1. 提升 mock 函数声明（vi.hoisted）
@@ -914,7 +915,7 @@ describe('TiptapEditor', () => {
     expect((sourceInput.element as HTMLTextAreaElement).value).toBe('he\n\n[[video:88]]\n\nllo');
   });
 
-  it('shows drag upload highlight only for external file drags, not when reordering existing editor nodes', async () => {
+  it('shows a single drop overlay border only for external file drags', async () => {
     const wrapper = mountEditor();
     const editorContent = wrapper.get('[data-testid="editor-content-stub"]');
 
@@ -933,12 +934,12 @@ describe('TiptapEditor', () => {
       },
     });
 
-    expect(wrapper.get('[data-testid="editor-content-stub"]').classes()).toContain('is-dragging');
+    expect(wrapper.get('[data-testid="editor-content-stub"]').classes()).not.toContain('is-dragging');
     expect(wrapper.get('[data-testid="media-drop-overlay"]').text()).toContain('释放以上传图片或视频');
     expect(wrapper.get('[data-testid="media-drop-overlay"]').text()).toContain('视频最大 20MB，每篇最多 2 个');
   });
 
-  it('shows drag upload highlight in split preview mode for external file drags too', async () => {
+  it('does not add a second drag border to split preview mode', async () => {
     const wrapper = mountEditor();
     const splitPreview = wrapper.get('[data-testid="markdown-split-preview"]');
 
@@ -949,7 +950,27 @@ describe('TiptapEditor', () => {
       },
     });
 
-    expect(wrapper.get('[data-testid="markdown-split-preview"]').classes()).toContain('is-dragging');
+    expect(wrapper.get('[data-testid="markdown-split-preview"]').classes()).not.toContain('is-dragging');
+    expect(wrapper.find('[data-testid="media-drop-overlay"]').exists()).toBe(true);
+  });
+
+  it('renders ordinary markdown line breaks without preserving the newline after each br', async () => {
+    mockEditorGetMarkdown.mockReturnValue('123\n123\n321\n312');
+    mockEditorGetHTML.mockReturnValue('<p>123<br>123<br>321<br>312</p>');
+
+    const wrapper = mountEditor();
+
+    await flushPromises();
+
+    const componentSource = readFileSync(
+      'src/components/tiptap-editor/TiptapEditor.vue',
+      'utf8',
+    );
+
+    expect(wrapper.get('[data-testid="markdown-preview-panel"]').findAll('br')).toHaveLength(3);
+    expect(componentSource).toMatch(
+      /&__preview:deep\(p\)\s*\{[\s\S]*?white-space:\s*normal;/,
+    );
   });
 
   // 用例 ④：验证编辑器 onUpdate 触发时始终向父组件 emit HTML 内容（保证提交链路不变）

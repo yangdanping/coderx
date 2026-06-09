@@ -37,7 +37,6 @@
       <div
         v-show="isSplitPreviewActive"
         class="tiptap-split-preview"
-        :class="{ 'is-dragging': isDragging }"
         data-testid="markdown-split-preview"
       >
         <section class="markdown-panel markdown-panel--source">
@@ -70,7 +69,6 @@
         v-show="!isSplitPreviewActive"
         :editor="editor"
         class="tiptap-editor-content"
-        :class="{ 'is-dragging': isDragging }"
       />
     </div>
 
@@ -1108,12 +1106,6 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   flex: 1;
   min-height: 0;
-
-  &.is-dragging {
-    outline: 2px dashed var(--el-color-primary);
-    outline-offset: -2px;
-    background-color: rgba(64, 158, 255, 0.05);
-  }
 }
 
 .markdown-panel {
@@ -1166,8 +1158,12 @@ onBeforeUnmount(() => {
     margin-top: 0;
   }
 
+  &__preview:deep(p) {
+    // MarkdownIt 已把单换行转换为 <br>；禁用全局 pre-wrap，避免 <br> 后的源码换行再次占一行。
+    white-space: normal;
+  }
+
   &__preview:deep(blockquote p) {
-    // MarkdownIt 在 breaks 模式下会输出 <br>，这里改回 normal 避免 <br> 后的源码换行空白被 pre-wrap 额外显示成“空一行”。
     white-space: normal;
   }
 
@@ -1210,13 +1206,6 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
   background: var(--bg-color-primary);
   color: var(--text-primary);
-
-  &.is-dragging {
-    border: 2px dashed var(--el-color-primary);
-    background-color: rgba(64, 158, 255, 0.05);
-    // 添加内边距避免内容被边框遮挡
-    padding: 8px;
-  }
 }
 
 @media (max-width: 992px) {
