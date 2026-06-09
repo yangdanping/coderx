@@ -215,13 +215,18 @@ const getMarkdownContent = (editorInstance: EditorInstance) => {
 
   // Tiptap v3 (@tiptap/markdown) 直接在 editor 实例上提供了 getMarkdown 方法
   if (typeof editorInstance.getMarkdown === 'function') {
-    return editorInstance.getMarkdown();
+    return normalizeMarkdownBoundaryWhitespace(editorInstance.getMarkdown());
   }
 
   // 备选方案：尝试从 storage 获取（兼容旧版本或其他插件）
   const storage = editorInstance.storage.markdown as MarkdownStorageType;
-  return storage?.getMarkdown?.() ?? '';
+  return normalizeMarkdownBoundaryWhitespace(storage?.getMarkdown?.() ?? '');
 };
+
+const normalizeMarkdownBoundaryWhitespace = (markdown: string) =>
+  markdown
+    .replace(/^(?:[ \t]*\r?\n)+/, '')
+    .replace(/(?:\r?\n[ \t]*)+$/, '');
 
 const getContentType = (content: EditorDocumentContent) => {
   if (typeof content !== 'string') {
@@ -562,6 +567,34 @@ const insertTextIntoMarkdownSource = (text: string, selection: MarkdownSourceSel
   });
 };
 
+const buildMarkdownBlockInsertion = (
+  currentMarkdown: string,
+  selection: MarkdownSourceSelection,
+  block: string,
+) => {
+  const safeStart = Math.max(0, Math.min(selection.start, currentMarkdown.length));
+  const safeEnd = Math.max(safeStart, Math.min(selection.end, currentMarkdown.length));
+  const before = currentMarkdown.slice(0, safeStart);
+  const after = currentMarkdown.slice(safeEnd);
+
+  const prefix = !before
+    ? ''
+    : /\r?\n[ \t]*\r?\n$/.test(before)
+      ? ''
+      : /\r?\n$/.test(before)
+        ? '\n'
+        : '\n\n';
+  const suffix = !after
+    ? ''
+    : /^\r?\n[ \t]*\r?\n/.test(after)
+      ? ''
+      : /^\r?\n/.test(after)
+        ? '\n'
+        : '\n\n';
+
+  return `${prefix}${block}${suffix}`;
+};
+
 const createMarkdownImageUploadOptions = (selection: MarkdownSourceSelection): ToolbarImageUploadOptions => ({
   onUploaded: ({ url, imgId }) => {
     insertTextIntoMarkdownSource(
@@ -580,7 +613,10 @@ const createMarkdownVideoUploadOptions = (selection: MarkdownSourceSelection): T
     const token = buildVideoToken(id);
     if (!token) return;
 
-    insertTextIntoMarkdownSource(`\n\n${token}\n\n`, selection);
+    insertTextIntoMarkdownSource(
+      buildMarkdownBlockInsertion(markdownSource.value, selection, token),
+      selection,
+    );
   },
 });
 

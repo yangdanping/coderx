@@ -99,8 +99,11 @@ export const VideoUpload = Extension.create({
               return;
             }
 
-            const { id, url, poster } = uploadRes.data;
-            console.log('上传视频成功!', { id, url, poster });
+            const { id, url, poster, transcodeStatus } = uploadRes.data;
+            const initialPoster = transcodeStatus === 'pending' || transcodeStatus === 'processing'
+              ? null
+              : poster || null;
+            console.log('上传视频成功!', { id, url, poster: initialPoster, transcodeStatus });
 
             if (!id) {
               console.error('警告: 后端返回的数据中没有 id 字段!', uploadRes.data);
@@ -112,7 +115,7 @@ export const VideoUpload = Extension.create({
             editorStore.registerVideoMeta({
               videoId: id,
               src: url,
-              poster: poster || null,
+              poster: initialPoster,
               controls: true,
               style: DEFAULT_VIDEO_STYLE,
             });
@@ -122,7 +125,7 @@ export const VideoUpload = Extension.create({
               options.onUploaded({
                 id,
                 url,
-                poster: poster || null,
+                poster: initialPoster,
               });
             } else {
               const chain = editor.chain();
@@ -140,7 +143,7 @@ export const VideoUpload = Extension.create({
                   attrs: {
                     videoId: id,
                     src: url,
-                    poster: poster || null,
+                    poster: initialPoster,
                     controls: true,
                     style: DEFAULT_VIDEO_STYLE,
                   } as VideoNodeAttrs,

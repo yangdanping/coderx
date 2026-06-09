@@ -282,6 +282,21 @@ vi.mock('../TiptapToolbar.vue', () => ({
           h(
             'button',
             {
+              'data-testid': 'toolbar-video-upload',
+              onClick: () => {
+                const options = (props.resolveVideoUploadOptions as undefined | (() => { onUploaded?: (payload: { id: number; url: string; poster: string | null }) => void }))?.();
+                options?.onUploaded?.({
+                  id: 67,
+                  url: 'http://example.com/from-toolbar.mp4',
+                  poster: null,
+                });
+              },
+            },
+            'video-upload',
+          ),
+          h(
+            'button',
+            {
               'data-testid': 'toolbar-blockquote',
               onMousedown: (event: MouseEvent) => event.preventDefault(),
               onClick: () => {
@@ -487,6 +502,48 @@ describe('TiptapEditor', () => {
         contentType: 'markdown',
       }),
     );
+  });
+
+  it('inserts a standalone video token without leading or trailing blank lines', async () => {
+    mockEditorGetMarkdown.mockReturnValue('');
+    mockEditorGetHTML.mockReturnValue('<p></p>');
+
+    const wrapper = mountEditor({}, { attachTo: document.body });
+
+    await flushPromises();
+
+    const sourceInput = wrapper.get('[data-testid="markdown-source-input"]');
+    const textarea = sourceInput.element as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(0, 0);
+
+    await sourceInput.trigger('focus');
+    await sourceInput.trigger('select');
+    await wrapper.get('[data-testid="toolbar-video-upload"]').trigger('click');
+    await flushPromises();
+
+    expect((wrapper.get('[data-testid="markdown-source-input"]').element as HTMLTextAreaElement).value).toBe('[[video:67]]');
+    expect(mockCommandSetContent).toHaveBeenLastCalledWith(
+      '[[video:67]]',
+      expect.objectContaining({
+        contentType: 'markdown',
+      }),
+    );
+
+    wrapper.unmount();
+  });
+
+  it('removes non-semantic boundary blank lines when restoring markdown from the editor', async () => {
+    mockEditorGetMarkdown.mockReturnValue('\n\n[[video:466]]\n\n\n\n');
+    mockEditorGetHTML.mockReturnValue(
+      '<video data-video-id="466" src="http://example.com/video.mp4" controls=""></video><p></p>',
+    );
+
+    const wrapper = mountEditor();
+
+    await flushPromises();
+
+    expect((wrapper.get('[data-testid="markdown-source-input"]').element as HTMLTextAreaElement).value).toBe('[[video:466]]');
   });
 
   it('inserts a single-line blockquote marker and keeps the caret after the space when split preview quote is clicked', async () => {

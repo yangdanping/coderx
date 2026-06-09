@@ -406,6 +406,71 @@ describe('VideoUpload', () => {
     });
   });
 
+  it('does not expose a predicted poster until processing has completed', async () => {
+    uploadVideoMock.mockResolvedValue({
+      code: 0,
+      data: {
+        id: 104,
+        url: 'http://example.com/processing.mp4',
+        poster: 'http://example.com/processing-poster.jpg',
+        transcodeStatus: 'processing',
+      },
+    });
+    getVideoStatusMock.mockResolvedValue({
+      code: 0,
+      data: {
+        id: 104,
+        poster: 'http://example.com/processing-poster.jpg',
+        transcode_status: 'completed',
+      },
+    });
+    const onUploaded = vi.fn();
+    const chain = {
+      focus: vi.fn(),
+      setTextSelection: vi.fn(),
+      insertContent: vi.fn(),
+      run: vi.fn(),
+    };
+    chain.focus.mockReturnValue(chain);
+    chain.setTextSelection.mockReturnValue(chain);
+    chain.insertContent.mockReturnValue(chain);
+
+    const editor = {
+      isFocused: false,
+      getJSON: vi.fn(() => ({
+        type: 'doc',
+        content: [],
+      })),
+      chain: vi.fn(() => chain),
+    };
+    const file = createValidMp4File('processing.mp4');
+    const uploadCommand = createUploadVideoCommand(file, { onUploaded });
+
+    expect(uploadCommand?.({ editor } as never)).toBe(true);
+    await getVideoUploadPromise(file);
+    await flushPromises();
+
+    expect(onUploaded).toHaveBeenCalledWith({
+      id: 104,
+      url: 'http://example.com/processing.mp4',
+      poster: null,
+    });
+    expect(registerVideoMetaMock).toHaveBeenNthCalledWith(1, {
+      videoId: 104,
+      src: 'http://example.com/processing.mp4',
+      poster: null,
+      controls: true,
+      style: 'width: 360px; max-width: 100%; height: auto;',
+    });
+    expect(registerVideoMetaMock).toHaveBeenLastCalledWith({
+      videoId: 104,
+      src: 'http://example.com/processing.mp4',
+      poster: 'http://example.com/processing-poster.jpg',
+      controls: true,
+      style: 'width: 360px; max-width: 100%; height: auto;',
+    });
+  });
+
   it('rejects non-video files before starting upload', () => {
     const editor = {
       getJSON: vi.fn(() => ({
