@@ -301,7 +301,7 @@ const syncArticleVideoRegistryFromProps = () => {
       return {
         videoId,
         src,
-        poster: null,
+        poster: typeof video?.poster === 'string' ? video.poster : null,
         controls: true,
         style: DEFAULT_VIDEO_STYLE,
       };

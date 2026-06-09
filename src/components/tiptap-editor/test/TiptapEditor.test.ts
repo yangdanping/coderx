@@ -619,6 +619,7 @@ describe('TiptapEditor', () => {
           {
             id: 428,
             url: 'http://example.com/existing.mp4',
+            poster: 'http://example.com/existing-poster.jpg',
           },
         ],
       },
@@ -628,6 +629,13 @@ describe('TiptapEditor', () => {
 
     expect(wrapper.get('[data-testid="markdown-preview-panel"] video').attributes('src')).toBe('http://example.com/existing.mp4');
     expect(wrapper.get('[data-testid="markdown-preview-panel"] video').attributes('data-video-id')).toBe('428');
+    expect(wrapper.get('[data-testid="markdown-preview-panel"] video').attributes('poster')).toBe('http://example.com/existing-poster.jpg');
+    expect(registerVideoMetasMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        videoId: 428,
+        poster: 'http://example.com/existing-poster.jpg',
+      }),
+    ]);
     expect(wrapper.get('[data-testid="markdown-preview-panel"]').text()).not.toContain('未解析视频 428');
   });
 

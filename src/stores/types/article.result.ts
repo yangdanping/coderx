@@ -34,6 +34,7 @@ export interface IArticleImg {
 export interface IArticleVideo {
   id?: number;
   url?: string;
+  poster?: string | null;
 }
 export interface IAuthor extends IUserInfo {
   id?: number;
