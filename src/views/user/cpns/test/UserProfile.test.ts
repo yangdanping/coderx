@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing';
 import { mount } from '@vue/test-utils';
-import { defineComponent, h, reactive } from 'vue';
+import { defineComponent, h, nextTick, reactive } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const route = reactive({
@@ -69,7 +69,7 @@ describe('UserProfile', () => {
     route.query = { tabName: '最近浏览' };
   });
 
-  it('normalizes unauthorized deep links and falls back to the article tab data fetch', () => {
+  it('normalizes unauthorized deep links without prefetching profile article server state', async () => {
     mount(UserProfile, {
       props: {
         profile: {
@@ -147,7 +147,12 @@ describe('UserProfile', () => {
       path: '/user/99',
       query: {},
     });
-    expect(articleStore.refreshFirstPageAction).toHaveBeenCalledWith({ userId: '99' });
+    expect(articleStore.refreshFirstPageAction).not.toHaveBeenCalled();
+
+    route.query = { tabName: '收藏' };
+    await nextTick();
+
+    expect(articleStore.initArticle).toHaveBeenCalledOnce();
   });
 
   it('pushes the follow sub-tab into the URL when the follower stat is clicked', async () => {

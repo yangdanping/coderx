@@ -4,53 +4,67 @@
       <h2>{{ sex }}的文章({{ profile.articleCount }})</h2>
     </div>
     <div class="list">
-      <template v-if="articles.result?.length">
-        <template v-for="item in articles.result" :key="item.id">
-          <ListItem :item="item">
-            <template #action>
-              <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
-            </template>
-          </ListItem>
-        </template>
-        <Page v-model:currentPage="pageNum" v-model:pageSize="pageSize" @changePage="changePage" :total="profile.articleCount" />
+      <el-skeleton v-if="isPending" animated :rows="5" />
+
+      <div v-else-if="isError" class="list-state error-state">
+        加载失败: {{ error?.message }}
+        <el-button class="retry-button" link type="primary" @click="() => refetch()">重试</el-button>
+      </div>
+
+      <div v-else-if="!items.length" class="list-state">这个人未发表过文章</div>
+
+      <template v-else>
+        <ListItem v-for="item in items" :key="item.id" :item="item">
+          <template #action>
+            <ArticleAction :article="item" :isLiked="isLiked" :onLike="likeArticle" />
+          </template>
+        </ListItem>
+
+        <el-skeleton v-if="isFetchingNextPage" animated :rows="1" />
+        <div v-else-if="!hasNextPage" class="list-state">没有更多了</div>
       </template>
-      <template v-else><span>这个人未发表过文章</span></template>
+
+      <div ref="infiniteSentinel" class="infinite-sentinel"></div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import Page from '@/components/Page.vue';
 import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
-import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
+import { useArticleList, useLikeArticle, useUserLikedArticles } from '@/composables/useArticleList';
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
 import useUserStore from '@/stores/user.store';
-import useArticleStore from '@/stores/article.store';
+
+import type { IUseArticleListParams } from '@/composables/useArticleList';
+
 const userStore = useUserStore();
-const articleStore = useArticleStore();
 const { profile } = storeToRefs(userStore);
-const { articles } = storeToRefs(articleStore);
+const userId = computed(() => profile.value.id);
+const requestParams = computed<IUseArticleListParams>(() => ({
+  userId: userId.value ?? '',
+  pageOrder: 'date',
+}));
 
-const pageNum = ref(1);
-const pageSize = ref(10);
-
-// 用户点赞状态
+const {
+  items,
+  fetchNextPage,
+  hasNextPage,
+  isPending,
+  isFetchingNextPage,
+  isError,
+  error,
+  refetch,
+} = useArticleList(requestParams, computed(() => !!userId.value));
 const { isLiked } = useUserLikedArticles();
-
-// 点赞操作
 const { mutate: likeArticle } = useLikeArticle();
+const { infiniteSentinel } = useInfiniteScroll({
+  canLoadMore: hasNextPage,
+  isLoading: isFetchingNextPage,
+  loadMore: fetchNextPage,
+});
 
 const sex = computed(() => (profile.value.sex === '男' ? '他' : '她'));
-
-watch(
-  () => profile.value.id,
-  (newV) => {
-    pageNum.value = 1;
-    articleStore.refreshFirstPageAction({ userId: newV, pageSize: pageSize.value });
-  },
-);
-
-const changePage = () => articleStore.getArticleListAction({ userId: profile.value.id, pageNum: pageNum.value, pageSize: pageSize.value });
 </script>
 
 <style lang="scss" scoped>
@@ -60,8 +74,24 @@ const changePage = () => articleStore.getArticleListAction({ userId: profile.val
     padding-bottom: 10px;
     padding-left: 10px;
   }
+
   .list {
     padding: 0 20px;
+  }
+
+  .list-state {
+    padding: 20px 0;
+    color: #999;
+    text-align: center;
+  }
+
+  .error-state {
+    color: var(--el-color-danger);
+  }
+
+  .infinite-sentinel {
+    width: 100%;
+    height: 1px;
   }
 }
 </style>

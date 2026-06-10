@@ -109,7 +109,6 @@ import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useOnlineStore from '@/stores/online.store';
 import useArticleStore from '@/stores/article.store';
-import useCommentStore from '@/stores/comment.store';
 import useHistoryStore from '@/stores/history.store';
 import { useAuth } from '@/composables/useAuth';
 
@@ -124,7 +123,6 @@ const rootStore = useRootStore();
 const userStore = useUserStore();
 const onlineStore = useOnlineStore();
 const articleStore = useArticleStore();
-const commentStore = useCommentStore();
 const historyStore = useHistoryStore();
 const { isCurrentUser } = useAuth();
 const route = useRoute();
@@ -234,10 +232,8 @@ const fetchTabData = (tabName: ProfileTabName, userId: string) => {
 
   switch (tabName) {
     case '文章':
-      articleStore.refreshFirstPageAction({ userId });
       break;
     case '评论':
-      commentStore.getCommentAction('', userId);
       break;
     case '收藏':
       if (!Number.isNaN(numericUserId)) {

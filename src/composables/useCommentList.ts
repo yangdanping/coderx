@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
+import { infiniteQueryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import {
   getCommentList,
+  getUserCommentList,
   getReplies,
   addComment,
   addReply,
@@ -17,6 +18,7 @@ import type { Ref } from 'vue';
 import type {
   IComment,
   ICommentListResponse,
+  IUserCommentPage,
   IRepliesResponse,
   CommentSortType,
 } from '@/service/comment/comment.request';
@@ -26,6 +28,8 @@ export const commentKeys = {
   all: ['comments'] as const,
   lists: (articleId: string) => [...commentKeys.all, 'list', articleId] as const,
   list: (articleId: string, sort: CommentSortType) => [...commentKeys.lists(articleId), sort] as const,
+  userLists: () => [...commentKeys.all, 'user-list'] as const,
+  userList: (userId: number, pageSize: number) => [...commentKeys.userLists(), userId, pageSize] as const,
   replies: (commentId: number) => [...commentKeys.all, 'replies', commentId] as const,
   userLiked: (userId: number) => [...commentKeys.all, 'userLiked', userId] as const,
 };
@@ -41,13 +45,13 @@ export const commentKeys = {
 export function useCommentList(articleId: Ref<string>, sort: Ref<CommentSortType>, limit = 5) {
   return useInfiniteQuery({
     queryKey: computed(() => commentKeys.list(articleId.value, sort.value)),
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam, signal }) => {
       const res = await getCommentList({
         articleId: articleId.value,
         cursor: pageParam as string | null,
         limit,
         sort: sort.value,
-      });
+      }, signal);
       return res.data;
     },
     initialPageParam: null as string | null,
@@ -69,12 +73,12 @@ export function useCommentList(articleId: Ref<string>, sort: Ref<CommentSortType
 export function useReplyList(commentId: Ref<number>, limit = 10, enabled: Ref<boolean> = ref(true)) {
   return useInfiniteQuery({
     queryKey: commentKeys.replies(commentId.value),
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam, signal }) => {
       const res = await getReplies({
         commentId: commentId.value,
         cursor: pageParam as string | null,
         limit,
-      });
+      }, signal);
       return res.data;
     },
     initialPageParam: null as string | null, // 起始游标通常是 null 或空字符串,逻辑：第一页(cursor=null) -> 返回下一页游标(cursor="xyz") -> 请求下一页(cursor="xyz")...
@@ -83,6 +87,44 @@ export function useReplyList(commentId: Ref<number>, limit = 10, enabled: Ref<bo
     },
     enabled: computed(() => !!commentId.value && enabled.value),
   });
+}
+
+// ==================== 个人资料评论列表 ====================
+
+export function userCommentInfiniteOptions(userId: number, pageSize = 10) {
+  return infiniteQueryOptions({
+    queryKey: commentKeys.userList(userId, pageSize),
+    queryFn: async ({ pageParam, signal }) => {
+      const res = await getUserCommentList(
+        {
+          userId,
+          pageNum: pageParam,
+          pageSize,
+        },
+        signal,
+      );
+      return res.data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: IUserCommentPage) => {
+      return lastPage.hasMore ? lastPage.pageNum + 1 : undefined;
+    },
+  });
+}
+
+export function useUserCommentList(userId: Ref<number | undefined>, pageSize = 10) {
+  const query = useInfiniteQuery(
+    computed(() => ({
+      ...userCommentInfiniteOptions(userId.value ?? 0, pageSize),
+      enabled: !!userId.value,
+    })),
+  );
+  const items = computed<IComment[]>(() => query.data.value?.pages.flatMap((page) => page.items) ?? []);
+
+  return {
+    ...query,
+    items,
+  };
 }
 
 // ==================== 用户点赞列表 ====================
@@ -94,24 +136,19 @@ export function useUserLikedComments() {
   const userStore = useUserStore();
   const userId = computed(() => userStore.userInfo?.id);
 
-  const query = useInfiniteQuery({
+  const query = useQuery({
     queryKey: computed(() => commentKeys.userLiked(userId.value || 0)),
     queryFn: async () => {
       if (!userId.value) return { commentLiked: [] };
       const res = await getLiked(userId.value);
       return res.data;
     },
-    initialPageParam: null,
-    getNextPageParam: () => undefined, // 不分页
     enabled: computed(() => !!userId.value),
   });
 
   // 提取点赞的评论ID列表
   const likedCommentIds = computed(() => {
-    const pages = query.data.value?.pages || [];
-    // return pages.flatMap((page) => page.commentLiked || []);
-    const ids = pages.flatMap((page) => page.commentLiked || []);
-    return new Set(ids);
+    return new Set<number>(query.data.value?.commentLiked ?? []);
   });
 
   // 判断某条评论是否被点赞(在需要频繁判断元素是否存在的场景下（比如列表渲染时判断每条评论是否点赞），使用 Set O(1)的效率显著优于数组 O(n))
@@ -126,6 +163,27 @@ export function useUserLikedComments() {
 }
 
 // ==================== Mutations ====================
+
+export function useLikeUserComment() {
+  const queryClient = useQueryClient();
+  const userStore = useUserStore();
+
+  return useMutation({
+    mutationFn: (commentId: number) => likeComment(commentId),
+    onSuccess: (res) => {
+      const { liked } = res.data;
+      liked ? Msg.showSuccess('已点赞该评论') : Msg.showInfo('已取消点赞该评论');
+
+      void queryClient.invalidateQueries({ queryKey: commentKeys.userLists() });
+      if (userStore.userInfo?.id) {
+        void queryClient.invalidateQueries({ queryKey: commentKeys.userLiked(userStore.userInfo.id) });
+      }
+    },
+    onError: () => {
+      Msg.showFail('操作失败，请重试');
+    },
+  });
+}
 
 /**
  * 新增一级评论
@@ -204,6 +262,7 @@ export function useLikeComment(articleId: Ref<string>, parentCommentId?: Ref<num
       if (userStore.userInfo?.id) {
         queryClient.invalidateQueries({ queryKey: commentKeys.userLiked(userStore.userInfo.id) });
       }
+      queryClient.invalidateQueries({ queryKey: commentKeys.userLists() });
 
       // 刷新回复列表（如果有父评论ID）
       if (parentCommentId?.value) {

@@ -2,8 +2,8 @@
   <ListAction isComment>
     <template #comment>
       <ul class="comment-action">
-        <li class="item like" role="button" @click.stop.prevent="likeComment(comment)">
-          <Icon type="like" :isActive="isCommentUserLiked(comment.id)" :label="comment.likes ? comment.likes : '点赞'" />
+        <li class="item like" role="button" @click.stop.prevent="likeClick(comment.id)">
+          <Icon type="like" :isActive="isLiked(comment.id)" :label="comment.likes ? comment.likes : '点赞'" />
         </li>
         <li class="item comment" role="button" @click="wantReply(comment)">
           <Icon type="comment" label="回复" />
@@ -19,24 +19,19 @@ import Icon from '@/components/icon/Icon.vue';
 
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
-import useArticleStore from '@/stores/article.store';
-import useCommentStore from '@/stores/comment.store';
 import { Msg, emitter } from '@/utils';
 
 import type { IComment } from '@/stores/types/comment.result';
 
-const { inArticle = true, comment } = defineProps<{
-  inArticle?: boolean;
+const props = defineProps<{
   comment: IComment;
+  isLiked: (commentId: number) => boolean;
+  onLike: (commentId: number) => void;
 }>();
 
-const commentStore = useCommentStore();
 const rootStore = useRootStore();
-const articleStore = useArticleStore();
 const userStore = useUserStore();
 const { token } = storeToRefs(userStore);
-const { article } = storeToRefs(articleStore);
-const { isCommentUserLiked } = storeToRefs(commentStore);
 
 const wantReply = (comment) => {
   if (token.value) {
@@ -47,10 +42,9 @@ const wantReply = (comment) => {
   }
 };
 
-const likeComment = (comment) => {
+const likeClick = (commentId: number) => {
   if (token.value) {
-    // commentStore.likeAction({ commentId, articleId: article.value.id });
-    commentStore.likeAction(comment, inArticle);
+    props.onLike(commentId);
   } else {
     Msg.showInfo('请先登录');
     rootStore.toggleLoginDialog();

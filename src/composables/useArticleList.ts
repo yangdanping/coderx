@@ -1,124 +1,103 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-query';
-import { unref, computed } from 'vue';
+import { infiniteQueryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import { computed, toValue, unref } from 'vue';
 import { getList, likeArticle } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import useUserStore from '@/stores/user.store';
 import { Msg } from '@/utils';
 
-import type { Ref } from 'vue';
+import type { MaybeRefOrGetter, Ref } from 'vue';
 import type { RouteParam } from '@/service/types';
+import type { IArticle, IArticles } from '@/stores/types/article.result';
 import type { IUseArticleListParams } from './types/use-article-list.type';
 
 export type { IUseArticleListParams };
 
-// ==================== Query Keys ====================
+export interface INormalizedArticleListParams {
+  pageOrder: string;
+  tagId: string | number;
+  userId: string | number;
+  keywords: string;
+  idList: number[];
+  pageSize: number;
+}
+
 export const articleKeys = {
   all: ['articles'] as const,
-  list: (params: any) => [...articleKeys.all, 'list', params] as const,
+  lists: () => [...articleKeys.all, 'list'] as const,
+  list: (params: INormalizedArticleListParams) => [...articleKeys.lists(), params] as const,
   userLiked: (userId: number) => [...articleKeys.all, 'userLiked', userId] as const,
 };
 
-/**
- * Composable: 文章列表逻辑封装
- * 作用：替代 Store 中的 loadMoreAction, hasMore, loading 等状态管理
- *
- * @param params 响应式参数对象。当内部属性变化时（如 keywords），TanStack Query 会自动重置并重新请求
- * @param initialPageNum 初始页码，默认为 1
- */
-// 1. Query Key (查询键) 类似于 Vue 的 watch 依赖。
-// 当 params 中的任何属性变化时（比如 keywords 变了），
-// TanStack Query 会自动认为这是个"新查询"，从而：
-// 1. 取消正在进行的旧请求
-// 2. 清空旧数据 (data.pages)
-// 3. 重置 pageParam 为 initialPageParam
-// 4. 重新发起第一页请求
-// 所谓的“优化了缓存策略”体现在：
-// 自动缓存：当用户在“最新”和“热门”之间切换时，TanStack Query 会在内存中保留之前的数据。
-// 无感切换：如果切走再切回来（在一定时间内），组件会直接渲染缓存的数据，而不是像以前那样必须显示 Skeleton 骨架屏等待 Loading。
-// Stale-While-Revalidate：它采用“先显示旧数据，后台静默更新”的策略，体验比单纯的“清空 -> Loading -> 显示”要流畅得多。
-// 这个 queryKey 就是缓存的"钥匙"
-export function useArticleList(params: Ref<IUseArticleListParams> | IUseArticleListParams) {
-  // 使用 useInfiniteQuery 处理无限滚动逻辑
-  return useInfiniteQuery({
-    queryKey: computed(() => articleKeys.list(unref(params))),
-    // 2. Query Function (查询函数)
-    // 接收 pageParam（当前页码），调用实际的 Service 层接口
-    queryFn: async ({ pageParam = 1 }) => {
-      const currentParams = unref(params);
-      // 清理参数中的 undefined/null/空字符串，避免 URL 过长或参数混乱
-      const cleanParams = Object.fromEntries(Object.entries(currentParams).filter(([_, v]) => v !== undefined && v !== null && v !== ''));
+export function normalizeArticleListParams(params: IUseArticleListParams = {}): INormalizedArticleListParams {
+  return {
+    pageOrder: params.pageOrder ?? '',
+    tagId: params.tagId ?? '',
+    userId: params.userId ?? '',
+    keywords: params.keywords ?? '',
+    idList: Array.isArray(params.idList) ? params.idList : [],
+    pageSize: params.pageSize && params.pageSize > 0 ? params.pageSize : 10,
+  };
+}
 
-      // 这里执行原本 Store 里的参数组装逻辑
-      const res = await getList({
-        pageOrder: '',
-        tagId: '',
-        userId: '',
-        keywords: '',
-        idList: [],
-        ...cleanParams,
-        pageNum: pageParam as number,
-        pageSize: currentParams.pageSize || 10, // 默认 pageSize
-      });
-
-      // 注意：这里直接返回 data，不需要像 Store 那样手动拼接数组
-      return res.data;
+export function articleListInfiniteOptions(params: INormalizedArticleListParams) {
+  return infiniteQueryOptions({
+    queryKey: articleKeys.list(params),
+    queryFn: async ({ pageParam, signal }) => {
+      const res = await getList(
+        {
+          ...params,
+          pageNum: pageParam,
+        },
+        undefined,
+        signal,
+      );
+      return res.data as IArticles;
     },
-
-    // 3. Initial Page Param (初始页码)
     initialPageParam: 1,
-
-    // 4. Get Next Page Param (计算下一页页码),替代了 Store 里的 `hasMore` 判断和 `pageNum + 1` 逻辑
-    // lastPage: 刚刚请求回来的那一页数据
-    // allPages: 目前已加载的所有页数据数组
     getNextPageParam: (lastPage, allPages) => {
       const total = lastPage.total ?? 0;
-
-      // 计算目前已加载的文章总数
-      // allPages 是数组的数组: [{result: [...], total: 100}, {result: [...], total: 100}]
-      const loadedCount = allPages.flatMap((page) => page.result ?? []).length;
-
-      // 如果已加载数量 >= 总数，说明没有下一页了，返回 undefined 停止加载
-      if (loadedCount >= total) {
-        return undefined;
-      }
-
-      // 否则，下一页页码 = 当前页数 + 1 (假设从1开始)
-      return allPages.length + 1;
+      const loadedCount = allPages.reduce((count, page) => count + (page.result?.length ?? 0), 0);
+      return loadedCount < total ? allPages.length + 1 : undefined;
     },
   });
 }
 
-// ==================== 用户点赞列表 ====================
+export function useArticleList(
+  params: Ref<IUseArticleListParams> | IUseArticleListParams,
+  enabled: MaybeRefOrGetter<boolean> = true,
+) {
+  const normalizedParams = computed(() => normalizeArticleListParams(unref(params)));
+  const query = useInfiniteQuery(
+    computed(() => ({
+      ...articleListInfiniteOptions(normalizedParams.value),
+      enabled: toValue(enabled),
+    })),
+  );
+  const items = computed<IArticle[]>(() => query.data.value?.pages.flatMap((page) => page.result ?? []) ?? []);
 
-/**
- * 获取当前用户点赞过的文章ID列表
- */
+  return {
+    ...query,
+    items,
+    normalizedParams,
+  };
+}
+
 export function useUserLikedArticles() {
   const userStore = useUserStore();
   const userId = computed(() => userStore.userInfo?.id);
 
-  const query = useInfiniteQuery({
+  const query = useQuery({
     queryKey: computed(() => articleKeys.userLiked(userId.value || 0)),
     queryFn: async () => {
-      if (!userId.value) return { articleLiked: [] };
+      if (!userId.value) return { articleLiked: [] as number[] };
       const res = await getLiked(userId.value);
       return res.data;
     },
-    initialPageParam: null,
-    getNextPageParam: () => undefined, // 不分页
     enabled: computed(() => !!userId.value),
   });
 
-  // 提取点赞的文章ID列表
-  // 在需要频繁判断元素是否存在的场景下（比如列表渲染时判断每条评论是否点赞），使用 Set的 has O(1) 的效率显著优于数组 的 includes O(n)
-  const likedArticleIds = computed(() => {
-    const pages = query.data.value?.pages || [];
-    const ids = pages.flatMap((page) => page.articleLiked || []);
-    return new Set(ids);
-  });
-
-  // 判断某篇文章是否被点赞
-  const isLiked = (articleId: number) => likedArticleIds.value.has(articleId);
+  const likedArticleIds = computed(() => new Set<number>(query.data.value?.articleLiked ?? []));
+  const isLiked = (articleId: number | string) => likedArticleIds.value.has(Number(articleId));
 
   return {
     ...query,
@@ -127,13 +106,7 @@ export function useUserLikedArticles() {
   };
 }
 
-// ==================== Mutations ====================
-
-/**
- * 点赞文章
- * @param params 查询参数（用于刷新文章列表）
- */
-export function useLikeArticle(params?: Ref<IUseArticleListParams> | IUseArticleListParams) {
+export function useLikeArticle(_params?: Ref<IUseArticleListParams> | IUseArticleListParams) {
   const queryClient = useQueryClient();
   const userStore = useUserStore();
 
@@ -143,14 +116,9 @@ export function useLikeArticle(params?: Ref<IUseArticleListParams> | IUseArticle
       const { liked } = res.data;
       liked ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
 
-      // 更新用户点赞列表
+      void queryClient.invalidateQueries({ queryKey: articleKeys.lists() });
       if (userStore.userInfo?.id) {
-        queryClient.invalidateQueries({ queryKey: articleKeys.userLiked(userStore.userInfo.id) });
-      }
-
-      // 刷新文章列表（如果提供了查询参数）
-      if (params) {
-        queryClient.invalidateQueries({ queryKey: articleKeys.list(unref(params)) });
+        void queryClient.invalidateQueries({ queryKey: articleKeys.userLiked(userStore.userInfo.id) });
       }
     },
     onError: () => {

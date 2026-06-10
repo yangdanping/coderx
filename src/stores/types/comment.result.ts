@@ -48,6 +48,15 @@ export interface ICommentListResponse {
   totalCount: number;
 }
 
+/** 个人资料页评论列表响应 */
+export interface IUserCommentPage {
+  items: IComment[];
+  total: number;
+  hasMore: boolean;
+  pageNum: number;
+  pageSize: number;
+}
+
 /** 回复列表响应 */
 export interface IRepliesResponse {
   items: IComment[];

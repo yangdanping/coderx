@@ -21,9 +21,8 @@
           </template>
         </el-checkbox-group>
 
-        <div class="load-more" v-if="historyStore.hasMore">
-          <el-button @click="loadMore" :loading="historyStore.loading" size="large"> 加载更多 </el-button>
-        </div>
+        <el-skeleton v-if="historyStore.loading" class="history-loading" :rows="1" animated />
+        <div v-else-if="!historyStore.hasMore" class="no-more">没有更多了</div>
       </template>
       <template v-else>
         <div class="empty-state">
@@ -31,6 +30,8 @@
           <el-skeleton v-else :rows="5" animated />
         </div>
       </template>
+
+      <div ref="infiniteSentinel" class="infinite-sentinel"></div>
     </div>
   </div>
 </template>
@@ -39,8 +40,8 @@
 import UserHistoryListItem from './UserHistoryListItem.vue';
 import useUserStore from '@/stores/user.store';
 import useHistoryStore from '@/stores/history.store';
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
 import { ElMessageBox } from 'element-plus';
-import { Delete } from '@element-plus/icons-vue';
 import { Msg } from '@/utils';
 
 const userStore = useUserStore();
@@ -61,7 +62,6 @@ watch(
   selectedItems,
   (newVal) => {
     const totalItems = historyStore.historyList.length;
-    console.log('totalItems', totalItems);
     selectAll.value = newVal.length === totalItems && totalItems > 0;
     indeterminate.value = newVal.length > 0 && newVal.length < totalItems;
   },
@@ -88,10 +88,16 @@ const handleSelectAll = (checked: any) => {
   }
 };
 
-// 加载更多
+// 触底加载更多
 const loadMore = () => {
+  if (!historyStore.hasMore || historyStore.loading) return;
   historyStore.getHistoryAction(false);
 };
+const { infiniteSentinel } = useInfiniteScroll({
+  canLoadMore: computed(() => historyStore.hasMore),
+  isLoading: computed(() => historyStore.loading),
+  loadMore,
+});
 
 // 删除开始
 const handleDeleteStart = (articleId: any) => {
@@ -199,9 +205,19 @@ const handleClearAll = async () => {
       }
     }
 
-    .load-more {
+    .history-loading {
+      padding: 20px 0;
+    }
+
+    .no-more {
       text-align: center;
       padding: 20px 0;
+      color: #999;
+    }
+
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
     }
 
     .empty-state {
