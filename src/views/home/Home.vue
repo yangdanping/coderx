@@ -4,7 +4,15 @@
       <div class="title-section">
         <div class="title">
           <div class="title-line-1">Welcome to</div>
-          <div class="title-line-2" :class="{ isLast }">{{ line2Str }}</div>
+          <div class="title-line-2">
+            <CyclingScrambleText
+              class="title-word"
+              :words="CODERX_ROLE_WORDS"
+              :preset="DEFAULT_SCRAMBLE_PRESET"
+              :cycle-delay="2000"
+            />
+            <span class="title-x">X</span>
+          </div>
         </div>
         <RetroComputerShader class="shader" />
         <!-- <CodeSpotlight class="shader" /> -->
@@ -28,6 +36,7 @@
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
 import FeatureSection from './cpns/features/FeatureSection.vue';
+import { CODERX_ROLE_WORDS, CyclingScrambleText, DEFAULT_SCRAMBLE_PRESET } from '@/components/scramble';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
@@ -35,30 +44,11 @@ import useHomeStore from '@/stores/home.store';
 const homeStore = useHomeStore();
 const { hotUsers } = storeToRefs(homeStore);
 
-const counter = ref(1);
-const line2 = ref('Coder');
-const line2Str = ref('');
 const githubUrl = ref('https://github.com/yangdanping');
-const isLast = ref(false); //是否激活最后一个字符的class
-let timer = ref();
 
 const goGitHub = () => window.open(githubUrl.value);
 
 onMounted(() => {
-  timer.value = setInterval(() => {
-    let str = line2.value.slice(0, counter.value);
-    // console.log(`打印${counter.value}个字母`, str);
-    counter.value++;
-    // 还有最后一个字符X,所以+1
-    if (counter.value <= line2.value.length + 1) {
-      str = str + '|';
-    } else {
-      counter.value = 0;
-      isLast.value = true;
-      clearInterval(timer.value);
-    }
-    line2Str.value = str;
-  }, 200);
   homeStore.getHotUsersAction();
 });
 </script>
@@ -102,21 +92,28 @@ $TitleSize: 2em;
           line-height: $TitleSize;
           height: $TitleSize;
           font-size: $TitleSize;
+          display: flex;
+          align-items: baseline;
+          white-space: nowrap;
+
+          .title-word {
+            display: inline-block;
+            width: 7ch;
+          }
+
+          .title-x {
+            font-style: oblique;
+            padding-right: 30px;
+            background-image: var(--xfontStyle);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-family: sans-serif;
+            text-shadow: none;
+          }
         }
         &:hover {
           text-shadow: 4px 4px var(--text-shadow);
-        }
-
-        .isLast:after {
-          content: 'X';
-          font-style: oblique;
-          padding-right: 30px;
-          background-image: var(--xfontStyle);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          font-family: none;
-          text-shadow: none;
         }
       }
 

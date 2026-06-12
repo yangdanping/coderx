@@ -14,6 +14,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.2
         version: 2.3.2(vue@3.5.35(typescript@6.0.3))
+      '@scrambl/vue':
+        specifier: ^0.1.1
+        version: 0.1.1(vue@3.5.35(typescript@6.0.3))
       '@tanstack/vue-query':
         specifier: ^5.100.14
         version: 5.100.14(vue@3.5.35(typescript@6.0.3))
@@ -698,6 +701,14 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@scrambl/core@0.1.1':
+    resolution: {integrity: sha512-e+/P7RLzhRQFna0PLT/BwNxjJ5ApFwTLGIpda4LxGBcBtfTRZDHvSK3I31DljfcDOaZKlPKnuBMjQf1+XCcFMQ==}
+
+  '@scrambl/vue@0.1.1':
+    resolution: {integrity: sha512-puhGkKb+yEaRUn7MJ+QMozn/JBjQVxlCGANheQlsUCOxl8Xl9BkscWjrk8fpUQ1HbknWW7fb5GhS/nv94hSPlA==}
+    peerDependencies:
+      vue: '>=3.3.0'
 
   '@socket.io/component-emitter@3.1.2':
     resolution: {integrity: sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==}
@@ -3593,6 +3604,13 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@scrambl/core@0.1.1': {}
+
+  '@scrambl/vue@0.1.1(vue@3.5.35(typescript@6.0.3))':
+    dependencies:
+      '@scrambl/core': 0.1.1
+      vue: 3.5.35(typescript@6.0.3)
 
   '@socket.io/component-emitter@3.1.2': {}
 

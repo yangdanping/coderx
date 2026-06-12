@@ -14,6 +14,7 @@
   "dependencies": {
     "@ai-sdk/vue": "^3.0.194",
     "@element-plus/icons-vue": "^2.3.2",
+    "@scrambl/vue": "^0.1.1",
     "@tanstack/vue-query": "^5.100.14",
     "@tiptap/core": "^3.24.0",
     "@tiptap/extension-code-block-lowlight": "^3.24.0",
