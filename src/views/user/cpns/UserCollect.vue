@@ -12,8 +12,10 @@
       </div>
       <div class="btn">
         <template v-if="isMe && !showSetup">
-          <el-tooltip effect="dark" content="新建收藏夹" placement="right">
-            <el-button :aria-label="showNewInput ? '收起新建收藏夹输入框' : '新建收藏夹'" @click="showNewInput = !showNewInput" :icon="Plus" circle></el-button>
+          <el-tooltip effect="dark" :content="showNewInput ? '取消' : '新建收藏夹'" placement="right">
+            <el-button circle :aria-label="showNewInput ? '取消新建收藏夹' : '新建收藏夹'" @click="toggleNewInput">
+              <Plus class="create-toggle-icon" :class="{ 'is-active': showNewInput }" aria-hidden="true" />
+            </el-button>
           </el-tooltip>
         </template>
         <template v-if="showSetup">
@@ -41,7 +43,6 @@
             <el-button @click="createCollect" :disabled="!newCollectName.trim()">确定</el-button>
           </template>
         </el-input>
-        <el-button class="cancel-btn" text @click="cancelCreate">取消</el-button>
       </div>
       <!-- 批量操作 -->
       <div v-if="showCheckBox">
@@ -60,10 +61,19 @@
       <template v-if="collects.length">
         <div v-if="!articles.result?.length" class="collect-list">
           <template v-for="item in collects" :key="item.id">
-            <div class="item card-style">
+            <div
+              class="item card-style"
+              :class="{ 'is-clickable': editingCollectId !== item.id }"
+              :role="editingCollectId === item.id ? undefined : 'button'"
+              :tabindex="editingCollectId === item.id ? undefined : 0"
+              :aria-label="editingCollectId === item.id ? undefined : `查看收藏夹${item.name}`"
+              @click="editingCollectId !== item.id && goCollectDetial(item)"
+              @keydown.enter.prevent="editingCollectId !== item.id && goCollectDetial(item)"
+              @keydown.space.prevent="editingCollectId !== item.id && goCollectDetial(item)"
+            >
               <!-- 编辑模式 -->
               <template v-if="editingCollectId === item.id">
-                <div class="edit-collect-input">
+                <div class="edit-collect-input" @click.stop>
                   <el-input
                     ref="editInputRef"
                     v-model="editCollectName"
@@ -75,20 +85,20 @@
                     @keyup.escape="cancelEdit"
                   />
                   <div class="edit-btns">
-                    <el-button type="primary" plain size="small" @click="confirmEdit(item.id)">保存</el-button>
-                    <el-button size="small" @click="cancelEdit">取消</el-button>
+                    <el-button type="primary" plain size="small" @click.stop="confirmEdit(item.id)">保存</el-button>
+                    <el-button size="small" @click.stop="cancelEdit">取消</el-button>
                   </div>
                 </div>
               </template>
               <!-- 正常展示模式 -->
               <template v-else>
-                <button type="button" class="collect-header" :aria-label="`查看收藏夹${item.name}`" @click="goCollectDetial(item)">
+                <div class="collect-header">
                   <span class="name">{{ item.name }}</span>
                   <span v-if="item.count" class="count">{{ item.count.length }}</span>
-                </button>
+                </div>
 
                 <!-- 编辑/删除操作按钮（仅自己可见） -->
-                <div v-if="isMe" class="item-actions">
+                <div v-if="isMe" class="item-actions" @click.stop>
                   <el-tooltip effect="dark" content="编辑" placement="bottom">
                     <button type="button" class="action-icon" :aria-label="`编辑收藏夹${item.name}`" @click.stop="startEdit(item)"><Pencil aria-hidden="true" /></button>
                   </el-tooltip>
@@ -148,11 +158,13 @@ import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { Msg, emitter } from '@/utils';
 import { Plus, Settings, ChevronLeft, Pencil, Trash2 } from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
 
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 import { useAuth } from '@/composables/useAuth';
 
+const route = useRoute();
 const userStore = useUserStore();
 const articleStore = useArticleStore();
 const { isCurrentUser } = useAuth();
@@ -207,6 +219,14 @@ const cancelCreate = () => {
   newCollectName.value = '';
 };
 
+const toggleNewInput = () => {
+  if (showNewInput.value) {
+    cancelCreate();
+    return;
+  }
+  showNewInput.value = true;
+};
+
 // 开始编辑收藏夹
 const startEdit = (item: { id: number; name: string }) => {
   editingCollectId.value = item.id;
@@ -245,6 +265,7 @@ onMounted(() => {
 const goCollectDetial = (item) => {
   console.log('goCollectDetial', item);
   if (item.count) {
+    cancelCreate();
     //获取到收藏夹名
     showSetup.value = !showSetup.value;
     const { id, name } = collects.value.find((collect) => collect.id === item.id);
@@ -288,6 +309,7 @@ const remove = () => {
 };
 
 const clearResultAndBack = () => {
+  cancelCreate();
   showSetup.value = false;
   showCheckBox.value = false;
   articles.value.result = [];
@@ -295,7 +317,17 @@ const clearResultAndBack = () => {
   userInfo.value?.id && userStore.getCollectAction(userInfo.value?.id);
 };
 
+watch(
+  () => route.query.tabName,
+  (tabName) => {
+    if (tabName && tabName !== '收藏') {
+      cancelCreate();
+    }
+  },
+);
+
 onUnmounted(() => {
+  cancelCreate();
   emitter.off('clearResultAndBack');
 });
 </script>
@@ -354,6 +386,14 @@ onUnmounted(() => {
 
   .btn {
     margin-left: 10px;
+
+    .create-toggle-icon {
+      transition: transform 0.2s ease;
+
+      &.is-active {
+        transform: rotate(45deg);
+      }
+    }
   }
 
   .back {
@@ -405,10 +445,6 @@ onUnmounted(() => {
       flex: 1;
       max-width: 300px;
     }
-
-    .cancel-btn {
-      color: var(--collect-muted);
-    }
   }
 
   .setting {
@@ -455,6 +491,15 @@ onUnmounted(() => {
       display: none;
     }
 
+    &.is-clickable {
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid var(--collect-focus-ring);
+        outline-offset: 2px;
+      }
+    }
+
     &:hover {
       border-color: var(--collect-card-border-hover);
       background-color: var(--collect-card-bg-hover);
@@ -468,20 +513,9 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      border: 0;
-      padding: 0;
-      background: transparent;
-      cursor: pointer;
       font-size: 18px;
       font-weight: 600;
       color: var(--collect-title);
-      text-align: left;
-
-      &:focus-visible {
-        outline: 2px solid var(--collect-focus-ring);
-        outline-offset: 4px;
-        border-radius: 6px;
-      }
 
       .name {
         margin-right: 8px;
@@ -598,6 +632,10 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .list-header .btn .create-toggle-icon {
+    transition: none;
+  }
+
   .list .item.card-style {
     transition: none;
 
