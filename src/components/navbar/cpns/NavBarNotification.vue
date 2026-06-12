@@ -100,6 +100,7 @@ const getArticleTitle = (item: INotification) => {
 
 const getNotificationTitle = (item: INotification) => {
   if (item.type === 'follow') return '关注了你';
+  if (item.type === 'comment_like') return '点赞了你的评论';
   if (item.type === 'article_comment') return '评论了你的文章';
   if (item.type === 'comment_reply') {
     return item.metadata?.recipientRole === 'article_author' ? '在你的文章下发表了回复' : '回复了你的评论';
@@ -108,6 +109,7 @@ const getNotificationTitle = (item: INotification) => {
 };
 
 const isCommentNotification = (item: INotification) => item.type === 'article_comment' || item.type === 'comment_reply';
+const hasCommentTarget = (item: INotification) => isCommentNotification(item) || item.type === 'comment_like';
 const isFollowNotification = (item: INotification) => item.type === 'follow';
 
 const getNotificationIconType = (item: INotification): IconType => {
@@ -125,13 +127,27 @@ const getNotificationMeta = (item: INotification) => {
   if (isFollowNotification(item)) {
     return '查看 Ta 的主页';
   }
-  if (isCommentNotification(item)) {
+  if (hasCommentTarget(item)) {
     return getCommentExcerpt(item) || getArticleTitle(item);
   }
   return getArticleTitle(item);
 };
 
 const getNotificationQuery = (item: INotification) => {
+  if (item.type === 'comment_like' && item.commentId != null) {
+    const parentCommentId = item.metadata?.parentCommentId;
+    if (
+      (typeof parentCommentId === 'number' || typeof parentCommentId === 'string') &&
+      String(parentCommentId).trim()
+    ) {
+      return {
+        commentId: String(parentCommentId),
+        replyId: String(item.commentId),
+      };
+    }
+    return { commentId: String(item.commentId) };
+  }
+
   if (isCommentNotification(item) && item.commentId != null) {
     const query: Record<string, string> = { commentId: String(item.commentId) };
     const replyId = item.metadata?.replyId;

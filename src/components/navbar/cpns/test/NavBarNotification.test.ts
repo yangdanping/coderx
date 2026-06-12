@@ -95,6 +95,95 @@ describe('NavBarNotification', () => {
     expect(wrapper.find('.notification-item__like-badge').exists()).toBe(true);
   });
 
+  it('renders top-level comment-like notifications and navigates to the liked comment', async () => {
+    notificationStore.notificationList = [
+      {
+        id: 8,
+        recipientId: 10,
+        actorId: 21,
+        actor: {
+          id: 21,
+          name: 'ada',
+          avatarUrl: 'https://api.example/user/21/avatar',
+        },
+        type: 'comment_like',
+        targetType: 'comment',
+        targetId: 41,
+        articleId: 31,
+        commentId: 41,
+        article: {
+          id: 31,
+          title: '评论点赞文章',
+        },
+        metadata: {
+          commentExcerpt: '一级评论内容',
+        },
+        readAt: null,
+        createdAt: '2026-05-14T08:00:00.000Z',
+        lastOccurredAt: '2026-05-14T08:00:00.000Z',
+      },
+    ];
+
+    const wrapper = mount(NavBarNotification);
+
+    await wrapper.get('.navbar-action-panel__trigger').trigger('click');
+
+    expect(wrapper.text()).toContain('ada 点赞了你的评论');
+    expect(wrapper.text()).toContain('一级评论内容');
+    expect(wrapper.find('.icon-stub').attributes('data-type')).toBe('like');
+
+    await wrapper.get('.notification-item').trigger('click');
+
+    expect(notificationStore.markReadAction).toHaveBeenCalledWith(8);
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'detail',
+      params: { articleId: 31 },
+      query: { commentId: '41' },
+    });
+  });
+
+  it('navigates comment-like reply notifications to the parent comment and liked reply', async () => {
+    notificationStore.notificationList = [
+      {
+        id: 9,
+        recipientId: 10,
+        actorId: 22,
+        actor: {
+          id: 22,
+          name: 'grace',
+          avatarUrl: 'https://api.example/user/22/avatar',
+        },
+        type: 'comment_like',
+        targetType: 'comment',
+        targetId: 42,
+        articleId: 32,
+        commentId: 42,
+        article: {
+          id: 32,
+          title: '回复点赞文章',
+        },
+        metadata: {
+          commentExcerpt: '回复内容',
+          parentCommentId: 40,
+        },
+        readAt: null,
+        createdAt: '2026-05-14T08:00:00.000Z',
+        lastOccurredAt: '2026-05-14T08:00:00.000Z',
+      },
+    ];
+
+    const wrapper = mount(NavBarNotification);
+
+    await wrapper.get('.navbar-action-panel__trigger').trigger('click');
+    await wrapper.get('.notification-item').trigger('click');
+
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'detail',
+      params: { articleId: 32 },
+      query: { commentId: '40', replyId: '42' },
+    });
+  });
+
   it('renders article-comment notifications with comment icon, excerpt, and comment query navigation', async () => {
     notificationStore.notificationList = [
       {

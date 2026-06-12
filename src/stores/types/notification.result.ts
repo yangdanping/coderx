@@ -1,8 +1,9 @@
-export type NotificationType = 'article_like' | 'article_comment' | 'comment_reply' | 'follow';
-export type NotificationTargetType = 'article' | 'user';
+export type NotificationType = 'article_like' | 'comment_like' | 'article_comment' | 'comment_reply' | 'follow';
+export type NotificationTargetType = 'article' | 'comment' | 'user';
 
 export interface INotificationMetadata {
   commentExcerpt?: string;
+  parentCommentId?: number;
   replyId?: number;
   recipientRole?: 'comment_author' | 'article_author';
   [key: string]: unknown;
