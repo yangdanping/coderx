@@ -4,9 +4,13 @@
     :key="renderKey"
     v-bind="{ ...effectiveOptions, ...attrs }"
     :as="props.as"
+    :data-scramble-word="currentWord"
     @scramble-complete="handleComplete"
   />
-  <component :is="props.as" v-else v-bind="attrs">{{ currentWord }}</component>
+  <component :is="props.as" v-else v-bind="attrs" :data-scramble-word="currentWord">
+    <span>{{ staticWordPrefix }}</span>
+    <span class="scramble-last-character">{{ staticWordSuffix }}</span>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -17,6 +21,7 @@ import type { CyclingScrambleTextProps } from './scramble.types';
 
 defineOptions({ inheritAttrs: false });
 
+// 基础配置：动画完成后等待 2 秒切词；未指定的布尔项沿用 Scrambl 默认值。
 const props = withDefaults(defineProps<CyclingScrambleTextProps>(), {
   as: 'span',
   words: () => [],
@@ -31,6 +36,7 @@ const props = withDefaults(defineProps<CyclingScrambleTextProps>(), {
 const attrs = useAttrs();
 const activeIndex = ref(0);
 const renderKey = ref(0);
+// 尊重系统“减少动态效果”偏好，开启时直接展示静态文本。
 const prefersReducedMotion = ref(
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -38,6 +44,7 @@ const prefersReducedMotion = ref(
 );
 let cycleTimer: number | undefined;
 
+// words 优先；未传时回退到官网提供的 text 配置。
 const effectiveWords = computed(() => {
   const words = props.words.filter((word) => word.length > 0);
   if (words.length) return words;
@@ -45,7 +52,10 @@ const effectiveWords = computed(() => {
 });
 
 const currentWord = computed(() => effectiveWords.value[activeIndex.value % effectiveWords.value.length] ?? '');
+const staticWordPrefix = computed(() => currentWord.value.slice(0, -1));
+const staticWordSuffix = computed(() => currentWord.value.slice(-1));
 
+// 预设先提供风格默认值，开发者显式传入的官网配置项拥有更高优先级。
 const effectiveOptions = computed<UseScrambleOptions>(() => {
   const options: UseScrambleOptions = {
     ...SCRAMBLE_PRESETS[props.preset],
@@ -88,6 +98,7 @@ const effectiveOptions = computed<UseScrambleOptions>(() => {
   return options;
 });
 
+// 当前版本会在初始化时固化选项，配置变化后通过 key 重建动画实例。
 const optionSignature = computed(() => ({
   words: props.words,
   text: props.text,
@@ -121,6 +132,7 @@ function clearCycleTimer() {
   cycleTimer = undefined;
 }
 
+// 仅在本轮动画完成后开始 cycleDelay，避免动画过程中提前切词。
 function handleComplete() {
   clearCycleTimer();
   if (prefersReducedMotion.value || effectiveWords.value.length <= 1) return;

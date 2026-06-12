@@ -56,30 +56,32 @@ describe('CyclingScrambleText', () => {
   });
 
   it('waits for completion and then the full cycle delay before changing words', async () => {
-    mount(CyclingScrambleText, {
+    const wrapper = mount(CyclingScrambleText, {
       props: {
-        words: ['Coder', 'Writer', 'Creator'],
+        words: ['CoderX', 'WriterX', 'CreatorX'],
         cycleDelay: 2000,
       },
     });
 
-    expect(capturedOptions.map((options) => options.text)).toEqual(['Coder']);
+    expect(capturedOptions.map((options) => options.text)).toEqual(['CoderX']);
+    expect(wrapper.attributes('data-scramble-word')).toBe('CoderX');
 
     await vi.advanceTimersByTimeAsync(5000);
-    expect(capturedOptions.map((options) => options.text)).toEqual(['Coder']);
+    expect(capturedOptions.map((options) => options.text)).toEqual(['CoderX']);
 
     capturedOptions[0]?.onComplete?.();
     await vi.advanceTimersByTimeAsync(1999);
-    expect(capturedOptions.map((options) => options.text)).toEqual(['Coder']);
+    expect(capturedOptions.map((options) => options.text)).toEqual(['CoderX']);
 
     await vi.advanceTimersByTimeAsync(1);
     await nextTick();
-    expect(capturedOptions.map((options) => options.text)).toEqual(['Coder', 'Writer']);
+    expect(capturedOptions.map((options) => options.text)).toEqual(['CoderX', 'WriterX']);
+    expect(wrapper.attributes('data-scramble-word')).toBe('WriterX');
 
     capturedOptions[1]?.onComplete?.();
     await vi.advanceTimersByTimeAsync(2000);
     await nextTick();
-    expect(capturedOptions.map((options) => options.text)).toEqual(['Coder', 'Writer', 'Creator']);
+    expect(capturedOptions.map((options) => options.text)).toEqual(['CoderX', 'WriterX', 'CreatorX']);
   });
 
   it('lets explicit official props override the selected preset', () => {
@@ -145,12 +147,13 @@ describe('CyclingScrambleText', () => {
     const wrapper = mount(CyclingScrambleText, {
       props: {
         as: 'strong',
-        words: ['Coder', 'Writer'],
+        words: ['CoderX', 'WriterX'],
       },
     });
 
     expect(scramblMock.useScramble).not.toHaveBeenCalled();
     expect(wrapper.element.tagName).toBe('STRONG');
-    expect(wrapper.text()).toBe('Coder');
+    expect(wrapper.text()).toBe('CoderX');
+    expect(wrapper.get('.scramble-last-character').text()).toBe('X');
   });
 });

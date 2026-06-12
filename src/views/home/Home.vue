@@ -7,11 +7,10 @@
           <div class="title-line-2">
             <CyclingScrambleText
               class="title-word"
-              :words="CODERX_ROLE_WORDS"
+              :words="CODERX_ROLE_TITLES"
               :preset="DEFAULT_SCRAMBLE_PRESET"
               :cycle-delay="2000"
             />
-            <span class="title-x">X</span>
           </div>
         </div>
         <RetroComputerShader class="shader" />
@@ -36,7 +35,7 @@
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
 import FeatureSection from './cpns/features/FeatureSection.vue';
-import { CODERX_ROLE_WORDS, CyclingScrambleText, DEFAULT_SCRAMBLE_PRESET } from '@/components/scramble';
+import { CODERX_ROLE_TITLES, CyclingScrambleText, DEFAULT_SCRAMBLE_PRESET } from '@/components/scramble';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
@@ -72,7 +71,9 @@ $TitleSize: 2em;
       .title {
         display: flex;
         flex-direction: column;
-        flex-shrink: 0;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
         /* 
            clamp(min, preferred, max) 函数用于设置响应式字体大小
            - min: 40px (最小值，防止在小屏幕下文字过小)
@@ -95,16 +96,58 @@ $TitleSize: 2em;
           display: flex;
           align-items: baseline;
           white-space: nowrap;
+          width: fit-content;
+          max-width: 100%;
 
           .title-word {
-            display: inline-block;
-            width: 7ch;
+            --active-x-gradient: var(--coder-x-gradient);
+            // X 动画字符格：分别控制宽度、左侧间隔和右侧安全留白。
+            --scramble-x-cell-width: 1.18ch;
+            --scramble-x-gap: 0.02em;
+            --scramble-x-right-space: 0.2em;
+
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            padding-inline: 0.08em;
+            overflow: visible;
           }
 
-          .title-x {
+          .title-word[data-scramble-word='WriterX'] {
+            --active-x-gradient: var(--writer-x-gradient);
+          }
+
+          .title-word[data-scramble-word='CreatorX'] {
+            --active-x-gradient: var(--creator-x-gradient);
+          }
+
+          .title-word[data-scramble-word='BuilderX'] {
+            --active-x-gradient: var(--builder-x-gradient);
+          }
+
+          .title-word :deep(.scrambl-cell) {
+            overflow: visible !important;
+          }
+
+          .title-word :deep(.scrambl-cell:first-child) {
+            width: 1.08ch !important;
+            max-width: 1.08ch !important;
+            justify-content: flex-end !important;
+          }
+
+          .title-word :deep(.scrambl-cell:last-child) {
+            box-sizing: content-box;
+            width: var(--scramble-x-cell-width) !important;
+            max-width: var(--scramble-x-cell-width) !important;
+            justify-content: flex-start !important;
+          }
+
+          .title-word :deep(.scrambl-cell:last-child),
+          .title-word :deep(.scramble-last-character) {
+            margin-left: var(--scramble-x-gap);
+            padding-right: var(--scramble-x-right-space);
             font-style: oblique;
-            padding-right: 30px;
-            background-image: var(--xfontStyle);
+            background-image: var(--active-x-gradient);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;

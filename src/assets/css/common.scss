@@ -20,7 +20,12 @@
   /* 在 800px 屏幕: 1.5vw = 12px → 正好符合 → 使用 12px */
   font-size: clamp(12px, 1.5vw, 16px);
   font-family: 'Hiragino Sans GB', sans-serif;
-  --xfontStyle: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
+  /* 首页角色标题末尾 X 的渐变色 */
+  --coder-x-gradient: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
+  --writer-x-gradient: linear-gradient(135deg, rgba(255, 211, 88, 0.82) 20%, rgba(235, 106, 44, 0.82) 100%);
+  --creator-x-gradient: linear-gradient(135deg, rgba(255, 111, 174, 0.78) 20%, rgba(132, 0, 255, 0.76) 100%);
+  --builder-x-gradient: linear-gradient(135deg, rgba(0, 240, 255, 0.72) 20%, rgba(12, 140, 254, 0.8) 100%);
+  --xfontStyle: var(--coder-x-gradient);
   // --xfontStyle: linear-gradient(to bottom right, #70b8ff, #edeef0);
   --navbarHeight: 56px;
   /* ========== 光标样式 ========== */
