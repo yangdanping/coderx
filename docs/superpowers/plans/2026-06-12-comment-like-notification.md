@@ -93,7 +93,8 @@ Drop both historical consistency constraint names if present, then add one const
 
 - article notification types target their article,
 - follow notifications target their recipient user,
-- comment-like notifications target the actual `comment_id`.
+- comment-like notifications target the actual `comment_id` while it exists, and allow
+  `comment_id` to become null after the referenced comment is deleted.
 
 Implement `createCommentLikeNotification` with a one-hour cooldown using
 `createNotificationWithCooldown`, a comment-specific lock key, sanitized 60-character excerpt,
