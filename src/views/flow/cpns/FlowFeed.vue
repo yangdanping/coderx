@@ -37,6 +37,7 @@
 import FlowFeedItem from './FlowFeedItem.vue';
 import FlowFeedSkeleton from './FlowFeedSkeleton.vue';
 import { useFlowFeed } from '@/composables/useFlowFeed';
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
 import { RefreshCw } from 'lucide-vue-next';
 
 const { data, isPending, isFetchingNextPage, isError, error, hasNextPage, fetchNextPage, refetch } = useFlowFeed();
@@ -47,27 +48,12 @@ const isEmpty = computed(() => {
   return !first?.items || first.items.length === 0;
 });
 
-const infiniteSentinel = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
-
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      const entry = entries[0];
-      if (entry?.isIntersecting && hasNextPage.value && !isFetchingNextPage.value) {
-        fetchNextPage();
-      }
-    },
-    { threshold: 0.1 },
-  );
-  nextTick(() => {
-    if (infiniteSentinel.value) observer?.observe(infiniteSentinel.value);
-  });
-});
-
-onUnmounted(() => {
-  observer?.disconnect();
-  observer = null;
+const { infiniteSentinel } = useInfiniteScroll({
+  canLoadMore: computed(() => Boolean(hasNextPage.value)),
+  isLoading: isFetchingNextPage,
+  loadMore: () => fetchNextPage(),
+  rootMargin: '0px',
+  threshold: 0.1,
 });
 
 defineExpose({ refetch });

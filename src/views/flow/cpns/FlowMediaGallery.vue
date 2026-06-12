@@ -1,5 +1,5 @@
 <template>
-  <div class="flow-media-gallery" :class="{ 'single-media': media.length === 1 }">
+  <div class="flow-media-gallery" :class="{ 'single-media': media.length === 1 }" @click.stop>
     <div class="media-viewport">
       <div class="media-track" :style="media.length > 2 ? { transform: translateX } : undefined">
         <div v-for="(item, idx) in media" :key="item.id" class="media-slot" :class="{ 'full-width': media.length === 1 }" role="button" @click="openPreview(idx)">
@@ -98,11 +98,6 @@ function openPreview(index: number) {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-
-        &:hover {
-          transform: scale(1.03);
-        }
       }
     }
   }
@@ -117,22 +112,18 @@ function openPreview(index: number) {
     transform: translateY(-50%);
     width: 32px;
     height: 32px;
-    border-radius: 50%;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.45);
-    color: #f0f0f0;
-    backdrop-filter: blur(4px);
-    transition:
-      opacity 0.25s ease,
-      background 0.25s ease;
+    background: transparent;
+    color: var(--text-primary);
+    transition: opacity 0.2s ease;
     opacity: 0;
     z-index: var(--z-above);
 
     &:hover {
-      background: rgba(0, 0, 0, 0.65);
+      opacity: 0.72;
     }
 
     &.disabled {

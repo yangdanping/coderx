@@ -68,8 +68,22 @@ const pullReady = computed(() => pullDistance.value >= 70);
     width: var(--flow-column-width);
     margin: 0 auto;
     padding: 0 16px 32px;
-    border-inline: 1px solid color-mix(in oklch, var(--fontColor) 8%, transparent);
+    position: relative;
+    isolation: isolate;
     container-type: inline-size;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border-inline: 1px solid color-mix(in oklch, var(--fontColor) 8%, transparent);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
+    }
   }
 
   .flow-editor-stack {
@@ -165,7 +179,7 @@ const pullReady = computed(() => pullDistance.value >= 70);
   }
 }
 
-html.dark .flow-page .flow-column {
+html.dark .flow-page .flow-column::before {
   border-color: color-mix(in oklch, var(--fontColor) 10%, transparent);
 }
 </style>

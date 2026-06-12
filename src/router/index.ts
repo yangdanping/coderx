@@ -43,6 +43,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/flow/Flow.vue'),
   },
   {
+    name: 'flow-detail',
+    path: '/flow/:flowId',
+    props: true,
+    meta: { title: 'Flow 详情' },
+    component: () => import('@/views/flow/FlowDetail.vue'),
+  },
+  {
     name: 'dev',
     path: '/dev',
     meta: {

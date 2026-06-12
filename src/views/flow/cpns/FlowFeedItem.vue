@@ -1,30 +1,58 @@
 <template>
-  <article class="flow-feed-item">
+  <article
+    class="flow-feed-item"
+    :class="{ 'is-navigable': navigable }"
+  >
+    <RouterLink
+      v-if="navigable"
+      class="item-detail-link"
+      :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }"
+      :aria-label="`查看 ${item.author.name} 的动态详情`"
+    />
+
     <header class="item-header">
-      <el-avatar :src="item.author.avatarUrl" :size="40" class="author-avatar" />
-      <div class="author-meta">
-        <span class="author-name">{{ item.author.name }}</span>
-        <time class="post-time" :datetime="item.createdAt">{{ timeAgo }}</time>
+      <div class="author-interactive excluded-from-detail" @click.stop>
+        <el-avatar :src="item.author.avatarUrl" :size="40" class="author-avatar" />
+        <div class="author-meta">
+          <span class="author-name">{{ item.author.name }}</span>
+          <time class="post-time" :datetime="item.createdAt">{{ timeAgo }}</time>
+        </div>
       </div>
-      <button class="more-btn" role="button" aria-label="更多操作">
+      <button class="more-btn excluded-from-detail" role="button" aria-label="更多操作" @click.stop>
         <MoreHorizontal :size="18" />
       </button>
     </header>
 
     <p class="item-body">{{ item.body }}</p>
 
-    <FlowMediaGallery v-if="item.media.length > 0" :media="item.media" />
+    <div v-if="item.media.length > 0" class="media-interactive excluded-from-detail">
+      <FlowMediaGallery :media="item.media" />
+    </div>
 
     <footer class="item-actions">
-      <button class="action-btn" :class="{ active: liked, pop: isAnimating }" @click="toggleLike" role="button">
+      <button
+        class="action-btn like-action excluded-from-detail"
+        :class="{ active: liked, pop: isAnimating }"
+        @click.stop="toggleLike"
+        role="button"
+      >
         <Heart :size="18" :fill="liked ? 'currentColor' : 'none'" />
         <span v-if="likeCount > 0">{{ likeCount }}</span>
       </button>
-      <button class="action-btn" role="button">
+      <RouterLink
+        v-if="navigable"
+        class="action-btn comment-action excluded-from-detail"
+        :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }"
+        aria-label="查看动态详情"
+      >
         <MessageCircle :size="18" />
         <span v-if="item.comments > 0">{{ item.comments }}</span>
-      </button>
-      <button class="action-btn" role="button">
+      </RouterLink>
+      <span v-else class="action-btn comment-action">
+        <MessageCircle :size="18" />
+        <span v-if="item.comments > 0">{{ item.comments }}</span>
+      </span>
+      <button class="action-btn share-action excluded-from-detail" role="button" @click.stop>
         <Share2 :size="18" />
       </button>
     </footer>
@@ -42,10 +70,17 @@ import type { FlowItem } from '@/service/flow/flow.types';
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
 
-const props = defineProps<{
-  item: FlowItem;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: FlowItem;
+    navigable?: boolean;
+  }>(),
+  {
+    navigable: true,
+  },
+);
 
+const navigable = computed(() => props.navigable);
 const liked = ref(props.item.liked);
 const likeCount = ref(props.item.likes);
 const isAnimating = ref(false);
@@ -63,8 +98,49 @@ const timeAgo = computed(() => dayjs(props.item.createdAt).fromNow());
 </script>
 <style lang="scss" scoped>
 .flow-feed-item {
+  position: relative;
   padding: 20px 0;
   container-type: inline-size;
+  outline: none;
+
+  &.is-navigable {
+    cursor: var(--cursorPointer);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    z-index: calc(var(--z-above) + 2);
+    width: 100%;
+    height: 1.5px;
+    pointer-events: none;
+    background: linear-gradient(90deg, #43c3ff, #afffe3);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.5s ease-out;
+  }
+
+  &.is-navigable:hover::after {
+    transform: scaleX(1);
+  }
+
+  .item-detail-link {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-above);
+    outline: none;
+
+    &:focus-visible {
+      box-shadow: inset 3px 0 0 color-mix(in oklch, var(--fontColor) 45%, transparent);
+    }
+  }
+
+  .excluded-from-detail {
+    position: relative;
+    z-index: calc(var(--z-above) + 1);
+  }
 
   & + & {
     border-top: 1px solid color-mix(in oklch, var(--fontColor) 12%, transparent);
@@ -75,6 +151,14 @@ const timeAgo = computed(() => dayjs(props.item.createdAt).fromNow());
     align-items: center;
     gap: clamp(8px, 2cqi, 12px);
     margin-bottom: clamp(10px, 2.5cqi, 14px);
+
+    .author-interactive {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 2cqi, 12px);
+    }
 
     .author-avatar {
       flex-shrink: 0;

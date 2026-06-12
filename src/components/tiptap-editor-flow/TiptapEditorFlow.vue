@@ -108,5 +108,28 @@ defineExpose({
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg-color-primary);
+
+  :deep(.comment-toolbar) {
+    background: color-mix(in oklch, var(--bg-color-primary) 92%, transparent);
+    border-bottom-color: var(--border-color-default);
+    scrollbar-color: color-mix(in oklch, var(--fontColor) 28%, transparent) transparent;
+  }
+
+  :deep(.comment-toolbar .toolbar-btn.el-button.is-plain) {
+    --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+    --el-button-bg-color: transparent;
+    --el-button-border-color: transparent;
+
+    &:hover:not(.is-disabled) {
+      --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+      --el-button-bg-color: color-mix(in oklch, var(--fontColor) 9%, transparent);
+    }
+  }
+
+  :deep(.comment-toolbar .toolbar-btn.el-button--primary.is-plain) {
+    --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+    --el-button-bg-color: color-mix(in oklch, var(--fontColor) 12%, transparent);
+    --el-button-border-color: transparent;
+  }
 }
 </style>
