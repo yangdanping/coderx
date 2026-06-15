@@ -7,6 +7,7 @@ uniform float u_time;
 uniform float u_yaw;
 uniform float u_pitch;
 uniform float u_scale;
+uniform float u_sceneOffsetX;
 uniform vec3  u_color;
 uniform float u_lineWidth;
 uniform float u_decorations;
@@ -293,6 +294,7 @@ void main(){
 
   vec2 uv = (gl_FragCoord.xy / u_resolution - 0.5) / u_scale;
   uv.x *= aspect;
+  uv.x -= u_sceneOffsetX;
 
   float aa = 1.4 / u_resolution.y;
   float lw = u_lineWidth / u_resolution.y;

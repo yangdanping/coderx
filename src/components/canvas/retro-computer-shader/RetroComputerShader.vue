@@ -21,6 +21,7 @@
 <script lang="ts" setup>
 import vertexShaderSource from './shaders/vertex.glsl';
 import fragmentShaderSource from './shaders/fragment.glsl';
+import { STACK_LAYOUT_BREAKPOINT, resolveResponsiveSceneOffsetX } from './responsive-scene-framing';
 import { fitScreenSaverFontSize, resolveHorizontalScreenSaverBounce, resolveResponsiveScreenSaverSpeedMultiplier } from './screen-saver-motion';
 import { useTheme } from '@/composables/useTheme';
 
@@ -142,7 +143,6 @@ const MAX_YAW = 0.7;
 // STACK_LAYOUT_BREAKPOINT：Hero 改为上下堆叠，并使用更宽的方形画布
 const SCALE_WIDE_BREAKPOINT = 1470;
 const SCALE_MIDDLE_BREAKPOINT = 1100;
-const STACK_LAYOUT_BREAKPOINT = 1040;
 // 堆叠画布略降 scale，为默认视角和拖拽极限下的两侧轨道预留 overscan。
 const MOBILE_EFFECTIVE_SCALE = 1.18;
 // 碰撞占位最多使用屏幕宽度的 72%，其余空间用于水平移动和反弹。
@@ -154,6 +154,8 @@ const SCREEN_SAVER_COLLISION_WIDTH_RATIO = 0.72;
 const ROTATION_PADDING_FACTOR = 0.7;
 
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1920);
+// 堆叠布局利用右侧余量轻移取景中心，让最宽的左侧轨道完整进入画幅。
+const effectiveSceneOffsetX = computed(() => resolveResponsiveSceneOffsetX(windowWidth.value));
 // 首次缩窄后运动区同步变小，速度减半以保持接近桌面端的碰壁节奏。
 const responsiveScreenSaverSpeedMultiplier = computed(() => resolveResponsiveScreenSaverSpeedMultiplier(windowWidth.value, SCALE_WIDE_BREAKPOINT));
 
@@ -257,6 +259,7 @@ function initGL(): boolean {
     yaw: gl.getUniformLocation(program, 'u_yaw'),
     pitch: gl.getUniformLocation(program, 'u_pitch'),
     scale: gl.getUniformLocation(program, 'u_scale'),
+    sceneOffsetX: gl.getUniformLocation(program, 'u_sceneOffsetX'),
     color: gl.getUniformLocation(program, 'u_color'),
     lw: gl.getUniformLocation(program, 'u_lineWidth'),
     deco: gl.getUniformLocation(program, 'u_decorations'),
@@ -336,7 +339,7 @@ function projectIsoPointToPixel(x: number, y: number, z: number, yaw: number, pi
   const aspect = width / height;
 
   return {
-    x: ((qx / aspect) * effectiveScale.value + 0.5) * width,
+    x: (((qx + effectiveSceneOffsetX.value) / aspect) * effectiveScale.value + 0.5) * width,
     // WebGL 片元坐标原点在左下，而 2D canvas 在左上，这里做 y 轴翻转
     y: (0.5 - qy * effectiveScale.value) * height,
   };
@@ -541,6 +544,7 @@ function render() {
   gl.uniform1f(uLocs.yaw!, state.yaw);
   gl.uniform1f(uLocs.pitch!, defaultView.value.pitch);
   gl.uniform1f(uLocs.scale!, effectiveScale.value);
+  gl.uniform1f(uLocs.sceneOffsetX!, effectiveSceneOffsetX.value);
   gl.uniform3f(uLocs.color!, r, g, b);
   gl.uniform1f(uLocs.lw!, props.lineWidth);
   gl.uniform1f(uLocs.deco!, props.showDecorations ? 1.0 : 0.0);

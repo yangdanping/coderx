@@ -17,13 +17,27 @@ describe('RetroComputerShader wall-hit contract', () => {
 
   it('keeps the stacked canvas large while reserving orbit overscan and slowing the screen saver', () => {
     const componentSource = fs.readFileSync(path.join(process.cwd(), 'src/components/canvas/retro-computer-shader/RetroComputerShader.vue'), 'utf8');
+    const framingSource = fs.readFileSync(path.join(process.cwd(), 'src/components/canvas/retro-computer-shader/responsive-scene-framing.ts'), 'utf8');
 
-    expect(componentSource).toContain('const STACK_LAYOUT_BREAKPOINT = 1040');
+    expect(framingSource).toContain('export const STACK_LAYOUT_BREAKPOINT = 1040');
+    expect(componentSource).toContain("import { STACK_LAYOUT_BREAKPOINT, resolveResponsiveSceneOffsetX } from './responsive-scene-framing'");
     expect(componentSource).toContain('const MOBILE_EFFECTIVE_SCALE = 1.18');
     expect(componentSource).toContain('if (w <= STACK_LAYOUT_BREAKPOINT) return MOBILE_EFFECTIVE_SCALE');
     expect(componentSource).toContain('resolveResponsiveScreenSaverSpeedMultiplier(windowWidth.value, SCALE_WIDE_BREAKPOINT)');
     expect(componentSource).toContain('props.screenSaverSpeed * responsiveScreenSaverSpeedMultiplier.value');
     expect(componentSource).toContain('const SCREEN_SAVER_COLLISION_WIDTH_RATIO = 0.72');
     expect(componentSource).toContain('fitScreenSaverFontSize({');
+  });
+
+  it('uses one responsive horizontal scene offset for WebGL and the screen-saver projection', () => {
+    const componentSource = fs.readFileSync(path.join(process.cwd(), 'src/components/canvas/retro-computer-shader/RetroComputerShader.vue'), 'utf8');
+    const fragmentSource = fs.readFileSync(path.join(process.cwd(), 'src/components/canvas/retro-computer-shader/shaders/fragment.glsl'), 'utf8');
+
+    expect(componentSource).toContain('resolveResponsiveSceneOffsetX(windowWidth.value)');
+    expect(componentSource).toContain('sceneOffsetX: gl.getUniformLocation(program,');
+    expect(componentSource).toContain('gl.uniform1f(uLocs.sceneOffsetX!, effectiveSceneOffsetX.value)');
+    expect(componentSource).toContain('(qx + effectiveSceneOffsetX.value) / aspect');
+    expect(fragmentSource).toContain('uniform float u_sceneOffsetX;');
+    expect(fragmentSource).toContain('uv.x -= u_sceneOffsetX;');
   });
 });
