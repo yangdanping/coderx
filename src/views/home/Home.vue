@@ -5,15 +5,10 @@
         <div class="title">
           <div class="title-line-1">Welcome to</div>
           <div class="title-line-2">
-            <CyclingScrambleText
-              class="title-word"
-              :words="CODERX_ROLE_TITLES"
-              :preset="DEFAULT_SCRAMBLE_PRESET"
-              :cycle-delay="2000"
-            />
+            <ScrambleFrameText class="title-word" :frame="frame" :target="target" />
           </div>
         </div>
-        <RetroComputerShader class="shader" />
+        <RetroComputerShader class="shader" :screen-saver-text="screenFrame" screen-saver-collision-text="creatorx" @wall-hit="advanceOnWallHit" />
         <!-- <CodeSpotlight class="shader" /> -->
       </div>
       <hr />
@@ -35,13 +30,15 @@
 import HomeHotUser from './cpns/HomeHotUser.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
 import FeatureSection from './cpns/features/FeatureSection.vue';
-import { CODERX_ROLE_TITLES, CyclingScrambleText, DEFAULT_SCRAMBLE_PRESET } from '@/components/scramble';
+import { ScrambleFrameText } from '@/components/scramble';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
+import { useWallHitScramble } from './composables/useWallHitScramble';
 
 const homeStore = useHomeStore();
 const { hotUsers } = storeToRefs(homeStore);
+const { frame, screenFrame, target, advanceOnWallHit } = useWallHitScramble();
 
 const githubUrl = ref('https://github.com/yangdanping');
 
@@ -77,10 +74,10 @@ $TitleSize: 2em;
         /* 
            clamp(min, preferred, max) 函数用于设置响应式字体大小
            - min: 40px (最小值，防止在小屏幕下文字过小)
-           - preferred: 10vw (首选值，10vw 表示屏幕宽度的 10%，实现随屏幕宽度动态缩放)
+           - preferred: 3.9vw (中等宽度下平滑缩小，给最长角色词和 Retro 留出并排空间)
            - max: 70px (最大值，防止在大屏幕下文字过大)
         */
-        font-size: clamp(40px, 10vw, 70px);
+        font-size: clamp(40px, 3.9vw, 70px);
         user-select: none;
         transition: all 0.5s;
         font-family: 'GeistPixel-Line', sans-serif;
@@ -135,14 +132,14 @@ $TitleSize: 2em;
             justify-content: flex-end !important;
           }
 
-          .title-word :deep(.scrambl-cell:last-child) {
+          .title-word :deep(.scramble-accent-character) {
             box-sizing: content-box;
             width: var(--scramble-x-cell-width) !important;
             max-width: var(--scramble-x-cell-width) !important;
             justify-content: flex-start !important;
           }
 
-          .title-word :deep(.scrambl-cell:last-child),
+          .title-word :deep(.scramble-accent-character),
           .title-word :deep(.scramble-last-character) {
             margin-left: var(--scramble-x-gap);
             padding-right: var(--scramble-x-right-space);
@@ -168,8 +165,8 @@ $TitleSize: 2em;
         max-width: 800px;
       }
 
-      // 响应式：小屏幕时堆叠显示
-      @media screen and (max-width: 900px) {
+      // 响应式：最长角色词与 Retro 接近冲突前切换为堆叠布局。
+      @media screen and (max-width: 1040px) {
         flex-direction: column;
         align-items: center;
         text-align: center;
@@ -180,13 +177,37 @@ $TitleSize: 2em;
         }
 
         .shader {
-          width: 100%;
+          // 画布突破正文的 80% 宽度，为 Retro 两侧轨道和屏保文字保留位图空间。
+          width: min(100vw, 520px);
           height: auto;
           aspect-ratio: 1 / 1;
-          max-width: 500px;
-          min-width: auto;
-          margin: 0 auto;
+          max-width: none;
+          min-width: 0;
+          margin: 0;
           align-self: center;
+        }
+      }
+
+      @media screen and (max-width: 600px) {
+        // 手机端让 Hero 脱离正文 80% 宽度，保证 100vw Retro 画布真正居中。
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+
+        .title {
+          // 小屏适度放大标题，并用整屏宽度容纳最长 CreatorX 的扰动帧。
+          width: min(100vw, 560px);
+          max-width: none;
+          font-size: clamp(40px, 11.5vw, 52px);
+
+          .title-line-2 .title-word {
+            // 手机宽度紧张时移除装饰内边距，避免 BuilderX / CreatorX 被视口裁切。
+            padding-inline: 0;
+          }
+        }
+
+        .shader {
+          width: min(100vw, 520px);
         }
       }
     }

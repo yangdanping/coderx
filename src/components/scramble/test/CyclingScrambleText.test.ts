@@ -91,6 +91,7 @@ describe('CyclingScrambleText', () => {
       props: {
         words: ['Coder', 'Writer'],
         preset: 'terminalBinary',
+        chars: 'binary',
         duration: 1500,
         from: 'right',
         trigger: 'inView',

@@ -21,6 +21,7 @@
 <script lang="ts" setup>
 import vertexShaderSource from './shaders/vertex.glsl';
 import fragmentShaderSource from './shaders/fragment.glsl';
+import { fitScreenSaverFontSize, resolveHorizontalScreenSaverBounce, resolveResponsiveScreenSaverSpeedMultiplier } from './screen-saver-motion';
 import { useTheme } from '@/composables/useTheme';
 
 import type { Perspective, RetroComputerShaderProps } from './index';
@@ -52,7 +53,12 @@ const props = withDefaults(defineProps<RetroComputerShaderProps>(), {
   screenSaverFontSize: 34,
   screenSaverFontFamily: 'GeistPixel-Line',
   screenSaverSpeed: 0.6,
+  screenSaverCollisionText: '',
 });
+
+const emit = defineEmits<{
+  'wall-hit': [direction: 'left' | 'right'];
+}>();
 
 /* ========== 视角预设映射 ========== */
 
@@ -133,10 +139,14 @@ const MAX_YAW = 0.7;
 
 // ── 响应式 scale 断点（在这里调整数值）────────────────────────
 // SCALE_WIDE_BREAKPOINT  ：宽于此值时使用完整 scale，不再缩小
-// SCALE_NARROW_BREAKPOINT：窄于此值时 scale 降至最小值 1.0
+// STACK_LAYOUT_BREAKPOINT：Hero 改为上下堆叠，并使用更宽的方形画布
 const SCALE_WIDE_BREAKPOINT = 1470;
 const SCALE_MIDDLE_BREAKPOINT = 1100;
-const SCALE_NARROW_BREAKPOINT = 900;
+const STACK_LAYOUT_BREAKPOINT = 1040;
+// 堆叠画布略降 scale，为默认视角和拖拽极限下的两侧轨道预留 overscan。
+const MOBILE_EFFECTIVE_SCALE = 1.18;
+// 碰撞占位最多使用屏幕宽度的 72%，其余空间用于水平移动和反弹。
+const SCREEN_SAVER_COLLISION_WIDTH_RATIO = 0.72;
 
 // 旋转留白系数：最终 scale = props.scale × 此值
 // 减小 → 图形更小、四周留白更多，旋转/拖拽不溢出
@@ -144,6 +154,8 @@ const SCALE_NARROW_BREAKPOINT = 900;
 const ROTATION_PADDING_FACTOR = 0.7;
 
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1920);
+// 首次缩窄后运动区同步变小，速度减半以保持接近桌面端的碰壁节奏。
+const responsiveScreenSaverSpeedMultiplier = computed(() => resolveResponsiveScreenSaverSpeedMultiplier(windowWidth.value, SCALE_WIDE_BREAKPOINT));
 
 // 平滑插值（ease-out quad）：从最大尺寸渐变到 1.0
 const effectiveScale = computed(() => {
@@ -151,10 +163,10 @@ const effectiveScale = computed(() => {
   // 基准提升：将 props.scale 映射到原来的 1.8 倍
   const adjustedScale = props.scale * 1.8;
   const maxScale = adjustedScale * ROTATION_PADDING_FACTOR;
+  if (w <= STACK_LAYOUT_BREAKPOINT) return MOBILE_EFFECTIVE_SCALE;
   if (w >= SCALE_WIDE_BREAKPOINT) return maxScale;
   if (w >= SCALE_MIDDLE_BREAKPOINT) return 0.85;
-  if (w >= SCALE_NARROW_BREAKPOINT) return 0.7;
-  return 0.6;
+  return 0.7;
 });
 
 function onWindowResize() {
@@ -366,25 +378,39 @@ function drawScreenSaverText() {
   const maxY = Math.max(...corners.map((p) => p.y));
 
   const dpr = Math.max(1, canvas.width / Math.max(1, containerRef.value?.clientWidth ?? canvas.width));
-  const fontSize = Math.max(8, props.screenSaverFontSize) * dpr;
+  const preferredFontSize = Math.max(8, props.screenSaverFontSize) * dpr;
+  const minimumFontSize = 8 * dpr;
   const padding = 2 * dpr;
+  const collisionText = props.screenSaverCollisionText || text;
 
-  screenSaverCtx.font = `${fontSize}px ${props.screenSaverFontFamily}`;
+  screenSaverCtx.font = `${preferredFontSize}px ${props.screenSaverFontFamily}`;
   screenSaverCtx.textAlign = 'left';
   screenSaverCtx.textBaseline = 'top';
+  const preferredCollisionWidth = Math.max(1, screenSaverCtx.measureText(collisionText).width);
+  const fontSize = fitScreenSaverFontSize({
+    preferredFontSize,
+    minimumFontSize,
+    measuredCollisionWidth: preferredCollisionWidth,
+    availableWidth: maxX - minX - padding * 2,
+    widthRatio: SCREEN_SAVER_COLLISION_WIDTH_RATIO,
+  });
+
+  screenSaverCtx.font = `${fontSize}px ${props.screenSaverFontFamily}`;
   const metrics = screenSaverCtx.measureText(text);
+  const collisionMetrics = screenSaverCtx.measureText(collisionText);
   const textWidth = Math.max(1, metrics.width);
+  const collisionWidth = Math.max(1, collisionMetrics.width);
   const textHeight = Math.max(fontSize, (metrics.actualBoundingBoxAscent || fontSize * 0.8) + (metrics.actualBoundingBoxDescent || fontSize * 0.2));
 
   const boundLeft = minX + padding;
-  const boundRight = maxX - padding - textWidth;
+  const boundRight = maxX - padding - collisionWidth;
   // trade-off: 当文本宽度超过屏幕可用宽度时，boundRight 会落到 boundLeft 左侧。
   // 此时直接不渲染（return），避免文字在极窄/无有效运动区间时抖动或越界绘制。
   if (boundRight <= boundLeft) return;
 
   const centerX = (boundLeft + boundRight) * 0.5;
-  const initTop = Math.max(interpolateYByX(pTL, pTR, centerX), interpolateYByX(pTL, pTR, centerX + textWidth)) + padding;
-  const initBottom = Math.min(interpolateYByX(pBL, pBR, centerX), interpolateYByX(pBL, pBR, centerX + textWidth)) - padding - textHeight;
+  const initTop = Math.max(interpolateYByX(pTL, pTR, centerX), interpolateYByX(pTL, pTR, centerX + collisionWidth)) + padding;
+  const initBottom = Math.min(interpolateYByX(pBL, pBR, centerX), interpolateYByX(pBL, pBR, centerX + collisionWidth)) - padding - textHeight;
   // trade-off: 屏幕在当前透视下若无法容纳该字号文本的高度，也直接不渲染。
   if (initBottom <= initTop) return;
 
@@ -396,24 +422,23 @@ function drawScreenSaverText() {
     screenSaverState.initialized = true;
   }
 
-  const speedMul = Math.max(0, props.screenSaverSpeed);
+  const speedMul = Math.max(0, props.screenSaverSpeed * responsiveScreenSaverSpeedMultiplier.value);
   const baseSpeed = 70 * dpr;
   screenSaverState.x += (screenSaverState.vx * baseSpeed * speedMul) / 60;
   screenSaverState.y += (screenSaverState.vy * baseSpeed * speedMul) / 60;
 
-  if (screenSaverState.x <= boundLeft) {
-    screenSaverState.x = boundLeft;
-    screenSaverState.vx = Math.abs(screenSaverState.vx);
-  } else if (screenSaverState.x >= boundRight) {
-    screenSaverState.x = boundRight;
-    screenSaverState.vx = -Math.abs(screenSaverState.vx);
+  const horizontalBounce = resolveHorizontalScreenSaverBounce(screenSaverState.x, screenSaverState.vx, boundLeft, boundRight);
+  screenSaverState.x = horizontalBounce.x;
+  screenSaverState.vx = horizontalBounce.vx;
+  if (horizontalBounce.wallHit) {
+    emit('wall-hit', horizontalBounce.wallHit);
   }
 
   // 关键修复：纵向边界不再使用固定 minY/maxY，
   // 而是根据当前文本左右 x 在屏幕上/下边线的插值结果动态计算，
   // 避免文本先“穿出屏幕”再反弹。
   const textLeftX = screenSaverState.x;
-  const textRightX = screenSaverState.x + textWidth;
+  const textRightX = screenSaverState.x + collisionWidth;
   const topAtLeft = interpolateYByX(pTL, pTR, textLeftX);
   const topAtRight = interpolateYByX(pTL, pTR, textRightX);
   const bottomAtLeft = interpolateYByX(pBL, pBR, textLeftX);
@@ -449,7 +474,8 @@ function drawScreenSaverText() {
   screenSaverCtx.fillStyle = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
   screenSaverCtx.shadowColor = `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${isDark.value ? 0.42 : 0.22})`;
   screenSaverCtx.shadowBlur = 4 * dpr;
-  screenSaverCtx.fillText(text, screenSaverState.x, screenSaverState.y);
+  const textOffsetX = (collisionWidth - textWidth) * 0.5;
+  screenSaverCtx.fillText(text, screenSaverState.x + textOffsetX, screenSaverState.y);
   screenSaverCtx.restore();
 }
 

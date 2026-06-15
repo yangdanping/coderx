@@ -43,6 +43,8 @@ export interface RetroComputerShaderProps {
   trail3Color?: string;
   /** 屏保文本内容；空字符串时不渲染，支持 emoji */
   screenSaverText?: string;
+  /** 屏保碰撞盒测量文本；为空时使用 screenSaverText */
+  screenSaverCollisionText?: string;
   /** 是否显示屏保文本；默认 true */
   showScreenSaver?: boolean;
   /** 屏保文本透明度（0~1）；默认 1 */
