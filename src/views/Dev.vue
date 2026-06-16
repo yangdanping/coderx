@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { Hammer } from 'lucide-vue-next';
+import { Hammer } from '@lucide/vue';
 import FlowCordWidget from '@/views/flow/cpns/FlowCordWidget.vue';
 import FlowDevConfetti from '@/views/flow/cpns/FlowDevConfetti.vue';
 

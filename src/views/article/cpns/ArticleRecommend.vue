@@ -36,7 +36,7 @@ import Icon from '@/components/icon/Icon.vue';
 import { throttle } from '@/utils';
 import useArticleStore from '@/stores/article.store';
 import { useRouter } from 'vue-router';
-import { RefreshCcw } from 'lucide-vue-next';
+import { RefreshCcw } from '@lucide/vue';
 import type { IArticle } from '@/stores/types/article.result';
 
 const { recommends = [], loading = false } = defineProps<{

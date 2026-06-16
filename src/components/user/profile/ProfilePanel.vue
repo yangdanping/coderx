@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { provinceAndCityData, codeToText } from 'element-china-area-data';
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus';
-import { Mars, Venus } from 'lucide-vue-next';
+import { Mars, Venus } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 import type { IUserInfo } from '@/stores/types/user.result';
 

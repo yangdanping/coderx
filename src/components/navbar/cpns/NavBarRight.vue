@@ -26,7 +26,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Sun, Moon } from 'lucide-vue-next';
+import { Sun, Moon } from '@lucide/vue';
 import NavBarUser from './NavBarUser.vue';
 import NavBarUserHistory from './NavBarUserHistory.vue';
 import NavBarNotification from './NavBarNotification.vue';

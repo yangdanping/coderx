@@ -24,7 +24,7 @@
 
 <script lang="ts" setup>
 import { Msg } from '@/utils';
-import { User, Lock } from 'lucide-vue-next';
+import { User, Lock } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 
 import type { ElForm, ElInput } from 'element-plus';

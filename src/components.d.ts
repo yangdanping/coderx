@@ -77,6 +77,7 @@ declare module 'vue' {
     RetroComputerShader: typeof import('./components/canvas/retro-computer-shader/RetroComputerShader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ScrambleFrameText: typeof import('./components/scramble/ScrambleFrameText.vue')['default']
     ScrambleWord: typeof import('./components/scramble/ScrambleWord.vue')['default']
     ScrollView: typeof import('./components/scroll-view/ScrollView.vue')['default']
     TabItem: typeof import('./components/common/TabItem.vue')['default']

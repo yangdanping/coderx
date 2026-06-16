@@ -59,7 +59,7 @@
   </article>
 </template>
 <script setup lang="ts">
-import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-vue-next';
+import { Heart, MessageCircle, Share2, MoreHorizontal } from '@lucide/vue';
 import FlowMediaGallery from './FlowMediaGallery.vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';

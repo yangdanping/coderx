@@ -32,7 +32,7 @@
 import { ElMessageBox } from 'element-plus';
 import { Msg } from '@/utils';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
-import { ArrowLeft, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
+import { ArrowLeft, Edit, Trash2, AlertTriangle } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
 

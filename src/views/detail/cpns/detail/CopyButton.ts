@@ -1,5 +1,5 @@
 import { h, ref } from 'vue';
-import { Copy, Check } from 'lucide-vue-next';
+import { Copy, Check } from '@lucide/vue';
 
 export const CopyButton = {
   props: ['text'],

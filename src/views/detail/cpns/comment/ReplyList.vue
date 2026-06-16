@@ -54,7 +54,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted, type CSSPropert
 
 import ReplyItem from './ReplyItem.vue';
 import { useReplyList, flattenReplies } from '@/composables/useCommentList';
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-vue-next';
+import { ChevronDown, ChevronUp, Loader2 } from '@lucide/vue';
 
 import type { IComment } from '@/service/comment/comment.request';
 

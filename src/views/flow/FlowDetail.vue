@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft } from '@lucide/vue';
 import FlowFeedItem from './cpns/FlowFeedItem.vue';
 import FlowFeedSkeleton from './cpns/FlowFeedSkeleton.vue';
 import { getFlowItemById } from '@/service/flow/flow.request';

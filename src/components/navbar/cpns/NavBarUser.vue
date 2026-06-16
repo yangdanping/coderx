@@ -41,7 +41,7 @@ import Avatar from '@/components/avatar/Avatar.vue';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 import { debounce } from '@/utils';
-import { PenSquare, MapPin, LogOut } from 'lucide-vue-next';
+import { PenSquare, MapPin, LogOut } from '@lucide/vue';
 
 const router = useRouter();
 const route = useRoute();

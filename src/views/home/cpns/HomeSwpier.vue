@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronRight } from 'lucide-vue-next';
+import { ChevronRight } from '@lucide/vue';
 const { news = [] } = defineProps<{
   news?: any[];
 }>();

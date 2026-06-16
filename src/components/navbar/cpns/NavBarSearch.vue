@@ -56,7 +56,7 @@
 
 <script lang="ts" setup>
 import { useRouter, useRoute } from 'vue-router';
-import { Search, X } from 'lucide-vue-next';
+import { Search, X } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
 import { debounce } from '@/utils';
 import LocalCache from '@/utils/LocalCache';

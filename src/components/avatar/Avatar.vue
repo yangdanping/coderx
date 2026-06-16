@@ -29,7 +29,7 @@
 
 <script lang="ts" setup>
 import FollowButton from '@/components/FollowButton.vue';
-import { Mars, Venus } from 'lucide-vue-next';
+import { Mars, Venus } from '@lucide/vue';
 import { debounce, getImageUrl } from '@/utils';
 import useUserStore from '@/stores/user.store';
 import useOnlineStore from '@/stores/online.store';

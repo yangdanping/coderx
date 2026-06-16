@@ -38,7 +38,7 @@
 
 <script lang="ts" setup>
 import { emitter } from '@/utils';
-import { Plus, ArrowRight, CheckCircle2 } from 'lucide-vue-next';
+import { Plus, ArrowRight, CheckCircle2 } from '@lucide/vue';
 import debounce from '@/utils/debounce';
 
 import useUserStore from '@/stores/user.store';

@@ -38,7 +38,7 @@ import FlowFeedItem from './FlowFeedItem.vue';
 import FlowFeedSkeleton from './FlowFeedSkeleton.vue';
 import { useFlowFeed } from '@/composables/useFlowFeed';
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
-import { RefreshCw } from 'lucide-vue-next';
+import { RefreshCw } from '@lucide/vue';
 
 const { data, isPending, isFetchingNextPage, isError, error, hasNextPage, fetchNextPage, refetch } = useFlowFeed();
 

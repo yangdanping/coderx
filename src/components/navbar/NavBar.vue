@@ -39,7 +39,7 @@ import NavBarSearch from './cpns/NavBarSearch.vue';
 import LoginDialog from '../user/login/LoginDialog.vue';
 import ProfileDialog from '../user/profile/ProfileDialog.vue';
 import useRootStore from '@/stores/index.store';
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft } from '@lucide/vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -36,7 +36,7 @@ import { Msg } from '@/utils';
 import TiptapEditorComment from '@/components/tiptap-editor-comment/TiptapEditorComment.vue';
 import ReportDialog from '@/components/dialog/ReportDialog.vue';
 import { useRoute } from 'vue-router';
-import { MoreHorizontal, Edit, Trash2, AlertTriangle } from 'lucide-vue-next';
+import { MoreHorizontal, Edit, Trash2, AlertTriangle } from '@lucide/vue';
 
 import useUserStore from '@/stores/user.store';
 import { useUpdateComment, useDeleteComment } from '@/composables/useCommentList';

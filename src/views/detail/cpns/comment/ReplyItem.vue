@@ -65,7 +65,7 @@ import CommentTools from './CommentTools.vue';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import { codeHeightlight } from '@/utils';
-import { CornerDownRight } from 'lucide-vue-next';
+import { CornerDownRight } from '@lucide/vue';
 
 import type { IComment } from '@/service/comment/comment.request';
 

@@ -157,7 +157,7 @@ import ListItem from '@/components/list/ListItem.vue';
 import ArticleAction from '@/components/list/cpns/ArticleAction.vue';
 import { useUserLikedArticles, useLikeArticle } from '@/composables/useArticleList';
 import { Msg, emitter } from '@/utils';
-import { Plus, Settings, ChevronLeft, Pencil, Trash2 } from 'lucide-vue-next';
+import { Plus, Settings, ChevronLeft, Pencil, Trash2 } from '@lucide/vue';
 import { useRoute } from 'vue-router';
 
 import useUserStore from '@/stores/user.store';

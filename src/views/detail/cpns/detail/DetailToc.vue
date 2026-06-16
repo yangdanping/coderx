@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { ListTree } from 'lucide-vue-next';
+import { ListTree } from '@lucide/vue';
 
 import type { DetailTocTitle } from './types/detail-toc.type';
 

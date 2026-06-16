@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { ElImageViewer } from 'element-plus';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import type { FlowMedia } from '@/service/flow/flow.types';
 
 const props = defineProps<{

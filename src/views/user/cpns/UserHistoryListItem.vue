@@ -22,7 +22,7 @@
 
 <script lang="ts" setup>
 import Avatar from '@/components/avatar/Avatar.vue';
-import { Trash2 } from 'lucide-vue-next';
+import { Trash2 } from '@lucide/vue';
 import { ElMessageBox } from 'element-plus';
 import useHistoryStore from '@/stores/history.store';
 import { useRouter } from 'vue-router';

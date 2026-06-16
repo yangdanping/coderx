@@ -62,7 +62,7 @@ import { emitter } from '@/utils';
 import { useRoute } from 'vue-router';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDown } from '@lucide/vue';
 
 import type { CommentSortType } from '@/service/comment/comment.request';
 

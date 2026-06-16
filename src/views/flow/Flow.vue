@@ -34,7 +34,7 @@ import FlowFeed from './cpns/FlowFeed.vue';
 import FlowCordWidget from './cpns/FlowCordWidget.vue';
 import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
 import { usePullToRefresh } from '@/composables/usePullToRefresh';
-import { Loader2 } from 'lucide-vue-next';
+import { Loader2 } from '@lucide/vue';
 
 const containerRef = ref<HTMLElement | null>(null);
 const feedRef = ref<InstanceType<typeof FlowFeed> | null>(null);

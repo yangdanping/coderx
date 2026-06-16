@@ -115,7 +115,7 @@
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue';
 import { Chat } from '@ai-sdk/vue'; // 使用新的 Chat 类
 import { DefaultChatTransport } from 'ai'; // 引入 DefaultChatTransport
-import { MessageCircle, X, User, Bot, ArrowDown } from 'lucide-vue-next';
+import { MessageCircle, X, User, Bot, ArrowDown } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';

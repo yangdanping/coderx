@@ -32,7 +32,7 @@ import NavBarActionPanel from './NavBarActionPanel.vue';
 import NavBarUserHistoryItem from './NavBarUserHistoryItem.vue';
 import useHistoryStore from '@/stores/history.store';
 import useUserStore from '@/stores/user.store';
-import { Clock, AlertTriangle } from 'lucide-vue-next';
+import { Clock, AlertTriangle } from '@lucide/vue';
 
 const router = useRouter();
 const userStore = useUserStore();

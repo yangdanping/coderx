@@ -67,7 +67,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Check, LogOut, ImagePlus, X } from 'lucide-vue-next';
+import { Check, LogOut, ImagePlus, X } from '@lucide/vue';
 import useArticleStore from '@/stores/article.store';
 import useEditorStore from '@/stores/editor.store';
 import { ElMessageBox } from 'element-plus';

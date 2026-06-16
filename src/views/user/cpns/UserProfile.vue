@@ -96,7 +96,7 @@
 import { computed, toRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
-import { Mars, Venus } from 'lucide-vue-next';
+import { Mars, Venus } from '@lucide/vue';
 import { emitter } from '@/utils';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';

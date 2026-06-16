@@ -56,7 +56,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Bell, BellOff } from 'lucide-vue-next';
+import { Bell, BellOff } from '@lucide/vue';
 import Avatar from '@/components/avatar/Avatar.vue';
 import Icon from '@/components/icon/Icon.vue';
 import NavBarActionPanel from './NavBarActionPanel.vue';

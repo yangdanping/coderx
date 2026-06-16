@@ -18,7 +18,7 @@
 import Avatar from '@/components/avatar/Avatar.vue';
 import AvatarCropper from '@/components/avatar/AvatarCropper.vue';
 import { Msg } from '@/utils';
-import { Edit } from 'lucide-vue-next';
+import { Edit } from '@lucide/vue';
 import { useAuth } from '@/composables/useAuth';
 import useUserStore from '@/stores/user.store';
 
