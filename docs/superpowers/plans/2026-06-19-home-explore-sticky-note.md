@@ -1,73 +1,68 @@
-# Home Explore Sticky Note Implementation Plan
+# Home Explore Canvas Page Curl Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add an accessible, responsive sticky-note link beneath the homepage hero title that routes new visitors to the article column.
+**Goal:** Replace the homepage `Start Exploring` CSS curl with a flat Canvas 2D paper note whose bottom-right page lift follows the pointer in the restrained StPageFlip-inspired direction approved by the user.
 
-**Architecture:** Introduce one focused Vue component for the semantic router link and all paper/curl/shadow presentation. Keep `Home.vue` responsible only for placement inside the existing title block so its current mesh background, scramble title, and shader behavior remain intact.
+**Architecture:** Keep `HomeExploreLink.vue` as one focused component: `RouterLink` owns semantics and navigation, while an `aria-hidden` Canvas owns the full paper front, exposed surface, and reverse fold. Canvas state stays non-reactive because it is frame-local imperative drawing state; Vue lifecycle hooks only create and clean up browser observers/listeners. `Home.vue` remains unchanged unless real-page verification exposes an integration defect.
 
-**Tech Stack:** Vue 3 SFC with `<script setup lang="ts">`, Vue Router, scoped SCSS, Vitest, Vue Test Utils.
+**Tech Stack:** Vue 3.5 `<script setup lang="ts">`, Vue Router, Canvas 2D, cubic Bézier paths, `ResizeObserver`, `MutationObserver`, `matchMedia`, Vitest, Vue Test Utils, SCSS.
 
 ---
 
 ## File Structure
 
-- Create `src/views/home/cpns/HomeExploreLink.vue`: semantic CTA markup plus all sticky-note, curved-curl, ASCII-shadow, interaction, theme, and responsive styles.
-- Create `src/views/home/cpns/test/HomeExploreLink.test.ts`: component contract tests for label, route destination, decorative accessibility, and CSS interaction/responsive requirements.
-- Modify `src/views/home/Home.vue`: import and place the CTA beneath the existing scramble title; only add layout spacing/alignment needed by the new component.
+- Modify `src/views/home/cpns/HomeExploreLink.vue`: semantic link, Canvas lifecycle, page-curl geometry, pointer/touch/focus interaction, theme and responsive styles.
+- Modify `src/views/home/cpns/test/HomeExploreLink.test.ts`: Canvas/browser mocks and behavioral contract tests.
+- Verify only `src/views/home/Home.vue`: retain the existing component placement and preserve the user's diffuse hero background edits.
+- Verify `src/views/home/test/Home.scramble.test.ts`: ensure the existing placement contract still passes.
 
-### Task 1: Build the accessible sticky-note link
+### Component map
+
+- `Home.vue`: route-level composition only; already positions `HomeExploreLink`.
+- `HomeExploreLink.vue`: owns one semantic navigation surface and its decorative Canvas rendering; no props or emits are needed.
+- `RouterLink`: public interaction contract; visible label remains the accessible name.
+- Canvas: decorative implementation detail; never receives focus or pointer events.
+
+## Task 1: Replace the legacy visual contract
 
 **Files:**
-- Create: `src/views/home/cpns/test/HomeExploreLink.test.ts`
-- Create: `src/views/home/cpns/HomeExploreLink.vue`
+- Modify: `src/views/home/cpns/test/HomeExploreLink.test.ts`
+- Modify: `src/views/home/cpns/HomeExploreLink.vue`
 
-- [ ] **Step 1: Write the failing component contract test**
+- [ ] **Step 1: Write failing markup and source-contract tests**
+
+Update the existing tests to require:
 
 ```ts
-import { mount, RouterLinkStub } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
-import HomeExploreLink from '../HomeExploreLink.vue';
+it('renders one decorative canvas behind the semantic link', () => {
+  const wrapper = mountLink();
+  const canvas = wrapper.get('canvas.home-explore-link__canvas');
 
-describe('HomeExploreLink', () => {
-  function mountLink() {
-    return mount(HomeExploreLink, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-  }
+  expect(canvas.attributes('aria-hidden')).toBe('true');
+  expect(wrapper.getComponent(RouterLinkStub).props('to')).toEqual({ name: 'article' });
+  expect(wrapper.get('.home-explore-link__label').text()).toBe('Start Exploring');
+});
 
-  it('links new visitors to the article column', () => {
-    const wrapper = mountLink();
-    const link = wrapper.getComponent(RouterLinkStub);
+it('removes the legacy CSS curl and ASCII shadow treatment', () => {
+  const wrapper = mountLink();
+  const source = readSource();
 
-    expect(link.props('to')).toEqual({ name: 'article' });
-    expect(link.text()).toContain('Start Exploring');
-  });
-
-  it('keeps visual effects decorative', () => {
-    const wrapper = mountLink();
-
-    expect(wrapper.get('.home-explore-link__ascii-shadow').attributes('aria-hidden')).toBe('true');
-    expect(wrapper.get('.home-explore-link__curl').attributes('aria-hidden')).toBe('true');
-    expect(wrapper.get('.home-explore-link__contact-shadow').attributes('aria-hidden')).toBe('true');
-  });
-
-  it('defines focus, reduced-motion, touch, and dark-mode treatments', async () => {
-    const source = await import('../HomeExploreLink.vue?raw');
-
-    expect(source.default).toContain(':focus-visible');
-    expect(source.default).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(source.default).toContain('@media (hover: none)');
-    expect(source.default).toContain(':where(html.dark)');
-  });
+  expect(wrapper.find('.home-explore-link__ascii-shadow').exists()).toBe(false);
+  expect(wrapper.find('.home-explore-link__curl').exists()).toBe(false);
+  expect(wrapper.find('.home-explore-link__contact-shadow').exists()).toBe(false);
+  expect(source).not.toMatch(/linear-gradient|radial-gradient|repeating-linear-gradient/);
+  expect(source).not.toContain('box-shadow: inset');
+  expect(source).not.toContain('filter:');
+  expect(source).not.toContain('░');
+  expect(source).not.toContain('▒');
+  expect(source).not.toContain('▓');
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the missing component failure**
+Keep the existing named-route and visible-copy assertion.
+
+- [ ] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -75,42 +70,112 @@ Run:
 pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
 ```
 
-Expected: FAIL because `HomeExploreLink.vue` does not exist.
+Expected: FAIL because the component still renders the ASCII shadow, CSS paper, curl, and contact shadow instead of a Canvas.
 
-- [ ] **Step 3: Implement the minimal semantic component**
+- [ ] **Step 3: Replace the template and legacy SCSS with the minimal semantic shell**
 
-Create `HomeExploreLink.vue` with:
+Use this structure:
 
 ```vue
+<script setup lang="ts">
+import { onMounted, onUnmounted, useTemplateRef } from 'vue';
+
+const canvasRef = useTemplateRef<HTMLCanvasElement>('canvas');
+</script>
+
 <template>
-  <div class="home-explore-link">
-    <span class="home-explore-link__ascii-shadow" aria-hidden="true">
-      ░░░▒▒▒▓▓▓▓▓
-      <span>░░▒▒▒▓▓▓▓▓▓</span>
-    </span>
-    <RouterLink class="home-explore-link__note" :to="{ name: 'article' }">
-      <span class="home-explore-link__label">Start Exploring</span>
-      <span class="home-explore-link__contact-shadow" aria-hidden="true"></span>
-      <span class="home-explore-link__curl" aria-hidden="true"></span>
-    </RouterLink>
-  </div>
+  <RouterLink class="home-explore-link" :to="{ name: 'article' }">
+    <canvas ref="canvas" class="home-explore-link__canvas" aria-hidden="true"></canvas>
+    <span class="home-explore-link__label">Start Exploring</span>
+  </RouterLink>
 </template>
 ```
 
-Implement scoped SCSS based on the approved high-fidelity preview:
+Add only the flat layout styles needed for:
 
-- compact 196–220 px warm yellow paper;
-- subtle line texture and tonal gradient;
-- curved bottom-right cutout and separate curled paper layer;
-- two-line ASCII shadow;
-- `transform`/`opacity` hover and focus motion;
-- visible offset focus ring;
-- active press state;
-- dark-mode color adjustments through `:where(html.dark)`;
-- slightly open curl under `@media (hover: none)`;
-- transitions removed under `prefers-reduced-motion`.
+- `position: relative`, overflow visibility, fixed interactive height, and fluid width;
+- an absolute full-size Canvas with `pointer-events: none`;
+- a stationary label above the Canvas;
+- visible `:focus-visible`;
+- a small active transform;
+- 320 px-safe sizing and centered behavior inherited from `Home.vue`;
+- solid light/dark CSS custom properties.
 
-- [ ] **Step 4: Run the component test and verify it passes**
+- [ ] **Step 4: Run the focused test and verify GREEN**
+
+Run:
+
+```bash
+pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
+```
+
+Expected: PASS for semantic markup and removal tests; Canvas behavior tests have not been added yet.
+
+## Task 2: Draw the flat page and StPageFlip-style fold
+
+**Files:**
+- Modify: `src/views/home/cpns/test/HomeExploreLink.test.ts`
+- Modify: `src/views/home/cpns/HomeExploreLink.vue`
+
+- [ ] **Step 1: Add deterministic Canvas and resize mocks**
+
+Create focused test doubles for:
+
+```ts
+const context = {
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  bezierCurveTo: vi.fn(),
+  closePath: vi.fn(),
+  fill: vi.fn(),
+  clearRect: vi.fn(),
+  setTransform: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+};
+```
+
+Stub `HTMLCanvasElement.prototype.getContext`, `ResizeObserver`, `requestAnimationFrame`, `cancelAnimationFrame`, `matchMedia`, and element `getBoundingClientRect()`. Restore all globals after each test.
+
+- [ ] **Step 2: Write failing initial-draw and DPR tests**
+
+Add tests that assert:
+
+- Canvas backing size becomes CSS width/height multiplied by a DPR capped at `2`.
+- `setTransform(dpr, 0, 0, dpr, 0, 0)` is called.
+- the drawing uses at least two `bezierCurveTo` calls and three solid fills for exposed surface, paper front, and reverse fold;
+- `createLinearGradient`, `createRadialGradient`, `shadowBlur`, and filter APIs are never used;
+- triggering the captured `ResizeObserver` callback redraws and resizes.
+
+- [ ] **Step 3: Run the focused test and verify RED**
+
+Run:
+
+```bash
+pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
+```
+
+Expected: FAIL because the Canvas lifecycle and drawing functions do not exist.
+
+- [ ] **Step 4: Implement minimal Canvas sizing and geometry**
+
+In `HomeExploreLink.vue`:
+
+- keep drawing state in plain typed objects, not Vue reactive state;
+- derive the rendered anchor from `canvas.parentElement` and read its CSS custom properties with `getComputedStyle`;
+- cap `window.devicePixelRatio` at `2`;
+- draw in CSS pixels after `setTransform`;
+- calculate a resting pull point, bottom fold intersection, and right-edge fold intersection;
+- draw three closed solid-color paths:
+  1. exposed surface below the lifted paper;
+  2. paper front clipped by a continuous cubic Bézier fold boundary;
+  3. broad reverse side bounded by cubic Bézier curves;
+- instantiate `ResizeObserver` when available and use a window resize fallback only when unavailable.
+
+The geometry must avoid `arc`, circular masks, straight triangular cutouts, gradients, and shadows.
+
+- [ ] **Step 5: Run the focused test and verify GREEN**
 
 Run:
 
@@ -120,73 +185,97 @@ pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the component**
-
-```bash
-git add src/views/home/cpns/HomeExploreLink.vue src/views/home/cpns/test/HomeExploreLink.test.ts
-git commit -m "feat(home): add explore sticky note link"
-```
-
-### Task 2: Place the CTA in the existing homepage hero
+## Task 3: Add pointer-follow, focus, touch, and reduced-motion behavior
 
 **Files:**
-- Modify: `src/views/home/test/Home.scramble.test.ts`
-- Modify: `src/views/home/Home.vue`
+- Modify: `src/views/home/cpns/test/HomeExploreLink.test.ts`
+- Modify: `src/views/home/cpns/HomeExploreLink.vue`
 
-- [ ] **Step 1: Add a failing homepage placement test**
+- [ ] **Step 1: Write failing interaction tests**
 
-Add to `Home.scramble.test.ts`:
+Test these observable behaviors:
 
-```ts
-it('places the article discovery link inside the hero title block', () => {
-  const wrapper = mountHome();
-  const title = wrapper.get('.title');
-  const exploreLink = title.getComponent({ name: 'HomeExploreLink' });
+- `pointerenter` targets the expanded fold and schedules animation.
+- `pointermove` converts client coordinates into normalized, clamped local coordinates and changes later Bézier control-point calls.
+- `pointerleave` targets the resting fold and schedules restoration.
+- focus expands with a stable centered pointer target; blur restores.
+- non-mouse `pointerdown` expands and `pointerup`/`pointercancel` restores.
+- pointer movement does not mutate the label or RouterLink box.
 
-  expect(exploreLink.exists()).toBe(true);
-  expect(wrapper.get('.title-section').findComponent({ name: 'HomeExploreLink' }).exists()).toBe(true);
-});
-```
+Use queued animation-frame callbacks so each state transition can be advanced deterministically.
 
-Stub/import behavior should follow the current shallow-mount setup.
+- [ ] **Step 2: Write a failing reduced-motion test**
 
-- [ ] **Step 2: Run the homepage test and verify the placement failure**
+Stub `matchMedia('(prefers-reduced-motion: reduce)')` with `matches: true` and assert that interaction redraws immediately without leaving a scheduled animation frame.
+
+- [ ] **Step 3: Run the focused test and verify RED**
 
 Run:
 
 ```bash
-pnpm vitest run src/views/home/test/Home.scramble.test.ts
+pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
 ```
 
-Expected: FAIL because `Home.vue` has not rendered `HomeExploreLink`.
+Expected: FAIL because events do not yet drive the fold.
 
-- [ ] **Step 3: Add the component to the title block**
+- [ ] **Step 4: Implement bounded animation state**
 
-Modify the title markup:
+Add:
 
-```vue
-<div class="title">
-  <div class="title-line-1">Welcome to</div>
-  <div class="title-line-2">
-    <ScrambleFrameText class="title-word" :frame="frame" :target="target" />
-  </div>
-  <HomeExploreLink class="title-explore-link" />
-</div>
+- current and target openness;
+- current and target normalized pointer coordinates;
+- fine-pointer hover state, keyboard-focus state, and coarse-pointer press state;
+- one `requestAnimationFrame` loop that starts on demand and stops when settled;
+- quintic-style natural deceleration without bounce;
+- strict geometry bounds so the fold cannot cover the label or leave the Canvas;
+- immediate target application when reduced motion is active;
+- handlers attached declaratively to `RouterLink`.
+
+- [ ] **Step 5: Run the focused test and verify GREEN**
+
+Run:
+
+```bash
+pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
 ```
 
-Import `HomeExploreLink` from `./cpns/HomeExploreLink.vue`.
+Expected: PASS.
 
-Add only placement rules to `Home.vue`:
+## Task 4: Add theme redraw and lifecycle cleanup
 
-```scss
-.title-explore-link {
-  margin-top: clamp(26px, 3vw, 42px);
-}
+**Files:**
+- Modify: `src/views/home/cpns/test/HomeExploreLink.test.ts`
+- Modify: `src/views/home/cpns/HomeExploreLink.vue`
+
+- [ ] **Step 1: Write failing theme and cleanup tests**
+
+Assert that:
+
+- CSS custom properties provide front, reverse, exposed-surface, ink, and focus colors;
+- a root-class `MutationObserver` redraws when dark mode changes;
+- a reduced-motion media-query change redraws and settles state;
+- unmount disconnects `ResizeObserver` and `MutationObserver`, removes media-query/window listeners, and cancels any pending animation frame.
+
+- [ ] **Step 2: Run the focused test and verify RED**
+
+Run:
+
+```bash
+pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts
 ```
 
-At the existing `max-width: 1040px` stacked breakpoint, keep the title centered so the component follows the existing alignment. At the mobile breakpoint, ensure no fixed width causes overflow at 320 px.
+Expected: FAIL because theme observation and complete cleanup are missing.
 
-- [ ] **Step 4: Run both focused test files**
+- [ ] **Step 3: Implement theme observation and cleanup**
+
+Use:
+
+- `MutationObserver` on `document.documentElement` with `{ attributes: true, attributeFilter: ['class'] }`;
+- `MediaQueryList.addEventListener('change', ...)` with the legacy listener fallback only if necessary;
+- `onUnmounted` cleanup for observers, listeners, and RAF;
+- solid dark-mode variable overrides under `:where(html.dark)`.
+
+- [ ] **Step 4: Run component and homepage placement tests**
 
 Run:
 
@@ -196,43 +285,18 @@ pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts src/views/home/
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit homepage placement**
-
-```bash
-git add src/views/home/Home.vue src/views/home/test/Home.scramble.test.ts
-git commit -m "feat(home): place explore link in hero"
-```
-
-### Task 3: Verify visual, responsive, and interface quality
+## Task 5: Verify on the real homepage and refine without widening scope
 
 **Files:**
-- Modify if required by findings:
+- Modify only if findings require it:
   - `src/views/home/cpns/HomeExploreLink.vue`
-  - `src/views/home/Home.vue`
   - `src/views/home/cpns/test/HomeExploreLink.test.ts`
+- Do not modify:
+  - navbar files
+  - Flow files
+  - the user's diffuse-background code in `src/views/home/Home.vue`
 
-- [ ] **Step 1: Run static verification**
-
-Run:
-
-```bash
-pnpm type-check
-pnpm eslint src/views/home/Home.vue src/views/home/cpns/HomeExploreLink.vue src/views/home/test/Home.scramble.test.ts src/views/home/cpns/test/HomeExploreLink.test.ts
-pnpm build-only
-```
-
-Expected: all commands exit successfully.
-
-- [ ] **Step 6: Commit verification-driven refinements**
-
-If verification changed tracked files:
-
-```bash
-git add src/views/home/Home.vue src/views/home/cpns/HomeExploreLink.vue src/views/home/test/Home.scramble.test.ts src/views/home/cpns/test/HomeExploreLink.test.ts
-git commit -m "fix(home): refine explore link interactions"
-```
-
-- [ ] **Step 2: Run the homepage locally and inspect desktop behavior**
+- [ ] **Step 1: Start the local app**
 
 Run:
 
@@ -240,46 +304,85 @@ Run:
 pnpm dev
 ```
 
-Verify:
+- [ ] **Step 2: Verify desktop light mode**
 
-- CTA is below the title and does not overlap the shader.
-- Curved bottom-right curl reads as paper, not a circular badge.
-- Hover lifts the paper and enlarges the curl without layout shift.
-- ASCII shadow remains restrained and visually attached to the paper.
-- Link navigates to `/article`.
-- Focus ring is clearly visible using keyboard navigation.
-- Dark mode preserves contrast.
+On the real homepage:
 
-- [ ] **Step 3: Inspect mobile and reduced-motion behavior**
+- the paper is flat and solid, with no highlight, gradient, inner shadow, blur, or ASCII shadow;
+- the resting fold is small but legible;
+- hover creates a broad StPageFlip-like lifted sheet;
+- moving the pointer subtly changes the fold spine and pull point;
+- leaving restores smoothly;
+- label and link hit area do not move;
+- no overlap with the title or shader.
 
-Verify at widths 390 px and 320 px:
+- [ ] **Step 3: Verify keyboard and navigation**
 
-- CTA centers with the stacked title.
-- No horizontal overflow.
-- Touch target is at least 44 px tall.
-- Curl is visible without hover.
-- Active feedback is present.
+- Tab to the link and confirm a visible focus ring plus stable expanded fold.
+- Activate with Enter and confirm the URL becomes `/article`.
+- Return to the homepage for remaining checks.
 
-Emulate `prefers-reduced-motion: reduce` and confirm state changes remain visible without animated transitions.
+- [ ] **Step 4: Verify dark mode**
 
-- [ ] **Step 4: Fetch and apply the latest Web Interface Guidelines**
+- Toggle the real app theme.
+- Confirm Canvas colors redraw without page reload.
+- Confirm yellow identity, reverse-side distinction, and label contrast remain clear.
 
-Fetch:
+- [ ] **Step 5: Verify mobile and touch behavior**
 
-```text
-https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
-```
+At 390 px and 320 px:
 
-Review the changed UI files using the required terse `file:line` output. Fix actionable accessibility, interaction, responsive, and performance findings, then repeat focused tests and static verification.
+- no horizontal overflow;
+- link remains at least 44 px high;
+- note remains centered in the stacked hero;
+- simulated touch press expands and release restores;
+- no functionality depends on hover.
 
-- [ ] **Step 5: Final regression run**
+- [ ] **Step 6: Verify reduced motion**
 
-Run:
+Emulate `prefers-reduced-motion: reduce` and confirm fold states update immediately without interpolated motion.
+
+## Task 6: Final verification
+
+**Files:**
+- Verify all scoped changes.
+
+- [ ] **Step 1: Run focused tests**
 
 ```bash
 pnpm vitest run src/views/home/cpns/test/HomeExploreLink.test.ts src/views/home/test/Home.scramble.test.ts
+```
+
+- [ ] **Step 2: Run the complete test suite**
+
+```bash
+pnpm vitest run
+```
+
+- [ ] **Step 3: Run lint on changed feature files**
+
+```bash
+pnpm eslint src/views/home/cpns/HomeExploreLink.vue src/views/home/cpns/test/HomeExploreLink.test.ts
+```
+
+- [ ] **Step 4: Run type-check**
+
+```bash
 pnpm type-check
+```
+
+- [ ] **Step 5: Run production build**
+
+```bash
 pnpm build-only
 ```
 
-Expected: all commands exit successfully.
+- [ ] **Step 6: Inspect the final diff**
+
+```bash
+git diff --check
+git diff -- src/views/home/cpns/HomeExploreLink.vue src/views/home/cpns/test/HomeExploreLink.test.ts
+git status --short
+```
+
+Confirm the diff does not include navbar, Flow, or the user's homepage background changes.
