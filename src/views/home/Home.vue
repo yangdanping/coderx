@@ -7,6 +7,7 @@
           <div class="title-line-2">
             <ScrambleFrameText class="title-word" :frame="frame" :target="target" />
           </div>
+          <HomeExploreLink class="title-explore-link" />
         </div>
         <RetroComputerShader class="shader" :screen-saver-text="screenFrame" screen-saver-collision-text="creatorx" @wall-hit="advanceOnWallHit" />
         <!-- <CodeSpotlight class="shader" /> -->
@@ -28,6 +29,7 @@
 
 <script lang="ts" setup>
 import HomeHotUser from './cpns/HomeHotUser.vue';
+import HomeExploreLink from './cpns/HomeExploreLink.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
 import FeatureSection from './cpns/features/FeatureSection.vue';
 import { ScrambleFrameText } from '@/components/scramble';
@@ -155,6 +157,12 @@ $TitleSize: 2em;
         &:hover {
           text-shadow: 4px 4px var(--text-shadow);
         }
+
+        .title-explore-link {
+          align-self: flex-start;
+          margin-top: clamp(26px, 3vw, 42px);
+          text-shadow: none;
+        }
       }
 
       .shader {
@@ -174,6 +182,10 @@ $TitleSize: 2em;
 
         .title {
           align-items: center;
+
+          .title-explore-link {
+            align-self: center;
+          }
         }
 
         .shader {

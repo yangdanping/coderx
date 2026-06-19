@@ -91,6 +91,14 @@ describe('Home scramble title', () => {
     expect(wrapper.getComponent({ name: 'RetroComputerShader' }).classes()).toContain('shader');
   });
 
+  it('places the article discovery link inside the hero title block', () => {
+    const wrapper = mountHome();
+    const title = wrapper.get('.title');
+
+    expect(title.getComponent({ name: 'HomeExploreLink' }).exists()).toBe(true);
+    expect(wrapper.get('.title-section').findComponent({ name: 'HomeExploreLink' }).exists()).toBe(true);
+  });
+
   it('keeps X gradients and avoids fixed-width title spacing', () => {
     const commonScss = fs.readFileSync(path.join(process.cwd(), 'src/assets/css/common.scss'), 'utf8');
     const homeSource = fs.readFileSync(path.join(process.cwd(), 'src/views/home/Home.vue'), 'utf8');
