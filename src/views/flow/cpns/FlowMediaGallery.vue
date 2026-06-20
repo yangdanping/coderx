@@ -18,15 +18,13 @@
       <span class="media-indicator">{{ indicator }}</span>
     </template>
 
-    <Teleport to="body">
-      <ElImageViewer v-if="previewVisible" :url-list="allUrls" :initial-index="previewInitialIndex" hide-on-click-modal @close="previewVisible = false" />
-    </Teleport>
+    <VueEasyLightbox :visible="previewVisible" :imgs="previewUrls" :index="previewInitialIndex" @hide="previewVisible = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ElImageViewer } from 'element-plus';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
+import VueEasyLightbox from 'vue-easy-lightbox';
 import type { FlowMedia } from '@/service/flow/flow.types';
 
 const props = defineProps<{
@@ -55,9 +53,9 @@ const indicator = computed(() => {
   return `${start}-${end} / ${props.media.length}`;
 });
 
-const allUrls = computed(() => props.media.map((m) => m.url));
-const previewVisible = ref(false);
-const previewInitialIndex = ref(0);
+const previewVisible = shallowRef(false);
+const previewInitialIndex = shallowRef(0);
+const previewUrls = computed(() => props.media.map((m) => m.url));
 
 function openPreview(index: number) {
   previewInitialIndex.value = index;

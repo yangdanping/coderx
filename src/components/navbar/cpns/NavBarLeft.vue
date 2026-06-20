@@ -18,8 +18,16 @@ const goHome = () => {
   max-width: 80px;
   min-width: 80px;
   cursor: pointer;
+  flex-shrink: 0;
   .logo {
     width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .left {
+    min-width: 64px;
+    max-width: 64px;
   }
 }
 </style>

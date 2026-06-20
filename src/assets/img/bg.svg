@@ -31,7 +31,7 @@
   </circle>
 
   <rect class="item-style" fill-opacity="0.5" stroke-opacity="0.7" x="1300" y="400" rx="40" ry="40" width="300"
-    height="300" stroke="rgba(129, 201, 149)" fill="rgba(129, 201, 149)">
+    height="300" stroke="rgba(190, 224, 198)" fill="rgba(190, 224, 198)">
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 1450 550"
       to="360 1450 550" repeatCount="indefinite" />
   </rect>
@@ -46,9 +46,9 @@
   <!-- 三角形 -->
   <path class="item-style"
     d="M 165 580 L 270 580 Q275 578 270 570 L 223 483 Q220 480 217 483 L 165 570 Q160 578 165 580"
-    stroke="rgba(238, 103, 92)" fill="rgba(238, 103, 92)">
-    <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 210 600"
-      to="360 210 600" repeatCount="indefinite" />
+    stroke="rgba(238, 103, 92)" fill="rgb(243, 178, 172)">
+    <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 100 380"
+      to="160 100 380" repeatCount="indefinite" />
   </path>
 
   <!-- 下方小块 -->
@@ -59,8 +59,8 @@
       values="0 140 390; -60 140 390; 0 140 390" keyTimes="0 ; 0.5 ; 1" repeatCount="indefinite" />
   </path>
 
-  <rect class="item-style" x="400" y="600" rx="40" ry="40" width="100" height="100" stroke="rgba(129, 201, 149)"
-    fill="rgba(129, 201, 149)">
+  <rect class="item-style" x="400" y="600" rx="40" ry="40" width="100" height="100" stroke="rgba(190, 224, 198)"
+    fill="rgba(190, 224, 198)">
     <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="35s" type="rotate"
       from="-30 550 750" to="330 550 750" repeatCount="indefinite" />
   </rect>

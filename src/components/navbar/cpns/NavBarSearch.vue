@@ -183,8 +183,8 @@ const widerStyle = computed(() => {
   if (!isSmallScreen.value) {
     return shouldShowCard.value ? baseWidth + 100 + 'px' : baseWidth + 'px';
   } else {
-    // 移动端固定宽度，配合 NavBar 的绝对定位居中
-    return '200px';
+    // 移动端由 flex 中间列分配剩余宽度，避免与右侧操作区重叠
+    return '100%';
   }
 });
 
@@ -270,6 +270,11 @@ $searchWidth: 100%;
 
 .search {
   position: relative;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    min-width: 0;
+  }
 
   :deep(.el-input) {
     border-radius: 5px;

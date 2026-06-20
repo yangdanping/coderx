@@ -60,12 +60,58 @@ $TitleSize: 2em;
     margin: 0 auto;
 
     .title-section {
+      --hero-mesh-opacity: 1;
+      --hero-mesh-offset-top: 150px;
+      position: relative;
+      isolation: isolate;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 40px;
-      margin: 150px 0 90px 0;
+      margin: var(--hero-mesh-offset-top) 0 90px 0;
       // padding: 80px 0;
+
+      &::before {
+        content: '';
+        position: absolute;
+        z-index: 0;
+        left: 50%;
+        width: 100vw;
+        // 向上抵消 title-section 的 margin-top，使弥散层贴齐导航栏下沿
+        top: calc(-1 * var(--hero-mesh-offset-top));
+        bottom: -48px;
+        transform: translateX(-50%);
+        pointer-events: none;
+        opacity: var(--hero-mesh-opacity);
+        background:
+          radial-gradient(ellipse 78% 62% at 18% 28%, rgba(186, 157, 255, 0.42) 0%, transparent 58%),
+          radial-gradient(ellipse 72% 58% at 78% 22%, rgba(255, 220, 150, 0.48) 0%, transparent 54%),
+          radial-gradient(ellipse 68% 52% at 52% 72%, rgba(147, 197, 253, 0.42) 0%, transparent 56%),
+          radial-gradient(ellipse 54% 48% at 88% 68%, rgba(255, 180, 220, 0.36) 0%, transparent 50%),
+          radial-gradient(ellipse 60% 50% at 42% 48%, rgba(200, 230, 255, 0.28) 0%, transparent 62%);
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+        animation: hero-mesh-drift 22s ease-in-out infinite alternate;
+      }
+
+      :where(html.dark) & {
+        --hero-mesh-opacity: 0.62;
+
+        &::before {
+          background:
+            radial-gradient(ellipse 72% 56% at 16% 22%, rgba(160, 145, 210, 0.22) 0%, transparent 52%),
+            radial-gradient(ellipse 72% 58% at 78% 22%, rgba(200, 140, 60, 0.32) 0%, transparent 54%),
+            radial-gradient(ellipse 68% 52% at 52% 72%, rgba(60, 120, 200, 0.3) 0%, transparent 56%),
+            radial-gradient(ellipse 54% 48% at 88% 68%, rgba(180, 80, 140, 0.26) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 50% at 42% 48%, rgba(80, 100, 180, 0.2) 0%, transparent 62%);
+        }
+      }
+
+      .title,
+      .shader {
+        position: relative;
+        z-index: 1;
+      }
 
       .title {
         display: flex;
@@ -159,8 +205,10 @@ $TitleSize: 2em;
         }
 
         .title-explore-link {
+          // 可调:按钮位置。align-self 控制水平对齐(flex-start 左对齐 / center 居中);
+          //       margin-top 控制与上方标题的垂直间距。(窄屏在 1040px 媒体查询里改为 center)
           align-self: flex-start;
-          margin-top: clamp(26px, 3vw, 42px);
+          margin-top: clamp(12px, 2vw, 4px);
           text-shadow: none;
         }
       }
@@ -260,5 +308,21 @@ $TitleSize: 2em;
       font-size: 16px;
     }
   } */
+}
+
+@keyframes hero-mesh-drift {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home > .content .title-section::before {
+    animation: none;
+  }
 }
 </style>

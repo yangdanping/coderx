@@ -86,10 +86,18 @@ const logOut = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 
   .user-avatar {
     position: relative;
     z-index: var(--z-navbar-popup);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 
     .nav-bar-user-panel {
       position: absolute;

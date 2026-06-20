@@ -74,7 +74,11 @@ const handleThemeClick = (event: MouseEvent) => {
     cursor: pointer;
     color: var(--text-secondary);
     background: transparent;
-    transition: all 0.3s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 0.3s ease,
+      background-color 0.3s ease;
 
     &:hover {
       color: var(--text-primary);
@@ -144,7 +148,17 @@ const handleThemeClick = (event: MouseEvent) => {
 // 移动端响应式样式
 @media (max-width: 768px) {
   .right {
-    gap: 15px;
+    flex-shrink: 0;
+    gap: 4px;
+    margin-right: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+
+    .theme-btn-wrapper {
+      width: 44px;
+      height: 44px;
+    }
+
     .register-btn {
       font-size: 14px;
       padding: 8px 12px;

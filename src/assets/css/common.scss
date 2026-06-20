@@ -34,6 +34,11 @@
   --cursorGrab: url('@/assets/img/cursor/grab.svg'), auto;
   --cursorGrabbed: url('@/assets/img/cursor/grabbed.svg'), auto;
   --bg: url('@/assets/img/bg.svg') center/cover no-repeat fixed;
+  --bg-filter: none;
+  --paper-noise: url('@/assets/img/paper-noise.svg');
+  --paper-noise-size: 128px 128px;
+  --paper-noise-opacity: 0.24;
+  --paper-noise-filter: none;
   /* --bg:
     linear-gradient(#0066cc0a 1px, transparent 1px), linear-gradient(90deg, #0066cc0a 1px, transparent 1px), linear-gradient(#0066cc14 1px, transparent 1px),
     linear-gradient(90deg, #0066cc14 1px, transparent 1px);
@@ -214,6 +219,8 @@ html.dark {
 
   /* SVG 背景滤镜 - 降低亮度和饱和度 */
   --bg-filter: brightness(0.3) saturate(0.8);
+  --paper-noise-opacity: 0.16;
+  --paper-noise-filter: invert(1);
 
   /* 装饰块背景 */
   --blockBg: linear-gradient(90deg, rgba(30, 50, 30, 0.7), rgba(15, 15, 15, 0.7));

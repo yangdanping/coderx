@@ -100,6 +100,7 @@ function handleBeforeUnload() {
 .app {
   position: relative;
   min-height: 100vh;
+  isolation: isolate;
   // 不设置 background-color，让 ::before 的 SVG 背景可见
   // 兜底背景色在 html 上设置
 
@@ -113,9 +114,26 @@ function handleBeforeUnload() {
     bottom: 0;
     background: var(--bg);
     filter: var(--bg-filter);
-    z-index: var(--z-below);
+    z-index: -2;
     pointer-events: none;
     transition: filter 0.3s;
+  }
+
+  // 纸张颗粒层 - 独立于动态 SVG，dark 模式由全局变量反相并降低强度
+  &::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: var(--paper-noise);
+    background-repeat: repeat;
+    background-size: var(--paper-noise-size);
+    filter: var(--paper-noise-filter);
+    opacity: var(--paper-noise-opacity);
+    z-index: -1;
+    pointer-events: none;
+    transition:
+      filter 0.3s,
+      opacity 0.3s;
   }
 
   .router-view {

@@ -84,6 +84,11 @@ const goBack = () => {
     /* padding: 0 80px; */
     max-width: 1280px;
     height: 100%;
+
+    @media (max-width: 768px) {
+      gap: 4px;
+      padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
+    }
     .center {
       flex: 1;
       display: flex;
@@ -91,9 +96,13 @@ const goBack = () => {
       align-items: center;
 
       @media (max-width: 768px) {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
+        position: static;
+        left: auto;
+        transform: none;
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        padding-inline: 6px;
       }
 
       .back-icon-container {

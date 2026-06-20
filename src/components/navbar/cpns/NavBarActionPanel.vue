@@ -123,6 +123,8 @@ void props;
     cursor: pointer;
     color: var(--text-secondary);
     background: transparent;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition:
       background-color 0.2s ease,
       color 0.2s ease,
@@ -207,6 +209,11 @@ void props;
 
 @media (max-width: 768px) {
   .navbar-action-panel {
+    &__trigger {
+      width: 44px;
+      height: 44px;
+    }
+
     &__popup {
       position: fixed;
       top: calc(var(--navbarHeight) + 8px);
