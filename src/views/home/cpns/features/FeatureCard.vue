@@ -1,28 +1,32 @@
 <template>
   <article ref="targetRef" class="feature-card" :class="{ visible: isVisible }" :style="cardStyle" @transitionend="handleTransitionEnd">
-    <div ref="headerRef" class="feature-card__header">
-      <div class="feature-card__header-dots" aria-hidden="true" :style="headerDotsStyle">
-        <div v-for="i in dotCount" :key="i" class="feature-card__dot" :style="dotPulseStyle(i - 1)" />
-      </div>
-      <div class="feature-card__header-content">
+    <div class="feature-card__header">
+      <svg class="feature-card__guide" viewBox="0 0 220 126" aria-hidden="true" focusable="false">
+        <path
+          class="feature-card__guide-path"
+          d="M210 16C202 47 190 63 164 68C126 76 90 59 61 73C43 82 29 94 14 98"
+          pathLength="1"
+        />
+        <path class="feature-card__guide-head" d="M27 85C21 91 17 96 14 98C20 102 26 106 34 108" pathLength="1" />
+      </svg>
+
+      <div class="feature-card__note">
         <p class="feature-card__eyebrow">Feature {{ indexLabel }}</p>
-        <h3 class="feature-card__title">
-          <span class="marker marker--title">{{ title }}</span>
-        </h3>
-        <p class="feature-card__description">
-          <span class="marker marker--desc">{{ description }}</span>
-        </p>
+        <h3 class="feature-card__title">{{ title }}</h3>
+        <p class="feature-card__description">{{ description }}</p>
       </div>
     </div>
 
-    <div class="feature-card__demo">
-      <slot />
+    <div class="feature-card__panel">
+      <div class="feature-card__demo">
+        <slot />
+      </div>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { useFadeIn } from '@/composables/useFadeIn';
 
@@ -52,56 +56,7 @@ const { targetRef, isVisible } = useFadeIn({
 const hasActivated = ref(false);
 let activationTimer: ReturnType<typeof setTimeout> | null = null;
 
-const DOT_SIZE = 3;
-const DOT_GAP = 8;
-/** 点阵与 `feature-card__header` 边缘的内缩，形成视觉留白 */
-const DOT_INSET = 10;
-
-const headerRef = ref<HTMLElement | null>(null);
-const dotColumns = ref(0);
-const dotRows = ref(0);
-
-const dotCount = computed(() => Math.max(0, dotColumns.value * dotRows.value));
-
-const headerDotsStyle = computed(() => ({
-  '--feature-dot-cols': String(Math.max(1, dotColumns.value)),
-}));
-
 const indexLabel = computed(() => String(props.index).padStart(2, '0'));
-
-/** 稳定伪随机，避免 hydration/重绘时整片点阵动画相位乱跳 */
-function dotPulseStyle(index: number) {
-  let s = (index + 1) * 48271;
-  s ^= s << 13;
-  s ^= s >>> 17;
-  s ^= s << 5;
-  const u1 = (s >>> 0) / 4294967296;
-  s = (s + 2147483647) >>> 0;
-  const u2 = (s >>> 0) / 4294967296;
-  const duration = 3.15 + u1 * 0.95;
-  const delay = u2 * 0.15;
-  return {
-    animationDuration: `${duration.toFixed(3)}s`,
-    animationDelay: `${delay.toFixed(3)}s`,
-  };
-}
-
-function updateDotGrid() {
-  const el = headerRef.value;
-  if (!el) return;
-  const w = el.clientWidth - 2 * DOT_INSET;
-  const h = el.clientHeight - 2 * DOT_INSET;
-  if (w <= 0 || h <= 0) {
-    dotColumns.value = 0;
-    dotRows.value = 0;
-    return;
-  }
-  const stride = DOT_SIZE + DOT_GAP;
-  dotColumns.value = Math.max(1, Math.floor((w + DOT_GAP) / stride));
-  dotRows.value = Math.max(1, Math.floor((h + DOT_GAP) / stride));
-}
-
-let ro: ResizeObserver | null = null;
 
 /**
  * Scroll-linked mask：根据卡片中心与视口中心的距离，实时驱动
@@ -196,28 +151,21 @@ const handleReducedMotionChange = (ev: MediaQueryListEvent) => {
 };
 
 onMounted(() => {
-  nextTick(() => {
-    updateDotGrid();
-    if (headerRef.value && typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(() => updateDotGrid());
-      ro.observe(headerRef.value);
-    }
-    reducedMotionMql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    prefersReducedMotion = reducedMotionMql.matches;
-    reducedMotionMql.addEventListener('change', handleReducedMotionChange);
-    // passive:true 告诉浏览器"我不会 preventDefault"，可以放心走 GPU 合成层，
-    // 不会因为事件处理阻塞滚动手感。
-    window.addEventListener('scroll', scheduleScrollMask, { passive: true });
-    window.addEventListener('resize', scheduleScrollMask, { passive: true });
-    applyScrollMask();
-  });
+  reducedMotionMql = window.matchMedia('(prefers-reduced-motion: reduce)');
+  prefersReducedMotion = reducedMotionMql.matches;
+  reducedMotionMql.addEventListener('change', handleReducedMotionChange);
+  // passive:true 告诉浏览器"我不会 preventDefault"，可以放心走 GPU 合成层，
+  // 不会因为事件处理阻塞滚动手感。
+  window.addEventListener('scroll', scheduleScrollMask, { passive: true });
+  window.addEventListener('resize', scheduleScrollMask, { passive: true });
+  applyScrollMask();
 });
 
 const cardStyle = computed(() => ({
   transitionDelay: `${props.delay}ms`,
-  '--marker-speed': `${props.markerSpeed}ms`,
-  '--marker-delay-title': `${props.delay}ms`,
-  '--marker-delay-desc': `${props.delay + props.markerSpeed}ms`,
+  '--note-speed': `${Math.max(560, props.markerSpeed)}ms`,
+  '--note-delay': `${props.delay + 80}ms`,
+  '--guide-delay': `${props.delay + 320}ms`,
 }));
 
 /**
@@ -254,8 +202,6 @@ watch(isVisible, (visible) => {
  */
 onBeforeUnmount(() => {
   activationTimer && clearTimeout(activationTimer);
-  ro?.disconnect();
-  ro = null;
   window.removeEventListener('scroll', scheduleScrollMask);
   window.removeEventListener('resize', scheduleScrollMask);
   reducedMotionMql?.removeEventListener('change', handleReducedMotionChange);
@@ -286,85 +232,134 @@ onBeforeUnmount(() => {
 }
 
 .feature-card {
-  @include glass-effect;
-  /* 点阵深浅：只改这两个变量即可（数值越大越明显） */
-  --feature-dot-opacity-low: 0.03;
-  --feature-dot-opacity-high: 0.1;
-  /* 初始值：未进入视口中心时应当保留 mask 效果；scroll handler 会根据距离实时覆写 */
+  /* 初始值：scroll handler 会根据卡片与视口中心的距离实时覆写。 */
   --mask-inner: 45%;
   --demo-blur: 6px;
   --demo-opacity: 0.82;
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
+  --guide-ink: rgb(226 72 43 / 0.9);
+  position: relative;
   opacity: 0;
   transform: translateY(20px);
-  border: 1px dashed rgba(148, 184, 238, 0.5);
-  border-top: 2px solid rgba(148, 184, 238, 0.5);
-  border-bottom: none;
-  min-height: 540px;
   transition:
     opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
-  overflow: hidden;
-  /* mask-image 只读取 Alpha，与具体颜色无关，天然适配 Dark/Light */
-  -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
-  mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgba(0, 0, 0, 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
 
   :where(html.dark) & {
-    border-color: rgba(148, 184, 238, 0.4);
-    --feature-dot-opacity-low: 0.11;
-    --feature-dot-opacity-high: 0.3;
+    --guide-ink: rgb(248 124 91 / 0.88);
   }
 
   &.visible {
     opacity: 1;
     transform: translateY(0);
 
-    .marker {
-      background-size: 100% 8px;
+    .feature-card__note {
+      opacity: 1;
+      transform: translateY(0) rotate(-1.4deg) scale(1);
+    }
+
+    .feature-card__guide {
+      opacity: 1;
+    }
+
+    .feature-card__guide-path {
+      animation: feature-card-guide-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) var(--guide-delay) forwards;
+      animation-iteration-count: 1;
+    }
+
+    .feature-card__guide-head {
+      animation: feature-card-guide-draw 300ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--guide-delay) + 690ms) forwards;
+      animation-iteration-count: 1;
     }
   }
 
   &__header {
     position: relative;
-    z-index: 0;
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-
-  &__header-dots {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    box-sizing: border-box;
-    padding: 10px;
+    z-index: 2;
+    margin: 0 14px 18px;
     pointer-events: none;
-    display: grid;
-    grid-template-columns: repeat(var(--feature-dot-cols, 24), 3px);
-    gap: 8px;
-    align-content: start;
-    justify-content: start;
-    overflow: hidden;
   }
 
-  &__dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--text-primary);
-    animation: feature-card-pulse-dot ease-in-out infinite;
+  &__guide {
+    position: absolute;
+    z-index: 0;
+    top: -70px;
+    right: -4px;
+    width: clamp(126px, 22vw, 176px);
+    height: auto;
+    overflow: visible;
+    opacity: 0;
+    color: var(--guide-ink);
+    transition: opacity 160ms linear var(--guide-delay);
   }
 
-  &__header-content {
+  &__guide-path,
+  &__guide-head {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 0.025 0.055;
+    stroke-dashoffset: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  &__note {
+    --note-paper: rgb(253 214 99 / 0.9);
+    --note-paper-deep: rgb(231 177 43 / 0.92);
+    --note-edge: rgb(213 157 26 / 0.58);
+    --note-ink: rgb(73 53 13);
+
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: min(100%, 640px);
+    padding: clamp(20px, 3vw, 30px) clamp(20px, 3vw, 34px) clamp(24px, 3.4vw, 36px);
+    color: var(--note-ink);
+    background:
+      linear-gradient(105deg, rgb(255 240 180 / 0.34), transparent 42%),
+      var(--paper-noise),
+      var(--note-paper);
+    background-size:
+      auto,
+      var(--paper-noise-size),
+      auto;
+    border: 1px solid var(--note-edge);
+    box-shadow:
+      0 14px 32px rgb(113 78 0 / 0.11),
+      1px 2px 0 rgb(133 91 0 / 0.1);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%);
+    opacity: 0;
+    transform: translateY(18px) rotate(-4deg) scale(0.96);
+    transform-origin: 35% 65%;
+    transition:
+      opacity 260ms linear var(--note-delay),
+      transform var(--note-speed) cubic-bezier(0.16, 1, 0.3, 1) var(--note-delay);
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, rgb(255 239 169 / 0.96), var(--note-paper-deep));
+      clip-path: polygon(100% 0, 0 100%, 100% 100%);
+      filter: drop-shadow(-2px -2px 2px rgb(103 69 0 / 0.12));
+    }
+
+    :where(html.dark) & {
+      --note-paper: rgb(104 78 27 / 0.96);
+      --note-paper-deep: rgb(66 47 15 / 0.98);
+      --note-edge: rgb(253 214 99 / 0.56);
+      --note-ink: rgb(255 241 190);
+      box-shadow:
+        0 16px 34px rgb(0 0 0 / 0.24),
+        1px 2px 0 rgb(253 214 99 / 0.08);
+    }
   }
 
   &__eyebrow {
@@ -373,37 +368,43 @@ onBeforeUnmount(() => {
     font-family: 'SFMono-Regular', Consolas, monospace;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: currentColor;
+    opacity: 0.66;
   }
 
   &__title {
     margin: 0;
     font-size: 26px;
     line-height: 1.2;
-    color: var(--text-primary);
+    color: currentColor;
   }
 
   &__description {
     margin: 0;
     font-size: 14px;
     line-height: 1.7;
-    color: var(--text-secondary);
+    color: currentColor;
+    opacity: 0.78;
   }
 
-  .marker {
-    background: linear-gradient(var(--marker-color), var(--marker-color));
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 0% 8px;
-    padding-bottom: 2px;
-    transition: background-size var(--marker-speed) ease-in-out;
+  &__panel {
+    @include glass-effect;
+    display: flex;
+    min-height: 540px;
+    padding: 24px;
+    overflow: hidden;
+    border: 1px dashed rgb(148 184 238 / 0.5);
+    border-top: 2px solid rgb(148 184 238 / 0.5);
+    border-bottom: none;
+    transition:
+      border-color 0.3s cubic-bezier(0.65, 0, 0.35, 1),
+      box-shadow 0.3s cubic-bezier(0.65, 0, 0.35, 1);
+    /* mask-image 只读取 Alpha，与具体颜色无关，天然适配 Dark/Light。 */
+    -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgb(0 0 0 / 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
+    mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgb(0 0 0 / 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
 
-    &--title {
-      transition-delay: var(--marker-delay-title);
-    }
-
-    &--desc {
-      transition-delay: var(--marker-delay-desc);
+    :where(html.dark) & {
+      border-color: rgb(148 184 238 / 0.4);
     }
   }
 
@@ -416,14 +417,63 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes feature-card-pulse-dot {
-  0%,
-  100% {
-    opacity: var(--feature-dot-opacity-low);
+@keyframes feature-card-guide-draw {
+  from {
+    stroke-dashoffset: 1;
   }
 
-  50% {
-    opacity: var(--feature-dot-opacity-high);
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (min-width: 1401px) {
+  .feature-card {
+    &__header {
+      position: absolute;
+      top: 34px;
+      right: calc(100% + 34px);
+      width: clamp(230px, 16vw, 292px);
+      margin: 0;
+    }
+
+    &__note {
+      width: 100%;
+    }
+
+    &__guide {
+      top: -34px;
+      right: auto;
+      left: calc(100% - 16px);
+      width: clamp(184px, 13vw, 238px);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-card {
+    &__header {
+      margin-inline: 0;
+    }
+
+    &__note {
+      padding: 20px 18px 26px;
+    }
+
+    &__title {
+      font-size: 22px;
+    }
+
+    &__guide {
+      top: -58px;
+      right: -12px;
+      width: 128px;
+    }
+
+    &__panel {
+      min-height: 640px;
+      padding: 18px;
+    }
   }
 }
 
@@ -433,16 +483,22 @@ onBeforeUnmount(() => {
     --demo-blur: 0px;
     --demo-opacity: 1;
     transition: none;
-  }
-}
 
-@media (max-width: 768px) {
-  .feature-card {
-    padding: 18px;
-    min-height: 640px;
+    &__note {
+      opacity: 1;
+      transform: rotate(-1.4deg);
+      transition: none;
+    }
 
-    &__title {
-      font-size: 22px;
+    &__guide {
+      opacity: 1;
+      transition: none;
+    }
+
+    &__guide-path,
+    &__guide-head {
+      animation: none !important;
+      stroke-dashoffset: 0;
     }
   }
 }

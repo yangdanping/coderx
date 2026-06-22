@@ -1,7 +1,6 @@
 <template>
   <section class="feature-section">
-    <SectionTitle id="features">How to Play</SectionTitle>
-    <p class="feature-section__intro">快速感受社区的核心交互</p>
+    <FeatureSectionAnchor />
 
     <div class="feature-section__grid" :class="[`is-${columns}-col`]">
       <FeatureCard
@@ -23,11 +22,11 @@
 import { reactive } from 'vue';
 
 import FeatureCard from './FeatureCard.vue';
+import FeatureSectionAnchor from './FeatureSectionAnchor.vue';
 import ArticleTocDemo from './demos/ArticleTocDemo.vue';
 import AiChatDemo from './demos/AiChatDemo.vue';
 import AiCompletionDemo from './demos/AiCompletionDemo.vue';
 import MarkdownRenderDemo from './demos/MarkdownRenderDemo.vue';
-import SectionTitle from '../SectionTitle.vue';
 
 import featuresData from '@/views/home/data/features.json';
 
@@ -79,14 +78,7 @@ const handleActivate = (id: string) => {
 
 <style scoped lang="scss">
 .feature-section {
-  margin: 40px 0 80px;
-
-  &__intro {
-    max-width: 760px;
-    margin: 0 0 24px;
-    line-height: 1.8;
-    color: var(--text-secondary);
-  }
+  margin: 28px 0 80px;
 
   &__grid {
     display: grid;
