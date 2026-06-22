@@ -1,13 +1,19 @@
 <template>
-  <article ref="targetRef" class="feature-card" :class="{ visible: isVisible }" :style="cardStyle" @transitionend="handleTransitionEnd">
+  <article
+    ref="targetRef"
+    class="feature-card"
+    :class="[{ visible: isVisible }, `is-note-${props.noteSide}`]"
+    :style="cardStyle"
+    @transitionend="handleTransitionEnd"
+  >
     <div class="feature-card__header">
       <svg class="feature-card__guide" viewBox="0 0 220 126" aria-hidden="true" focusable="false">
         <path
           class="feature-card__guide-path"
-          d="M210 16C202 47 190 63 164 68C126 76 90 59 61 73C43 82 29 94 14 98"
+          d="M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56"
           pathLength="1"
         />
-        <path class="feature-card__guide-head" d="M27 85C21 91 17 96 14 98C20 102 26 106 34 108" pathLength="1" />
+        <path class="feature-card__guide-head" d="M27 43C21 49 17 53 14 56C20 61 26 65 34 68" pathLength="1" />
       </svg>
 
       <div class="feature-card__note">
@@ -37,11 +43,13 @@ const props = withDefaults(
     delay?: number;
     index?: number;
     markerSpeed?: number;
+    noteSide?: 'left' | 'right';
   }>(),
   {
     delay: 0,
     index: 1,
     markerSpeed: 800,
+    noteSide: 'left',
   },
 );
 
@@ -255,7 +263,7 @@ onBeforeUnmount(() => {
 
     .feature-card__note {
       opacity: 1;
-      transform: translateY(0) rotate(-1.4deg) scale(1);
+      transform: translateY(0) rotate(var(--note-rotation)) scale(1);
     }
 
     .feature-card__guide {
@@ -263,12 +271,12 @@ onBeforeUnmount(() => {
     }
 
     .feature-card__guide-path {
-      animation: feature-card-guide-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) var(--guide-delay) forwards;
+      animation: feature-card-guide-draw 2400ms cubic-bezier(0.25, 1, 0.5, 1) var(--guide-delay) forwards;
       animation-iteration-count: 1;
     }
 
     .feature-card__guide-head {
-      animation: feature-card-guide-draw 300ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--guide-delay) + 690ms) forwards;
+      animation: feature-card-guide-draw 620ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 1880ms) forwards;
       animation-iteration-count: 1;
     }
   }
@@ -282,7 +290,7 @@ onBeforeUnmount(() => {
 
   &__guide {
     position: absolute;
-    z-index: 0;
+    z-index: 2;
     top: -70px;
     right: -4px;
     width: clamp(126px, 22vw, 176px);
@@ -306,34 +314,33 @@ onBeforeUnmount(() => {
   }
 
   &__note {
-    --note-paper: rgb(253 214 99 / 0.9);
-    --note-paper-deep: rgb(231 177 43 / 0.92);
-    --note-edge: rgb(213 157 26 / 0.58);
-    --note-ink: rgb(73 53 13);
+    --note-surface: rgb(255 255 255 / 0.42);
+    --note-tint: rgb(253 214 99 / 0.14);
+    --note-paper-deep: rgb(253 214 99 / 0.26);
+    --note-edge: rgb(206 158 38 / 0.3);
+    --note-ink: rgb(66 58 38);
+    --note-rotation: -1.1deg;
+    --note-start-rotation: -3deg;
 
     position: relative;
     z-index: 1;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: min(100%, 640px);
     padding: clamp(20px, 3vw, 30px) clamp(20px, 3vw, 34px) clamp(24px, 3.4vw, 36px);
     color: var(--note-ink);
-    background:
-      linear-gradient(105deg, rgb(255 240 180 / 0.34), transparent 42%),
-      var(--paper-noise),
-      var(--note-paper);
-    background-size:
-      auto,
-      var(--paper-noise-size),
-      auto;
+    background: linear-gradient(135deg, var(--note-tint), rgb(255 255 255 / 0.24) 52%, rgb(253 214 99 / 0.08)), var(--note-surface);
+    -webkit-backdrop-filter: blur(10px) saturate(118%);
+    backdrop-filter: blur(10px) saturate(118%);
     border: 1px solid var(--note-edge);
     box-shadow:
-      0 14px 32px rgb(113 78 0 / 0.11),
-      1px 2px 0 rgb(133 91 0 / 0.1);
+      0 10px 28px rgb(92 73 28 / 0.08),
+      1px 1px 0 rgb(255 255 255 / 0.32) inset;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%);
     opacity: 0;
-    transform: translateY(18px) rotate(-4deg) scale(0.96);
+    transform: translateY(18px) rotate(var(--note-start-rotation)) scale(0.97);
     transform-origin: 35% 65%;
     transition:
       opacity 260ms linear var(--note-delay),
@@ -346,19 +353,20 @@ onBeforeUnmount(() => {
       bottom: 0;
       width: 24px;
       height: 24px;
-      background: linear-gradient(135deg, rgb(255 239 169 / 0.96), var(--note-paper-deep));
+      background: linear-gradient(135deg, rgb(255 255 255 / 0.64), var(--note-paper-deep));
       clip-path: polygon(100% 0, 0 100%, 100% 100%);
       filter: drop-shadow(-2px -2px 2px rgb(103 69 0 / 0.12));
     }
 
     :where(html.dark) & {
-      --note-paper: rgb(104 78 27 / 0.96);
-      --note-paper-deep: rgb(66 47 15 / 0.98);
-      --note-edge: rgb(253 214 99 / 0.56);
-      --note-ink: rgb(255 241 190);
+      --note-surface: rgb(35 38 48 / 0.68);
+      --note-tint: rgb(253 214 99 / 0.1);
+      --note-paper-deep: rgb(253 214 99 / 0.18);
+      --note-edge: rgb(253 214 99 / 0.34);
+      --note-ink: rgb(244 236 208);
       box-shadow:
-        0 16px 34px rgb(0 0 0 / 0.24),
-        1px 2px 0 rgb(253 214 99 / 0.08);
+        0 12px 30px rgb(0 0 0 / 0.16),
+        1px 1px 0 rgb(255 255 255 / 0.06) inset;
     }
   }
 
@@ -427,13 +435,12 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (min-width: 1401px) {
+@media (min-width: 1320px) {
   .feature-card {
     &__header {
       position: absolute;
-      top: 34px;
-      right: calc(100% + 34px);
-      width: clamp(230px, 16vw, 292px);
+      top: 42px;
+      width: clamp(220px, 15vw, 248px);
       margin: 0;
     }
 
@@ -442,10 +449,37 @@ onBeforeUnmount(() => {
     }
 
     &__guide {
-      top: -34px;
-      right: auto;
-      left: calc(100% - 16px);
-      width: clamp(184px, 13vw, 238px);
+      top: -42px;
+      width: clamp(132px, 9.5vw, 166px);
+    }
+
+    &.is-note-left {
+      .feature-card__header {
+        right: calc(100% + 64px);
+      }
+
+      .feature-card__guide {
+        right: auto;
+        left: calc(100% + 8px);
+      }
+    }
+
+    &.is-note-right {
+      .feature-card__header {
+        left: calc(100% + 64px);
+      }
+
+      .feature-card__note {
+        --note-rotation: 1.1deg;
+        --note-start-rotation: 3deg;
+      }
+
+      .feature-card__guide {
+        right: calc(100% + 8px);
+        left: auto;
+        transform: scaleX(-1);
+        transform-origin: center;
+      }
     }
   }
 }
@@ -486,7 +520,7 @@ onBeforeUnmount(() => {
 
     &__note {
       opacity: 1;
-      transform: rotate(-1.4deg);
+      transform: rotate(var(--note-rotation));
       transition: none;
     }
 

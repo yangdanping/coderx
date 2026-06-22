@@ -10,6 +10,7 @@
         :title="feature.title"
         :description="feature.description"
         :delay="index * 120"
+        :note-side="index % 2 === 0 ? 'left' : 'right'"
         @activate="handleActivate(feature.id)"
       >
         <component :is="feature.component" :active="Boolean(activatedCards[feature.id])" />

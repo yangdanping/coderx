@@ -49,12 +49,13 @@ describe('FeatureCard note header', () => {
     vi.restoreAllMocks();
   });
 
-  function mountCard() {
+  function mountCard(noteSide: 'left' | 'right' = 'left') {
     return mount(FeatureCard, {
       props: {
         index: 1,
         title: '浏览文章自动目录划分',
         description: '进入文章后，目录会自动提取章节并辅助定位。',
+        noteSide,
       },
       slots: {
         default: '<div class="demo-content">demo</div>',
@@ -76,6 +77,11 @@ describe('FeatureCard note header', () => {
     expect(wrapper.find('.feature-card__header-dots').exists()).toBe(false);
   });
 
+  it('exposes the requested side as an explicit layout class', () => {
+    expect(mountCard('left').classes()).toContain('is-note-left');
+    expect(mountCard('right').classes()).toContain('is-note-right');
+  });
+
   it('reveals the note and starts the one-shot guide animation on first intersection', async () => {
     const wrapper = mountCard();
     await wrapper.vm.$nextTick();
@@ -90,13 +96,18 @@ describe('FeatureCard note header', () => {
     expect(wrapper.get('.feature-card__guide-path').classes()).toContain('feature-card__guide-path');
   });
 
-  it('defines the requested palette, one-shot drawing, responsive layout, dark mode, and reduced-motion fallback', () => {
+  it('defines a translucent fresh note, slow one-shot drawing, alternating layout, dark mode, and reduced-motion fallback', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
 
     expect(source).toContain('253 214 99');
+    expect(source).toContain('backdrop-filter');
+    expect(source).not.toContain('var(--paper-noise)');
     expect(source).toContain('stroke-dashoffset');
     expect(source).toContain('feature-card-guide-draw');
+    expect(source).toContain('2400ms');
     expect(source).toContain('animation-iteration-count: 1');
+    expect(source).toContain('&.is-note-left');
+    expect(source).toContain('&.is-note-right');
     expect(source).toContain(':where(html.dark) &');
     expect(source).toContain('@media (max-width: 768px)');
     expect(source).toContain('@media (prefers-reduced-motion: reduce)');

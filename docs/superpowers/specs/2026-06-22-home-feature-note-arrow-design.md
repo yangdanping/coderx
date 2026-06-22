@@ -4,9 +4,9 @@
 
 Refresh the homepage transition into the Feature section without changing the existing `Go Exploring >` button:
 
-- replace the `How to Play` heading and intro with a large downward arrow that owns the `features` anchor;
+- replace the `How to Play` heading and intro with a borderless double-chevron downward icon that owns the `features` anchor;
 - give the downward arrow a continuous top-to-bottom light sweep;
-- render each Feature eyebrow, title, and description on a warm yellow paper note;
+- render each Feature eyebrow, title, and description on a fresh translucent yellow-tinted glass-paper note;
 - add a hand-drawn dashed arrow beside each note that draws once when its card first enters the viewport.
 
 ## Confirmed Product Direction
@@ -41,7 +41,7 @@ Composition surface for the Feature area. It replaces `SectionTitle` and the int
 
 ### `FeatureSectionAnchor.vue`
 
-Owns the semantic `features` anchor and the large downward-arrow SVG. The anchor remains keyboard focusable and clickable. Its light band loops downward inside the arrow shape, while reduced-motion mode displays a static highlighted arrow.
+Owns the semantic `features` anchor and the double-chevron SVG. The anchor remains keyboard focusable and clickable without a rectangular focus border; a soft icon glow supplies keyboard focus feedback. Light strokes loop through both chevrons, while reduced-motion mode displays a static highlight.
 
 ### `FeatureCard.vue`
 
@@ -53,24 +53,24 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 ### Section Anchor
 
-- A centered, oversized downward arrow replaces both `How to Play` and its supporting line.
+- A centered pair of hand-drawn downward chevrons replaces both `How to Play` and its supporting line.
 - The arrow uses the existing blue/periwinkle interface accent so it reads as navigation rather than another yellow note.
-- A clipped highlight band travels from the top of the arrow toward its tip in a calm loop.
-- Hover and keyboard focus slightly increase contrast without changing layout.
+- Highlight strokes travel through the upper and lower chevrons in a calm staggered loop.
+- Hover and keyboard focus slightly increase contrast and glow without drawing a rectangular border.
 - The anchor target is the arrow element itself, with `scroll-margin-top` preserving navbar clearance.
 
 ### Feature Note
 
-- The header becomes a slightly rotated paper note with an asymmetric clipped silhouette and a folded bottom-right corner.
-- Light mode uses a translucent version of `rgb(253 214 99)` with a warmer edge and dark brown-gray ink.
-- Dark mode uses a deeper ochre surface, lighter yellow edge, and warm cream ink; it is not a simple inverted light theme.
+- The header becomes a slightly rotated translucent note with an asymmetric clipped silhouette and a folded bottom-right corner.
+- Light mode combines a white glass surface with a restrained `rgb(253 214 99)` tint, a fine warm edge, and dark brown-gray ink.
+- Dark mode uses a translucent charcoal surface, restrained yellow tint, lighter yellow edge, and warm cream ink.
 - Existing dot-grid and green marker treatments are removed from the header because they compete with the paper-note metaphor.
 - The note enters with a short fade, upward translation, and slight rotation correction after the card becomes visible.
 - Text remains real HTML and retains the existing eyebrow, heading, and paragraph hierarchy.
 
 ### Hand-Drawn Dashed Arrow
 
-- The decorative SVG sits outside the note on wide screens and bends back toward the note, matching the supplied reference.
+- The decorative SVG stays entirely in the gap between note and demo on wide screens and points to the note's top edge rather than covering text.
 - The path uses rounded dashed strokes in the existing warm red accent.
 - The arrowhead is a separate path and follows the same one-shot reveal choreography.
 - On compact layouts it moves above the note and scales down so it does not reduce text width.
@@ -80,7 +80,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The section arrow light sweep loops continuously because it communicates “continue downward.”
 - The note reveal takes about 600–700 ms with an exponential ease-out.
-- The dashed guide path draws once over roughly 900 ms after the card becomes visible; the arrowhead follows near the end.
+- The dashed guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead follows near the end.
 - Staggering continues to use each card's existing `delay` prop.
 - Only `transform`, `opacity`, and SVG stroke properties animate. Layout dimensions do not animate.
 - Under `prefers-reduced-motion: reduce`, the note and dashed arrow render immediately in their final states and the section arrow shows a static highlight.
@@ -88,7 +88,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 ## Responsive Behavior
 
 - The large section arrow remains centered and scales with `clamp()`.
-- Desktop and wide tablet layouts reserve a modest left-side decoration zone for the dashed arrow while keeping note text readable.
+- Wide desktop layouts alternate notes left, right, left, right and reserve a clear gap for the dashed connector without overlapping demo content.
 - At the existing mobile breakpoint, the note uses the full available width and the dashed arrow becomes a smaller top decoration.
 - The anchor keeps a minimum 44 px interactive target.
 

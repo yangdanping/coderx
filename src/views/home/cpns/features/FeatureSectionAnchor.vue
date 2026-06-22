@@ -1,35 +1,30 @@
 <template>
   <a id="features" class="feature-section-anchor" href="#features" aria-label="进入核心特性">
-    <svg class="feature-section-anchor__arrow" viewBox="0 0 96 150" aria-hidden="true" focusable="false">
+    <svg class="feature-section-anchor__arrow" viewBox="0 0 140 116" aria-hidden="true" focusable="false">
       <defs>
-        <clipPath id="feature-section-arrow-shape">
-          <path d="M31 4h34v86h23L48 146 8 90h23V4Z" />
-        </clipPath>
-        <linearGradient id="feature-section-arrow-light" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="rgb(255 255 255 / 0)" />
-          <stop offset="0.5" stop-color="rgb(255 255 255 / 0.94)" />
-          <stop offset="1" stop-color="rgb(255 255 255 / 0)" />
+        <linearGradient id="feature-section-arrow-light" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="rgb(255 255 255 / 0.08)" />
+          <stop offset="0.5" stop-color="rgb(255 255 255 / 0.96)" />
+          <stop offset="1" stop-color="rgb(255 255 255 / 0.08)" />
         </linearGradient>
       </defs>
 
-      <path class="feature-section-anchor__body" d="M31 4h34v86h23L48 146 8 90h23V4Z" />
-      <g clip-path="url(#feature-section-arrow-shape)">
-        <rect class="feature-section-anchor__sweep" x="-8" y="-62" width="112" height="54" fill="url(#feature-section-arrow-light)" />
-      </g>
-      <path class="feature-section-anchor__outline" d="M31 4h34v86h23L48 146 8 90h23V4Z" />
+      <path class="feature-section-anchor__chevron feature-section-anchor__chevron--top" d="M16 16L70 64L124 16" />
+      <path class="feature-section-anchor__chevron feature-section-anchor__chevron--bottom" d="M16 44L70 92L124 44" />
+      <path class="feature-section-anchor__sweep feature-section-anchor__sweep--top" d="M16 16L70 64L124 16" />
+      <path class="feature-section-anchor__sweep feature-section-anchor__sweep--bottom" d="M16 44L70 92L124 44" />
     </svg>
   </a>
 </template>
 
 <style scoped lang="scss">
 .feature-section-anchor {
-  --arrow-fill: rgb(148 184 238 / 0.2);
-  --arrow-edge: rgb(94 145 222 / 0.7);
+  --arrow-edge: rgb(94 145 222 / 0.62);
 
   display: grid;
-  width: clamp(76px, 8vw, 124px);
-  min-height: 148px;
-  margin: 0 auto clamp(34px, 5vw, 70px);
+  width: clamp(86px, 9vw, 138px);
+  min-height: 116px;
+  margin: 0 auto clamp(32px, 4vw, 56px);
   place-items: center;
   color: var(--arrow-edge);
   text-decoration: none;
@@ -37,19 +32,25 @@
   -webkit-tap-highlight-color: transparent;
 
   &:focus-visible {
-    outline: 3px solid rgb(94 145 222 / 0.72);
-    outline-offset: 8px;
+    outline: none;
+
+    .feature-section-anchor__arrow {
+      filter: drop-shadow(0 0 9px rgb(94 145 222 / 0.48));
+      transform: translateY(2px) scale(1.04);
+    }
   }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      --arrow-fill: rgb(148 184 238 / 0.3);
       --arrow-edge: rgb(73 129 214 / 0.9);
+
+      .feature-section-anchor__arrow {
+        transform: translateY(3px);
+      }
     }
   }
 
   :where(html.dark) & {
-    --arrow-fill: rgb(120 158 222 / 0.24);
     --arrow-edge: rgb(171 202 248 / 0.78);
   }
 
@@ -58,51 +59,65 @@
     width: 100%;
     height: auto;
     overflow: visible;
-    filter: drop-shadow(0 8px 14px rgb(67 108 170 / 0.12));
+    filter: drop-shadow(0 7px 12px rgb(67 108 170 / 0.12));
+    transition:
+      transform 220ms cubic-bezier(0.25, 1, 0.5, 1),
+      filter 220ms cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  &__body {
-    fill: var(--arrow-fill);
-    transition: fill 220ms cubic-bezier(0.25, 1, 0.5, 1);
-  }
-
-  &__outline {
+  &__chevron,
+  &__sweep {
     fill: none;
-    stroke: var(--arrow-edge);
-    stroke-width: 2;
+    stroke-linecap: round;
     stroke-linejoin: round;
+  }
+
+  &__chevron {
+    stroke: var(--arrow-edge);
+    stroke-width: 4;
     transition: stroke 220ms cubic-bezier(0.25, 1, 0.5, 1);
   }
 
   &__sweep {
-    opacity: 0.82;
-    animation: feature-section-anchor-sweep 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    stroke: url('#feature-section-arrow-light');
+    stroke-width: 5;
+    stroke-dasharray: 34 190;
+    stroke-dashoffset: 130;
+    opacity: 0;
+    animation: feature-section-anchor-sweep 2.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     animation-iteration-count: infinite;
+
+    &--bottom {
+      animation-delay: 300ms;
+    }
   }
 }
 
 @keyframes feature-section-anchor-sweep {
   0% {
-    transform: translateY(0);
+    stroke-dashoffset: 130;
     opacity: 0;
   }
 
-  18%,
+  18% {
+    opacity: 0.94;
+  }
+
   72% {
-    opacity: 0.9;
+    opacity: 0.8;
   }
 
   100% {
-    transform: translateY(224px);
+    stroke-dashoffset: -130;
     opacity: 0;
   }
 }
 
 @media (max-width: 768px) {
   .feature-section-anchor {
-    width: clamp(68px, 22vw, 92px);
-    min-height: 116px;
-    margin-bottom: 30px;
+    width: clamp(78px, 26vw, 104px);
+    min-height: 96px;
+    margin-bottom: 26px;
   }
 }
 
@@ -110,12 +125,12 @@
   .feature-section-anchor {
     &__sweep {
       animation: none;
-      transform: translateY(116px);
-      opacity: 0.62;
+      stroke-dashoffset: 0;
+      opacity: 0.54;
     }
 
-    &__body,
-    &__outline {
+    &__arrow,
+    &__chevron {
       transition: none;
     }
   }
