@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the homepage Feature heading with an anchored light-sweep arrow and restyle each Feature header as an animated yellow note with a one-shot hand-drawn dashed arrow.
+**Goal:** Replace the homepage Feature heading with an anchored light-sweep arrow and restyle each Feature header as an animated yellow note with a one-shot hand-drawn solid green arrow.
 
 **Architecture:** Add one focused SVG anchor component and keep all card-specific presentation inside `FeatureCard.vue`. Reuse the card's existing one-shot IntersectionObserver state, so no duplicate observer or global motion state is introduced. Preserve `HomeExploreLink.vue`, Feature demos, and activation behavior.
 
@@ -14,7 +14,7 @@
 
 - Create `src/views/home/cpns/features/FeatureSectionAnchor.vue`: semantic `features` anchor and looping light-sweep arrow.
 - Modify `src/views/home/cpns/features/FeatureSection.vue`: replace the old title/intro with `FeatureSectionAnchor`.
-- Modify `src/views/home/cpns/features/FeatureCard.vue`: yellow note header, decorative dashed arrow, one-shot entrance animation, theme and responsive styles.
+- Modify `src/views/home/cpns/features/FeatureCard.vue`: yellow note header, decorative solid arrow, one-shot entrance animation, theme and responsive styles.
 - Create `src/views/home/cpns/features/test/FeatureSection.test.ts`: section anchor contract.
 - Create `src/views/home/cpns/features/test/FeatureCard.test.ts`: note semantics, viewport trigger, motion/style contracts.
 
@@ -31,13 +31,13 @@
 - [ ] Replace the `SectionTitle` and intro paragraph in `FeatureSection.vue` with `FeatureSectionAnchor`.
 - [ ] Re-run the focused test and confirm it passes.
 
-### Task 2: Feature note and one-shot dashed arrow
+### Task 2: Feature note and one-shot guide arrow
 
 **Files:**
 - Create: `src/views/home/cpns/features/test/FeatureCard.test.ts`
 - Modify: `src/views/home/cpns/features/FeatureCard.vue`
 
-- [ ] Write failing markup tests that require a note wrapper containing the eyebrow, heading, and description plus an `aria-hidden` hand-drawn SVG with dashed path and arrowhead classes.
+- [ ] Write failing markup tests that require a note wrapper containing the eyebrow, heading, and description plus an `aria-hidden` hand-drawn SVG with path and arrowhead classes.
 - [ ] Write a failing visibility test with a controlled `IntersectionObserver` that requires the card's `visible` class to appear only after intersection.
 - [ ] Write failing source-contract checks for the yellow `253 214 99` palette, dark-mode override, one-shot `stroke-dashoffset` animation, responsive rule, and reduced-motion fallback.
 - [ ] Run `pnpm vitest run src/views/home/cpns/features/test/FeatureCard.test.ts` and confirm the expected failures.
@@ -58,5 +58,16 @@
 - [ ] Run `pnpm type-check`.
 - [ ] Run `pnpm build-only`.
 - [ ] Start the Vite dev server and inspect the homepage in light and dark modes at desktop and mobile widths.
-- [ ] Confirm the anchor lands on the arrow, the light sweep travels downward, every note remains readable, each dashed arrow draws once, and reduced motion renders stable end states.
+- [ ] Confirm the anchor lands on the arrow, the light sweep travels downward, every note remains readable, each guide arrow draws once, and reduced motion renders stable end states.
 - [ ] Review `git diff -- src/views/home/cpns/HomeExploreLink.vue` and confirm it is empty.
+
+### Task 4: Refine the guide and wall-mounted paper depth
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureCard.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureCard.vue`
+
+- [ ] Add failing contracts for the `rgb(190 224 198)` solid stroke, full path-then-head timing, intact rectangular silhouette, and mirrored outer-edge curl.
+- [ ] Replace the dotted warm-red stroke with a continuous green path and delay the arrowhead until the 2.4-second body draw is complete.
+- [ ] Remove the clipped folded corner and create a localized underside highlight plus soft contact shadow at the lower-left or lower-right outer edge.
+- [ ] Verify the note remains outside the demo panel and the connector remains unobstructed in both alternating positions.

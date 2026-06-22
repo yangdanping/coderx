@@ -244,7 +244,7 @@ onBeforeUnmount(() => {
   --mask-inner: 45%;
   --demo-blur: 6px;
   --demo-opacity: 0.82;
-  --guide-ink: rgb(226 72 43 / 0.9);
+  --guide-ink: rgb(190 224 198 / 0.96);
   position: relative;
   opacity: 0;
   transform: translateY(20px);
@@ -254,7 +254,7 @@ onBeforeUnmount(() => {
   will-change: transform, opacity;
 
   :where(html.dark) & {
-    --guide-ink: rgb(248 124 91 / 0.88);
+    --guide-ink: rgb(190 224 198 / 0.88);
   }
 
   &.visible {
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
 
     .feature-card__note {
       opacity: 1;
-      transform: translateY(0) rotate(var(--note-rotation)) scale(1);
+      transform: perspective(900px) translateY(0) rotate(var(--note-rotation)) rotateY(var(--note-curl-tilt-y)) rotateX(0.7deg) scale(1);
     }
 
     .feature-card__guide {
@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
     }
 
     .feature-card__guide-head {
-      animation: feature-card-guide-draw 620ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 1880ms) forwards;
+      animation: feature-card-guide-draw 620ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 2400ms) forwards;
       animation-iteration-count: 1;
     }
   }
@@ -285,6 +285,7 @@ onBeforeUnmount(() => {
     position: relative;
     z-index: 2;
     margin: 0 14px 18px;
+    perspective: 900px;
     pointer-events: none;
   }
 
@@ -308,7 +309,7 @@ onBeforeUnmount(() => {
     stroke-width: 6;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-dasharray: 0.025 0.055;
+    stroke-dasharray: 1;
     stroke-dashoffset: 1;
     vector-effect: non-scaling-stroke;
   }
@@ -321,6 +322,12 @@ onBeforeUnmount(() => {
     --note-ink: rgb(66 58 38);
     --note-rotation: -1.1deg;
     --note-start-rotation: -3deg;
+    --note-curl-left: -3%;
+    --note-curl-right: auto;
+    --note-curl-origin: left bottom;
+    --note-curl-tilt-y: -2.4deg;
+    --note-curl-shadow-x: -6px;
+    --note-curl-rotation: 1deg;
 
     position: relative;
     z-index: 1;
@@ -338,24 +345,44 @@ onBeforeUnmount(() => {
     box-shadow:
       0 10px 28px rgb(92 73 28 / 0.08),
       1px 1px 0 rgb(255 255 255 / 0.32) inset;
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%);
     opacity: 0;
-    transform: translateY(18px) rotate(var(--note-start-rotation)) scale(0.97);
-    transform-origin: 35% 65%;
+    transform: perspective(900px) translateY(18px) rotate(var(--note-start-rotation)) rotateY(var(--note-curl-tilt-y)) rotateX(1deg) scale(0.97);
+    transform-origin: var(--note-curl-origin);
+    transform-style: preserve-3d;
     transition:
       opacity 260ms linear var(--note-delay),
       transform var(--note-speed) cubic-bezier(0.16, 1, 0.3, 1) var(--note-delay);
 
+    &::before,
     &::after {
       content: '';
       position: absolute;
-      right: 0;
-      bottom: 0;
-      width: 24px;
-      height: 24px;
-      background: linear-gradient(135deg, rgb(255 255 255 / 0.64), var(--note-paper-deep));
-      clip-path: polygon(100% 0, 0 100%, 100% 100%);
-      filter: drop-shadow(-2px -2px 2px rgb(103 69 0 / 0.12));
+      left: var(--note-curl-left);
+      right: var(--note-curl-right);
+      width: 58%;
+      pointer-events: none;
+      transform-origin: var(--note-curl-origin);
+    }
+
+    &::before {
+      z-index: -1;
+      bottom: -13px;
+      height: 25px;
+      background: radial-gradient(ellipse at center, rgb(76 59 21 / 0.24) 0%, rgb(76 59 21 / 0.12) 38%, transparent 72%);
+      filter: blur(7px);
+      opacity: 0.72;
+      transform: translateX(var(--note-curl-shadow-x)) rotate(var(--note-curl-rotation)) translateZ(-1px);
+    }
+
+    &::after {
+      z-index: 2;
+      bottom: -2px;
+      height: 17px;
+      background: linear-gradient(to bottom, transparent 4%, rgb(255 255 255 / 0.2) 43%, var(--note-paper-deep) 100%);
+      border-bottom: 1px solid rgb(206 158 38 / 0.18);
+      border-radius: 0 0 58% 42%;
+      opacity: 0.52;
+      transform: perspective(150px) rotateX(42deg) rotateZ(var(--note-curl-rotation)) translateZ(2px);
     }
 
     :where(html.dark) & {
@@ -367,6 +394,14 @@ onBeforeUnmount(() => {
       box-shadow:
         0 12px 30px rgb(0 0 0 / 0.16),
         1px 1px 0 rgb(255 255 255 / 0.06) inset;
+
+      &::before {
+        background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.48) 0%, rgb(0 0 0 / 0.18) 42%, transparent 72%);
+      }
+
+      &::after {
+        border-bottom-color: rgb(253 214 99 / 0.14);
+      }
     }
   }
 
@@ -454,6 +489,15 @@ onBeforeUnmount(() => {
     }
 
     &.is-note-left {
+      .feature-card__note {
+        --note-curl-left: -3%;
+        --note-curl-right: auto;
+        --note-curl-origin: left bottom;
+        --note-curl-tilt-y: -2.4deg;
+        --note-curl-shadow-x: -6px;
+        --note-curl-rotation: 1deg;
+      }
+
       .feature-card__header {
         right: calc(100% + 64px);
       }
@@ -472,6 +516,12 @@ onBeforeUnmount(() => {
       .feature-card__note {
         --note-rotation: 1.1deg;
         --note-start-rotation: 3deg;
+        --note-curl-left: auto;
+        --note-curl-right: -3%;
+        --note-curl-origin: right bottom;
+        --note-curl-tilt-y: 2.4deg;
+        --note-curl-shadow-x: 6px;
+        --note-curl-rotation: -1deg;
       }
 
       .feature-card__guide {
@@ -520,7 +570,7 @@ onBeforeUnmount(() => {
 
     &__note {
       opacity: 1;
-      transform: rotate(var(--note-rotation));
+      transform: perspective(900px) rotate(var(--note-rotation)) rotateY(var(--note-curl-tilt-y)) rotateX(0.7deg);
       transition: none;
     }
 

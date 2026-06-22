@@ -7,27 +7,28 @@ Refresh the homepage transition into the Feature section without changing the ex
 - replace the `How to Play` heading and intro with a borderless double-chevron downward icon that owns the `features` anchor;
 - give the downward arrow a continuous top-to-bottom light sweep;
 - render each Feature eyebrow, title, and description on a fresh translucent yellow-tinted glass-paper note;
-- add a hand-drawn dashed arrow beside each note that draws once when its card first enters the viewport.
+- add a hand-drawn solid green arrow beside each note that draws once when its card first enters the viewport.
 
 ## Confirmed Product Direction
 
 - Only the `Feature 01 + title + description` header becomes a note. The demo body remains unchanged.
 - The note palette is based on the yellow semicircle in `src/assets/img/bg.svg`: `rgb(253 214 99)`.
 - The existing `HomeExploreLink.vue` implementation is reference-only and must not be modified.
-- The hand-drawn dashed arrow plays once from start to finish when the Feature card enters the viewport.
+- The hand-drawn guide uses the `rgb(190 224 198)` green from the rectangle in `bg.svg`.
+- Its curved line draws fully before the arrowhead begins, and the complete sequence plays once when the Feature card enters the viewport.
 - Dark mode must remain readable and visually related to the light-mode yellow paper.
 
 ## Considered Approaches
 
 ### A. Inline SVG plus existing viewport state — selected
 
-Use an isolated SVG component for the section arrow and an inline decorative SVG inside the Feature header. Reuse `FeatureCard`'s existing `isVisible` state to trigger both the note entrance and dashed-path drawing.
+Use an isolated SVG component for the section arrow and an inline decorative SVG inside the Feature header. Reuse `FeatureCard`'s existing `isVisible` state to trigger both the note entrance and solid-path drawing.
 
 This keeps vector artwork crisp, requires no new dependency or observer, supports `stroke-dasharray` animation naturally, and has a small rendering cost.
 
 ### B. CSS-only clip paths and pseudo-elements
 
-Build both arrows from borders, rotated rectangles, and pseudo-elements. This is compact for a simple chevron, but cannot reproduce the hand-drawn curved dashed arrow cleanly and makes path drawing difficult.
+Build both arrows from borders, rotated rectangles, and pseudo-elements. This is compact for a simple chevron, but cannot reproduce the hand-drawn curved guide cleanly and makes path drawing difficult.
 
 ### C. Canvas drawing
 
@@ -61,18 +62,19 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 ### Feature Note
 
-- The header becomes a slightly rotated translucent note with an asymmetric clipped silhouette and a folded bottom-right corner.
+- The header becomes a slightly rotated translucent rectangular note with all four corners intact.
 - Light mode combines a white glass surface with a restrained `rgb(253 214 99)` tint, a fine warm edge, and dark brown-gray ink.
 - Dark mode uses a translucent charcoal surface, restrained yellow tint, lighter yellow edge, and warm cream ink.
+- A local underside highlight and contact shadow make the paper look incompletely attached to the wall. Only the lower outer edge lifts: lower-left for notes left of the demo, lower-right for notes right of the demo.
 - Existing dot-grid and green marker treatments are removed from the header because they compete with the paper-note metaphor.
 - The note enters with a short fade, upward translation, and slight rotation correction after the card becomes visible.
 - Text remains real HTML and retains the existing eyebrow, heading, and paragraph hierarchy.
 
-### Hand-Drawn Dashed Arrow
+### Hand-Drawn Solid Arrow
 
 - The decorative SVG stays entirely in the gap between note and demo on wide screens and points to the note's top edge rather than covering text.
-- The path uses rounded dashed strokes in the existing warm red accent.
-- The arrowhead is a separate path and follows the same one-shot reveal choreography.
+- The path uses one continuous rounded stroke in the `rgb(190 224 198)` background-art green.
+- The arrowhead is a separate path and starts only after the curved line has finished drawing.
 - On compact layouts it moves above the note and scales down so it does not reduce text width.
 - It is `aria-hidden` and never intercepts pointer input.
 
@@ -80,16 +82,16 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The section arrow light sweep loops continuously because it communicates “continue downward.”
 - The note reveal takes about 600–700 ms with an exponential ease-out.
-- The dashed guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead follows near the end.
+- The solid guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead follows after the path completes.
 - Staggering continues to use each card's existing `delay` prop.
 - Only `transform`, `opacity`, and SVG stroke properties animate. Layout dimensions do not animate.
-- Under `prefers-reduced-motion: reduce`, the note and dashed arrow render immediately in their final states and the section arrow shows a static highlight.
+- Under `prefers-reduced-motion: reduce`, the note and guide arrow render immediately in their final states and the section arrow shows a static highlight.
 
 ## Responsive Behavior
 
 - The large section arrow remains centered and scales with `clamp()`.
-- Wide desktop layouts alternate notes left, right, left, right and reserve a clear gap for the dashed connector without overlapping demo content.
-- At the existing mobile breakpoint, the note uses the full available width and the dashed arrow becomes a smaller top decoration.
+- Wide desktop layouts alternate notes left, right, left, right, lift the outer lower paper edge, and reserve a clear gap for the connector without overlapping demo content.
+- At the existing mobile breakpoint, the note uses the full available width and the guide arrow becomes a smaller top decoration.
 - The anchor keeps a minimum 44 px interactive target.
 
 ## Accessibility
@@ -104,8 +106,8 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 ## Testing And Verification
 
 - Component test confirms the `features` id and href live on the arrow anchor, and the old `How to Play` text is absent.
-- Component test confirms Feature header content remains semantic text inside a note and includes one decorative dashed-arrow SVG.
-- Source-level motion contracts confirm the looped arrow sweep, one-shot dashed-path animation, dark-mode overrides, responsive rules, and reduced-motion fallback.
+- Component test confirms Feature header content remains semantic text inside a note and includes one decorative guide-arrow SVG.
+- Source-level motion contracts confirm the looped arrow sweep, one-shot solid-path animation, dark-mode overrides, responsive rules, and reduced-motion fallback.
 - Existing Feature activation behavior remains covered by a focused visibility test.
 - Run focused Feature tests, type-check, lint for changed files where practical, and production build.
 - Verify light mode, dark mode, desktop, and mobile in the real homepage.

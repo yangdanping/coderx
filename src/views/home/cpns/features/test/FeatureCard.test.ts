@@ -96,16 +96,32 @@ describe('FeatureCard note header', () => {
     expect(wrapper.get('.feature-card__guide-path').classes()).toContain('feature-card__guide-path');
   });
 
-  it('defines a translucent fresh note, slow one-shot drawing, alternating layout, dark mode, and reduced-motion fallback', () => {
+  it('draws a solid bg-green guide path completely before drawing its arrowhead', () => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
+
+    expect(source).toContain('--guide-ink: rgb(190 224 198');
+    expect(source).toMatch(/stroke-dasharray:\s*1;/);
+    expect(source).not.toContain('stroke-dasharray: 0.025 0.055');
+    expect(source).toContain('feature-card-guide-draw 2400ms');
+    expect(source).toContain('calc(var(--guide-delay) + 2400ms)');
+    expect(source).toContain('animation-iteration-count: 1');
+  });
+
+  it('keeps a complete rectangular note and lifts the outer lower edge on alternating sides', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
 
     expect(source).toContain('253 214 99');
     expect(source).toContain('backdrop-filter');
     expect(source).not.toContain('var(--paper-noise)');
-    expect(source).toContain('stroke-dashoffset');
-    expect(source).toContain('feature-card-guide-draw');
-    expect(source).toContain('2400ms');
-    expect(source).toContain('animation-iteration-count: 1');
+    expect(source).not.toContain('clip-path: polygon(0 0, 100% 0');
+    expect(source).not.toContain('clip-path: polygon(100% 0, 0 100%, 100% 100%)');
+    expect(source).toContain('transform-style: preserve-3d');
+    expect(source).toContain('--note-curl-left: -3%');
+    expect(source).toContain('--note-curl-right: -3%');
+    expect(source).toContain('--note-curl-tilt-y: -');
+    expect(source).toMatch(/--note-curl-tilt-y:\s*[1-9]/);
+    expect(source).toContain('radial-gradient');
+    expect(source).toContain('filter: blur(');
     expect(source).toContain('&.is-note-left');
     expect(source).toContain('&.is-note-right');
     expect(source).toContain(':where(html.dark) &');
