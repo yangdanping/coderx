@@ -71,3 +71,15 @@
 - [ ] Replace the dotted warm-red stroke with a continuous green path and delay the arrowhead until the 2.4-second body draw is complete.
 - [ ] Remove the clipped folded corner and create a localized underside highlight plus soft contact shadow at the lower-left or lower-right outer edge.
 - [ ] Verify the note remains outside the demo panel and the connector remains unobstructed in both alternating positions.
+
+### Task 5: Tighten the curl-guide choreography and expose paper curl strength
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureCard.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureCard.vue`
+
+- [ ] Add failing tests for a compact loop near the guide start, a 40 ms body/head overlap, and a mirrored `noteCurlAngle` prop.
+- [ ] Replace the long shallow path with a shorter hand-drawn loop that starts near the demo edge and resolves toward the note.
+- [ ] Use a steadier body easing and begin the arrowhead at 2360 ms so the drawing reads as one continuous gesture.
+- [ ] Default `noteCurlAngle` to 4 degrees, clamp unsafe values, document it briefly in Chinese, and map its sign from `noteSide`.
+- [ ] Increase the localized underside highlight and contact shadow while keeping the note rectangular and the inner edge visually attached.

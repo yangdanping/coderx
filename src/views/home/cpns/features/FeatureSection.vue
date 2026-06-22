@@ -11,6 +11,7 @@
         :description="feature.description"
         :delay="index * 120"
         :note-side="index % 2 === 0 ? 'left' : 'right'"
+        :note-curl-angle="props.noteCurlAngle"
         @activate="handleActivate(feature.id)"
       >
         <component :is="feature.component" :active="Boolean(activatedCards[feature.id])" />
@@ -36,9 +37,12 @@ import type { FeatureMeta } from './types/feature-section.type';
 const props = withDefaults(
   defineProps<{
     columns?: 1 | 2;
+    /** 便签外侧下缘的翘曲角度（单位：deg），默认 4，建议设置在 0–8 之间。 */
+    noteCurlAngle?: number;
   }>(),
   {
     columns: 1,
+    noteCurlAngle: 4,
   },
 );
 

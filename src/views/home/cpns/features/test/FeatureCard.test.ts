@@ -49,13 +49,14 @@ describe('FeatureCard note header', () => {
     vi.restoreAllMocks();
   });
 
-  function mountCard(noteSide: 'left' | 'right' = 'left') {
+  function mountCard(noteSide: 'left' | 'right' = 'left', noteCurlAngle?: number) {
     return mount(FeatureCard, {
       props: {
         index: 1,
         title: '浏览文章自动目录划分',
         description: '进入文章后，目录会自动提取章节并辅助定位。',
         noteSide,
+        noteCurlAngle,
       },
       slots: {
         default: '<div class="demo-content">demo</div>',
@@ -96,18 +97,32 @@ describe('FeatureCard note header', () => {
     expect(wrapper.get('.feature-card__guide-path').classes()).toContain('feature-card__guide-path');
   });
 
-  it('draws a solid bg-green guide path completely before drawing its arrowhead', () => {
+  it('draws a compact curled guide path and starts its arrowhead with a near-seamless overlap', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
+    const wrapper = mountCard();
+    const pathData = wrapper.get('.feature-card__guide-path').attributes('d');
 
     expect(source).toContain('--guide-ink: rgb(190 224 198');
     expect(source).toMatch(/stroke-dasharray:\s*1;/);
     expect(source).not.toContain('stroke-dasharray: 0.025 0.055');
     expect(source).toContain('feature-card-guide-draw 2400ms');
-    expect(source).toContain('calc(var(--guide-delay) + 2400ms)');
+    expect(source).toContain('calc(var(--guide-delay) + 2360ms)');
     expect(source).toContain('animation-iteration-count: 1');
+    expect(pathData).toMatch(/^M122 18/);
+    expect(pathData.match(/C/g)).toHaveLength(7);
   });
 
-  it('keeps a complete rectangular note and lifts the outer lower edge on alternating sides', () => {
+  it('exposes a developer-adjustable curl angle and mirrors it toward each outer lower edge', () => {
+    const leftStyle = mountCard('left', 6).attributes('style');
+    const rightStyle = mountCard('right', 6).attributes('style');
+    const defaultStyle = mountCard('left').attributes('style');
+
+    expect(leftStyle).toContain('--note-curl-tilt-y: -6deg');
+    expect(rightStyle).toContain('--note-curl-tilt-y: 6deg');
+    expect(defaultStyle).toContain('--note-curl-tilt-y: -4deg');
+  });
+
+  it('keeps a complete rectangular note and emphasizes the lifted paper underside', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
 
     expect(source).toContain('253 214 99');
@@ -118,8 +133,10 @@ describe('FeatureCard note header', () => {
     expect(source).toContain('transform-style: preserve-3d');
     expect(source).toContain('--note-curl-left: -3%');
     expect(source).toContain('--note-curl-right: -3%');
-    expect(source).toContain('--note-curl-tilt-y: -');
-    expect(source).toMatch(/--note-curl-tilt-y:\s*[1-9]/);
+    expect(source).toContain('noteCurlAngle?: number');
+    expect(source).toContain('便签外侧下缘的翘曲角度');
+    expect(source).toContain('width: 66%');
+    expect(source).toContain('height: 32px');
     expect(source).toContain('radial-gradient');
     expect(source).toContain('filter: blur(');
     expect(source).toContain('&.is-note-left');

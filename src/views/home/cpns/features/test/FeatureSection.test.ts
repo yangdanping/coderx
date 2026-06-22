@@ -10,6 +10,7 @@ const FeatureCardStub = defineComponent({
   name: 'FeatureCard',
   props: {
     noteSide: String,
+    noteCurlAngle: Number,
   },
   template: '<article class="feature-card-stub"><slot /></article>',
 });
@@ -55,6 +56,25 @@ describe('FeatureSection', () => {
     });
 
     expect(wrapper.findAllComponents(FeatureCardStub).map((card) => card.props('noteSide'))).toEqual(['left', 'right', 'left', 'right']);
+  });
+
+  it('passes the developer-configurable note curl angle to every card', () => {
+    const wrapper = mount(FeatureSection, {
+      props: {
+        noteCurlAngle: 6,
+      },
+      global: {
+        stubs: {
+          FeatureCard: FeatureCardStub,
+          ArticleTocDemo: DemoStub,
+          AiChatDemo: DemoStub,
+          AiCompletionDemo: DemoStub,
+          MarkdownRenderDemo: DemoStub,
+        },
+      },
+    });
+
+    expect(wrapper.findAllComponents(FeatureCardStub).map((card) => card.props('noteCurlAngle'))).toEqual([6, 6, 6, 6]);
   });
 
   it('defines a borderless double-chevron light sweep with dark-mode and reduced-motion fallbacks', () => {

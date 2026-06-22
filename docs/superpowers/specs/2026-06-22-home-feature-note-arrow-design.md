@@ -74,7 +74,8 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The decorative SVG stays entirely in the gap between note and demo on wide screens and points to the note's top edge rather than covering text.
 - The path uses one continuous rounded stroke in the `rgb(190 224 198)` background-art green.
-- The arrowhead is a separate path and starts only after the curved line has finished drawing.
+- The path begins near the demo edge with one compact hand-drawn loop before curving toward the note, avoiding a long line that reaches deeply into the demo.
+- The arrowhead is a separate path and begins 40 ms before the curved line completes, so both strokes read as one continuous gesture.
 - On compact layouts it moves above the note and scales down so it does not reduce text width.
 - It is `aria-hidden` and never intercepts pointer input.
 
@@ -82,7 +83,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The section arrow light sweep loops continuously because it communicates “continue downward.”
 - The note reveal takes about 600–700 ms with an exponential ease-out.
-- The solid guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead follows after the path completes.
+- The solid guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead overlaps its final 40 ms.
 - Staggering continues to use each card's existing `delay` prop.
 - Only `transform`, `opacity`, and SVG stroke properties animate. Layout dimensions do not animate.
 - Under `prefers-reduced-motion: reduce`, the note and guide arrow render immediately in their final states and the section arrow shows a static highlight.
@@ -91,6 +92,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The large section arrow remains centered and scales with `clamp()`.
 - Wide desktop layouts alternate notes left, right, left, right, lift the outer lower paper edge, and reserve a clear gap for the connector without overlapping demo content.
+- `FeatureSection` exposes `noteCurlAngle` (default 4 degrees, clamped by each card to 0–8 degrees) so developers can tune the outer-edge lift without editing internal styles.
 - At the existing mobile breakpoint, the note uses the full available width and the guide arrow becomes a smaller top decoration.
 - The anchor keeps a minimum 44 px interactive target.
 

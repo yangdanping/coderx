@@ -7,13 +7,13 @@
     @transitionend="handleTransitionEnd"
   >
     <div class="feature-card__header">
-      <svg class="feature-card__guide" viewBox="0 0 220 126" aria-hidden="true" focusable="false">
+      <svg class="feature-card__guide" viewBox="0 0 190 126" aria-hidden="true" focusable="false">
         <path
           class="feature-card__guide-path"
-          d="M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56"
+          d="M122 18C112 14 101 16 95 24C89 33 94 42 104 43C115 44 122 35 117 27C112 18 99 18 90 24C79 32 78 45 76 52C70 64 54 66 40 62C29 60 21 58 14 57"
           pathLength="1"
         />
-        <path class="feature-card__guide-head" d="M27 43C21 49 17 53 14 56C20 61 26 65 34 68" pathLength="1" />
+        <path class="feature-card__guide-head" d="M28 45C22 50 17 54 14 57C20 61 27 64 35 66" pathLength="1" />
       </svg>
 
       <div class="feature-card__note">
@@ -44,12 +44,15 @@ const props = withDefaults(
     index?: number;
     markerSpeed?: number;
     noteSide?: 'left' | 'right';
+    /** 便签外侧下缘的翘曲角度（单位：deg），默认 4，建议设置在 0–8 之间。 */
+    noteCurlAngle?: number;
   }>(),
   {
     delay: 0,
     index: 1,
     markerSpeed: 800,
     noteSide: 'left',
+    noteCurlAngle: 4,
   },
 );
 
@@ -65,6 +68,10 @@ const hasActivated = ref(false);
 let activationTimer: ReturnType<typeof setTimeout> | null = null;
 
 const indexLabel = computed(() => String(props.index).padStart(2, '0'));
+const safeNoteCurlAngle = computed(() => {
+  if (!Number.isFinite(props.noteCurlAngle)) return 4;
+  return Math.min(8, Math.max(0, props.noteCurlAngle));
+});
 
 /**
  * Scroll-linked mask：根据卡片中心与视口中心的距离，实时驱动
@@ -169,12 +176,17 @@ onMounted(() => {
   applyScrollMask();
 });
 
-const cardStyle = computed(() => ({
-  transitionDelay: `${props.delay}ms`,
-  '--note-speed': `${Math.max(560, props.markerSpeed)}ms`,
-  '--note-delay': `${props.delay + 80}ms`,
-  '--guide-delay': `${props.delay + 320}ms`,
-}));
+const cardStyle = computed(() => {
+  const curlDirection = props.noteSide === 'left' ? -1 : 1;
+
+  return {
+    transitionDelay: `${props.delay}ms`,
+    '--note-speed': `${Math.max(560, props.markerSpeed)}ms`,
+    '--note-delay': `${props.delay + 80}ms`,
+    '--guide-delay': `${props.delay + 320}ms`,
+    '--note-curl-tilt-y': `${safeNoteCurlAngle.value * curlDirection}deg`,
+  };
+});
 
 /**
  * 视觉 mask 已经由 scroll 驱动、和激活状态解耦；
@@ -271,12 +283,12 @@ onBeforeUnmount(() => {
     }
 
     .feature-card__guide-path {
-      animation: feature-card-guide-draw 2400ms cubic-bezier(0.25, 1, 0.5, 1) var(--guide-delay) forwards;
+      animation: feature-card-guide-draw 2400ms cubic-bezier(0.37, 0, 0.63, 1) var(--guide-delay) forwards;
       animation-iteration-count: 1;
     }
 
     .feature-card__guide-head {
-      animation: feature-card-guide-draw 620ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 2400ms) forwards;
+      animation: feature-card-guide-draw 520ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 2360ms) forwards;
       animation-iteration-count: 1;
     }
   }
@@ -294,7 +306,7 @@ onBeforeUnmount(() => {
     z-index: 2;
     top: -70px;
     right: -4px;
-    width: clamp(126px, 22vw, 176px);
+    width: clamp(118px, 21vw, 160px);
     height: auto;
     overflow: visible;
     opacity: 0;
@@ -325,7 +337,6 @@ onBeforeUnmount(() => {
     --note-curl-left: -3%;
     --note-curl-right: auto;
     --note-curl-origin: left bottom;
-    --note-curl-tilt-y: -2.4deg;
     --note-curl-shadow-x: -6px;
     --note-curl-rotation: 1deg;
 
@@ -359,30 +370,30 @@ onBeforeUnmount(() => {
       position: absolute;
       left: var(--note-curl-left);
       right: var(--note-curl-right);
-      width: 58%;
+      width: 66%;
       pointer-events: none;
       transform-origin: var(--note-curl-origin);
     }
 
     &::before {
       z-index: -1;
-      bottom: -13px;
-      height: 25px;
-      background: radial-gradient(ellipse at center, rgb(76 59 21 / 0.24) 0%, rgb(76 59 21 / 0.12) 38%, transparent 72%);
-      filter: blur(7px);
-      opacity: 0.72;
+      bottom: -18px;
+      height: 32px;
+      background: radial-gradient(ellipse at center, rgb(76 59 21 / 0.3) 0%, rgb(76 59 21 / 0.15) 40%, transparent 74%);
+      filter: blur(8px);
+      opacity: 0.82;
       transform: translateX(var(--note-curl-shadow-x)) rotate(var(--note-curl-rotation)) translateZ(-1px);
     }
 
     &::after {
       z-index: 2;
-      bottom: -2px;
-      height: 17px;
-      background: linear-gradient(to bottom, transparent 4%, rgb(255 255 255 / 0.2) 43%, var(--note-paper-deep) 100%);
-      border-bottom: 1px solid rgb(206 158 38 / 0.18);
-      border-radius: 0 0 58% 42%;
-      opacity: 0.52;
-      transform: perspective(150px) rotateX(42deg) rotateZ(var(--note-curl-rotation)) translateZ(2px);
+      bottom: -3px;
+      height: 24px;
+      background: linear-gradient(to bottom, transparent 2%, rgb(255 255 255 / 0.28) 38%, var(--note-paper-deep) 100%);
+      border-bottom: 1px solid rgb(206 158 38 / 0.24);
+      border-radius: 0 0 62% 38%;
+      opacity: 0.68;
+      transform: perspective(150px) rotateX(52deg) rotateZ(var(--note-curl-rotation)) translateZ(3px);
     }
 
     :where(html.dark) & {
@@ -485,7 +496,7 @@ onBeforeUnmount(() => {
 
     &__guide {
       top: -42px;
-      width: clamp(132px, 9.5vw, 166px);
+      width: clamp(124px, 8.8vw, 154px);
     }
 
     &.is-note-left {
@@ -493,7 +504,6 @@ onBeforeUnmount(() => {
         --note-curl-left: -3%;
         --note-curl-right: auto;
         --note-curl-origin: left bottom;
-        --note-curl-tilt-y: -2.4deg;
         --note-curl-shadow-x: -6px;
         --note-curl-rotation: 1deg;
       }
@@ -519,7 +529,6 @@ onBeforeUnmount(() => {
         --note-curl-left: auto;
         --note-curl-right: -3%;
         --note-curl-origin: right bottom;
-        --note-curl-tilt-y: 2.4deg;
         --note-curl-shadow-x: 6px;
         --note-curl-rotation: -1deg;
       }
@@ -551,7 +560,7 @@ onBeforeUnmount(() => {
     &__guide {
       top: -58px;
       right: -12px;
-      width: 128px;
+      width: 118px;
     }
 
     &__panel {
