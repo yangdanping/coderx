@@ -76,6 +76,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 - The path uses one continuous rounded stroke in the `rgb(190 224 198)` background-art green.
 - The path begins near the demo edge with one compact hand-drawn loop before curving toward the note, avoiding a long line that reaches deeply into the demo.
 - The arrowhead is a separate path and begins 40 ms before the curved line completes, so both strokes read as one continuous gesture.
+- On wide layouts the visible stroke remains inside the connector gap, uses a longer lead-in before looping, and finishes with a straighter tail so the lower arrow arm does not merge into the body.
 - On compact layouts it moves above the note and scales down so it does not reduce text width.
 - It is `aria-hidden` and never intercepts pointer input.
 
@@ -93,7 +94,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 - The large section arrow remains centered and scales with `clamp()`.
 - Wide desktop layouts alternate notes left, right, left, right, lift the outer lower paper edge, and reserve a clear gap for the connector without overlapping demo content.
 - `FeatureSection` exposes `noteCurlAngle` (default 4 degrees, clamped by each card to 0–8 degrees) so developers can tune the outer-edge lift without editing internal styles.
-- At the existing mobile breakpoint, the note uses the full available width and the guide arrow becomes a smaller top decoration.
+- At the existing mobile breakpoint, the note uses the full available width, returns to the earlier 2.4-degree light paper depth, and switches to the previous non-looping 128 px guide artwork above the note.
 - The anchor keeps a minimum 44 px interactive target.
 
 ## Accessibility

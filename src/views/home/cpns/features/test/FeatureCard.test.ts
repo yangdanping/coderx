@@ -97,10 +97,11 @@ describe('FeatureCard note header', () => {
     expect(wrapper.get('.feature-card__guide-path').classes()).toContain('feature-card__guide-path');
   });
 
-  it('draws a compact curled guide path and starts its arrowhead with a near-seamless overlap', () => {
+  it('keeps the desktop guide in the gap, delays its loop, and separates the lower arrow arm', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
     const wrapper = mountCard();
-    const pathData = wrapper.get('.feature-card__guide-path').attributes('d');
+    const pathData = wrapper.get('.feature-card__guide-path--desktop').attributes('d');
+    const headData = wrapper.get('.feature-card__guide-head--desktop').attributes('d');
 
     expect(source).toContain('--guide-ink: rgb(190 224 198');
     expect(source).toMatch(/stroke-dasharray:\s*1;/);
@@ -108,8 +109,27 @@ describe('FeatureCard note header', () => {
     expect(source).toContain('feature-card-guide-draw 2400ms');
     expect(source).toContain('calc(var(--guide-delay) + 2360ms)');
     expect(source).toContain('animation-iteration-count: 1');
-    expect(pathData).toMatch(/^M122 18/);
+    expect(source).toContain('left: calc(100% - 48px)');
+    expect(source).toContain('right: calc(100% - 48px)');
+    expect(pathData).toMatch(/^M154 19C143 19 132 20 121 24/);
     expect(pathData.match(/C/g)).toHaveLength(7);
+    expect(headData).toBe('M31 43C24 49 18 54 14 57C22 61 30 64 40 65');
+  });
+
+  it('restores the previous compact mobile guide and lighter paper depth without changing desktop artwork', () => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
+    const wrapper = mountCard();
+
+    expect(wrapper.get('.feature-card__guide-path--mobile').attributes('d')).toBe(
+      'M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56',
+    );
+    expect(wrapper.get('.feature-card__guide-head--mobile').attributes('d')).toBe('M27 43C21 49 17 53 14 56C20 61 26 65 34 68');
+    expect(source).toContain('&__guide-path--desktop');
+    expect(source).toContain('&__guide-path--mobile');
+    expect(source).toContain('--note-curl-tilt-y: -2.4deg !important');
+    expect(source).toContain('width: 128px');
+    expect(source).toContain('width: 58%');
+    expect(source).toContain('height: 25px');
   });
 
   it('exposes a developer-adjustable curl angle and mirrors it toward each outer lower edge', () => {

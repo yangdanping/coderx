@@ -7,13 +7,27 @@
     @transitionend="handleTransitionEnd"
   >
     <div class="feature-card__header">
-      <svg class="feature-card__guide" viewBox="0 0 190 126" aria-hidden="true" focusable="false">
+      <svg class="feature-card__guide" viewBox="0 0 220 126" aria-hidden="true" focusable="false">
         <path
-          class="feature-card__guide-path"
-          d="M122 18C112 14 101 16 95 24C89 33 94 42 104 43C115 44 122 35 117 27C112 18 99 18 90 24C79 32 78 45 76 52C70 64 54 66 40 62C29 60 21 58 14 57"
+          class="feature-card__guide-path feature-card__guide-path--desktop"
+          d="M154 19C143 19 132 20 121 24C111 28 105 34 106 40C108 48 119 49 126 43C134 36 132 27 124 24C113 20 99 25 93 35C87 45 83 51 72 54C55 58 36 58 14 57"
           pathLength="1"
         />
-        <path class="feature-card__guide-head" d="M28 45C22 50 17 54 14 57C20 61 27 64 35 66" pathLength="1" />
+        <path
+          class="feature-card__guide-head feature-card__guide-head--desktop"
+          d="M31 43C24 49 18 54 14 57C22 61 30 64 40 65"
+          pathLength="1"
+        />
+        <path
+          class="feature-card__guide-path feature-card__guide-path--mobile"
+          d="M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56"
+          pathLength="1"
+        />
+        <path
+          class="feature-card__guide-head feature-card__guide-head--mobile"
+          d="M27 43C21 49 17 53 14 56C20 61 26 65 34 68"
+          pathLength="1"
+        />
       </svg>
 
       <div class="feature-card__note">
@@ -326,6 +340,11 @@ onBeforeUnmount(() => {
     vector-effect: non-scaling-stroke;
   }
 
+  &__guide-path--mobile,
+  &__guide-head--mobile {
+    display: none;
+  }
+
   &__note {
     --note-surface: rgb(255 255 255 / 0.42);
     --note-tint: rgb(253 214 99 / 0.14);
@@ -514,7 +533,7 @@ onBeforeUnmount(() => {
 
       .feature-card__guide {
         right: auto;
-        left: calc(100% + 8px);
+        left: calc(100% - 48px);
       }
     }
 
@@ -534,7 +553,7 @@ onBeforeUnmount(() => {
       }
 
       .feature-card__guide {
-        right: calc(100% + 8px);
+        right: calc(100% - 48px);
         left: auto;
         transform: scaleX(-1);
         transform-origin: center;
@@ -545,12 +564,37 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .feature-card {
+    --note-curl-tilt-y: -2.4deg !important;
+
     &__header {
       margin-inline: 0;
     }
 
     &__note {
       padding: 20px 18px 26px;
+
+      &::before,
+      &::after {
+        width: 58%;
+      }
+
+      &::before {
+        bottom: -13px;
+        height: 25px;
+        background: radial-gradient(ellipse at center, rgb(76 59 21 / 0.24) 0%, rgb(76 59 21 / 0.12) 38%, transparent 72%);
+        filter: blur(7px);
+        opacity: 0.72;
+      }
+
+      &::after {
+        bottom: -2px;
+        height: 17px;
+        background: linear-gradient(to bottom, transparent 4%, rgb(255 255 255 / 0.2) 43%, var(--note-paper-deep) 100%);
+        border-bottom-color: rgb(206 158 38 / 0.18);
+        border-radius: 0 0 58% 42%;
+        opacity: 0.52;
+        transform: perspective(150px) rotateX(42deg) rotateZ(var(--note-curl-rotation)) translateZ(2px);
+      }
     }
 
     &__title {
@@ -560,7 +604,17 @@ onBeforeUnmount(() => {
     &__guide {
       top: -58px;
       right: -12px;
-      width: 118px;
+      width: 128px;
+    }
+
+    &__guide-path--desktop,
+    &__guide-head--desktop {
+      display: none;
+    }
+
+    &__guide-path--mobile,
+    &__guide-head--mobile {
+      display: block;
     }
 
     &__panel {

@@ -83,3 +83,15 @@
 - [ ] Use a steadier body easing and begin the arrowhead at 2360 ms so the drawing reads as one continuous gesture.
 - [ ] Default `noteCurlAngle` to 4 degrees, clamp unsafe values, document it briefly in Chinese, and map its sign from `noteSide`.
 - [ ] Increase the localized underside highlight and contact shadow while keeping the note rectangular and the inner edge visually attached.
+
+### Task 6: Restore mobile presentation and refine desktop guide geometry
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureCard.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureCard.vue`
+
+- [ ] Add failing contracts for the previous mobile path, 128 px mobile guide, lighter mobile paper depth, and a desktop path with a longer lead-in and separated arrow arm.
+- [ ] Keep desktop and mobile SVG paths in the same decorative SVG and switch them at the existing 768 px breakpoint.
+- [ ] Reposition the desktop SVG toward the note so its visible stroke stays in the connector gap rather than crossing demo content.
+- [ ] Extend the desktop lead-in before the loop and lengthen the final straight segment before the arrowhead.
+- [ ] Restore the mobile 2.4-degree tilt and earlier pseudo-element dimensions while preserving desktop `noteCurlAngle`.
