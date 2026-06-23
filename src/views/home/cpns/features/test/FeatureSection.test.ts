@@ -85,13 +85,19 @@ describe('FeatureSection', () => {
     expect(wrapper.findAllComponents(FeatureCardStub).map((card) => card.props('noteCurlAngle'))).toEqual([6, 6, 6, 6]);
   });
 
-  it('defines a borderless double-chevron light sweep with dark-mode and reduced-motion fallbacks', () => {
+  it('defines a compact top-to-bottom gradient sweep with dark-mode and reduced-motion fallbacks', () => {
     const filePath = path.join(process.cwd(), 'src/views/home/cpns/features/FeatureSectionAnchor.vue');
     const source = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
 
     expect(source.match(/feature-section-anchor__chevron/g)?.length).toBeGreaterThanOrEqual(2);
     expect(source).not.toContain('feature-section-anchor__body');
     expect(source).not.toContain('outline: 3px solid');
+    expect(source).toContain('x1="0" y1="0" x2="0" y2="1"');
+    expect(source).toContain('id="feature-section-arrow-sweep-mask"');
+    expect(source).toContain('feature-section-anchor__sweep-band');
+    expect(source).toContain('transform: translateY(172px)');
+    expect(source).toContain('width: clamp(58px, 5vw, 88px)');
+    expect(source).not.toContain('stroke-dasharray');
     expect(source).toContain('feature-section-anchor-sweep');
     expect(source).toContain('animation-iteration-count: infinite');
     expect(source).toContain(':where(html.dark) &');

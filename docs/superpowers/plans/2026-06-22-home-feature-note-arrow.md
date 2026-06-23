@@ -109,3 +109,14 @@
 - [x] Hide the paper note depth and guide SVG on mobile, then render the existing Feature copy as the header of the same glass card as its demo.
 - [x] Restore the old mobile dot-grid decoration and green marker drawing without duplicating Feature copy in a second DOM branch.
 - [x] Verify the restored mobile layout at 390 px and confirm desktop notes, alternating placement, guide artwork, and developer-configurable curl remain intact.
+
+### Task 8: Compact the section arrow and make its light flow vertically
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureSection.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureSectionAnchor.vue`
+
+- [x] Add a failing contract for a top-to-bottom gradient mask, removal of path-dash animation, and an 88 px desktop cap.
+- [x] Replace the staggered path tracing with one animated vertical SVG mask that crosses both chevrons.
+- [x] Reduce the desktop arrow footprint while keeping hover, focus, dark mode, and reduced-motion behavior.
+- [x] Verify the animation transform progresses downward and the rendered desktop width is 88 px.

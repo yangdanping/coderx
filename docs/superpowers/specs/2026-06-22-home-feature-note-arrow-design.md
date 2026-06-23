@@ -56,7 +56,8 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - A centered pair of hand-drawn downward chevrons replaces both `How to Play` and its supporting line.
 - The arrow uses the existing blue/periwinkle interface accent so it reads as navigation rather than another yellow note.
-- Highlight strokes travel through the upper and lower chevrons in a calm staggered loop.
+- A soft vertical gradient band travels continuously from the top of the complete icon to the bottom, lighting both chevrons in spatial order instead of tracing each V-shaped path.
+- The desktop icon is intentionally compact, capped at 88 px wide while retaining a comfortable anchor target.
 - Hover and keyboard focus slightly increase contrast and glow without drawing a rectangular border.
 - The anchor target is the arrow element itself, with `scroll-margin-top` preserving navbar clearance.
 
