@@ -94,7 +94,9 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 - The large section arrow remains centered and scales with `clamp()`.
 - Wide desktop layouts alternate notes left, right, left, right, lift the outer lower paper edge, and reserve a clear gap for the connector without overlapping demo content.
 - `FeatureSection` exposes `noteCurlAngle` (default 4 degrees, clamped by each card to 0–8 degrees) so developers can tune the outer-edge lift without editing internal styles.
-- At the existing mobile breakpoint, the note uses the full available width, returns to the earlier 2.4-degree light paper depth, and switches to the previous non-looping 128 px guide artwork above the note.
+- At the existing mobile breakpoint, restore the legacy `How to Play` heading and visually hide the large section arrow while preserving its semantic hash target.
+- Mobile cards do not show the detached paper note or hand-drawn connector. The Feature eyebrow, title, description, dot grid, and green marker animation return to the top of the same glass card that contains the demo.
+- Desktop continues to use the alternating detached notes, one-shot guide artwork, and `noteCurlAngle`; the mobile override does not change their geometry or animation.
 - The anchor keeps a minimum 44 px interactive target.
 
 ## Accessibility

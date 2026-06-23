@@ -20,7 +20,7 @@ const DemoStub = defineComponent({
 });
 
 describe('FeatureSection', () => {
-  it('uses the animated downward arrow as the features anchor', () => {
+  it('keeps the desktop arrow anchor and restores the legacy mobile section heading', () => {
     const wrapper = mount(FeatureSection, {
       global: {
         stubs: {
@@ -38,8 +38,16 @@ describe('FeatureSection', () => {
     expect(anchor.attributes('href')).toBe('#features');
     expect(anchor.attributes('aria-label')).toBe('进入核心特性');
     expect(anchor.find('svg.feature-section-anchor__arrow').exists()).toBe(true);
-    expect(wrapper.text()).not.toContain('How to Play');
-    expect(wrapper.find('.feature-section__intro').exists()).toBe(false);
+    expect(anchor.classes()).toContain('feature-section__desktop-anchor');
+    expect(wrapper.get('.feature-section__mobile-heading').text()).toContain('How to Play');
+    expect(wrapper.get('.feature-section__intro').text()).toBe('快速感受社区的核心交互');
+
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureSection.vue'), 'utf8');
+
+    expect(source).toContain('&__mobile-heading');
+    expect(source).toContain('&__desktop-anchor');
+    expect(source).toContain('clip-path: inset(50%)');
+    expect(source).toContain('visibility: hidden');
   });
 
   it('alternates feature notes between the left and right sides', () => {

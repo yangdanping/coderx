@@ -32,7 +32,10 @@ describe('FeatureCard note header', () => {
     MockIntersectionObserver.instances.length = 0;
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver as unknown as typeof IntersectionObserver);
     vi.stubGlobal('ResizeObserver', MockResizeObserver as unknown as typeof ResizeObserver);
-    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    );
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
     vi.stubGlobal(
       'matchMedia',
@@ -116,20 +119,23 @@ describe('FeatureCard note header', () => {
     expect(headData).toBe('M31 43C24 49 18 54 14 57C22 61 30 64 40 65');
   });
 
-  it('restores the previous compact mobile guide and lighter paper depth without changing desktop artwork', () => {
+  it('restores the legacy unified glass card on mobile while keeping desktop note artwork', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
     const wrapper = mountCard();
 
-    expect(wrapper.get('.feature-card__guide-path--mobile').attributes('d')).toBe(
-      'M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56',
-    );
-    expect(wrapper.get('.feature-card__guide-head--mobile').attributes('d')).toBe('M27 43C21 49 17 53 14 56C20 61 26 65 34 68');
-    expect(source).toContain('&__guide-path--desktop');
-    expect(source).toContain('&__guide-path--mobile');
-    expect(source).toContain('--note-curl-tilt-y: -2.4deg !important');
-    expect(source).toContain('width: 128px');
-    expect(source).toContain('width: 58%');
-    expect(source).toContain('height: 25px');
+    expect(wrapper.get('.feature-card__title .marker--title').text()).toBe('浏览文章自动目录划分');
+    expect(wrapper.get('.feature-card__description .marker--desc').text()).toContain('目录会自动提取章节');
+    expect(source).toContain('feature-card__guide-path--desktop');
+    expect(source).not.toContain('&__guide-path--mobile');
+    expect(source).toContain('@include glass-effect');
+    expect(source).toContain('background-image: radial-gradient');
+    expect(source).toContain('background: transparent');
+    expect(source).toContain('-webkit-backdrop-filter: none');
+    expect(source).toContain('background-size: 100% 8px');
+    expect(source).toMatch(/&__guide\s*\{\s*display:\s*none;/);
+    expect(source).toMatch(/&__note\s*\{[\s\S]*?border:\s*0;/);
+    expect(source).toMatch(/&__panel\s*\{[\s\S]*?mask-image:\s*none;/);
+    expect(source).toContain('min-height: 640px');
   });
 
   it('exposes a developer-adjustable curl angle and mirrors it toward each outer lower edge', () => {

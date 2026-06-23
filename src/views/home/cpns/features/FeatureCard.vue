@@ -1,11 +1,5 @@
 <template>
-  <article
-    ref="targetRef"
-    class="feature-card"
-    :class="[{ visible: isVisible }, `is-note-${props.noteSide}`]"
-    :style="cardStyle"
-    @transitionend="handleTransitionEnd"
-  >
+  <article ref="targetRef" class="feature-card" :class="[{ visible: isVisible }, `is-note-${props.noteSide}`]" :style="cardStyle" @transitionend="handleTransitionEnd">
     <div class="feature-card__header">
       <svg class="feature-card__guide" viewBox="0 0 220 126" aria-hidden="true" focusable="false">
         <path
@@ -13,27 +7,17 @@
           d="M154 19C143 19 132 20 121 24C111 28 105 34 106 40C108 48 119 49 126 43C134 36 132 27 124 24C113 20 99 25 93 35C87 45 83 51 72 54C55 58 36 58 14 57"
           pathLength="1"
         />
-        <path
-          class="feature-card__guide-head feature-card__guide-head--desktop"
-          d="M31 43C24 49 18 54 14 57C22 61 30 64 40 65"
-          pathLength="1"
-        />
-        <path
-          class="feature-card__guide-path feature-card__guide-path--mobile"
-          d="M210 16C202 25 190 31 164 34C126 39 90 36 61 44C43 49 29 53 14 56"
-          pathLength="1"
-        />
-        <path
-          class="feature-card__guide-head feature-card__guide-head--mobile"
-          d="M27 43C21 49 17 53 14 56C20 61 26 65 34 68"
-          pathLength="1"
-        />
+        <path class="feature-card__guide-head feature-card__guide-head--desktop" d="M31 43C24 49 18 54 14 57C22 61 30 64 40 65" pathLength="1" />
       </svg>
 
       <div class="feature-card__note">
         <p class="feature-card__eyebrow">Feature {{ indexLabel }}</p>
-        <h3 class="feature-card__title">{{ title }}</h3>
-        <p class="feature-card__description">{{ description }}</p>
+        <h3 class="feature-card__title">
+          <span class="marker marker--title">{{ title }}</span>
+        </h3>
+        <p class="feature-card__description">
+          <span class="marker marker--desc">{{ description }}</span>
+        </p>
       </div>
     </div>
 
@@ -195,6 +179,9 @@ const cardStyle = computed(() => {
 
   return {
     transitionDelay: `${props.delay}ms`,
+    '--marker-speed': `${props.markerSpeed}ms`,
+    '--marker-delay-title': `${props.delay + 120}ms`,
+    '--marker-delay-desc': `${props.delay + 280}ms`,
     '--note-speed': `${Math.max(560, props.markerSpeed)}ms`,
     '--note-delay': `${props.delay + 80}ms`,
     '--guide-delay': `${props.delay + 320}ms`,
@@ -338,11 +325,6 @@ onBeforeUnmount(() => {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
     vector-effect: non-scaling-stroke;
-  }
-
-  &__guide-path--mobile,
-  &__guide-head--mobile {
-    display: none;
   }
 
   &__note {
@@ -564,62 +546,115 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .feature-card {
-    --note-curl-tilt-y: -2.4deg !important;
+    @include glass-effect;
+    display: flex;
+    flex-direction: column;
+    min-height: 640px;
+    padding: 18px;
+    overflow: hidden;
+    border: 1px dashed rgb(148 184 238 / 0.5);
+    border-top: 2px solid rgb(148 184 238 / 0.5);
+    border-bottom: none;
+    -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgb(0 0 0 / 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
+    mask-image: radial-gradient(ellipse 95% 85% at 50% 45%, #000 var(--mask-inner), rgb(0 0 0 / 0.55) calc(var(--mask-inner) + 22%), transparent 100%);
+
+    :where(html.dark) & {
+      border-color: rgb(148 184 238 / 0.4);
+    }
+
+    &.visible {
+      .feature-card__note {
+        opacity: 1;
+        transform: none;
+      }
+
+      .marker {
+        background-size: 100% 8px;
+      }
+    }
 
     &__header {
-      margin-inline: 0;
+      position: relative;
+      z-index: 0;
+      margin: 0 0 20px;
+      overflow: hidden;
+      perspective: none;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        color: var(--text-primary);
+        background-image: radial-gradient(circle, currentColor 1.4px, transparent 1.5px);
+        background-size: 11px 11px;
+        opacity: 0.08;
+        -webkit-mask-image: linear-gradient(90deg, transparent 36%, #000 100%);
+        mask-image: linear-gradient(90deg, transparent 36%, #000 100%);
+        pointer-events: none;
+      }
+    }
+
+    &__guide {
+      display: none;
     }
 
     &__note {
-      padding: 20px 18px 26px;
+      width: 100%;
+      padding: 0;
+      color: var(--text-primary);
+      background: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      border: 0;
+      box-shadow: none;
+      opacity: 1;
+      transform: none;
+      transform-style: flat;
+      transition: none;
 
       &::before,
       &::after {
-        width: 58%;
+        display: none;
       }
+    }
 
-      &::before {
-        bottom: -13px;
-        height: 25px;
-        background: radial-gradient(ellipse at center, rgb(76 59 21 / 0.24) 0%, rgb(76 59 21 / 0.12) 38%, transparent 72%);
-        filter: blur(7px);
-        opacity: 0.72;
-      }
-
-      &::after {
-        bottom: -2px;
-        height: 17px;
-        background: linear-gradient(to bottom, transparent 4%, rgb(255 255 255 / 0.2) 43%, var(--note-paper-deep) 100%);
-        border-bottom-color: rgb(206 158 38 / 0.18);
-        border-radius: 0 0 58% 42%;
-        opacity: 0.52;
-        transform: perspective(150px) rotateX(42deg) rotateZ(var(--note-curl-rotation)) translateZ(2px);
-      }
+    &__eyebrow,
+    &__description {
+      color: var(--text-secondary);
+      opacity: 1;
     }
 
     &__title {
       font-size: 22px;
     }
 
-    &__guide {
-      top: -58px;
-      right: -12px;
-      width: 128px;
-    }
-
-    &__guide-path--desktop,
-    &__guide-head--desktop {
-      display: none;
-    }
-
-    &__guide-path--mobile,
-    &__guide-head--mobile {
-      display: block;
-    }
-
     &__panel {
-      min-height: 640px;
-      padding: 18px;
+      flex: 1;
+      min-height: 0;
+      padding: 0;
+      overflow: visible;
+      background: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      border: 0;
+      box-shadow: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+
+    .marker {
+      padding-bottom: 1px;
+      background: linear-gradient(var(--marker-color), var(--marker-color)) no-repeat left bottom;
+      background-size: 0 8px;
+      transition: background-size var(--marker-speed) cubic-bezier(0.65, 0, 0.35, 1);
+
+      &--title {
+        transition-delay: var(--marker-delay-title);
+      }
+
+      &--desc {
+        transition-delay: var(--marker-delay-desc);
+      }
     }
   }
 }
@@ -646,6 +681,11 @@ onBeforeUnmount(() => {
     &__guide-head {
       animation: none !important;
       stroke-dashoffset: 0;
+    }
+
+    .marker {
+      background-size: 100% 8px;
+      transition: none;
     }
   }
 }

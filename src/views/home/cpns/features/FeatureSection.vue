@@ -1,6 +1,11 @@
 <template>
   <section class="feature-section">
-    <FeatureSectionAnchor />
+    <FeatureSectionAnchor class="feature-section__desktop-anchor" />
+
+    <div class="feature-section__mobile-heading">
+      <h1 class="feature-section__mobile-title">How to Play</h1>
+      <p class="feature-section__intro">快速感受社区的核心交互</p>
+    </div>
 
     <div class="feature-section__grid" :class="[`is-${columns}-col`]">
       <FeatureCard
@@ -85,6 +90,10 @@ const handleActivate = (id: string) => {
 .feature-section {
   margin: 28px 0 80px;
 
+  &__mobile-heading {
+    display: none;
+  }
+
   &__grid {
     display: grid;
     gap: 24px;
@@ -118,6 +127,47 @@ const handleActivate = (id: string) => {
         grid-template-columns: 1fr;
         width: 100%;
       }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-section {
+    position: relative;
+    margin: 40px 0 80px;
+
+    &__desktop-anchor {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &__mobile-heading {
+      display: block;
+      margin-bottom: 24px;
+    }
+
+    &__mobile-title {
+      margin: 0 0 20px;
+      font-size: 32px;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    &__intro {
+      max-width: 760px;
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-secondary);
     }
   }
 }

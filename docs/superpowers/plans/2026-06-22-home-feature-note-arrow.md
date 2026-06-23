@@ -95,3 +95,17 @@
 - [ ] Reposition the desktop SVG toward the note so its visible stroke stays in the connector gap rather than crossing demo content.
 - [ ] Extend the desktop lead-in before the loop and lengthen the final straight segment before the arrowhead.
 - [ ] Restore the mobile 2.4-degree tilt and earlier pseudo-element dimensions while preserving desktop `noteCurlAngle`.
+
+### Task 7: Restore the legacy unified mobile Feature card
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureSection.test.ts`
+- Modify: `src/views/home/cpns/features/test/FeatureCard.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureSection.vue`
+- Modify: `src/views/home/cpns/features/FeatureCard.vue`
+
+- [x] Add regression contracts for the mobile `How to Play` heading, hidden desktop anchor, unified glass card, dot grid, and marker underline.
+- [x] Keep the desktop arrow anchor in the DOM while visually hiding it at the 768 px breakpoint.
+- [x] Hide the paper note depth and guide SVG on mobile, then render the existing Feature copy as the header of the same glass card as its demo.
+- [x] Restore the old mobile dot-grid decoration and green marker drawing without duplicating Feature copy in a second DOM branch.
+- [x] Verify the restored mobile layout at 390 px and confirm desktop notes, alternating placement, guide artwork, and developer-configurable curl remain intact.
