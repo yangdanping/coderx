@@ -120,3 +120,15 @@
 - [x] Replace the staggered path tracing with one animated vertical SVG mask that crosses both chevrons.
 - [x] Reduce the desktop arrow footprint while keeping hover, focus, dark mode, and reduced-motion behavior.
 - [x] Verify the animation transform progresses downward and the rendered desktop width is 88 px.
+
+### Task 9: Tighten the guide body-to-head handoff
+
+**Files:**
+- Modify: `src/views/home/cpns/features/test/FeatureCard.test.ts`
+- Modify: `src/views/home/cpns/features/FeatureCard.vue`
+
+- [ ] Update the source contract to require the arrowhead to start at `calc(var(--guide-delay) + 2100ms)` and reject the previous `2360ms` offset.
+- [ ] Run `pnpm vitest run src/views/home/cpns/features/test/FeatureCard.test.ts` and confirm it fails because the component still uses `2360ms`.
+- [ ] Change only the arrowhead animation delay to `2100ms`, preserving the 2400 ms guide-body duration, 520 ms arrowhead duration, easing curves, one-shot behavior, and reduced-motion fallback.
+- [ ] Re-run the focused FeatureCard test and confirm it passes.
+- [ ] Run `pnpm type-check` and `pnpm build-only`.
