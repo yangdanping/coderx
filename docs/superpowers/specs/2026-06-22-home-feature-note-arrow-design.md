@@ -15,7 +15,7 @@ Refresh the homepage transition into the Feature section without changing the ex
 - The note palette is based on the yellow semicircle in `src/assets/img/bg.svg`: `rgb(253 214 99)`.
 - The existing `HomeExploreLink.vue` implementation is reference-only and must not be modified.
 - The hand-drawn guide uses the `rgb(190 224 198)` green from the rectangle in `bg.svg`.
-- Its curved line draws fully before the arrowhead begins, and the complete sequence plays once when the Feature card enters the viewport.
+- Its arrowhead overlaps the curved line's final 300 ms, and the complete sequence plays once when the Feature card enters the viewport.
 - Dark mode must remain readable and visually related to the light-mode yellow paper.
 
 ## Considered Approaches
@@ -76,7 +76,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 - The decorative SVG stays entirely in the gap between note and demo on wide screens and points to the note's top edge rather than covering text.
 - The path uses one continuous rounded stroke in the `rgb(190 224 198)` background-art green.
 - The path begins near the demo edge with one compact hand-drawn loop before curving toward the note, avoiding a long line that reaches deeply into the demo.
-- The arrowhead is a separate path and begins 40 ms before the curved line completes, so both strokes read as one continuous gesture.
+- The arrowhead is a separate path and begins about 300 ms before the curved line completes, so the slow tail of the body and the arrowhead read as one continuous gesture without a visible pause.
 - On wide layouts the visible stroke remains inside the connector gap, uses a longer lead-in before looping, and finishes with a straighter tail so the lower arrow arm does not merge into the body.
 - On compact layouts it moves above the note and scales down so it does not reduce text width.
 - It is `aria-hidden` and never intercepts pointer input.
@@ -85,7 +85,7 @@ No new shared composable is needed because `FeatureCard` already exposes the exa
 
 - The section arrow light sweep loops continuously because it communicates “continue downward.”
 - The note reveal takes about 600–700 ms with an exponential ease-out.
-- The solid guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead overlaps its final 40 ms.
+- The solid guide path draws once over roughly 2.4 seconds after the card becomes visible so the hand-drawn motion remains noticeable; the arrowhead starts at roughly 2.1 seconds and overlaps the final 300 ms.
 - Staggering continues to use each card's existing `delay` prop.
 - Only `transform`, `opacity`, and SVG stroke properties animate. Layout dimensions do not animate.
 - Under `prefers-reduced-motion: reduce`, the note and guide arrow render immediately in their final states and the section arrow shows a static highlight.
