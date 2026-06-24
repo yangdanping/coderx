@@ -289,7 +289,7 @@ onBeforeUnmount(() => {
     }
 
     .feature-card__guide-head {
-      animation: feature-card-guide-draw 520ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 2360ms) forwards;
+      animation: feature-card-guide-draw 520ms cubic-bezier(0.25, 1, 0.5, 1) calc(var(--guide-delay) + 2100ms) forwards;
       animation-iteration-count: 1;
     }
   }
