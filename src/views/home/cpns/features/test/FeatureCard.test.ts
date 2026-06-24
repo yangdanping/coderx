@@ -67,14 +67,21 @@ describe('FeatureCard note header', () => {
     });
   }
 
-  it('keeps the feature copy inside a yellow paper note with a decorative guide arrow', () => {
+  it('keeps semantic feature copy on a layered paper sheet with decorative attachment cues', () => {
     const wrapper = mountCard();
     const note = wrapper.get('.feature-card__note');
+    const sheet = note.get('.feature-card__note-sheet');
+    const shadow = note.get('.feature-card__note-shadow');
+    const contact = sheet.get('.feature-card__note-contact');
+    const curl = sheet.get('.feature-card__note-curl');
     const guide = wrapper.get('svg.feature-card__guide');
 
-    expect(note.get('.feature-card__eyebrow').text()).toBe('Feature 01');
-    expect(note.get('h3.feature-card__title').text()).toBe('浏览文章自动目录划分');
-    expect(note.get('p.feature-card__description').text()).toContain('目录会自动提取章节');
+    expect(sheet.get('.feature-card__eyebrow').text()).toBe('Feature 01');
+    expect(sheet.get('h3.feature-card__title').text()).toBe('浏览文章自动目录划分');
+    expect(sheet.get('p.feature-card__description').text()).toContain('目录会自动提取章节');
+    expect(shadow.attributes('aria-hidden')).toBe('true');
+    expect(contact.attributes('aria-hidden')).toBe('true');
+    expect(curl.attributes('aria-hidden')).toBe('true');
     expect(guide.attributes('aria-hidden')).toBe('true');
     expect(guide.find('.feature-card__guide-path').exists()).toBe(true);
     expect(guide.find('.feature-card__guide-head').exists()).toBe(true);
@@ -133,37 +140,48 @@ describe('FeatureCard note header', () => {
     expect(source).toContain('-webkit-backdrop-filter: none');
     expect(source).toContain('background-size: 100% 8px');
     expect(source).toMatch(/&__guide\s*\{\s*display:\s*none;/);
-    expect(source).toMatch(/&__note\s*\{[\s\S]*?border:\s*0;/);
+    expect(source).toMatch(/&__note-sheet\s*\{[\s\S]*?border:\s*0;/);
+    expect(source).toMatch(/&__note-shadow,[\s\S]*?&__note-curl\s*\{[\s\S]*?display:\s*none;/);
     expect(source).toMatch(/&__panel\s*\{[\s\S]*?mask-image:\s*none;/);
     expect(source).toContain('min-height: 640px');
   });
 
-  it('exposes a developer-adjustable curl angle and mirrors it toward each outer lower edge', () => {
+  it('normalizes the adjustable curl angle and mirrors lift direction without rotating the whole sheet', () => {
     const leftStyle = mountCard('left', 6).attributes('style');
     const rightStyle = mountCard('right', 6).attributes('style');
     const defaultStyle = mountCard('left').attributes('style');
 
-    expect(leftStyle).toContain('--note-curl-tilt-y: -6deg');
-    expect(rightStyle).toContain('--note-curl-tilt-y: 6deg');
-    expect(defaultStyle).toContain('--note-curl-tilt-y: -4deg');
+    expect(leftStyle).toContain('--note-lift-direction: -1');
+    expect(leftStyle).toContain('--note-lift-strength: 0.75');
+    expect(rightStyle).toContain('--note-lift-direction: 1');
+    expect(rightStyle).toContain('--note-lift-strength: 0.75');
+    expect(defaultStyle).toContain('--note-lift-strength: 0.5');
   });
 
-  it('keeps a complete rectangular note and emphasizes the lifted paper underside', () => {
+  it('attaches the top edge and limits depth cues to the lifted outer corner', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
 
     expect(source).toContain('253 214 99');
-    expect(source).toContain('backdrop-filter');
+    expect(source).toContain('&__note-sheet');
+    expect(source).toContain('&__note-contact');
+    expect(source).toContain('&__note-shadow');
+    expect(source).toContain('&__note-curl');
+    expect(source).toContain('--note-lift-strength');
+    expect(source).toContain('--note-lift-direction');
+    expect(source).toContain('transform-origin: center top');
+    expect(source).toContain('-webkit-mask-image: radial-gradient');
     expect(source).not.toContain('var(--paper-noise)');
+    expect(source).not.toContain('backdrop-filter: blur(10px)');
+    expect(source).not.toContain('rotateY(var(--note-curl-tilt-y))');
+    expect(source).not.toContain('width: 66%');
+    expect(source).not.toContain('// &::before');
+    expect(source).not.toContain('// &::after');
     expect(source).not.toContain('clip-path: polygon(0 0, 100% 0');
     expect(source).not.toContain('clip-path: polygon(100% 0, 0 100%, 100% 100%)');
     expect(source).toContain('transform-style: preserve-3d');
-    expect(source).toContain('--note-curl-left: -3%');
-    expect(source).toContain('--note-curl-right: -3%');
     expect(source).toContain('noteCurlAngle?: number');
     expect(source).toContain('便签外侧下缘的翘曲角度');
-    expect(source).toContain('width: 66%');
-    expect(source).toContain('height: 32px');
-    expect(source).toContain('radial-gradient');
+    expect(source).toMatch(/&__note-shadow\s*\{[\s\S]*?width:\s*(?:3\d|4\d)%;/);
     expect(source).toContain('filter: blur(');
     expect(source).toContain('&.is-note-left');
     expect(source).toContain('&.is-note-right');
