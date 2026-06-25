@@ -126,13 +126,13 @@ describe('useTheme', () => {
     setMode('dark');
     expect(document.documentElement.classList.contains('theme-transitioning')).toBe(true);
 
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: 'coderx-theme',
-        newValue: 'light',
-        storageArea: localStorage,
-      }),
-    );
+    const storageEvent = new Event('storage');
+    Object.defineProperties(storageEvent, {
+      key: { value: 'coderx-theme' },
+      newValue: { value: 'light' },
+      storageArea: { value: localStorage },
+    });
+    window.dispatchEvent(storageEvent);
 
     expect(document.documentElement.classList.contains('dark')).toBe(false);
     expect(document.documentElement.classList.contains('theme-transitioning')).toBe(false);
