@@ -19,6 +19,11 @@ const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
 /** localStorage 存储键名 */
 const STORAGE_KEY = 'coderx-theme';
 
+/** 用户主动切换主题时使用的全局过渡配置。 */
+const THEME_TRANSITION_CLASS = 'theme-transitioning';
+const THEME_TRANSITION_DURATION_MS = 300;
+const THEME_TRANSITION_EASING = 'cubic-bezier(0.65, 0, 0.35, 1)';
+
 /** 主题模式引用 - 在模块级别定义，实现单例模式 */
 const mode = ref<ThemeMode>(DEFAULT_THEME_MODE);
 
@@ -31,6 +36,7 @@ let systemThemeListenerBound = false;
 let storageListenerBound = false;
 let keyboardListenerBound = false;
 let mediaQuery: MediaQueryList | null = null;
+let themeTransitionTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 /** 快捷键配置：按下该键可在 light / dark 间切换 */
 const TOGGLE_SHORTCUT_KEY = 'd';
@@ -68,21 +74,44 @@ function applyTheme() {
 }
 
 /**
- * 临时禁用所有 CSS 过渡动画，避免切换主题时元素"慢吞吞"地跟随变色造成闪烁/撕裂。
- * 与 tailwindcss / shadcn 社区的 disableTransitionOnChange 方案一致。
+ * 清理主题渐变的临时状态。
  */
-function disableTransitionsTemporarily() {
-  const style = document.createElement('style');
-  style.appendChild(document.createTextNode('*,*::before,*::after{-webkit-transition:none!important;transition:none!important}'));
-  document.head.appendChild(style);
+function finishThemeTransition() {
+  if (themeTransitionTimer !== null) {
+    window.clearTimeout(themeTransitionTimer);
+    themeTransitionTimer = null;
+  }
+  document.documentElement.classList.remove(THEME_TRANSITION_CLASS);
+}
 
-  // 双 rAF 确保浏览器在下一帧之后才移除这个覆盖样式，
-  // 此时主题类名已经完成变更并被绘制，不再会触发过渡。
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      style.remove();
-    });
-  });
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/**
+ * 为一次用户主动主题切换开启全局颜色渐变。
+ *
+ * 时长与缓动由这里统一写入 CSS 变量，样式层只消费变量，
+ * 避免 TypeScript 清理时间和 SCSS 动画时间各自维护。
+ */
+function beginThemeTransition() {
+  finishThemeTransition();
+
+  const root = document.documentElement;
+  root.style.setProperty('--theme-transition-duration', `${THEME_TRANSITION_DURATION_MS}ms`);
+  root.style.setProperty('--theme-transition-easing', THEME_TRANSITION_EASING);
+
+  if (prefersReducedMotion()) {
+    return;
+  }
+
+  root.classList.add(THEME_TRANSITION_CLASS);
+  // 确保浏览器先解析过渡规则，再切换 dark class。
+  void root.offsetWidth;
+
+  themeTransitionTimer = window.setTimeout(() => {
+    finishThemeTransition();
+  }, THEME_TRANSITION_DURATION_MS);
 }
 
 function persistTheme() {
@@ -96,9 +125,11 @@ function persistTheme() {
  *    破坏"首次访问不持久化、静默跟随系统"的约定，导致用户此后系统偏好
  *    变化时站点不再自动响应。
  */
-function syncTheme(newMode: ThemeMode, options: { disableTransition?: boolean } = {}) {
-  if (options.disableTransition) {
-    disableTransitionsTemporarily();
+function syncTheme(newMode: ThemeMode, options: { animate?: boolean } = {}) {
+  if (options.animate) {
+    beginThemeTransition();
+  } else {
+    finishThemeTransition();
   }
   mode.value = newMode;
   applyTheme();
@@ -127,7 +158,7 @@ function toggleDark() {
   } else {
     nextMode = systemDark.value ? 'light' : 'dark';
   }
-  syncTheme(nextMode, { disableTransition: true });
+  syncTheme(nextMode, { animate: true });
 }
 
 function handleSystemThemeChange(event: MediaQueryListEvent) {
@@ -136,6 +167,7 @@ function handleSystemThemeChange(event: MediaQueryListEvent) {
   // 仅当 mode === 'system'（包括首次访问的默认态）时才跟随系统变化；
   // 用户一旦主动选择了 light / dark，就"冻结"在用户选择上，不再自动切换。
   if (mode.value === 'system') {
+    finishThemeTransition();
     applyTheme();
   }
 }
@@ -150,6 +182,7 @@ function handleStorageChange(event: StorageEvent) {
   }
 
   mode.value = isThemeMode(event.newValue) ? event.newValue : DEFAULT_THEME_MODE;
+  finishThemeTransition();
   applyTheme();
 }
 
@@ -234,7 +267,7 @@ export function useTheme() {
    * @param newMode - 新的主题模式
    */
   const setMode = (newMode: ThemeMode) => {
-    syncTheme(newMode, { disableTransition: true });
+    syncTheme(newMode, { animate: true });
   };
 
   return {

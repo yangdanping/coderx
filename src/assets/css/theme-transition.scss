@@ -1,0 +1,82 @@
+/*
+ * 主题切换渐变的唯一全局策略入口。
+ *
+ * 时长和缓动由 useTheme 写入 CSS 变量；这里仅决定哪些绘制属性参与过渡。
+ * 规则只在 html.theme-transitioning 存在时生效，避免干扰日常 hover、focus
+ * 和组件进出场动画。
+ */
+
+$theme-transition-tiptap-surfaces: (
+  '.tiptap-editor-container',
+  '.tiptap-toolbar',
+  '.tiptap-bubble-menu',
+  '.comment-editor-container',
+  '.comment-toolbar',
+  '.comment-bubble-menu',
+  '.flow-editor-container',
+  '.flow-bubble-menu',
+  '.completion-popover'
+);
+
+@mixin theme-paint-transition($important: false) {
+  @if $important {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      outline-color,
+      text-decoration-color,
+      box-shadow,
+      fill,
+      stroke,
+      filter,
+      opacity !important;
+    transition-duration: var(--theme-transition-duration) !important;
+    transition-timing-function: var(--theme-transition-easing) !important;
+  } @else {
+    transition-property:
+      color,
+      background-color,
+      border-color,
+      outline-color,
+      text-decoration-color,
+      box-shadow,
+      fill,
+      stroke,
+      filter,
+      opacity;
+    transition-duration: var(--theme-transition-duration);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+}
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  @include theme-paint-transition;
+}
+
+/*
+ * Tiptap 防遗漏注册表：
+ * 编辑器族存在局部 transition 声明，并且 BubbleMenu / AI 补全可能脱离编辑器
+ * DOM 层级。逐项提升主题绘制属性的优先级，确保文章、评论、Flow 与传送浮层
+ * 使用同一时长。新增编辑器表面时必须同步更新本表及契约测试。
+ */
+@each $surface in $theme-transition-tiptap-surfaces {
+  html.theme-transitioning #{$surface},
+  html.theme-transitioning #{$surface} *,
+  html.theme-transitioning #{$surface} *::before,
+  html.theme-transitioning #{$surface} *::after {
+    @include theme-paint-transition(true);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
