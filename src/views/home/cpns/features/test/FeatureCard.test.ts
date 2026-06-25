@@ -105,7 +105,7 @@ describe('FeatureCard note header', () => {
     expect(wrapper.get('.feature-card__guide-path').classes()).toContain('feature-card__guide-path');
   });
 
-  it('keeps the desktop guide in the gap, delays its loop, and separates the lower arrow arm', () => {
+  it('keeps the desktop guide in the gap, overlaps the arrowhead with the slow tail, and separates the lower arrow arm', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
     const wrapper = mountCard();
     const pathData = wrapper.get('.feature-card__guide-path--desktop').attributes('d');
@@ -115,7 +115,8 @@ describe('FeatureCard note header', () => {
     expect(source).toMatch(/stroke-dasharray:\s*1;/);
     expect(source).not.toContain('stroke-dasharray: 0.025 0.055');
     expect(source).toContain('feature-card-guide-draw 2400ms');
-    expect(source).toContain('calc(var(--guide-delay) + 2360ms)');
+    expect(source).toContain('calc(var(--guide-delay) + 2100ms)');
+    expect(source).not.toContain('calc(var(--guide-delay) + 2360ms)');
     expect(source).toContain('animation-iteration-count: 1');
     expect(source).toContain('left: calc(100% - 48px)');
     expect(source).toContain('right: calc(100% - 48px)');
