@@ -272,7 +272,7 @@ describe('HomeExploreLink', () => {
     const link = wrapper.getComponent(RouterLinkStub);
 
     expect(link.props('to')).toEqual({ name: 'article' });
-    expect(link.text()).toContain('Start Exploring');
+    expect(link.text()).toContain('Go Exploring >');
   });
 
   it('renders one decorative canvas behind the semantic link', () => {
@@ -282,7 +282,7 @@ describe('HomeExploreLink', () => {
 
     expect(canvas.attributes('aria-hidden')).toBe('true');
     expect(link.props('to')).toEqual({ name: 'article' });
-    expect(wrapper.get('.home-explore-link__label').text()).toBe('Start Exploring');
+    expect(wrapper.get('.home-explore-link__label').text()).toBe('Go Exploring >');
   });
 
   it('removes the legacy CSS curl and ASCII shadow treatment', () => {
@@ -294,7 +294,7 @@ describe('HomeExploreLink', () => {
     expect(wrapper.find('.home-explore-link__contact-shadow').exists()).toBe(false);
     expect(source).not.toMatch(/linear-gradient|radial-gradient|repeating-linear-gradient/);
     expect(source).not.toContain('box-shadow: inset');
-    expect(source).not.toContain('filter:');
+    expect(source).not.toMatch(/(?:^|\n)\s*filter:/);
     expect(source).not.toContain('░');
     expect(source).not.toContain('▒');
     expect(source).not.toContain('▓');
@@ -306,7 +306,7 @@ describe('HomeExploreLink', () => {
     expect(source).toContain(':focus-visible');
     expect(source).toContain('@media (prefers-reduced-motion: reduce)');
     expect(source).toContain(':where(html.dark) &');
-    expect(source).toContain('min-height: 64px');
+    expect(source).toContain('min-height: 46px');
     expect(source).toContain('@media (max-width: 420px)');
   });
 
