@@ -6,7 +6,7 @@ Replace the current rigid, floating-looking Feature note with a believable sheet
 
 ## Confirmed Direction
 
-- Preserve the existing note position, content hierarchy, yellow palette, alternating left/right placement, guide arrow, activation behavior, and mobile fallback.
+- Preserve the content hierarchy, yellow palette, alternating left/right placement at wide desktop sizes, guide arrow, activation behavior, and unified narrow-layout fallback.
 - Stop using whole-note `rotateY` as the primary depth cue.
 - Do not rely on an exaggerated irregular polygon or a large detached shadow.
 - Treat the homepage Feature note as a flagship visual detail rather than an MVP approximation.
@@ -15,7 +15,7 @@ Replace the current rigid, floating-looking Feature note with a believable sheet
 
 ### A. Layered HTML and CSS paper model — selected
 
-Keep semantic copy in HTML and split the visual into a positioning wrapper, paper sheet, top contact band, localized cast shadow, and lower-corner curl. Each cue describes the same light and attachment model.
+Keep semantic copy in HTML and split the visual into a positioning wrapper, paper sheet, and localized cast shadow. The sheet itself carries the subtle lower-corner shading, without a separate underside flap or top contact band.
 
 This is easy to tune in DevTools, preserves text quality and accessibility, supports both themes, and does not add a rendering dependency.
 
@@ -34,8 +34,6 @@ A displacement filter or mesh could produce genuine surface deformation, but it 
 - `.feature-card__note`: positioning and entrance wrapper.
 - `.feature-card__note-shadow`: localized wall shadow under the lifted outer corner.
 - `.feature-card__note-sheet`: rectangular paper surface and semantic text.
-- `.feature-card__note-contact`: subtle top adhesive/contact band.
-- `.feature-card__note-curl`: local lower-corner underside highlight.
 
 No new composable or shared component is needed because this is isolated presentation with no new state.
 
@@ -45,8 +43,8 @@ No new composable or shared component is needed because this is isolated present
 
 - The transform origin moves to the top edge.
 - The whole sheet keeps only a slight Z rotation and minimal X tilt.
-- A narrow, low-contrast contact band near the top indicates that the adhesive strip is pressed against the wall.
-- The top edge receives almost no external cast shadow.
+- The top edge is defined only by the paper's fine border; no separate gradient line is drawn over it.
+- The top edge receives no external cast shadow.
 
 ### Continuous paper surface
 
@@ -59,26 +57,27 @@ No new composable or shared component is needed because this is isolated present
 
 - Only the lower-left corner lifts for notes placed left of the demo; only the lower-right corner lifts for notes placed right of it.
 - The cast shadow occupies roughly the outer third of the note and grows softer and farther from the sheet toward the corner.
-- The curl element is a small curved underside highlight connected to the sheet, not a separate strip under the complete bottom edge.
-- `noteCurlAngle` continues to control lift intensity, but it affects local curl and shadow strength rather than rotating the entire note as a rigid board.
+- There is no separate underside or curl element protruding beyond the paper silhouette; local sheet shading and the cast shadow carry the depth cue.
+- `noteCurlAngle` continues to control lift intensity for compatibility, but it affects corner shading and shadow strength rather than rotating the entire note as a rigid board.
 
 ## Theme And Responsive Behavior
 
 - Light mode uses warm ivory paper, a faint yellow tint, brown-gray ink, and restrained warm shadows.
 - Dark mode uses charcoal paper with warm yellow undertones and a darker localized wall shadow.
-- At `max-width: 768px`, the detached note artwork, contact band, curl, and cast shadow remain disabled; the existing unified mobile Feature card stays unchanged.
+- At `max-width: 1319px`, the detached note artwork, guide, and cast shadow remain disabled; the existing unified card layout is used instead of placing a paper note above the demo.
+- At `min-width: 1320px`, the alternating left/right paper-note layout remains enabled.
 - Reduced-motion mode renders the same final physical state without the entrance transition.
 
 ## Testing And Verification
 
-- Markup tests confirm the sheet, contact, curl, and shadow layers exist and remain decorative where appropriate.
+- Markup tests confirm the sheet and shadow layers exist while explicitly rejecting separate contact-band and curl layers.
 - Source contracts reject whole-note `rotateY(var(--note-curl-tilt-y))` and the previous 66%-wide underside treatment.
-- Tests confirm `noteCurlAngle` remains clamped and mirrored while exposing a normalized lift-strength variable.
+- Tests confirm `noteCurlAngle` remains clamped while exposing a normalized lift-strength variable.
 - Run the focused FeatureCard tests, ESLint for changed files, type-check, and production build.
-- Inspect left and right notes in light and dark themes at desktop width and confirm the mobile layout is unchanged.
+- Inspect left and right notes in light and dark themes at `1320px` and above, then confirm `1319px` and narrower use the unified card layout.
 
 ## Non-Goals
 
 - No change to Feature copy, demos, guide-arrow geometry, section layout, or scroll mask.
 - No Canvas, SVG displacement filter, image texture, or new package.
-- No redesign of the mobile Feature header.
+- No redesign of the unified narrow Feature header.

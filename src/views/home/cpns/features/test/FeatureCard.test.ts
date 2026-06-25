@@ -67,21 +67,19 @@ describe('FeatureCard note header', () => {
     });
   }
 
-  it('keeps semantic feature copy on a layered paper sheet with decorative attachment cues', () => {
+  it('keeps semantic feature copy on a clean paper sheet without a top contact band', () => {
     const wrapper = mountCard();
     const note = wrapper.get('.feature-card__note');
     const sheet = note.get('.feature-card__note-sheet');
     const shadow = note.get('.feature-card__note-shadow');
-    const contact = sheet.get('.feature-card__note-contact');
-    const curl = sheet.get('.feature-card__note-curl');
     const guide = wrapper.get('svg.feature-card__guide');
 
     expect(sheet.get('.feature-card__eyebrow').text()).toBe('Feature 01');
     expect(sheet.get('h3.feature-card__title').text()).toBe('浏览文章自动目录划分');
     expect(sheet.get('p.feature-card__description').text()).toContain('目录会自动提取章节');
     expect(shadow.attributes('aria-hidden')).toBe('true');
-    expect(contact.attributes('aria-hidden')).toBe('true');
-    expect(curl.attributes('aria-hidden')).toBe('true');
+    expect(note.find('.feature-card__note-contact').exists()).toBe(false);
+    expect(note.find('.feature-card__note-curl').exists()).toBe(false);
     expect(guide.attributes('aria-hidden')).toBe('true');
     expect(guide.find('.feature-card__guide-path').exists()).toBe(true);
     expect(guide.find('.feature-card__guide-head').exists()).toBe(true);
@@ -126,7 +124,7 @@ describe('FeatureCard note header', () => {
     expect(headData).toBe('M31 43C24 49 18 54 14 57C22 61 30 64 40 65');
   });
 
-  it('restores the legacy unified glass card on mobile while keeping desktop note artwork', () => {
+  it('uses the unified card layout below the side-note desktop breakpoint', () => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/views/home/cpns/features/FeatureCard.vue'), 'utf8');
     const wrapper = mountCard();
 
@@ -141,19 +139,17 @@ describe('FeatureCard note header', () => {
     expect(source).toContain('background-size: 100% 8px');
     expect(source).toMatch(/&__guide\s*\{\s*display:\s*none;/);
     expect(source).toMatch(/&__note-sheet\s*\{[\s\S]*?border:\s*0;/);
-    expect(source).toMatch(/&__note-shadow,[\s\S]*?&__note-curl\s*\{[\s\S]*?display:\s*none;/);
+    expect(source).toMatch(/&__note-shadow\s*\{[\s\S]*?display:\s*none;/);
     expect(source).toMatch(/&__panel\s*\{[\s\S]*?mask-image:\s*none;/);
     expect(source).toContain('min-height: 640px');
   });
 
-  it('normalizes the adjustable curl angle and mirrors lift direction without rotating the whole sheet', () => {
+  it('normalizes the adjustable lift strength without rotating the whole sheet', () => {
     const leftStyle = mountCard('left', 6).attributes('style');
     const rightStyle = mountCard('right', 6).attributes('style');
     const defaultStyle = mountCard('left').attributes('style');
 
-    expect(leftStyle).toContain('--note-lift-direction: -1');
     expect(leftStyle).toContain('--note-lift-strength: 0.75');
-    expect(rightStyle).toContain('--note-lift-direction: 1');
     expect(rightStyle).toContain('--note-lift-strength: 0.75');
     expect(defaultStyle).toContain('--note-lift-strength: 0.5');
   });
@@ -163,11 +159,14 @@ describe('FeatureCard note header', () => {
 
     expect(source).toContain('253 214 99');
     expect(source).toContain('&__note-sheet');
-    expect(source).toContain('&__note-contact');
+    expect(source).not.toContain('feature-card__note-contact');
+    expect(source).not.toContain('&__note-contact');
+    expect(source).not.toContain('--note-contact-shade');
     expect(source).toContain('&__note-shadow');
-    expect(source).toContain('&__note-curl');
+    expect(source).not.toContain('feature-card__note-curl');
+    expect(source).not.toContain('&__note-curl');
     expect(source).toContain('--note-lift-strength');
-    expect(source).toContain('--note-lift-direction');
+    expect(source).not.toContain('--note-lift-direction');
     expect(source).toContain('transform-origin: center top');
     expect(source).toContain('-webkit-mask-image: radial-gradient');
     expect(source).not.toContain('var(--paper-noise)');
@@ -186,7 +185,8 @@ describe('FeatureCard note header', () => {
     expect(source).toContain('&.is-note-left');
     expect(source).toContain('&.is-note-right');
     expect(source).toContain(':where(html.dark) &');
-    expect(source).toContain('@media (max-width: 768px)');
+    expect(source).toContain('@media (max-width: 1319px)');
+    expect(source).not.toContain('@media (max-width: 768px)');
     expect(source).toContain('@media (prefers-reduced-motion: reduce)');
   });
 });

@@ -13,7 +13,6 @@
       <div class="feature-card__note">
         <span class="feature-card__note-shadow" aria-hidden="true" />
         <div class="feature-card__note-sheet">
-          <span class="feature-card__note-contact" aria-hidden="true" />
           <p class="feature-card__eyebrow">Feature {{ indexLabel }}</p>
           <h3 class="feature-card__title">
             <span class="marker marker--title">{{ title }}</span>
@@ -21,7 +20,6 @@
           <p class="feature-card__description">
             <span class="marker marker--desc">{{ description }}</span>
           </p>
-          <span class="feature-card__note-curl" aria-hidden="true" />
         </div>
       </div>
     </div>
@@ -180,7 +178,6 @@ onMounted(() => {
 });
 
 const cardStyle = computed(() => {
-  const liftDirection = props.noteSide === 'left' ? -1 : 1;
   const liftStrength = Number((safeNoteCurlAngle.value / 8).toFixed(3));
 
   return {
@@ -191,7 +188,6 @@ const cardStyle = computed(() => {
     '--note-speed': `${Math.max(560, props.markerSpeed)}ms`,
     '--note-delay': `${props.delay + 80}ms`,
     '--guide-delay': `${props.delay + 320}ms`,
-    '--note-lift-direction': `${liftDirection}`,
     '--note-lift-strength': `${liftStrength}`,
   };
 });
@@ -337,25 +333,16 @@ onBeforeUnmount(() => {
   &__note {
     --note-surface: rgb(255 252 238 / 0.94);
     --note-tint: rgb(253 214 99 / 0.11);
-    --note-paper-deep: rgb(225 186 78 / 0.3);
     --note-edge: rgb(190 146 38 / 0.28);
     --note-ink: rgb(66 58 38);
     --note-corner-shade: rgb(146 104 31 / 0.13);
-    --note-contact-shade: rgb(106 80 24 / 0.12);
     --note-shadow-color: rgb(76 56 20 / 0.34);
-    --note-crease-color: rgb(112 79 21 / 0.18);
     --note-rotation: -1.1deg;
     --note-start-rotation: -3deg;
     --note-lift-x: 0%;
     --note-shadow-left: -4%;
     --note-shadow-right: auto;
     --note-shadow-shift: -6px;
-    --note-curl-left: -1px;
-    --note-curl-right: auto;
-    --note-curl-origin: left bottom;
-    --note-curl-shift: -2px;
-    --note-curl-rotation: 1.2deg;
-    --note-curl-radius: 0 0 72% 22%;
 
     position: relative;
     z-index: 1;
@@ -371,13 +358,10 @@ onBeforeUnmount(() => {
     :where(html.dark) & {
       --note-surface: rgb(38 39 44 / 0.94);
       --note-tint: rgb(253 214 99 / 0.08);
-      --note-paper-deep: rgb(124 105 59 / 0.28);
       --note-edge: rgb(253 214 99 / 0.28);
       --note-ink: rgb(244 236 208);
       --note-corner-shade: rgb(0 0 0 / 0.28);
-      --note-contact-shade: rgb(0 0 0 / 0.26);
       --note-shadow-color: rgb(0 0 0 / 0.56);
-      --note-crease-color: rgb(0 0 0 / 0.34);
     }
   }
 
@@ -403,20 +387,6 @@ onBeforeUnmount(() => {
     transform-style: preserve-3d;
   }
 
-  &__note-contact {
-    position: absolute;
-    z-index: 3;
-    top: -1px;
-    right: 8%;
-    left: 8%;
-    height: 10px;
-    background: linear-gradient(to bottom, var(--note-contact-shade), transparent 78%);
-    border-radius: 0 0 50% 50%;
-    opacity: 0.62;
-    pointer-events: none;
-    transform: translateZ(1px);
-  }
-
   &__note-shadow {
     position: absolute;
     z-index: 0;
@@ -429,30 +399,8 @@ onBeforeUnmount(() => {
     filter: blur(7px);
     opacity: calc(0.14 + var(--note-lift-strength) * 0.36);
     pointer-events: none;
-    transform: translateX(var(--note-shadow-shift)) rotate(var(--note-curl-rotation)) scaleY(calc(0.72 + var(--note-lift-strength) * 0.24));
-    transform-origin: var(--note-curl-origin);
-  }
-
-  &__note-curl {
-    position: absolute;
-    z-index: 2;
-    right: var(--note-curl-right);
-    bottom: -10px;
-    left: var(--note-curl-left);
-    width: 36%;
-    height: 38px;
-    background:
-      radial-gradient(ellipse 110% 24% at var(--note-lift-x) 4%, var(--note-crease-color) 0%, transparent 72%),
-      linear-gradient(to bottom, var(--note-surface) 0 14%, rgb(255 255 255 / 0.34) 38%, var(--note-paper-deep) 100%);
-    border-bottom: 1px solid rgb(190 146 38 / 0.22);
-    border-radius: var(--note-curl-radius);
-    opacity: calc(0.62 + var(--note-lift-strength) * 0.32);
-    -webkit-mask-image: radial-gradient(ellipse 120% 115% at var(--note-lift-x) 100%, #000 0 60%, rgb(0 0 0 / 0.9) 69%, transparent 79%);
-    mask-image: radial-gradient(ellipse 120% 115% at var(--note-lift-x) 100%, #000 0 60%, rgb(0 0 0 / 0.9) 69%, transparent 79%);
-    pointer-events: none;
-    transform: perspective(180px) translate3d(var(--note-curl-shift), 1px, 3px) rotateX(42deg)
-      rotateY(calc(var(--note-lift-direction) * 5deg)) rotateZ(var(--note-curl-rotation)) scaleY(calc(0.8 + var(--note-lift-strength) * 0.28));
-    transform-origin: var(--note-curl-origin);
+    transform: translateX(var(--note-shadow-shift)) scaleY(calc(0.72 + var(--note-lift-strength) * 0.24));
+    transform-origin: center;
   }
 
   &__eyebrow {
@@ -544,12 +492,6 @@ onBeforeUnmount(() => {
         --note-shadow-left: -4%;
         --note-shadow-right: auto;
         --note-shadow-shift: -6px;
-        --note-curl-left: -1px;
-        --note-curl-right: auto;
-        --note-curl-origin: left bottom;
-        --note-curl-shift: -2px;
-        --note-curl-rotation: 1.2deg;
-        --note-curl-radius: 0 0 72% 22%;
       }
 
       .feature-card__header {
@@ -574,12 +516,6 @@ onBeforeUnmount(() => {
         --note-shadow-left: auto;
         --note-shadow-right: -4%;
         --note-shadow-shift: 6px;
-        --note-curl-left: auto;
-        --note-curl-right: -1px;
-        --note-curl-origin: right bottom;
-        --note-curl-shift: 2px;
-        --note-curl-rotation: -1.2deg;
-        --note-curl-radius: 0 0 22% 72%;
       }
 
       .feature-card__guide {
@@ -592,7 +528,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1319px) {
   .feature-card {
     @include glass-effect;
     display: flex;
@@ -665,9 +601,7 @@ onBeforeUnmount(() => {
       transform-style: flat;
     }
 
-    &__note-shadow,
-    &__note-contact,
-    &__note-curl {
+    &__note-shadow {
       display: none;
     }
 
