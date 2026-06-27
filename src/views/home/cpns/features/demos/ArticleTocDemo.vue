@@ -23,21 +23,24 @@
 
     <aside class="article-demo__toc">
       <div class="article-demo__toc-title">目录</div>
-      <button
-        v-for="section in demoData.sections"
-        :key="section.id"
-        type="button"
-        :class="['article-demo__toc-item', `level-${section.level}`, { active: activeId === section.id }]"
-        @click="jumpToSection(section.id, true)"
-      >
-        {{ section.heading }}
-      </button>
+      <div class="article-demo__toc-track" :style="tocSliderStyle">
+        <span class="toc-active-slider article-demo__toc-slider" aria-hidden="true"></span>
+        <button
+          v-for="section in demoData.sections"
+          :key="section.id"
+          type="button"
+          :class="['article-demo__toc-item', `level-${section.level}`, { active: activeId === section.id }]"
+          @click="jumpToSection(section.id, true)"
+        >
+          {{ section.heading }}
+        </button>
+      </div>
     </aside>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 
 import articleTocDemoData from '@/views/home/data/article-toc-demo.json';
 import { useAutoPlay } from '@/composables/useAutoPlay';
@@ -50,6 +53,8 @@ const props = defineProps<{
   active: boolean;
 }>();
 
+const TOC_ITEM_HEIGHT = 38;
+
 const demoData = articleTocDemoData as ArticleTocDemoData;
 const viewportRef = ref<HTMLDivElement | null>(null);
 const activeId = ref(demoData.sections[0]?.id ?? '');
@@ -58,6 +63,16 @@ const hasStarted = ref(false);
 const isProgrammaticScroll = ref(false);
 
 const { start } = useAutoPlay({ loopDelay: 2400 });
+
+const activeIndex = computed(() => demoData.sections.findIndex((section) => section.id === activeId.value));
+const tocSliderStyle = computed(() => {
+  const index = activeIndex.value >= 0 ? activeIndex.value : 0;
+
+  return {
+    '--toc-active-y': `${index * TOC_ITEM_HEIGHT}px`,
+    '--toc-active-opacity': activeIndex.value >= 0 ? '1' : '0',
+  };
+});
 
 let resumeTimer: ReturnType<typeof setTimeout> | null = null;
 let scrollFlagTimer: ReturnType<typeof setTimeout> | null = null;
@@ -317,43 +332,73 @@ onBeforeUnmount(() => {
 
   &__toc {
     align-self: start;
-    padding: 20px;
-    @include glass-effect;
-    border: 1px solid var(--el-border-color-lighter);
-    transition: all 0.3s ease;
+    padding: 16px 0;
+    overflow-x: hidden;
   }
 
   &__toc-title {
-    font-size: 18px;
+    padding-left: 18px;
+    font-size: 17px;
     font-weight: bold;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    margin-bottom: 14px;
     color: var(--text-primary);
   }
 
+  &__toc-track {
+    --toc-accent-color: #81c995;
+    --toc-muted-color: color-mix(in srgb, var(--text-secondary) 68%, #9a9a9a);
+    --toc-active-y: 0px;
+    --toc-active-opacity: 0;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  :where(html.dark) &__toc-track {
+    --toc-accent-color: #c0e0c7;
+  }
+
+  .toc-active-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 38px;
+    border-radius: 0;
+    background: var(--toc-accent-color);
+    opacity: var(--toc-active-opacity);
+    pointer-events: none;
+    transform: translate3d(0, var(--toc-active-y), 0);
+    transition:
+      transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      background-position 0.34s ease;
+  }
+
   &__toc-item {
-    display: block;
+    display: flex;
+    align-items: center;
     width: 100%;
+    min-height: 38px;
+    box-sizing: border-box;
     border: 0;
     background: transparent;
-    padding: 8px 10px;
+    padding: 0 10px 0 18px;
     text-align: left;
     cursor: pointer;
     font-size: 14px;
     line-height: 1.4;
-    color: var(--text-secondary);
-    border-radius: 4px;
-    transition: all 0.2s;
+    color: var(--toc-muted-color);
+    border-radius: 0;
+    transition:
+      color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--text-primary);
     }
 
     &.active {
-      color: var(--el-color-primary);
+      color: var(--toc-accent-color);
       font-weight: bold;
-      background-color: var(--el-color-primary-light-9);
     }
 
     &.level-1 {
@@ -361,7 +406,7 @@ onBeforeUnmount(() => {
     }
 
     &.level-2 {
-      padding-left: 20px;
+      padding-left: 30px;
       font-size: 13px;
     }
   }
@@ -377,6 +422,15 @@ onBeforeUnmount(() => {
 
     &__viewport {
       min-height: 260px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-demo {
+    .toc-active-slider,
+    &__toc-item {
+      transition: none;
     }
   }
 }

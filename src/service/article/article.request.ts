@@ -1,4 +1,5 @@
 import myRequest from '@/service';
+import { normalizeSearchKeyword } from '@/utils/search';
 import type { IArticle, IArticleList } from '@/service/article/article.types';
 import type { IPage, IResData, RouteParam } from '@/service/types';
 
@@ -88,7 +89,7 @@ export const changeTags = (articleId: RouteParam, tags: string[]) => {
 export const search = (keywords: string, signal?: AbortSignal) => {
   return myRequest.get<IResData>({
     url: `${urlHead}/search`,
-    params: { keywords },
+    params: { keywords: normalizeSearchKeyword(keywords) },
     signal,
   });
 };

@@ -3,11 +3,14 @@
     <!-- Desktop View -->
     <div class="toc-desktop hidden-sm-and-down">
       <div class="toc-title">目录</div>
-      <ul class="toc-list">
-        <li v-for="item in titles" :key="item.id" :class="['toc-item', `level-${item.level}`, { active: activeId === item.id }]" @click="scrollTo(item.id)">
-          {{ item.title }}
-        </li>
-      </ul>
+      <div class="toc-list-shell" :style="tocSliderStyle">
+        <span class="toc-active-slider" aria-hidden="true"></span>
+        <ul class="toc-list">
+          <li v-for="item in titles" :key="item.id" :class="['toc-item', `level-${item.level}`, { active: activeId === item.id }]" @click="scrollTo(item.id)">
+            {{ item.title }}
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Mobile View -->
@@ -35,7 +38,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { ListTree } from '@lucide/vue';
 
 import type { DetailTocTitle } from './types/detail-toc.type';
@@ -44,8 +47,20 @@ const props = defineProps<{
   titles: DetailTocTitle[];
 }>();
 
+const TOC_ITEM_HEIGHT = 40;
+
 const showDrawer = ref(false);
-const activeId = ref('');
+const activeId = ref(props.titles[0]?.id ?? '');
+
+const activeIndex = computed(() => props.titles.findIndex((item) => item.id === activeId.value));
+const tocSliderStyle = computed(() => {
+  const index = activeIndex.value >= 0 ? activeIndex.value : 0;
+
+  return {
+    '--toc-active-y': `${index * TOC_ITEM_HEIGHT}px`,
+    '--toc-active-opacity': activeIndex.value >= 0 ? '1' : '0',
+  };
+});
 
 const scrollTo = (id: string) => {
   const el = document.getElementById(id);
@@ -82,6 +97,7 @@ const handleScroll = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll);
+  handleScroll();
 });
 
 onUnmounted(() => {
@@ -92,22 +108,49 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .toc-desktop {
   width: 100%;
-  @include glass-effect;
-  padding: 20px;
+  padding: 6px 0;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
-  transition: all 0.3s ease;
+  overflow-x: hidden;
   z-index: 10;
-  border: 1px solid var(--el-border-color-lighter);
 
   .toc-title {
     font-size: 18px;
     font-weight: bold;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    margin-bottom: 18px;
+    padding-left: 20px;
     color: var(--text-primary);
   }
+}
+
+.toc-list-shell {
+  --toc-accent-color: #81c995;
+  --toc-muted-color: color-mix(in srgb, var(--text-secondary) 68%, #9a9a9a);
+  --toc-active-y: 0px;
+  --toc-active-opacity: 0;
+  position: relative;
+  overflow-x: hidden;
+}
+
+:where(html.dark) .toc-list-shell {
+  --toc-accent-color: #c0e0c7;
+}
+
+.toc-active-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 40px;
+  border-radius: 0;
+  background: var(--toc-accent-color);
+  opacity: var(--toc-active-opacity);
+  pointer-events: none;
+  transform: translate3d(0, var(--toc-active-y), 0);
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease,
+    background-position 0.34s ease;
 }
 
 .toc-list {
@@ -116,22 +159,25 @@ onUnmounted(() => {
   margin: 0;
 
   .toc-item {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    box-sizing: border-box;
     cursor: pointer;
-    padding: 8px 10px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: 0 10px 0 20px;
+    font-size: 15px;
+    color: var(--toc-muted-color);
     line-height: 1.4;
+    transition:
+      color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--text-primary);
     }
 
     &.active {
-      color: var(--el-color-primary);
+      color: var(--toc-accent-color);
       font-weight: bold;
-      background-color: var(--el-color-primary-light-9);
     }
 
     &.level-1 {
@@ -139,9 +185,16 @@ onUnmounted(() => {
     }
 
     &.level-2 {
-      padding-left: 20px;
-      font-size: 13px;
+      padding-left: 32px;
+      font-size: 14px;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toc-active-slider,
+  .toc-list .toc-item {
+    transition: none;
   }
 }
 
@@ -216,6 +269,7 @@ $toc-trigger-glow: #a3dfd0;
 }
 
 .toc-list-mobile {
+  --toc-accent-color: #81c995;
   list-style: none;
   padding: 0;
 
@@ -231,10 +285,14 @@ $toc-trigger-glow: #a3dfd0;
     }
 
     &.active {
-      color: var(--el-color-primary);
+      color: var(--toc-accent-color);
       font-weight: bold;
     }
   }
+}
+
+:where(html.dark) .toc-list-mobile {
+  --toc-accent-color: #c0e0c7;
 }
 
 /* Element Plus Responsive Utility Classes Simulation */

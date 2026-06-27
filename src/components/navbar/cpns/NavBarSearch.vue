@@ -1,208 +1,216 @@
 <template>
-  <div class="search" ref="containerRef">
-    <el-input
-      ref="inputRef"
-      v-model="searchValue"
-      @focus="handleFocus"
-      @keyup.enter="submitSearch"
-      @compositionstart="handleCompositionStart"
-      @compositionend="handleCompositionEnd"
-      :style="{ width: widerStyle }"
-      placeholder="Search CoderX"
-      :prefix-icon="Search"
-      clearable
-      size="large"
-    />
-    <el-card v-show="showCardWithDelay" class="search-card" :style="{ width: widerStyle }">
-      <!-- 搜索记录头部 -->
-      <template v-if="searchHistory.length && !searchValue" #header>
-        <span class="header-title">搜索记录:</span>
-        <el-button type="text" size="small" @click="clearAllHistory" class="clear-btn"> 清空 </el-button>
-      </template>
+  <div class="search">
+    <button type="button" class="search-trigger" :aria-expanded="isDialogOpen" aria-haspopup="dialog" aria-label="打开搜索面板" @click="toggleDialog">
+      <Search class="search-trigger-icon" :size="18" aria-hidden="true" />
+      <kbd class="search-shortcut">{{ shortcutText }}</kbd>
+    </button>
 
-      <!-- 搜索记录列表 (仅在无搜索词时显示) -->
-      <div v-if="searchHistory.length && !searchValue" class="history-content">
-        <div
-          v-for="(item, index) in searchHistory"
-          :key="index"
-          class="history-item"
-          :style="getItemStyle(index)"
-          @click="selectHistoryItem(item)"
-          @mouseenter="hoveredIndex = index"
-          @mouseleave="hoveredIndex = -1"
-        >
-          <span class="history-text">{{ item }}</span>
-          <el-icon class="delete-icon" v-show="hoveredIndex === index" @click.stop="removeHistoryItem(item)">
-            <X />
-          </el-icon>
-        </div>
-      </div>
-
-      <!-- 搜索结果列表 -->
-      <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchResults?.length && searchHistory.length }">
-        <template v-if="!isLoading">
-          <template v-if="searchResults?.length">
-            <div v-for="item in searchResults" :key="item.id" @click="goToArticle(item)" class="result-item-wrapper">
-              <div class="search-item" v-html="highlightText(item.title, searchValue)"></div>
+    <Teleport to="body">
+      <Transition name="search-overlay">
+        <div v-if="isDialogOpen" class="search-overlay" @click="closeDialog">
+          <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索 CoderX" @click.stop>
+            <div class="search-input-shell">
+              <Search class="search-input-icon" :size="24" aria-hidden="true" />
+              <input
+                ref="searchInput"
+                v-model="searchValue"
+                class="search-input"
+                type="search"
+                name="coderx-search"
+                aria-label="Search CoderX"
+                placeholder="Vue, TypeScript…"
+                autocomplete="off"
+                inputmode="search"
+                spellcheck="false"
+                @keyup.enter="submitSearch"
+                @compositionstart="handleCompositionStart"
+                @compositionend="handleCompositionEnd"
+              />
             </div>
-          </template>
-          <div v-else class="no-data-text">未搜索到相关内容</div>
-        </template>
-        <div v-else class="loading" v-loading="true"></div>
-      </div>
-    </el-card>
+
+            <div class="search-panel">
+              <template v-if="!searchValue && searchHistory.length">
+                <div class="search-panel-header">
+                  <span class="header-title">历史记录</span>
+                  <button type="button" class="clear-btn" @click="clearAllHistory">清空</button>
+                </div>
+
+                <div class="history-content">
+                  <div
+                    v-for="(item, index) in searchHistory"
+                    :key="item"
+                    class="history-chip"
+                    @mouseenter="hoveredIndex = index"
+                    @mouseleave="hoveredIndex = -1"
+                    @focusin="hoveredIndex = index"
+                    @focusout="hoveredIndex = -1"
+                  >
+                    <button type="button" class="history-item" :style="getItemStyle(index)" @click="selectHistoryItem(item)">
+                      <span class="history-text">{{ item }}</span>
+                    </button>
+                    <button v-show="hoveredIndex === index" type="button" class="delete-icon" aria-label="删除历史记录" @click.stop="removeHistoryItem(item)">
+                      <Trash2 :size="12" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchHistory.length > 0 }">
+                <template v-if="!isLoading">
+                  <template v-if="searchResults.length">
+                    <button v-for="item in searchResults" :key="item.id" type="button" class="result-item" @click="goToArticle(item)">
+                      <span v-for="(part, partIndex) in getHighlightedSearchParts(item.title, searchValue)" :key="`${item.id}-${partIndex}`" :class="{ 'search-match': part.matched }">
+                        {{ part.text }}
+                      </span>
+                    </button>
+                  </template>
+                  <div v-else class="no-data-text">未找到相关内容</div>
+                </template>
+                <div v-else class="loading" v-loading="true"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useRouter, useRoute } from 'vue-router';
-import { Search, X } from '@lucide/vue';
+import { Search, Trash2 } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
+import { useRoute, useRouter } from 'vue-router';
 import { debounce } from '@/utils';
+import { getHighlightedSearchParts, getSearchShortcutText, isSearchToggleShortcut, normalizeSearchKeyword } from '@/utils/search';
 import LocalCache from '@/utils/LocalCache';
-import useRootStore from '@/stores/index.store';
 import useArticleStore from '@/stores/article.store';
 import { search } from '@/service/article/article.request';
 
-// 1. 状态定义
-const containerRef = ref<HTMLElement>();
-const inputRef = ref();
-const searchValue = ref('');
-const debouncedSearchValue = ref(''); // 用于触发查询的防抖值
-const isFocused = ref(false);
-const searchHistory = ref<string[]>([]);
-const hoveredIndex = ref(-1);
-const isComposing = ref(false); // 追踪输入法状态
+interface SearchResultItem {
+  id: number | string;
+  title: string;
+}
 
-const rootStore = useRootStore();
+const searchInput = useTemplateRef<HTMLInputElement>('searchInput');
+const searchValue = shallowRef('');
+const debouncedSearchValue = shallowRef('');
+const isDialogOpen = shallowRef(false);
+const searchHistory = shallowRef<string[]>([]);
+const hoveredIndex = shallowRef(-1);
+const isComposing = shallowRef(false);
+const shortcutText = computed(() => getSearchShortcutText());
+
 const articleStore = useArticleStore();
-const { isSmallScreen } = storeToRefs(rootStore);
 const router = useRouter();
 const route = useRoute();
 
-// 从 URL 同步搜索词到输入框（当在 /search 页面时）
-// 可选优化点：这里可按需对 query 做 trim 或类型收敛，减少 URL 同步时的边界处理。
 watch(
   () => route.query.q,
   (newQ) => {
-    if (route.path === '/search' && newQ) {
-      searchValue.value = newQ as string;
+    if (route.path === '/search' && typeof newQ === 'string') {
+      searchValue.value = newQ;
     }
   },
   { immediate: true },
 );
 
-// 防抖更新查询参数
 const updateDebouncedValue = debounce(() => {
   debouncedSearchValue.value = searchValue.value;
 }, 500);
 
 watch(searchValue, (newVal) => {
-  if (!newVal) {
+  if (!normalizeSearchKeyword(newVal)) {
     debouncedSearchValue.value = '';
-  } else {
-    updateDebouncedValue();
+    return;
   }
+
+  updateDebouncedValue();
 });
 
-// 2. TanStack Query 替换原有的 Store/Loading 逻辑
+const normalizedDebouncedSearchValue = computed(() => normalizeSearchKeyword(debouncedSearchValue.value));
+
 const { data: searchData, isLoading } = useQuery({
-  queryKey: ['search', debouncedSearchValue],
+  queryKey: computed(() => ['search', normalizedDebouncedSearchValue.value]),
   queryFn: ({ signal }) => search(debouncedSearchValue.value, signal),
-  enabled: computed(() => !!debouncedSearchValue.value), // 只有当有搜索值时才查询
-  staleTime: 1000 * 60, // 1分钟缓存
-  select: (res) => res.data, // 只返回 data 部分
+  enabled: computed(() => !!normalizedDebouncedSearchValue.value),
+  staleTime: 1000 * 60,
+  select: (res) => res.data as SearchResultItem[],
 });
 
 const searchResults = computed(() => searchData.value || []);
 
-// 3. 显示逻辑优化
-// 点击外部隐藏逻辑
-const handleClickOutside = (event: MouseEvent) => {
-  if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
-    isFocused.value = false;
+let originalBodyOverflow = '';
+
+const lockBodyScroll = () => {
+  originalBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+};
+
+const unlockBodyScroll = () => {
+  document.body.style.overflow = originalBodyOverflow;
+};
+
+watch(isDialogOpen, async (open) => {
+  if (open) {
+    lockBodyScroll();
+    loadSearchHistory();
+    await nextTick();
+    if (shouldFocusSearchInput()) {
+      searchInput.value?.focus();
+    }
+    return;
+  }
+
+  unlockBodyScroll();
+});
+
+const openDialog = () => {
+  isDialogOpen.value = true;
+};
+
+const closeDialog = () => {
+  isDialogOpen.value = false;
+  hoveredIndex.value = -1;
+};
+
+const toggleDialog = () => {
+  isDialogOpen.value ? closeDialog() : openDialog();
+};
+
+const shouldFocusSearchInput = () => typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 768px)').matches;
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (isSearchToggleShortcut(event)) {
+    event.preventDefault();
+    toggleDialog();
+    return;
+  }
+
+  if (event.key === 'Escape' && isDialogOpen.value) {
+    event.preventDefault();
+    closeDialog();
   }
 };
 
-const handleFocus = () => {
-  isFocused.value = true;
-};
-
-// 处理macos系统输入法回车键提交搜索的问题
 const handleCompositionStart = () => (isComposing.value = true);
 
 const handleCompositionEnd = () => {
-  // 使用 setTimeout 延迟重置，确保 keyup.enter 事件能正确检测到输入法状态
-  // compositionend 和 keyup.enter 几乎同时触发，需要延迟一点点时间
   setTimeout(() => (isComposing.value = false), 100);
 };
 
-// 控制卡片显示：(聚焦状态) && (有搜索内容 OR 有历史记录)
-const shouldShowCard = computed(() => {
-  const hasContent = !!searchValue.value || searchHistory.value.length > 0;
-  return isFocused.value && hasContent;
-});
-
-/**
- * 卡片显示延迟控制
- * 目的：让卡片在 input 宽度变化完成后再出现，实现流畅的动画效果
- *
- * showCardWithDelay: 控制卡片最终是否显示（响应式，用于模板渲染）
- * showCardTimer: 延迟定时器 ID（普通变量，不需要响应式）
- *   - 不用 ref() 的原因：
- *     1. 只用于存储定时器 ID，清除定时器时使用
- *     2. 不需要在模板中使用，不需要触发视图更新
- *     3. 使用普通变量更轻量，避免响应式系统的性能开销
- */
-const showCardWithDelay = ref(false);
-let showCardTimer: number | null = null;
-
-watch(shouldShowCard, (newVal) => {
-  if (newVal) {
-    // 显示逻辑：小屏幕立即显示，大屏幕延迟 300ms（等待 input 宽度过渡完成）
-    if (isSmallScreen.value) {
-      showCardWithDelay.value = true;
-    } else {
-      showCardTimer = window.setTimeout(() => {
-        showCardWithDelay.value = true;
-      }, 300);
-    }
-  } else {
-    // 隐藏逻辑：无论屏幕大小，都立即隐藏并清除待执行的定时器
-    if (showCardTimer) {
-      clearTimeout(showCardTimer);
-      showCardTimer = null;
-    }
-    showCardWithDelay.value = false;
-  }
-});
-
-// 样式计算
-const widerStyle = computed(() => {
-  const baseWidth = 240;
-  if (!isSmallScreen.value) {
-    return shouldShowCard.value ? baseWidth + 100 + 'px' : baseWidth + 'px';
-  } else {
-    // 移动端由 flex 中间列分配剩余宽度，避免与右侧操作区重叠
-    return '100%';
-  }
-});
-
 const borderColors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#ff6b9d', '#9c27b0', '#00bcd4', '#ff9800', '#795548'];
+
 const getItemStyle = (index: number) => {
   const color = borderColors[index % borderColors.length];
-  return { borderColor: color, color: color };
+  return { borderColor: color, color };
 };
 
-// 4. 搜索记录管理
 const loadSearchHistory = () => {
   searchHistory.value = LocalCache.getSearchHistory();
 };
 
 const selectHistoryItem = (value: string) => {
   searchValue.value = value;
-  // 选中历史记录时，不仅赋值，通常也期望触发搜索或跳转
-  // 这里直接触发提交
   submitSearch();
 };
 
@@ -216,207 +224,418 @@ const clearAllHistory = () => {
   loadSearchHistory();
 };
 
-// 5. 提交搜索与跳转
 const submitSearch = () => {
   if (isComposing.value) return;
-  if (!searchValue.value) return;
 
-  // 保存记录
-  LocalCache.addSearchHistory(searchValue.value);
+  const visibleKeyword = searchValue.value.trim();
+  if (!visibleKeyword) return;
+
+  LocalCache.addSearchHistory(visibleKeyword);
   loadSearchHistory();
-
-  // 隐藏下拉 (失去焦点)
-  isFocused.value = false;
-  if (inputRef.value) inputRef.value.blur();
+  closeDialog();
 
   articleStore.activeTagId = '综合';
-
-  // 统一跳转到 /search?q=xxx（单页面路由切换）
-  router.push({ path: '/search', query: { q: searchValue.value } });
+  router.push({ path: '/search', query: { q: visibleKeyword } });
 };
 
-const goToArticle = (item: any) => {
-  // 记录点击历史
+const goToArticle = (item: SearchResultItem) => {
   LocalCache.addSearchHistory(item.title);
   loadSearchHistory();
+  closeDialog();
 
   const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.id } });
   window.open(routeUrl.href, '_blank');
 };
 
-// 6. 工具函数
-const highlightText = (text: string, keyword: string) => {
-  if (!keyword || !text) return text;
-  const regex = new RegExp(keyword, 'gi');
-  return text.replace(regex, '<strong>$&</strong>');
-};
-
-// 7. 生命周期
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('keydown', handleKeydown);
   loadSearchHistory();
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-  if (showCardTimer) {
-    clearTimeout(showCardTimer);
-  }
+  window.removeEventListener('keydown', handleKeydown);
+  unlockBodyScroll();
 });
 </script>
 
 <style lang="scss" scoped>
-$searchWidth: 100%;
-
 .search {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 
-  @media (max-width: 768px) {
+.search-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 74px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--el-color-primary) 48%, transparent);
+    background: var(--glass-bg-popup);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.search-trigger-icon {
+  flex: 0 0 auto;
+}
+
+.search-shortcut {
+  min-width: 34px;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 5px;
+  font-family: MapleMono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  background: color-mix(in srgb, var(--bg-color-primary) 72%, transparent);
+}
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--navbarHeight) + 28px) 16px 24px;
+  background: rgba(31, 36, 48, 0.54);
+  backdrop-filter: blur(4px);
+  overscroll-behavior: contain;
+}
+
+.search-dialog {
+  width: min(720px, 100%);
+  max-height: min(72vh, 680px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--el-color-primary) 44%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--glass-bg-popup) 96%, var(--bg-color-primary));
+  overscroll-behavior: contain;
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.search-input-shell {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color-list) 78%, transparent);
+}
+
+.search-input-icon {
+  color: var(--el-color-primary);
+}
+
+.search-input {
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 22px;
+  letter-spacing: 0;
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--text-secondary) 58%, transparent);
+  }
+}
+
+.search-panel {
+  min-height: 72px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px 20px 18px;
+}
+
+.search-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.header-title {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.clear-btn {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--el-color-primary);
+  background: transparent;
+  font-size: 13px;
+
+  &:hover {
+    color: #66b1ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.history-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+}
+
+.history-item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bg-color-primary) 68%, transparent);
+  font-size: 12px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, currentColor 8%, var(--bg-color-primary));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+.history-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.delete-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #b9b4ae;
+
+  &:hover {
+    background: #f78989;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.search-result-content {
+  min-height: 44px;
+
+  &.showborder {
+    border-top: 1px solid var(--border-color-list);
+    padding-top: 10px;
+  }
+}
+
+.result-item {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 0;
+  border: 0;
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    color: #03a9f4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.search-match {
+  padding: 1px 2px;
+  border-radius: 2px;
+  color: #29313a;
+  background-color: #9de0ff;
+  font-weight: 700;
+}
+
+.no-data-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.search-overlay-enter-active,
+.search-overlay-leave-active {
+  transition: opacity 0.18s ease;
+
+  .search-dialog {
+    transition:
+      transform 0.2s ease,
+      opacity 0.18s ease;
+  }
+}
+
+.search-overlay-enter-from,
+.search-overlay-leave-to {
+  opacity: 0;
+
+  .search-dialog {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-trigger,
+  .history-item,
+  .search-overlay-enter-active,
+  .search-overlay-leave-active,
+  .search-overlay-enter-active .search-dialog,
+  .search-overlay-leave-active .search-dialog {
+    transition: none;
+  }
+
+  .search-trigger:hover,
+  .history-item:hover,
+  .search-overlay-enter-from .search-dialog,
+  .search-overlay-leave-to .search-dialog {
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .search {
     width: 100%;
-    min-width: 0;
+    justify-content: center;
   }
 
-  :deep(.el-input) {
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    height: 36px;
-    width: $searchWidth;
-    .el-input__wrapper {
-      border-radius: 5px;
-    }
+  .search-trigger {
+    min-width: 62px;
+    width: auto;
+    height: 40px;
+    padding-inline: 10px;
   }
 
-  :deep(.el-card__body) {
-    padding: 5px 10px;
+  .search-overlay {
+    display: block;
+    overflow: hidden;
+    padding: 0;
+    background: rgba(31, 36, 48, 0.66);
   }
 
-  :deep(.el-card__header) {
-    padding: 5px 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .search-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    min-height: 100vh;
+    max-height: none;
+    border-width: 0;
+    border-radius: 0;
+    background: var(--bg-color-primary);
+  }
 
-    .header-title {
-      color: #eee;
-      font-size: 14px;
-    }
-
-    .clear-btn {
-      color: #409eff;
-      padding: 0;
-      &:hover {
-        color: #66b1ff;
-      }
+  @supports (min-height: 100dvh) {
+    .search-dialog {
+      min-height: 100dvh;
     }
   }
 
-  .search-card {
-    position: absolute;
-    top: 100%;
-    margin-top: 4px;
-    width: $searchWidth;
-    z-index: var(--z-navbar-popup);
-    animation: boxDownSimple 0.3s;
-    .history-content {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding-bottom: 5pt;
+  .search-input-shell {
+    padding: max(16px, env(safe-area-inset-top)) 16px 14px;
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
 
-      .history-item {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        max-width: 90px;
-        padding: 4px 8px;
-        @include thin-border(all);
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 12px;
+  .search-input {
+    height: 40px;
+    font-size: 20px;
+  }
 
-        .history-text {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+  .search-panel {
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  }
 
-        .delete-icon {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          width: 16px;
-          height: 16px;
-          background: #c1bbb4;
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          cursor: pointer;
-          z-index: var(--z-above);
-
-          &:hover {
-            background: #f78989;
-          }
-        }
-
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-      }
-    }
-
-    .search-result-content {
-      min-height: 30px;
-      &.showborder {
-        @include thin-border(top, var(--border-color-list));
-      }
-
-      .result-item-wrapper {
-        cursor: pointer;
-      }
-
-      .search-item {
-        padding: 10px 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        cursor: pointer;
-        font-size: 14px;
-
-        &:hover {
-          color: #03a9f4;
-        }
-
-        :deep(strong) {
-          background-color: #9de0ff;
-          color: #333;
-          font-weight: bold;
-          padding: 1px 2px;
-          border-radius: 2px;
-        }
-      }
-
-      .no-data-text {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 30px;
-        color: #eee;
-        font-size: 14px;
-      }
-
-      .loading {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 60px; /* Fixed height for loading */
-      }
-    }
+  .history-chip,
+  .history-item {
+    min-height: 36px;
+    max-width: min(44vw, 180px);
   }
 }
 </style>

@@ -27,7 +27,7 @@ const media: FlowMedia[] = [
 ];
 
 describe('FlowMediaGallery image preview', () => {
-  it('opens a library-backed lightbox with the selected image index', async () => {
+  it('opens a body-teleported lightbox with the selected image index', async () => {
     const wrapper = mount(FlowMediaGallery, {
       attachTo: document.body,
       props: {
@@ -37,9 +37,10 @@ describe('FlowMediaGallery image preview', () => {
         stubs: {
           VueEasyLightbox: {
             name: 'VueEasyLightbox',
-            props: ['visible', 'imgs', 'index'],
+            props: ['visible', 'imgs', 'index', 'teleport'],
             emits: ['hide'],
-            template: '<div data-testid="library-lightbox" :data-visible="String(visible)" :data-index="String(index)" @click="$emit(\'hide\')" />',
+            template:
+              '<div data-testid="library-lightbox" :data-visible="String(visible)" :data-index="String(index)" :data-teleport="teleport" @click="$emit(\'hide\')" />',
           },
         },
       },
@@ -53,6 +54,7 @@ describe('FlowMediaGallery image preview', () => {
 
     expect(lightbox.attributes('data-visible')).toBe('true');
     expect(lightbox.attributes('data-index')).toBe('1');
+    expect(lightbox.attributes('data-teleport')).toBe('body');
     expect(lightboxProps.imgs).toEqual(['/road.jpg', '/lake.jpg', '/forest.jpg']);
 
     await lightbox.trigger('click');

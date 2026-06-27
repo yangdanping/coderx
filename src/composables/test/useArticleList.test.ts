@@ -64,6 +64,10 @@ describe('article list query options', () => {
     expect(page.result).toEqual([{ id: 21 }]);
   });
 
+  it('normalizes article search keywords case-insensitively', () => {
+    expect(normalizeArticleListParams({ keywords: '  Vue  ' }).keywords).toBe('vue');
+  });
+
   it('returns the next page only while the loaded item count is below total', () => {
     const options = articleListInfiniteOptions(normalizeArticleListParams({ pageSize: 2 }));
     const firstPage = { result: [{ id: 1 }, { id: 2 }], total: 3 };

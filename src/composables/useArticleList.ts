@@ -4,6 +4,7 @@ import { getList, likeArticle } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import useUserStore from '@/stores/user.store';
 import { Msg } from '@/utils';
+import { normalizeSearchKeyword } from '@/utils/search';
 
 import type { MaybeRefOrGetter, Ref } from 'vue';
 import type { RouteParam } from '@/service/types';
@@ -33,7 +34,7 @@ export function normalizeArticleListParams(params: IUseArticleListParams = {}): 
     pageOrder: params.pageOrder ?? '',
     tagId: params.tagId ?? '',
     userId: params.userId ?? '',
-    keywords: params.keywords ?? '',
+    keywords: normalizeSearchKeyword(params.keywords),
     idList: Array.isArray(params.idList) ? params.idList : [],
     pageSize: params.pageSize && params.pageSize > 0 ? params.pageSize : 10,
   };

@@ -1,23 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { postMock, putMock } = vi.hoisted(() => ({
+const { getMock, postMock, putMock } = vi.hoisted(() => ({
+  getMock: vi.fn(),
   postMock: vi.fn(),
   putMock: vi.fn(),
 }));
 
 vi.mock('@/service', () => ({
   default: {
+    get: getMock,
     post: postMock,
     put: putMock,
   },
 }));
 
-import { createArticle, updateArticle } from '../article.request';
+import { createArticle, search, updateArticle } from '../article.request';
 
 describe('article.request', () => {
   beforeEach(() => {
+    getMock.mockReset();
     postMock.mockReset();
     putMock.mockReset();
+  });
+
+  it('normalizes search keywords before forwarding them', () => {
+    const signal = new AbortController().signal;
+
+    search('  Vue  ', signal);
+
+    expect(getMock).toHaveBeenCalledWith({
+      url: '/article/search',
+      params: { keywords: 'vue' },
+      signal,
+    });
   });
 
   it('forwards draftId in the create article body', () => {

@@ -18,7 +18,7 @@
       <span class="media-indicator">{{ indicator }}</span>
     </template>
 
-    <VueEasyLightbox :visible="previewVisible" :imgs="previewUrls" :index="previewInitialIndex" @hide="previewVisible = false" />
+    <VueEasyLightbox :visible="previewVisible" :imgs="previewUrls" :index="previewInitialIndex" teleport="body" @hide="previewVisible = false" />
   </div>
 </template>
 
