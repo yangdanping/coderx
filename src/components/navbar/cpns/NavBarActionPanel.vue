@@ -147,9 +147,9 @@ void props;
   }
 
   &__popup {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
+    position: fixed;
+    top: calc(var(--navbarHeight) + 12px);
+    right: max(20px, calc((100vw - 1280px) / 2 + 20px));
     z-index: var(--z-navbar-popup);
     display: flex;
     flex-direction: column;
@@ -231,4 +231,3 @@ void props;
   }
 }
 </style>
-

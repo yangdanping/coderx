@@ -2,6 +2,10 @@
   <div class="right">
     <slot name="right"> </slot>
 
+    <template v-if="isMe">
+      <NavBarUser />
+    </template>
+
     <!-- 主题切换按钮：点击在 light / dark 间切换，按 D 键同样可切换 -->
     <el-tooltip effect="dark" placement="bottom" :show-after="300" :hide-after="0">
       <template #content>
@@ -17,11 +21,10 @@
     </el-tooltip>
 
     <template v-if="isMe">
-      <NavBarUser />
       <NavBarNotification />
       <NavBarUserHistory />
     </template>
-    <el-button @click="changeDialog" class="register-btn" v-else><span>Hello Coder</span> <span class="x">X</span></el-button>
+    <el-button v-if="!isMe" @click="changeDialog" class="register-btn"><span>Hello Coder</span> <span class="x">X</span></el-button>
   </div>
 </template>
 
@@ -58,9 +61,9 @@ const handleThemeClick = (event: MouseEvent) => {
 .right {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: clamp(14px, 1.8vw, 28px);
   height: 100%;
-  margin-right: 20px;
+  margin-right: 0;
 
   .theme-btn-wrapper {
     display: flex;
@@ -94,7 +97,12 @@ const handleThemeClick = (event: MouseEvent) => {
   .register-btn {
     position: relative;
     height: 36px;
-    transition: all 0.3s;
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
     .x {
       font-style: oblique;
       padding-right: 2px;

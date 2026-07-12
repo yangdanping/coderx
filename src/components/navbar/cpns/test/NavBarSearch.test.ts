@@ -1,11 +1,17 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import NavBarSearch from '../NavBarSearch.vue';
+import { search } from '@/service/article/article.request';
 import useRootStore from '@/stores/index.store';
+
+const mountedWrappers: VueWrapper[] = [];
+let updateMobileViewport = (_matches: boolean) => undefined;
 
 function installLocalStorage() {
   const store = new Map<string, string>();
@@ -43,8 +49,42 @@ function setPlatform(platform: string) {
   });
 }
 
-async function mountSearch(platform = 'MacIntel') {
+function setMobileViewport(matches: boolean) {
+  const changeListeners = new Set<(event: MediaQueryListEvent) => void>();
+  let currentMatches = matches;
+  const mediaQuery = {
+    get matches() {
+      return currentMatches;
+    },
+    media: '(max-width: 768px)',
+    onchange: null,
+    addEventListener: vi.fn((_type: string, listener: (event: MediaQueryListEvent) => void) => changeListeners.add(listener)),
+    removeEventListener: vi.fn((_type: string, listener: (event: MediaQueryListEvent) => void) => changeListeners.delete(listener)),
+    addListener: vi.fn((listener: (event: MediaQueryListEvent) => void) => changeListeners.add(listener)),
+    removeListener: vi.fn((listener: (event: MediaQueryListEvent) => void) => changeListeners.delete(listener)),
+    dispatchEvent: vi.fn(),
+  } as unknown as MediaQueryList;
+
+  updateMobileViewport = (nextMatches: boolean) => {
+    currentMatches = nextMatches;
+    const event = { matches: nextMatches, media: mediaQuery.media } as MediaQueryListEvent;
+    changeListeners.forEach((listener) => listener(event));
+  };
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: vi.fn().mockImplementation(() => mediaQuery),
+  });
+}
+
+async function finishDialogLeave(wrapper: VueWrapper) {
+  wrapper.getComponent({ name: 'transition' }).vm.$emit('after-leave');
+  await flushPromises();
+}
+
+async function mountSearch(platform = 'MacIntel', mobile = false) {
   setPlatform(platform);
+  setMobileViewport(mobile);
 
   const pinia = createPinia();
   setActivePinia(pinia);
@@ -70,7 +110,8 @@ async function mountSearch(platform = 'MacIntel') {
     },
   });
 
-  return mount(NavBarSearch, {
+  const wrapper = mount(NavBarSearch, {
+    attachTo: document.body,
     global: {
       plugins: [pinia, router, [VueQueryPlugin, { queryClient }]],
       stubs: {
@@ -96,12 +137,26 @@ async function mountSearch(platform = 'MacIntel') {
       },
     },
   });
+
+  mountedWrappers.push(wrapper);
+  return wrapper;
 }
 
 describe('NavBarSearch', () => {
   beforeEach(() => {
     installLocalStorage();
     window.localStorage.clear();
+    document.body.style.overflow = '';
+    vi.clearAllMocks();
+    vi.mocked(search).mockResolvedValue({ data: [] } as never);
+
+    const appRoot = document.createElement('div');
+    appRoot.id = 'app';
+    document.body.appendChild(appRoot);
+  });
+
+  afterEach(() => {
+    mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
   });
 
   it('renders a compact search trigger with the macOS shortcut instead of a fixed input', async () => {
@@ -112,20 +167,200 @@ describe('NavBarSearch', () => {
     expect(wrapper.find('.search > .el-input__inner').exists()).toBe(false);
   });
 
-  it('opens the search dialog from the trigger and closes it from the backdrop', async () => {
+  it('contains desktop focus while open and restores the trigger after backdrop close', async () => {
+    const wrapper = await mountSearch();
+    const appRoot = document.querySelector<HTMLElement>('#app')!;
+    const trigger = wrapper.get<HTMLButtonElement>('.search-trigger').element;
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.search-dialog').exists()).toBe(true);
+    expect(wrapper.find('.search-dialog-close').exists()).toBe(false);
+    expect(appRoot.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(wrapper.get<HTMLInputElement>('.search-input').element);
+
+    await wrapper.get('.search-overlay').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.search-dialog').exists()).toBe(false);
+    expect(appRoot.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).not.toBe(trigger);
+
+    await finishDialogLeave(wrapper);
+    expect(appRoot.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('shows a mobile close control, focuses it, and traps forward/backward tab navigation', async () => {
+    const wrapper = await mountSearch('MacIntel', true);
+    const trigger = wrapper.get<HTMLButtonElement>('.search-trigger').element;
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+
+    const input = wrapper.get<HTMLInputElement>('.search-input').element;
+    const close = wrapper.get<HTMLButtonElement>('.search-dialog-close').element;
+    expect(document.activeElement).toBe(close);
+
+    close.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(input);
+
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(close);
+
+    await wrapper.get('.search-dialog-close').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.search-dialog').exists()).toBe(false);
+
+    await finishDialogLeave(wrapper);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('adds the mobile close control if the viewport becomes mobile while the dialog is open', async () => {
+    const wrapper = await mountSearch('MacIntel', false);
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.search-dialog-close').exists()).toBe(false);
+
+    updateMobileViewport(true);
+    await flushPromises();
+    expect(wrapper.find('.search-dialog-close').exists()).toBe(true);
+
+    await wrapper.get('.search-dialog-close').trigger('click');
+    await finishDialogLeave(wrapper);
+  });
+
+  it('restores the original page state after reopening before the first leave finishes', async () => {
+    document.body.style.overflow = 'clip';
+    const wrapper = await mountSearch();
+    const appRoot = document.querySelector<HTMLElement>('#app')!;
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-overlay').trigger('click');
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(appRoot.hasAttribute('inert')).toBe(true);
+
+    await wrapper.get('.search-overlay').trigger('click');
+    await finishDialogLeave(wrapper);
+
+    expect(document.body.style.overflow).toBe('clip');
+    expect(appRoot.hasAttribute('inert')).toBe(false);
+  });
+
+  it('skips v-show-hidden history controls when wrapping focus backward', async () => {
+    window.localStorage.setItem('coderx_search_history', JSON.stringify(['Vue']));
+    const wrapper = await mountSearch('MacIntel', true);
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+
+    const input = wrapper.get<HTMLInputElement>('.search-input').element;
+    const lastVisibleHistoryItem = wrapper.get<HTMLButtonElement>('.history-item').element;
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+
+    expect(document.activeElement).toBe(lastVisibleHistoryItem);
+  });
+
+  it('restores focus and background interactivity when Escape closes the dialog', async () => {
+    const wrapper = await mountSearch();
+    const trigger = wrapper.get<HTMLButtonElement>('.search-trigger').element;
+    const appRoot = document.querySelector<HTMLElement>('#app')!;
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await flushPromises();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await flushPromises();
+
+    expect(wrapper.find('.search-dialog').exists()).toBe(false);
+    expect(appRoot.hasAttribute('inert')).toBe(true);
+
+    await finishDialogLeave(wrapper);
+    expect(appRoot.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('normalizes casing and surrounding whitespace before requesting quick-search results', async () => {
     const wrapper = await mountSearch();
 
     await wrapper.get('.search-trigger').trigger('click');
-    expect(wrapper.find('.search-dialog').exists()).toBe(true);
-    expect(wrapper.find('.search-dialog-close').exists()).toBe(false);
+    await wrapper.get('.search-input').setValue('  Vue  ');
+    await flushPromises();
 
-    await wrapper.get('.search-overlay').trigger('click');
+    expect(search).toHaveBeenCalledWith('vue', expect.anything());
+  });
+
+  it('renders results as safe native links and announces async result counts', async () => {
+    vi.mocked(search).mockResolvedValue({ data: [{ id: 21, title: 'Vue knowledge' }] } as never);
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('vue');
+    await flushPromises();
+
+    const result = wrapper.get<HTMLAnchorElement>('.result-item');
+    expect(result.element.tagName).toBe('A');
+    expect(result.attributes('href')).toBe('/article/21');
+    expect(result.attributes('target')).toBe('_blank');
+    expect(result.attributes('rel')).toContain('noopener');
+    expect(result.attributes('rel')).toContain('noreferrer');
+    expect(wrapper.get('[role="status"]').text()).toContain('找到 1 条相关内容');
+
+    await result.trigger('click');
     expect(wrapper.find('.search-dialog').exists()).toBe(false);
+  });
+
+  it('shows a recoverable error instead of presenting request failures as empty results', async () => {
+    vi.mocked(search).mockRejectedValue(new Error('network'));
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('vue');
+    await flushPromises();
+
+    expect(wrapper.get('.search-error').text()).toContain('搜索失败，请稍后重试');
+    expect(wrapper.get('[role="status"]').text()).toContain('搜索失败，请稍后重试');
   });
 
   it('uses Ctrl+K on non-Apple platforms', async () => {
     const wrapper = await mountSearch('Win32');
 
     expect(wrapper.find('.search-trigger').text()).toContain('Ctrl\u00a0K');
+  });
+
+  it('keeps the navbar search trigger visually unframed', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+    const triggerBlock = source.match(/\.search-trigger\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+    const shortcutBlock = source.match(/\.search-shortcut\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+
+    expect(triggerBlock).toContain('border: 0;');
+    expect(triggerBlock).toContain('background: transparent;');
+    expect(triggerBlock).not.toMatch(/border:\s*1px/);
+    expect(shortcutBlock).toContain('border: 0;');
+    expect(shortcutBlock).toContain('background: transparent;');
+    expect(shortcutBlock).not.toMatch(/border:\s*1px/);
+  });
+
+  it('defines compact mobile layout without shortcut noise and keeps touch targets usable', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+    const mobileStyles = source.slice(source.lastIndexOf('@media (max-width: 768px)'));
+
+    expect(mobileStyles).toMatch(/\.search\s*{[\s\S]*?width:\s*auto;/);
+    expect(mobileStyles).toMatch(/\.search-shortcut\s*{[\s\S]*?display:\s*none;/);
+    expect(mobileStyles).toMatch(/\.search-trigger\s*{[\s\S]*?min-width:\s*3\.667rem;[\s\S]*?height:\s*3\.667rem;/);
+    expect(mobileStyles).toMatch(/\.search-dialog-close\s*{[\s\S]*?width:\s*3\.667rem;[\s\S]*?height:\s*3\.667rem;/);
+  });
+
+  it('provides a compound focus treatment and landscape safe-area padding', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+    const mobileStyles = source.slice(source.lastIndexOf('@media (max-width: 768px)'));
+
+    expect(source).toMatch(/\.search-input-shell\s*{[\s\S]*?&:focus-within\s*{[\s\S]*?box-shadow:/);
+    expect(mobileStyles).toContain('env(safe-area-inset-left)');
+    expect(mobileStyles).toContain('env(safe-area-inset-right)');
   });
 });

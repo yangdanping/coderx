@@ -1,28 +1,25 @@
 <template>
-  <header class="nav-bar">
+  <header class="nav-bar" :style="{ '--navbar-glass-progress': glassProgress }">
     <div class="list">
       <!-- 左边区域================================================= -->
       <NavBarLeft />
       <!-- 中间区域================================================= -->
-      <div class="center" :style="{ justifyContent: toggleNavMenu ? 'flex-start' : 'center' }">
+      <div class="center">
         <slot name="center">
           <div v-if="isUserPage" class="back-icon-container">
             <el-tooltip class="item" effect="dark" content="返回" placement="bottom">
-              <i class="back-icon" @click="goBack">
-                <el-icon><ArrowLeft /></el-icon>
-              </i>
+              <button type="button" class="back-icon" aria-label="返回" @click="goBack">
+                <el-icon><ArrowLeft aria-hidden="true" /></el-icon>
+              </button>
             </el-tooltip>
           </div>
-          <template v-else>
-            <NavMenu v-if="toggleNavMenu" />
-            <NavBarSearch v-else />
-          </template>
         </slot>
       </div>
       <!-- 右边区域================================================= -->
       <NavBarRight>
         <template #right>
-          <NavBarSearch v-if="toggleNavMenu" />
+          <NavMenu v-if="toggleNavMenu" />
+          <NavBarSearch />
         </template>
       </NavBarRight>
     </div>
@@ -38,8 +35,24 @@ import NavMenu from './cpns/NavMenu.vue';
 import NavBarSearch from './cpns/NavBarSearch.vue';
 import LoginDialog from '../user/login/LoginDialog.vue';
 import ProfileDialog from '../user/profile/ProfileDialog.vue';
+import { useNavbarGlass } from '@/composables/useNavbarGlass';
 import useRootStore from '@/stores/index.store';
 import { ArrowLeft } from '@lucide/vue';
+
+interface NavBarProps {
+  glassRevealStart?: number;
+  glassRevealEnd?: number;
+}
+
+const props = withDefaults(defineProps<NavBarProps>(), {
+  glassRevealStart: 0,
+  glassRevealEnd: 96,
+});
+
+const { progress: glassProgress } = useNavbarGlass({
+  start: () => props.glassRevealStart,
+  end: () => props.glassRevealEnd,
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -52,7 +65,7 @@ const isUserPage = computed(() => route.name === 'user');
 // 当 width 为 0（未初始化）时，默认显示菜单（按大屏处理）
 const toggleNavMenu = computed(() => {
   const width = windowInfo.value.width;
-  return width === 0 || width >= 768;
+  return width === 0 || width > 768;
 });
 
 const goBack = () => {
@@ -74,23 +87,55 @@ const goBack = () => {
   /* display: flex; */
   height: var(--navbarHeight);
   z-index: var(--z-navbar);
-  @include glass-effect;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+  isolation: isolate;
+  background-color: transparent;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    opacity: var(--navbar-glass-progress);
+    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+  }
+
   .list {
-    display: flex;
+    --navbar-logo-rail: clamp(88px, 10vw, 176px);
+
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: var(--navbar-logo-rail) minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    margin: 0 auto;
-    /* padding: 0 80px; */
-    max-width: 1280px;
+    column-gap: 16px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-inline: clamp(18px, 7vw, 150px) clamp(18px, 6vw, 120px);
     height: 100%;
 
+    :deep(.left) {
+      justify-self: start;
+    }
+
+    :deep(.right) {
+      justify-self: end;
+      min-width: 0;
+    }
+
     @media (max-width: 768px) {
+      --navbar-logo-rail: 72px;
+
+      grid-template-columns: minmax(64px, auto) minmax(0, 1fr) auto;
       gap: 4px;
       padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
     }
     .center {
-      flex: 1;
+      min-width: 0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -114,14 +159,24 @@ const goBack = () => {
       }
       .back-icon {
         cursor: pointer;
-        transition: all 0.3s;
+        border: 0;
+        padding: 0;
         font-size: 32px;
         display: flex;
         align-items: center;
         color: #666;
+        background: transparent;
+        transition:
+          color 0.3s ease,
+          transform 0.3s ease;
         &:hover {
           transform: translate(-6px, 0);
           color: #81c995;
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--el-color-primary);
+          outline-offset: 2px;
         }
       }
     }

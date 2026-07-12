@@ -1,25 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
-const { follow, getFollow, showSuccess, showWarn, showFail, removeCachesByPrefix } = vi.hoisted(() => ({
-  follow: vi.fn(),
-  getFollow: vi.fn(),
-  showSuccess: vi.fn(),
-  showWarn: vi.fn(),
-  showFail: vi.fn(),
-  removeCachesByPrefix: vi.fn(),
-}));
+const { follow, getFollow, userLogin, getUserInfoById, showSuccess, showWarn, showFail, removeCachesByPrefix, getCache, routerGo, migrateGuestTagOrderToAccount } = vi.hoisted(
+  () => ({
+    follow: vi.fn(),
+    getFollow: vi.fn(),
+    userLogin: vi.fn(),
+    getUserInfoById: vi.fn(),
+    showSuccess: vi.fn(),
+    showWarn: vi.fn(),
+    showFail: vi.fn(),
+    removeCachesByPrefix: vi.fn(),
+    getCache: vi.fn(),
+    routerGo: vi.fn(),
+    migrateGuestTagOrderToAccount: vi.fn(),
+  }),
+);
 
 vi.mock('@/router', () => ({
   default: {
-    go: vi.fn(),
+    go: routerGo,
   },
 }));
 
 vi.mock('@/service/user/user.request', () => ({
-  userLogin: vi.fn(),
+  userLogin,
   userRegister: vi.fn(),
-  getUserInfoById: vi.fn(),
+  getUserInfoById,
   follow,
   getFollow,
   updateProfile: vi.fn(),
@@ -40,9 +47,13 @@ vi.mock('@/service/file/file.request', () => ({
   deleteOldAvatar: vi.fn(),
 }));
 
+vi.mock('@/service/article/tagOrderPreference', () => ({
+  migrateGuestTagOrderToAccount,
+}));
+
 vi.mock('@/utils', () => ({
   LocalCache: {
-    getCache: vi.fn(),
+    getCache,
     setCache: vi.fn(),
     removeCache: vi.fn(),
     removeCachesByPrefix,
@@ -68,6 +79,11 @@ describe('user.store followAction', () => {
     showWarn.mockReset();
     showFail.mockReset();
     removeCachesByPrefix.mockReset();
+    userLogin.mockReset();
+    getUserInfoById.mockReset();
+    getCache.mockReset();
+    routerGo.mockReset();
+    migrateGuestTagOrderToAccount.mockReset();
     getFollow.mockResolvedValue({ code: 0, data: { following: [], follower: [] } });
   });
 
@@ -111,5 +127,28 @@ describe('user.store followAction', () => {
     store.clearAuthState();
 
     expect(removeCachesByPrefix).toHaveBeenCalledWith('coderx_ai_chat_');
+  });
+
+  it('awaits guest tag-order migration before refreshing after login', async () => {
+    let finishMigration!: () => void;
+    const migration = new Promise<'migrated'>((resolve) => {
+      finishMigration = () => resolve('migrated');
+    });
+    userLogin.mockResolvedValue({ code: 0, data: { id: 7, token: 'token' } });
+    getUserInfoById.mockResolvedValue({ code: 0, data: { id: 7, name: 'Coder' } });
+    getCache.mockReturnValue('token');
+    migrateGuestTagOrderToAccount.mockReturnValue(migration);
+    const store = useUserStore();
+
+    const pendingLogin = store.loginAction({ name: 'coder', password: 'secret' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(routerGo).not.toHaveBeenCalled();
+    finishMigration();
+    await pendingLogin;
+
+    expect(migrateGuestTagOrderToAccount).toHaveBeenCalledOnce();
+    expect(routerGo).toHaveBeenCalledWith(0);
   });
 });

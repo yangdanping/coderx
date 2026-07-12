@@ -47,6 +47,13 @@ $paddingTop: 60px;
     height: 100%;
   }
 
+  .article-nav {
+    flex: 0 0 auto;
+    // 固定竖栏：5em 给足 4 个汉字余量，再加左右 padding
+    width: calc(5em + 28px);
+    max-width: 100%;
+  }
+
   .list-wrapper {
     padding-top: 20px;
   }

@@ -20,6 +20,7 @@
   /* 在 800px 屏幕: 1.5vw = 12px → 正好符合 → 使用 12px */
   font-size: clamp(12px, 1.5vw, 16px);
   font-family: 'Hiragino Sans GB', sans-serif;
+  --markdown-editor-font: 'SFMono-Regular', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   /* 首页角色标题末尾 X 的渐变色 */
   --coder-x-gradient: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
   --writer-x-gradient: linear-gradient(135deg, rgba(255, 211, 88, 0.82) 20%, rgba(235, 106, 44, 0.82) 100%);

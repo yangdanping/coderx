@@ -3,6 +3,7 @@ import router from '@/router'; //拿到router对象,进行路由跳转
 import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProfile, reportUser } from '@/service/user/user.request';
 import { getCollect, addCollect, addToCollect, removeCollectArticle, updateCollect, removeCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
+import { migrateGuestTagOrderToAccount } from '@/service/article/tagOrderPreference';
 import { LocalCache, Msg, emitter } from '@/utils';
 import useArticleStore from './article.store';
 import useRootStore from './index.store';
@@ -188,6 +189,10 @@ const useUserStore = defineStore('user', {
           this.token = token;
           LocalCache.setCache('token', token); //注意拿到token第一时间先做缓存,然后就可以在axios实例拦截器中getCache了
           useRootStore().setAuthStatus('authenticated');
+          const migrationResult = await migrateGuestTagOrderToAccount();
+          if (migrationResult === 'failed') {
+            Msg.showWarn('标签顺序同步失败，已保留本地设置');
+          }
           // 3.成功登录后刷新页面-----------------------------------------------------
           LocalCache.getCache('token') ? router.go(0) : Msg.showFail('请求登录用户信息失败'); //若是登录用户信息则不用再请求了
         }

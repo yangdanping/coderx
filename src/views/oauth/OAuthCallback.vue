@@ -22,6 +22,7 @@
 import { Loading, CircleCloseFilled } from '@element-plus/icons-vue';
 import { LocalCache, Msg } from '@/utils';
 import { getUserInfoById } from '@/service/user/user.request';
+import { migrateGuestTagOrderToAccount } from '@/service/article/tagOrderPreference';
 import useUserStore from '@/stores/user.store';
 import useRootStore from '@/stores/index.store';
 import router from '@/router';
@@ -73,6 +74,11 @@ const handleOAuthCallback = async () => {
       userStore.userInfo = userInfo;
       LocalCache.setCache('userInfo', userInfo);
       rootStore.setAuthStatus('authenticated');
+
+      const migrationResult = await migrateGuestTagOrderToAccount();
+      if (migrationResult === 'failed') {
+        Msg.showWarn('标签顺序同步失败，已保留本地设置');
+      }
 
       Msg.showSuccess('登录成功');
 

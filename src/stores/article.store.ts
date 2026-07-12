@@ -1,6 +1,6 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转(.push)
-import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, getTags, changeTags, getRecommend } from '@/service/article/article.request';
+import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, getTags, getTagOrder, changeTags, getRecommend } from '@/service/article/article.request';
 import { getLiked } from '@/service/user/user.request';
 import { addImgForArticle, addVideoForArticle } from '@/service/file/file.request';
 import { collectArticleMediaRefs, type ArticleStructuredContent } from '@/service/article/article.content';
@@ -8,6 +8,7 @@ import useUserStore from '@/stores/user.store';
 import useEditorStore from './editor.store';
 import { Msg, LocalCache } from '@/utils';
 import { MAX_VIDEO_COUNT, VIDEO_COUNT_LIMIT_MESSAGE } from '@/components/tiptap-editor/uploadLimits';
+import { mergeTagsByPreference, readGuestTagOrder } from '@/utils/tagOrderPreference';
 
 import type { RouteParam } from '@/service/types';
 import type { IArticles, IArticle, IArticleVideo, Itag } from '@/stores/types/article.result';
@@ -22,36 +23,23 @@ const resolveExistingVideoIdsByContent = (videoUrls: string[], articleVideos: IA
   const normalizedVideoUrls = new Set(videoUrls.map((url) => normalizeMediaUrl(url)).filter(Boolean));
 
   return dedupeNumberIds(
-    articleVideos
-      .map((video) => (normalizedVideoUrls.has(normalizeMediaUrl(video.url)) ? Number(video.id) : NaN))
-      .filter((id) => Number.isInteger(id) && id > 0),
+    articleVideos.map((video) => (normalizedVideoUrls.has(normalizeMediaUrl(video.url)) ? Number(video.id) : NaN)).filter((id) => Number.isInteger(id) && id > 0),
   );
 };
 const isVideoLimitExceeded = (count: number) => count > MAX_VIDEO_COUNT;
 type ArticleMediaPayload = Array<{ isCover: boolean; id?: number; url?: string }>;
-const buildArticleImagePayload = (
-  imageRefs: ReturnType<typeof collectArticleMediaRefs>['images'],
-  manualCoverImgId: number | null,
-): ArticleMediaPayload => {
+const buildArticleImagePayload = (imageRefs: ReturnType<typeof collectArticleMediaRefs>['images'], manualCoverImgId: number | null): ArticleMediaPayload => {
   const images: ArticleMediaPayload = [];
 
   if (manualCoverImgId) {
     images.push({ id: manualCoverImgId, isCover: true });
   }
 
-  dedupeNumberIds(
-    imageRefs
-      .map((imageRef) => imageRef.imageId)
-      .filter((imageId): imageId is number => Number.isInteger(imageId) && imageId > 0),
-  ).forEach((id) => {
+  dedupeNumberIds(imageRefs.map((imageRef) => imageRef.imageId).filter((imageId): imageId is number => Number.isInteger(imageId) && imageId > 0)).forEach((id) => {
     images.push({ id, isCover: false });
   });
 
-  dedupeStringValues(
-    imageRefs
-      .filter((imageRef) => !imageRef.imageId)
-      .map((imageRef) => imageRef.src ?? ''),
-  ).forEach((url) => {
+  dedupeStringValues(imageRefs.filter((imageRef) => !imageRef.imageId).map((imageRef) => imageRef.src ?? '')).forEach((url) => {
     images.push({ url, isCover: false });
   });
 
@@ -153,8 +141,19 @@ const useArticleStore = defineStore('article', {
     },
     /** 获取全部文章标签（导航栏标签列表） */
     async getTagsAction() {
-      const res = await getTags();
-      res.code === 0 && (this.tags = res.data);
+      const userStore = useUserStore();
+      const isAuthenticated = Boolean(userStore.userInfo.id);
+      let res;
+
+      try {
+        res = isAuthenticated ? await getTagOrder() : await getTags();
+      } catch {
+        res = await getTags();
+      }
+
+      if (res.code === 0) {
+        this.tags = isAuthenticated ? res.data : mergeTagsByPreference(res.data, readGuestTagOrder());
+      }
     },
     /**
      * ======== 编辑页详情预填 ========
@@ -201,9 +200,7 @@ const useArticleStore = defineStore('article', {
       const { title, contentJson, tags, draftId } = payload;
       const mediaRefs = collectArticleMediaRefs(contentJson);
       const explicitVideoIds = dedupeNumberIds(
-        mediaRefs.videos
-          .map((videoRef) => videoRef.videoId)
-          .filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
+        mediaRefs.videos.map((videoRef) => videoRef.videoId).filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
       );
 
       // 视频数量限制校验
@@ -290,15 +287,9 @@ const useArticleStore = defineStore('article', {
 
       // 视频数量限制校验
       const explicitVideoIds = dedupeNumberIds(
-        mediaRefs.videos
-          .map((videoRef) => videoRef.videoId)
-          .filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
+        mediaRefs.videos.map((videoRef) => videoRef.videoId).filter((videoId): videoId is number => Number.isInteger(videoId) && videoId > 0),
       );
-      const legacyVideoUrls = dedupeStringValues(
-        mediaRefs.videos
-          .filter((videoRef) => !videoRef.videoId)
-          .map((videoRef) => videoRef.src ?? ''),
-      );
+      const legacyVideoUrls = dedupeStringValues(mediaRefs.videos.filter((videoRef) => !videoRef.videoId).map((videoRef) => videoRef.src ?? ''));
       const existingVideoIds = resolveExistingVideoIdsByContent(legacyVideoUrls, this.article.videos ?? []);
       const nextVideoIds = dedupeNumberIds([...explicitVideoIds, ...existingVideoIds, ...editorStore.pendingVideoIds]);
       if (isVideoLimitExceeded(mediaRefs.videos.length) || isVideoLimitExceeded(nextVideoIds.length)) {

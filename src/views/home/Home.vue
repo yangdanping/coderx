@@ -5,6 +5,8 @@
         <div class="title">
           <div class="title-line-1">Welcome to</div>
           <div class="title-line-2">
+            <!-- 桌面隐形尺子：与可见词同组件，按最长词占位；样式约定见 .title-line-2 注释 -->
+            <ScrambleFrameText class="title-word title-word-sizer" :frame="titleWidthReserve" :target="titleWidthReserve" aria-hidden="true" />
             <ScrambleFrameText class="title-word" :frame="frame" :target="target" />
           </div>
           <HomeExploreLink class="title-explore-link" />
@@ -32,7 +34,7 @@ import HomeHotUser from './cpns/HomeHotUser.vue';
 import HomeExploreLink from './cpns/HomeExploreLink.vue';
 import SectionTitle from './cpns/SectionTitle.vue';
 import FeatureSection from './cpns/features/FeatureSection.vue';
-import { ScrambleFrameText } from '@/components/scramble';
+import { CODERX_ROLE_TITLES, ScrambleFrameText } from '@/components/scramble';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
@@ -41,6 +43,9 @@ import { useWallHitScramble } from './composables/useWallHitScramble';
 const homeStore = useHomeStore();
 const { hotUsers } = storeToRefs(homeStore);
 const { frame, screenFrame, target, advanceOnWallHit } = useWallHitScramble();
+
+/** 桌面 Hero 标题槽宽：按角色词里字符数最多的一项预留（当前为 CreatorX / BuilderX） */
+const titleWidthReserve = CODERX_ROLE_TITLES.reduce((longest, title) => (Array.from(title).length > Array.from(longest).length ? title : longest));
 
 const githubUrl = ref('https://github.com/yangdanping');
 
@@ -77,8 +82,8 @@ $TitleSize: 2em;
         z-index: 0;
         left: 50%;
         width: 100vw;
-        // 向上抵消 title-section 的 margin-top，使弥散层贴齐导航栏下沿
-        top: calc(-1 * var(--hero-mesh-offset-top));
+        // Offset the title spacing and reserved Header height so the mesh reaches the viewport top behind the fixed navbar.
+        top: calc(-1 * var(--hero-mesh-offset-top) - var(--navbarHeight));
         bottom: -48px;
         transform: translateX(-50%);
         pointer-events: none;
@@ -138,7 +143,15 @@ $TitleSize: 2em;
           line-height: $TitleSize;
           height: $TitleSize;
           font-size: $TitleSize;
-          display: flex;
+          /*
+            变长文案防抖动（桌面并排）：
+            1) grid 叠放：sizer（最长词）+ 可见词都 grid-area:1/1，格子宽取更宽的那个 → 槽宽钉死。
+            2) sizer 必须 visibility:hidden（仍占位）；勿用 display:none，否则不占宽、抖动复现。
+            3) sizer 与可见词用同一组件/同一套字格样式，否则「字符数最长 ≠ 视觉最宽」。
+            4) 窄屏堆叠时关掉 sizer（见下方 1040px），否则标题区会被最长词撑偏。
+          */
+          display: grid;
+          justify-items: start;
           align-items: baseline;
           white-space: nowrap;
           width: fit-content;
@@ -151,11 +164,19 @@ $TitleSize: 2em;
             --scramble-x-gap: 0.02em;
             --scramble-x-right-space: 0.2em;
 
+            grid-area: 1 / 1; // 与 sizer 同格叠放；格子宽由更宽者决定
             display: inline-flex;
             width: fit-content;
             max-width: 100%;
             padding-inline: 0.08em;
             overflow: visible;
+          }
+
+          .title-word-sizer {
+            // 隐形尺子：看不见但仍参与排版占位（display:none 会踩坑）
+            visibility: hidden;
+            pointer-events: none;
+            user-select: none;
           }
 
           .title-word[data-scramble-word='WriterX'] {
@@ -230,6 +251,11 @@ $TitleSize: 2em;
 
         .title {
           align-items: center;
+
+          // 堆叠布局：关掉桌面尺子，恢复「当前可见词」自然宽度（此处用 display:none 是刻意的）。
+          .title-line-2 .title-word-sizer {
+            display: none;
+          }
 
           .title-explore-link {
             align-self: center;

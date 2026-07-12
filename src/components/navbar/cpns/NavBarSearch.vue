@@ -1,14 +1,14 @@
 <template>
   <div class="search">
-    <button type="button" class="search-trigger" :aria-expanded="isDialogOpen" aria-haspopup="dialog" aria-label="打开搜索面板" @click="toggleDialog">
+    <button ref="searchTrigger" type="button" class="search-trigger" :aria-expanded="isDialogOpen" aria-haspopup="dialog" aria-label="打开搜索面板" @click="toggleDialog">
       <Search class="search-trigger-icon" :size="18" aria-hidden="true" />
       <kbd class="search-shortcut">{{ shortcutText }}</kbd>
     </button>
 
     <Teleport to="body">
-      <Transition name="search-overlay">
+      <Transition name="search-overlay" @after-leave="handleDialogAfterLeave">
         <div v-if="isDialogOpen" class="search-overlay" @click="closeDialog">
-          <section class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索 CoderX" @click.stop>
+          <section ref="searchDialog" class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索 CoderX" tabindex="-1" @click.stop @keydown="handleDialogKeydown">
             <div class="search-input-shell">
               <Search class="search-input-icon" :size="24" aria-hidden="true" />
               <input
@@ -26,9 +26,12 @@
                 @compositionstart="handleCompositionStart"
                 @compositionend="handleCompositionEnd"
               />
+              <button v-if="isMobileDialog" ref="searchDialogClose" type="button" class="search-dialog-close" aria-label="关闭搜索面板" @click="closeDialog">
+                <X :size="22" aria-hidden="true" />
+              </button>
             </div>
 
-            <div class="search-panel">
+            <div class="search-panel" :aria-busy="isLoading">
               <template v-if="!searchValue && searchHistory.length">
                 <div class="search-panel-header">
                   <span class="header-title">历史记录</span>
@@ -56,19 +59,21 @@
               </template>
 
               <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchHistory.length > 0 }">
-                <template v-if="!isLoading">
+                <div v-if="isError" class="search-error">搜索失败，请稍后重试</div>
+                <template v-else-if="!isLoading">
                   <template v-if="searchResults.length">
-                    <button v-for="item in searchResults" :key="item.id" type="button" class="result-item" @click="goToArticle(item)">
+                    <a v-for="item in searchResults" :key="item.id" class="result-item" :href="getArticleHref(item)" target="_blank" rel="noopener noreferrer" @click="handleResultClick(item)">
                       <span v-for="(part, partIndex) in getHighlightedSearchParts(item.title, searchValue)" :key="`${item.id}-${partIndex}`" :class="{ 'search-match': part.matched }">
                         {{ part.text }}
                       </span>
-                    </button>
+                    </a>
                   </template>
                   <div v-else class="no-data-text">未找到相关内容</div>
                 </template>
                 <div v-else class="loading" v-loading="true"></div>
               </div>
             </div>
+            <p class="search-status" role="status" aria-live="polite" aria-atomic="true">{{ searchStatusText }}</p>
           </section>
         </div>
       </Transition>
@@ -77,7 +82,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Search, Trash2 } from '@lucide/vue';
+import { Search, Trash2, X } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
 import { useRoute, useRouter } from 'vue-router';
 import { debounce } from '@/utils';
@@ -91,10 +96,14 @@ interface SearchResultItem {
   title: string;
 }
 
+const searchTrigger = useTemplateRef<HTMLButtonElement>('searchTrigger');
+const searchDialog = useTemplateRef<HTMLElement>('searchDialog');
 const searchInput = useTemplateRef<HTMLInputElement>('searchInput');
+const searchDialogClose = useTemplateRef<HTMLButtonElement>('searchDialogClose');
 const searchValue = shallowRef('');
 const debouncedSearchValue = shallowRef('');
 const isDialogOpen = shallowRef(false);
+const isMobileDialog = shallowRef(false);
 const searchHistory = shallowRef<string[]>([]);
 const hoveredIndex = shallowRef(-1);
 const isComposing = shallowRef(false);
@@ -129,17 +138,28 @@ watch(searchValue, (newVal) => {
 
 const normalizedDebouncedSearchValue = computed(() => normalizeSearchKeyword(debouncedSearchValue.value));
 
-const { data: searchData, isLoading } = useQuery({
+const { data: searchData, isLoading, isError } = useQuery({
   queryKey: computed(() => ['search', normalizedDebouncedSearchValue.value]),
-  queryFn: ({ signal }) => search(debouncedSearchValue.value, signal),
+  queryFn: ({ signal }) => search(normalizedDebouncedSearchValue.value, signal),
   enabled: computed(() => !!normalizedDebouncedSearchValue.value),
   staleTime: 1000 * 60,
   select: (res) => res.data as SearchResultItem[],
 });
 
 const searchResults = computed(() => searchData.value || []);
+const searchStatusText = computed(() => {
+  if (!normalizedDebouncedSearchValue.value) return '';
+  if (isLoading.value) return '正在搜索…';
+  if (isError.value) return '搜索失败，请稍后重试';
+
+  const resultCount = searchResults.value.length;
+  return resultCount ? `找到 ${resultCount} 条相关内容` : '未找到相关内容';
+});
 
 let originalBodyOverflow = '';
+let appRoot: HTMLElement | null = null;
+let appRootWasInert = false;
+let modalEnvironmentActive = false;
 
 const lockBodyScroll = () => {
   originalBodyOverflow = document.body.style.overflow;
@@ -150,21 +170,55 @@ const unlockBodyScroll = () => {
   document.body.style.overflow = originalBodyOverflow;
 };
 
-watch(isDialogOpen, async (open) => {
-  if (open) {
-    lockBodyScroll();
-    loadSearchHistory();
-    await nextTick();
-    if (shouldFocusSearchInput()) {
-      searchInput.value?.focus();
-    }
-    return;
+const makeBackgroundInert = () => {
+  appRoot = document.querySelector<HTMLElement>('#app');
+  appRootWasInert = appRoot?.hasAttribute('inert') ?? false;
+  appRoot?.setAttribute('inert', '');
+};
+
+const restoreBackgroundInteractivity = () => {
+  if (appRoot && !appRootWasInert) {
+    appRoot.removeAttribute('inert');
   }
+  appRoot = null;
+  appRootWasInert = false;
+};
+
+const activateModalEnvironment = () => {
+  if (modalEnvironmentActive) return;
+
+  lockBodyScroll();
+  makeBackgroundInert();
+  modalEnvironmentActive = true;
+};
+
+const deactivateModalEnvironment = () => {
+  if (!modalEnvironmentActive) return;
 
   unlockBodyScroll();
+  restoreBackgroundInteractivity();
+  modalEnvironmentActive = false;
+};
+
+watch(isDialogOpen, async (open) => {
+  if (!open) return;
+
+  activateModalEnvironment();
+  loadSearchHistory();
+  await nextTick();
+  (isMobileDialog.value ? searchDialogClose.value : searchInput.value)?.focus();
 });
 
+const handleDialogAfterLeave = async () => {
+  if (isDialogOpen.value) return;
+
+  deactivateModalEnvironment();
+  await nextTick();
+  searchTrigger.value?.focus();
+};
+
 const openDialog = () => {
+  isMobileDialog.value = mobileViewportQuery?.matches ?? isMobileViewport();
   isDialogOpen.value = true;
 };
 
@@ -177,7 +231,62 @@ const toggleDialog = () => {
   isDialogOpen.value ? closeDialog() : openDialog();
 };
 
-const shouldFocusSearchInput = () => typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 768px)').matches;
+const mobileViewportMedia = '(max-width: 768px)';
+let mobileViewportQuery: MediaQueryList | null = null;
+
+const isMobileViewport = () => typeof window.matchMedia === 'function' && window.matchMedia(mobileViewportMedia).matches;
+
+const handleMobileViewportChange = (event: MediaQueryListEvent) => {
+  isMobileDialog.value = event.matches;
+};
+
+const registerMobileViewportListener = () => {
+  if (typeof window.matchMedia !== 'function') return;
+
+  mobileViewportQuery = window.matchMedia(mobileViewportMedia);
+  isMobileDialog.value = mobileViewportQuery.matches;
+  if (typeof mobileViewportQuery.addEventListener === 'function') {
+    mobileViewportQuery.addEventListener('change', handleMobileViewportChange);
+  } else {
+    mobileViewportQuery.addListener(handleMobileViewportChange);
+  }
+};
+
+const unregisterMobileViewportListener = () => {
+  if (!mobileViewportQuery) return;
+
+  if (typeof mobileViewportQuery.removeEventListener === 'function') {
+    mobileViewportQuery.removeEventListener('change', handleMobileViewportChange);
+  } else {
+    mobileViewportQuery.removeListener(handleMobileViewportChange);
+  }
+  mobileViewportQuery = null;
+};
+
+const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const handleDialogKeydown = (event: KeyboardEvent) => {
+  if (event.key !== 'Tab' || !searchDialog.value) return;
+
+  const focusableElements = Array.from(searchDialog.value.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => {
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements.at(-1);
+  if (!firstFocusable || !lastFocusable) return;
+
+  if (event.shiftKey && document.activeElement === firstFocusable) {
+    event.preventDefault();
+    lastFocusable.focus();
+    return;
+  }
+
+  if (!event.shiftKey && document.activeElement === lastFocusable) {
+    event.preventDefault();
+    firstFocusable.focus();
+  }
+};
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (isSearchToggleShortcut(event)) {
@@ -238,23 +347,24 @@ const submitSearch = () => {
   router.push({ path: '/search', query: { q: visibleKeyword } });
 };
 
-const goToArticle = (item: SearchResultItem) => {
+const getArticleHref = (item: SearchResultItem) => router.resolve({ name: 'detail', params: { articleId: item.id } }).href;
+
+const handleResultClick = (item: SearchResultItem) => {
   LocalCache.addSearchHistory(item.title);
   loadSearchHistory();
   closeDialog();
-
-  const routeUrl = router.resolve({ name: 'detail', params: { articleId: item.id } });
-  window.open(routeUrl.href, '_blank');
 };
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
+  registerMobileViewportListener();
   loadSearchHistory();
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
-  unlockBodyScroll();
+  unregisterMobileViewportListener();
+  deactivateModalEnvironment();
 });
 </script>
 
@@ -269,27 +379,22 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 74px;
+  gap: 10px;
+  min-width: auto;
   height: 36px;
-  padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
-  border-radius: 6px;
+  padding: 0 2px;
+  border: 0;
   color: var(--text-secondary);
-  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+  background: transparent;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition:
     color 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    transform 0.2s ease;
+    opacity 0.2s ease;
 
   &:hover {
     color: var(--text-primary);
-    border-color: color-mix(in srgb, var(--el-color-primary) 48%, transparent);
-    background: var(--glass-bg-popup);
-    transform: translateY(-1px);
+    opacity: 0.82;
   }
 
   &:focus-visible {
@@ -303,17 +408,16 @@ onUnmounted(() => {
 }
 
 .search-shortcut {
-  min-width: 34px;
-  padding: 2px 6px;
-  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
-  border-radius: 5px;
+  min-width: auto;
+  padding: 0;
+  border: 0;
   font-family: MapleMono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
-  background: color-mix(in srgb, var(--bg-color-primary) 72%, transparent);
+  background: transparent;
 }
 
 .search-overlay {
@@ -351,10 +455,42 @@ onUnmounted(() => {
   gap: 12px;
   padding: 18px 20px;
   border-bottom: 1px solid color-mix(in srgb, var(--border-color-list) 78%, transparent);
+  &:focus-within {
+    border-bottom-color: color-mix(in srgb, var(--el-color-primary) 72%, transparent);
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--el-color-primary) 48%, transparent);
+  }
 }
 
 .search-input-icon {
   color: var(--el-color-primary);
+}
+
+.search-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .search-input {
@@ -504,6 +640,7 @@ onUnmounted(() => {
   font-size: 14px;
   line-height: 1.45;
   text-align: left;
+  text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -516,6 +653,15 @@ onUnmounted(() => {
     outline: 2px solid var(--el-color-primary);
     outline-offset: 2px;
   }
+}
+
+.search-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  color: var(--el-color-danger);
+  font-size: 14px;
 }
 
 .search-match {
@@ -543,6 +689,18 @@ onUnmounted(() => {
   height: 60px;
 }
 
+.search-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .search-overlay-enter-active,
 .search-overlay-leave-active {
   transition: opacity 0.18s ease;
@@ -566,6 +724,7 @@ onUnmounted(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .search-trigger,
+  .search-dialog-close,
   .history-item,
   .search-overlay-enter-active,
   .search-overlay-leave-active,
@@ -584,15 +743,20 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .search {
-    width: 100%;
-    justify-content: center;
+    flex: 0 0 auto;
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .search-shortcut {
+    display: none;
   }
 
   .search-trigger {
-    min-width: 62px;
-    width: auto;
-    height: 40px;
-    padding-inline: 10px;
+    min-width: 3.667rem;
+    width: 3.667rem;
+    height: 3.667rem;
+    padding: 0;
   }
 
   .search-overlay {
@@ -619,13 +783,22 @@ onUnmounted(() => {
   }
 
   .search-input-shell {
-    padding: max(16px, env(safe-area-inset-top)) 16px 14px;
-    grid-template-columns: 26px minmax(0, 1fr);
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      14px
+      max(16px, env(safe-area-inset-left));
+    grid-template-columns: 26px minmax(0, 1fr) 3.667rem;
   }
 
   .search-input {
     height: 40px;
-    font-size: 20px;
+    font-size: 1.5rem;
+  }
+
+  .search-dialog-close {
+    width: 3.667rem;
+    height: 3.667rem;
   }
 
   .search-panel {

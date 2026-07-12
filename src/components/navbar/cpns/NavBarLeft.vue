@@ -1,7 +1,7 @@
 <template>
   <div class="left">
-    <a href="/" @click.prevent="goHome">
-      <img class="logo" src="@/assets/img/logo.svg" alt="" />
+    <a href="/" aria-label="返回首页" @click.prevent="goHome">
+      <img class="logo" src="@/assets/img/logo.svg" width="158" height="55" alt="" />
     </a>
   </div>
 </template>
@@ -15,19 +15,21 @@ const goHome = () => {
 
 <style lang="scss" scoped>
 .left {
-  max-width: 80px;
-  min-width: 80px;
+  max-width: 90px;
+  min-width: 90px;
   cursor: pointer;
   flex-shrink: 0;
   .logo {
     width: 100%;
+    height: auto;
+    display: block;
   }
 }
 
 @media (max-width: 768px) {
   .left {
-    min-width: 64px;
-    max-width: 64px;
+    min-width: 88px;
+    max-width: 88px;
   }
 }
 </style>

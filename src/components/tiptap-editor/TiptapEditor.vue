@@ -1117,8 +1117,9 @@ onBeforeUnmount(() => {
 
   &__label {
     margin-bottom: 16px;
+    font-family: var(--markdown-editor-font);
     font-size: 12px;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-secondary);
   }
@@ -1133,14 +1134,20 @@ onBeforeUnmount(() => {
   &__textarea {
     resize: none;
     border: 0;
-    outline: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
     background: transparent;
     color: var(--text-primary);
-    font:
-      500 15px/1.8 'SFMono-Regular',
-      Consolas,
-      monospace;
+    font-family: var(--markdown-editor-font);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.8;
     white-space: pre-wrap;
+    transition: outline-color 0.2s ease;
+
+    &:focus-visible {
+      outline-color: var(--el-color-primary);
+    }
   }
 
   &__preview {
@@ -1175,7 +1182,7 @@ onBeforeUnmount(() => {
   }
 
   &__preview:deep(code) {
-    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-family: var(--markdown-editor-font);
   }
 
   &__preview:deep(.markdown-video-placeholder) {
@@ -1203,7 +1210,9 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   min-height: 0; // 关键：让 flex 子元素能正确收缩
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
   background: var(--bg-color-primary);
   color: var(--text-primary);
 }

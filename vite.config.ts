@@ -16,6 +16,7 @@ const pathSrc = fileURLToPath(new URL('./src', import.meta.url));
 // https:/vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const devApiTarget = env.VITE_DEV_API_TARGET || 'http://localhost:8000';
   return {
     plugins: [
       vue(),
@@ -85,7 +86,7 @@ export default defineConfig(({ mode }) => {
       host: env.HOST,
       proxy: {
         '/dev-api': {
-          target: 'http://localhost:8000', //接口的前缀
+          target: devApiTarget, //接口的前缀
           changeOrigin: true, //支持跨域
           rewrite: (path) => path.replace(/^\/dev-api/, ''), //重写路径
         },

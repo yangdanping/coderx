@@ -32,7 +32,7 @@ const props = withDefaults(
   }>(),
   {
     controlsId: 'flow-cord-panel',
-    cordAnchorInsetPx: -112,
+    cordAnchorInsetPx: -470,
   },
 );
 
@@ -73,7 +73,7 @@ onBeforeRouteLeave((_to, _from, next) => {
 .flow-cord-widget {
   .flow-cord-outside {
     position: fixed;
-    top: calc(var(--navbarHeight) - 6px);
+    top: 0;
     right: var(--flow-cord-right);
     z-index: var(--z-sticky);
     pointer-events: none;

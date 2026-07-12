@@ -76,6 +76,21 @@ export const getTags = (params?: IPage) => {
   });
 };
 
+// 获取当前登录用户的个性化标签顺序
+export const getTagOrder = () => {
+  return myRequest.get<IResData>({
+    url: `/tag/order`,
+  });
+};
+
+// 完整替换当前登录用户的标签顺序
+export const saveTagOrder = (tagIds: number[]) => {
+  return myRequest.put<IResData>({
+    url: `/tag/order`,
+    data: { tagIds },
+  });
+};
+
 // 修改文章标签
 export const changeTags = (articleId: RouteParam, tags: string[]) => {
   console.log('changeTags', articleId, tags);

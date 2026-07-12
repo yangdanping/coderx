@@ -14,6 +14,11 @@ const {
   editorStoreState,
   removeCache,
   showInfo,
+  getTags,
+  getTagOrder,
+  getCache,
+  setCache,
+  userStoreState,
   extractImagesFromHtmlMock,
   extractVideosFromHtmlMock,
   extractVideoIdsFromHtmlMock,
@@ -40,6 +45,14 @@ const {
       clearPendingFiles,
     },
     showInfo,
+    getTags: vi.fn(),
+    getTagOrder: vi.fn(),
+    getCache: vi.fn(),
+    setCache: vi.fn(),
+    userStoreState: {
+      userInfo: {} as { id?: number },
+      collects: [] as Array<{ count: number[] }>,
+    },
     extractImagesFromHtmlMock: vi.fn(),
     extractVideosFromHtmlMock: vi.fn(),
     extractVideoIdsFromHtmlMock: vi.fn(),
@@ -53,7 +66,8 @@ vi.mock('@/service/article/article.request', () => ({
   likeArticle: vi.fn(),
   updateArticle,
   removeArticle: vi.fn(),
-  getTags: vi.fn(),
+  getTags,
+  getTagOrder,
   changeTags,
   getRecommend: vi.fn(),
 }));
@@ -72,10 +86,7 @@ vi.mock('@/service/user/user.request', () => ({
 }));
 
 vi.mock('@/stores/user.store', () => ({
-  default: () => ({
-    userInfo: {},
-    collects: [],
-  }),
+  default: () => userStoreState,
 }));
 
 vi.mock('../history.store', () => ({
@@ -105,6 +116,8 @@ vi.mock('@/utils', () => ({
   extractVideoIdsFromHtml: extractVideoIdsFromHtmlMock,
   extractVideoReferencesFromHtml: extractVideoReferencesFromHtmlMock,
   LocalCache: {
+    getCache,
+    setCache,
     removeCache,
   },
 }));
@@ -145,6 +158,10 @@ describe('article.store updateAction', () => {
     clearPendingFiles.mockReset();
     removeCache.mockReset();
     showInfo.mockReset();
+    getTags.mockReset();
+    getTagOrder.mockReset();
+    getCache.mockReset();
+    setCache.mockReset();
     extractImagesFromHtmlMock.mockReset();
     extractVideosFromHtmlMock.mockReset();
     extractVideoIdsFromHtmlMock.mockReset();
@@ -164,6 +181,65 @@ describe('article.store updateAction', () => {
     extractVideosFromHtmlMock.mockReturnValue([]);
     extractVideoIdsFromHtmlMock.mockReturnValue([]);
     extractVideoReferencesFromHtmlMock.mockReturnValue([]);
+    userStoreState.userInfo = {};
+    userStoreState.collects = [];
+  });
+
+  it('loads the authenticated user tag order when a user is present', async () => {
+    const personalizedTags = [
+      { id: 3, name: 'JS/TS' },
+      { id: 1, name: '前端' },
+    ];
+    userStoreState.userInfo = { id: 7 };
+    getTagOrder.mockResolvedValue({ code: 0, data: personalizedTags });
+    const store = useArticleStore();
+
+    await store.getTagsAction();
+
+    expect(getTagOrder).toHaveBeenCalledOnce();
+    expect(getTags).not.toHaveBeenCalled();
+    expect(store.tags).toEqual(personalizedTags);
+  });
+
+  it('loads the public deterministic tag order for a guest', async () => {
+    const defaultTags = [{ id: 1, name: '前端' }];
+    getTags.mockResolvedValue({ code: 0, data: defaultTags });
+    const store = useArticleStore();
+
+    await store.getTagsAction();
+
+    expect(getTags).toHaveBeenCalledOnce();
+    expect(getTagOrder).not.toHaveBeenCalled();
+    expect(store.tags).toEqual(defaultTags);
+  });
+
+  it('applies a valid cached guest order and appends tags missing from the cache', async () => {
+    const defaultTags = [
+      { id: 1, name: '前端' },
+      { id: 2, name: '后端' },
+      { id: 3, name: 'JS/TS' },
+    ];
+    getCache.mockReturnValue([3, 999, 1]);
+    getTags.mockResolvedValue({ code: 0, data: defaultTags });
+    const store = useArticleStore();
+
+    await store.getTagsAction();
+
+    expect(store.tags.map((tag) => tag.id)).toEqual([3, 1, 2]);
+  });
+
+  it('falls back to the public order when loading the authenticated order fails', async () => {
+    const defaultTags = [{ id: 1, name: '前端' }];
+    userStoreState.userInfo = { id: 7 };
+    getTagOrder.mockRejectedValue(new Error('network failed'));
+    getTags.mockResolvedValue({ code: 0, data: defaultTags });
+    const store = useArticleStore();
+
+    await store.getTagsAction();
+
+    expect(getTagOrder).toHaveBeenCalledOnce();
+    expect(getTags).toHaveBeenCalledOnce();
+    expect(store.tags).toEqual(defaultTags);
   });
 
   it('passes draftId to createArticle and keeps local cleanup without deleting the draft again', async () => {

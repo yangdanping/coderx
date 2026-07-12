@@ -277,35 +277,68 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/assets/css/utils' as *;
+
 /*
  * 边框与形状（自己改这里即可）：
  * - 本块：整框描边 border、圆角 border-radius、聚焦环 :focus-within
  * - 工具栏与编辑区分割线：CommentToolbar.vue → .comment-toolbar → border-bottom
  * - 正文区域底色：styles/comment-editor.scss → .comment-editor-content
- * 主色「浓淡」由 props accentStrength（--ce-strength）与各处的 calc(…% * var(--ce-strength)) 控制。
+ * --ce-accent 为站点品牌绿，与页面纸感背景 / 评论列表玻璃风格对齐。
  */
 .comment-editor-container {
-  /* 无 :style 绑定兜底，与 accentStrength 默认 50 一致 */
-  --ce-strength: 0.5;
+  --ce-accent: #81c895;
+  --ce-accent-hover: #6aad78;
+  --ce-accent-muted: color-mix(in srgb, var(--ce-accent) 12%, var(--bg-color-primary));
+
   container-type: inline-size;
   container-name: comment-editor;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border: 1px solid color-mix(in srgb, var(--el-color-primary) calc(14% * var(--ce-strength, 1)), var(--el-border-color-lighter, var(--el-border-color)));
+  border: 1px solid var(--border-color-default);
+  border-radius: 8px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--el-color-primary) calc(5% * var(--ce-strength, 1)), var(--bg-color-primary));
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--el-color-primary) calc(6% * var(--ce-strength, 1)), transparent);
+  @include glass-effect;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--fontColor) 6%, transparent);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 
-  // &:focus-within {
-  //   border-color: color-mix(in srgb, var(--el-color-primary) calc(38% * var(--ce-strength, 1)), var(--el-border-color));
-  //   box-shadow:
-  //     0 0 0 3px color-mix(in srgb, var(--el-color-primary) calc(20% * var(--ce-strength, 1)), transparent),
-  //     0 1px 0 color-mix(in srgb, var(--el-color-primary) calc(10% * var(--ce-strength, 1)), transparent);
-  // }
+  &:focus-within {
+    border-color: color-mix(in srgb, var(--ce-accent) 45%, var(--border-color-default));
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--ce-accent) 15%, transparent),
+      0 1px 3px color-mix(in srgb, var(--fontColor) 6%, transparent);
+  }
+
+  :deep(.comment-toolbar) {
+    background: color-mix(in srgb, var(--bg-color-primary) 88%, transparent);
+    border-bottom-color: var(--border-color-default);
+    scrollbar-color: color-mix(in srgb, var(--fontColor) 28%, transparent) transparent;
+  }
+
+  :deep(.comment-toolbar .toolbar-btn.el-button.is-plain) {
+    --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+    --el-button-bg-color: transparent;
+    --el-button-border-color: transparent;
+
+    &:hover:not(.is-disabled) {
+      --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+      --el-button-bg-color: color-mix(in srgb, var(--fontColor) 9%, transparent);
+    }
+  }
+
+  :deep(.comment-toolbar .toolbar-btn.el-button--primary.is-plain) {
+    --el-button-text-color: var(--text-primary, var(--el-text-color-primary));
+    --el-button-bg-color: color-mix(in srgb, var(--fontColor) 12%, transparent);
+    --el-button-border-color: transparent;
+  }
+}
+
+:global(html.dark) .comment-editor-container {
+  --ce-accent: #88d4a0;
+  --ce-accent-hover: #9de0b0;
 }
 
 /*
@@ -320,8 +353,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 10px;
-  border-top: 1px solid color-mix(in srgb, var(--el-color-primary) calc(10% * var(--ce-strength, 1)), var(--el-border-color-lighter, var(--el-border-color)));
-  background: color-mix(in srgb, var(--el-color-primary) calc(3% * var(--ce-strength, 1)), var(--el-bg-color, #fff));
+  border-top: 1px solid var(--border-color-default);
+  background: color-mix(in srgb, var(--bg-color-primary) 92%, transparent);
 }
 
 .toolbar-toggle {
@@ -342,18 +375,18 @@ onBeforeUnmount(() => {
     border-color 0.15s ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--el-color-primary) calc(12% * var(--ce-strength, 1)), transparent);
-    color: var(--el-color-primary);
+    background: var(--ce-accent-muted);
+    color: var(--ce-accent);
   }
 
   &:focus-visible {
     outline: none;
-    border-color: color-mix(in srgb, var(--el-color-primary) calc(35% * var(--ce-strength, 1)), var(--el-border-color));
+    border-color: color-mix(in srgb, var(--ce-accent) 45%, var(--border-color-default));
   }
 
   &.is-active {
-    background: color-mix(in srgb, var(--el-color-primary) calc(18% * var(--ce-strength, 1)), transparent);
-    color: var(--el-color-primary);
+    background: color-mix(in srgb, var(--ce-accent) 18%, transparent);
+    color: var(--ce-accent);
   }
 
   .toolbar-toggle__icon {
@@ -377,6 +410,26 @@ onBeforeUnmount(() => {
   // slot 有内容时按钮组紧贴右边
   &:empty {
     display: none;
+  }
+
+  :deep(.el-button--primary:not(.is-plain)) {
+    --el-button-bg-color: var(--ce-accent);
+    --el-button-border-color: var(--ce-accent);
+    --el-button-hover-bg-color: var(--ce-accent-hover);
+    --el-button-hover-border-color: var(--ce-accent-hover);
+    --el-button-active-bg-color: var(--ce-accent-hover);
+    --el-button-active-border-color: var(--ce-accent-hover);
+    --el-button-disabled-bg-color: color-mix(in srgb, var(--ce-accent) 45%, var(--bg-color-secondary));
+    --el-button-disabled-border-color: transparent;
+  }
+
+  :deep(.el-button--default.is-plain) {
+    --el-button-text-color: var(--text-secondary);
+    --el-button-border-color: var(--border-color-default);
+    --el-button-bg-color: transparent;
+    --el-button-hover-text-color: var(--text-primary);
+    --el-button-hover-border-color: var(--border-color-default);
+    --el-button-hover-bg-color: color-mix(in srgb, var(--fontColor) 6%, transparent);
   }
 }
 </style>

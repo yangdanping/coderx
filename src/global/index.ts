@@ -52,7 +52,7 @@ function isTokenExpiringSoon(token: string, threshold = 5 * 60): boolean {
 // 标记是否已完成首次验证(页面刷新/首次加载时需要验证一次)
 let hasVerifiedOnce = false;
 
-function setDocumentTitle(to: RouteLocationNormalized) {
+function setDocumentTitle(to: GuardRouteLike) {
   const matchedTitle = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')?.meta.title;
   document.title = matchedTitle ? `${matchedTitle} - ${DEFAULT_DOCUMENT_TITLE}` : DEFAULT_DOCUMENT_TITLE;
 }

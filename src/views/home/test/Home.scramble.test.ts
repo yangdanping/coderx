@@ -50,10 +50,10 @@ describe('Home scramble title', () => {
 
   it('renders the shared frame in the title and lowercase retro screen', () => {
     const wrapper = mountHome();
-    const title = wrapper.getComponent(ScrambleFrameText);
+    const title = wrapper.findAllComponents(ScrambleFrameText).find((component) => !component.classes().includes('title-word-sizer'));
     const retro = wrapper.getComponent({ name: 'RetroComputerShader' });
 
-    expect(title.props()).toMatchObject({
+    expect(title?.props()).toMatchObject({
       frame: 'WrｦterX',
       target: 'WriterX',
     });
@@ -85,10 +85,34 @@ describe('Home scramble title', () => {
 
   it('keeps the title and retro component in the existing hero layout', () => {
     const wrapper = mountHome();
+    const titleWords = wrapper.findAllComponents(ScrambleFrameText);
 
     expect(wrapper.get('.title-line-2').exists()).toBe(true);
-    expect(wrapper.getComponent(ScrambleFrameText).classes()).toContain('title-word');
+    expect(titleWords).toHaveLength(2);
+    expect(titleWords[0]?.classes()).toContain('title-word-sizer');
+    expect(titleWords[1]?.classes()).toContain('title-word');
+    expect(titleWords[1]?.classes()).not.toContain('title-word-sizer');
     expect(wrapper.getComponent({ name: 'RetroComputerShader' }).classes()).toContain('shader');
+  });
+
+  it('reserves desktop title width with the longest role title and hides the sizer when stacked', () => {
+    const homeSource = fs.readFileSync(path.join(process.cwd(), 'src/views/home/Home.vue'), 'utf8');
+    const stackedTitleStyles = homeSource.match(/@media screen and \(max-width: 1040px\)[\s\S]*?\.title-word-sizer\s*\{[\s\S]*?\}/)?.[0] ?? '';
+
+    expect(homeSource).toContain('title-word-sizer');
+    expect(homeSource).toContain('titleWidthReserve');
+    expect(homeSource).toContain('display: grid');
+    expect(homeSource).toContain('grid-area: 1 / 1');
+    expect(stackedTitleStyles).toContain('display: none');
+  });
+
+  it('offsets the title-section mesh by both the hero spacing and navbar height', () => {
+    const homeSource = fs.readFileSync(path.join(process.cwd(), 'src/views/home/Home.vue'), 'utf8');
+    const uncommentedHomeSource = homeSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+    expect(uncommentedHomeSource).toMatch(
+      /\.title-section\s*\{[^{}]*&::before\s*\{[^{}]*top\s*:\s*calc\(\s*-1\s*\*\s*var\(\s*--hero-mesh-offset-top\s*\)\s*-\s*var\(\s*--navbarHeight\s*\)\s*\)\s*;/,
+    );
   });
 
   it('places the article discovery link inside the hero title block', () => {
