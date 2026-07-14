@@ -7,23 +7,74 @@ import {
   TRIANGLE_BODY_COLOR,
   TRIANGLE_FALLBACK_PATH,
   TRIANGLE_OUTLINE_COLOR,
+  TRIANGLE_SHAPE_CONFIG,
   TRIANGLE_TOTAL_DEPTH,
   TRIANGLE_WORLD_POSITION,
   calculateContinuousPose,
   calculateCoverFrustum,
+  calculateTriangleGuide,
   createMotionProfile,
   createTriangleObject,
   createTriangleShape,
 } from '../triangle3d';
 
+function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+function triangleArea(a: { x: number; y: number }, b: { x: number; y: number }, c: { x: number; y: number }) {
+  return Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) / 2;
+}
+
 describe('triangle3d scene model', () => {
+  it('exposes developer-friendly defaults for an equilateral arrow guide', () => {
+    expect(TRIANGLE_SHAPE_CONFIG).toEqual({
+      sideLength: 112,
+      heightScale: 1,
+      tipSkew: 0,
+      notchDepth: 22,
+      cornerRadius: 10,
+    });
+
+    const guide = calculateTriangleGuide();
+    const sides = [
+      distance(guide.tip, guide.bottomRight),
+      distance(guide.bottomRight, guide.bottomLeft),
+      distance(guide.bottomLeft, guide.tip),
+    ];
+
+    sides.forEach((side) => expect(side).toBeCloseTo(TRIANGLE_SHAPE_CONFIG.sideLength, 6));
+  });
+
+  it('lets height and skew tune the triangle without editing path coordinates', () => {
+    const defaultGuide = calculateTriangleGuide();
+    const flatterGuide = calculateTriangleGuide({ ...TRIANGLE_SHAPE_CONFIG, heightScale: 0.8 });
+    const skewedGuide = calculateTriangleGuide({ ...TRIANGLE_SHAPE_CONFIG, tipSkew: 12 });
+
+    expect(distance(flatterGuide.bottomRight, flatterGuide.bottomLeft)).toBeCloseTo(TRIANGLE_SHAPE_CONFIG.sideLength, 6);
+    expect(triangleArea(flatterGuide.tip, flatterGuide.bottomRight, flatterGuide.bottomLeft)).toBeLessThan(
+      triangleArea(defaultGuide.tip, defaultGuide.bottomRight, defaultGuide.bottomLeft),
+    );
+    expect(distance(skewedGuide.tip, skewedGuide.bottomRight)).not.toBeCloseTo(distance(skewedGuide.tip, skewedGuide.bottomLeft), 4);
+  });
+
+  it('moves the concave notch toward the tip by the configured depth', () => {
+    const guide = calculateTriangleGuide();
+    const baseMidpoint = {
+      x: (guide.bottomRight.x + guide.bottomLeft.x) / 2,
+      y: (guide.bottomRight.y + guide.bottomLeft.y) / 2,
+    };
+
+    expect(distance(baseMidpoint, guide.notch)).toBeCloseTo(TRIANGLE_SHAPE_CONFIG.notchDepth, 6);
+  });
+
   it('builds a near-front rounded navigation arrow as a visible shallow prism', () => {
     const object = createTriangleObject();
     const bounds = new Box3().setFromObject(object.group);
     const size = bounds.getSize(new Vector3());
 
-    expect(size.x).toBeGreaterThanOrEqual(110);
-    expect(size.y).toBeGreaterThanOrEqual(96);
+    expect(size.x).toBeGreaterThanOrEqual(100);
+    expect(size.y).toBeGreaterThanOrEqual(90);
     expect(size.z).toBeCloseTo(TRIANGLE_TOTAL_DEPTH, 4);
     expect(TRIANGLE_TOTAL_DEPTH).toBe(24);
     expect(MathUtils.radToDeg(STATIC_ROTATION.x)).toBeCloseTo(8, 6);
@@ -34,7 +85,7 @@ describe('triangle3d scene model', () => {
     object.dispose();
   });
 
-  it('uses one curved, concave up-right arrow contour', () => {
+  it('uses one safely rounded, concave up-right contour', () => {
     const points = createTriangleShape().getPoints(32);
     const turnSigns = points
       .map((point, index) => {
@@ -45,10 +96,19 @@ describe('triangle3d scene model', () => {
       })
       .filter((sign) => sign !== 0);
 
-    expect(TRIANGLE_FALLBACK_PATH.match(/C/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(TRIANGLE_FALLBACK_PATH.match(/Q/g)?.length).toBe(4);
     expect(new Set(turnSigns)).toEqual(new Set([-1, 1]));
-    expect(Math.max(...points.map((point) => point.x))).toBeGreaterThan(40);
-    expect(Math.max(...points.map((point) => point.y))).toBeGreaterThan(40);
+    expect(points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))).toBe(true);
+  });
+
+  it('caps oversized corner radii before they can fold the path', () => {
+    const shape = createTriangleShape({ ...TRIANGLE_SHAPE_CONFIG, cornerRadius: 1_000 });
+    const points = shape.getPoints(32);
+    const defaultPoints = createTriangleShape().getPoints(32);
+
+    expect(points.length).toBeGreaterThan(20);
+    expect(points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))).toBe(true);
+    expect(points).not.toEqual(defaultPoints);
   });
 
   it('outlines both prism caps without protruding depth connectors', () => {

@@ -9,6 +9,33 @@ export const TRIANGLE_BODY_COLOR = '#f8cbc6';
 export const TRIANGLE_OUTLINE_COLOR = '#f7aaa3';
 export const TRIANGLE_WORLD_POSITION = { x: -482.5, y: -130, z: 0 } as const;
 export const ORBIT_DURATION_MS = 56_250;
+export interface TriangleShapeConfig {
+  sideLength: number;
+  heightScale: number;
+  tipSkew: number;
+  notchDepth: number;
+  cornerRadius: number;
+}
+
+export interface TrianglePoint {
+  x: number;
+  y: number;
+}
+
+export interface TriangleGuide {
+  tip: TrianglePoint;
+  bottomRight: TrianglePoint;
+  notch: TrianglePoint;
+  bottomLeft: TrianglePoint;
+}
+
+export const TRIANGLE_SHAPE_CONFIG = {
+  sideLength: 112,
+  heightScale: 1,
+  tipSkew: 0,
+  notchDepth: 22,
+  cornerRadius: 10,
+} as const satisfies TriangleShapeConfig;
 export const STATIC_ROTATION = {
   x: MathUtils.degToRad(8),
   y: MathUtils.degToRad(-12),
@@ -16,6 +43,7 @@ export const STATIC_ROTATION = {
 } as const;
 
 const TRIANGLE_CENTER = { x: 217.5, y: 530 } as const;
+const ARROW_DIRECTION_RADIANS = MathUtils.degToRad(58);
 const ORBIT_CENTER = { x: -600, y: 20 } as const;
 const ORBIT_OFFSET = {
   x: TRIANGLE_WORLD_POSITION.x - ORBIT_CENTER.x,
@@ -24,26 +52,85 @@ const ORBIT_OFFSET = {
 const BEVEL_SIZE = 0;
 const CORE_DEPTH = TRIANGLE_TOTAL_DEPTH - BEVEL_SIZE * 2;
 
-type PathPoint = readonly [x: number, y: number];
+function rotateAndTranslate(point: TrianglePoint): TrianglePoint {
+  const cos = Math.cos(ARROW_DIRECTION_RADIANS);
+  const sin = Math.sin(ARROW_DIRECTION_RADIANS);
+  return {
+    x: TRIANGLE_CENTER.x + point.x * cos - point.y * sin,
+    y: TRIANGLE_CENTER.y + point.x * sin + point.y * cos,
+  };
+}
+
+export function calculateTriangleGuide(config: TriangleShapeConfig = TRIANGLE_SHAPE_CONFIG): TriangleGuide {
+  const height = (config.sideLength * Math.sqrt(3) * config.heightScale) / 2;
+  const tip = { x: config.tipSkew, y: (-2 * height) / 3 };
+  const bottomRight = { x: config.sideLength / 2, y: height / 3 };
+  const bottomLeft = { x: -config.sideLength / 2, y: height / 3 };
+  const baseMidpoint = { x: 0, y: height / 3 };
+  const towardTip = { x: tip.x - baseMidpoint.x, y: tip.y - baseMidpoint.y };
+  const towardTipLength = Math.hypot(towardTip.x, towardTip.y) || 1;
+  const notch = {
+    x: baseMidpoint.x + (towardTip.x / towardTipLength) * config.notchDepth,
+    y: baseMidpoint.y + (towardTip.y / towardTipLength) * config.notchDepth,
+  };
+
+  return {
+    tip: rotateAndTranslate(tip),
+    bottomRight: rotateAndTranslate(bottomRight),
+    notch: rotateAndTranslate(notch),
+    bottomLeft: rotateAndTranslate(bottomLeft),
+  };
+}
+
 type TrianglePathCommand =
-  | { type: 'M' | 'L'; point: PathPoint }
-  | { type: 'C'; control1: PathPoint; control2: PathPoint; point: PathPoint }
+  | { type: 'M' | 'L'; point: TrianglePoint }
+  | { type: 'Q'; control: TrianglePoint; point: TrianglePoint }
   | { type: 'Z' };
 
-const TRIANGLE_ARROW_PATH: readonly TrianglePathCommand[] = [
-  { type: 'M', point: [258, 483] },
-  { type: 'C', control1: [268, 479], control2: [278, 483], point: [274, 493] },
-  { type: 'L', point: [241, 571] },
-  { type: 'C', control1: [237, 581], control2: [234, 584], point: [229, 583] },
-  { type: 'C', control1: [224, 583], control2: [221, 580], point: [218, 575] },
-  { type: 'L', point: [204, 552] },
-  { type: 'C', control1: [202, 549], control2: [200, 548], point: [196, 547] },
-  { type: 'L', point: [169, 538] },
-  { type: 'C', control1: [160, 535], control2: [156, 530], point: [157, 524] },
-  { type: 'C', control1: [158, 518], control2: [162, 515], point: [169, 513] },
-  { type: 'L', point: [258, 483] },
-  { type: 'Z' },
-];
+function distanceBetween(a: TrianglePoint, b: TrianglePoint) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+function moveToward(from: TrianglePoint, to: TrianglePoint, distance: number): TrianglePoint {
+  const length = distanceBetween(from, to) || 1;
+  const ratio = distance / length;
+  return {
+    x: from.x + (to.x - from.x) * ratio,
+    y: from.y + (to.y - from.y) * ratio,
+  };
+}
+
+function createRoundedPathCommands(config: TriangleShapeConfig): TrianglePathCommand[] {
+  const guide = calculateTriangleGuide(config);
+  const polygon = [guide.tip, guide.bottomRight, guide.notch, guide.bottomLeft];
+  const corners = polygon.map((point, index) => {
+    const previous = polygon[(index - 1 + polygon.length) % polygon.length]!;
+    const next = polygon[(index + 1) % polygon.length]!;
+    const safeRadius = Math.min(
+      Math.max(0, config.cornerRadius),
+      distanceBetween(point, previous) * 0.4,
+      distanceBetween(point, next) * 0.4,
+    );
+
+    return {
+      control: point,
+      entry: moveToward(point, previous, safeRadius),
+      exit: moveToward(point, next, safeRadius),
+    };
+  });
+  const firstCorner = corners[0]!;
+  const commands: TrianglePathCommand[] = [{ type: 'M', point: firstCorner.entry }];
+
+  corners.forEach((corner, index) => {
+    if (index > 0) commands.push({ type: 'L', point: corner.entry });
+    commands.push({ type: 'Q', control: corner.control, point: corner.exit });
+  });
+  commands.push({ type: 'L', point: firstCorner.entry }, { type: 'Z' });
+
+  return commands;
+}
+
+const TRIANGLE_ARROW_PATH = createRoundedPathCommands(TRIANGLE_SHAPE_CONFIG);
 
 export interface CoverFrustum {
   left: number;
@@ -73,26 +160,30 @@ function localPoint(x: number, y: number): [number, number] {
   return [x - TRIANGLE_CENTER.x, TRIANGLE_CENTER.y - y];
 }
 
-function localPathPoint([x, y]: PathPoint): [number, number] {
-  return localPoint(x, y);
+function localPathPoint(point: TrianglePoint): [number, number] {
+  return localPoint(point.x, point.y);
 }
 
-function pointText([x, y]: PathPoint) {
-  return `${x} ${y}`;
+function formatCoordinate(value: number) {
+  return Number(value.toFixed(4)).toString();
+}
+
+function pointText(point: TrianglePoint) {
+  return `${formatCoordinate(point.x)} ${formatCoordinate(point.y)}`;
 }
 
 export const TRIANGLE_FALLBACK_PATH = TRIANGLE_ARROW_PATH.map((command) => {
   if (command.type === 'Z') return 'Z';
-  if (command.type === 'C') {
-    return `C ${pointText(command.control1)} ${pointText(command.control2)} ${pointText(command.point)}`;
+  if (command.type === 'Q') {
+    return `Q ${pointText(command.control)} ${pointText(command.point)}`;
   }
   return `${command.type} ${pointText(command.point)}`;
 }).join(' ');
 
-export function createTriangleShape() {
+export function createTriangleShape(config: TriangleShapeConfig = TRIANGLE_SHAPE_CONFIG) {
   const shape = new Shape();
 
-  for (const command of TRIANGLE_ARROW_PATH) {
+  for (const command of createRoundedPathCommands(config)) {
     if (command.type === 'Z') {
       shape.closePath();
       continue;
@@ -101,7 +192,7 @@ export function createTriangleShape() {
     const point = localPathPoint(command.point);
     if (command.type === 'M') shape.moveTo(...point);
     else if (command.type === 'L') shape.lineTo(...point);
-    else shape.bezierCurveTo(...localPathPoint(command.control1), ...localPathPoint(command.control2), ...point);
+    else shape.quadraticCurveTo(...localPathPoint(command.control), ...point);
   }
 
   return shape;
