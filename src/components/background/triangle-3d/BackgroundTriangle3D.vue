@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, shallowRef, useTemplateRef } from 'vue';
 import { createTriangle3DRuntime } from './triangle3d-runtime';
+import { TRIANGLE_BODY_COLOR, TRIANGLE_FALLBACK_PATH, TRIANGLE_OUTLINE_COLOR } from './triangle3d';
 
 import type { Triangle3DRuntime } from './triangle3d-runtime';
 
@@ -37,11 +38,11 @@ onUnmounted(() => {
       preserveAspectRatio="xMidYMid slice"
     >
       <path
-        d="M 165 580 L 270 580 Q275 578 270 570 L 223 483 Q220 480 217 483 L 165 570 Q160 578 165 580"
-        fill="#f8cbc6"
+        :d="TRIANGLE_FALLBACK_PATH"
+        :fill="TRIANGLE_BODY_COLOR"
         fill-opacity="0.28"
-        stroke="#f58e85"
-        stroke-opacity="0.6"
+        :stroke="TRIANGLE_OUTLINE_COLOR"
+        stroke-opacity="0.42"
       />
     </svg>
     <canvas ref="canvas" class="background-triangle-3d__canvas" />

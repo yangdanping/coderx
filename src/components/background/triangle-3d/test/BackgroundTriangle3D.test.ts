@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BackgroundTriangle3D from '../BackgroundTriangle3D.vue';
+import { TRIANGLE_BODY_COLOR, TRIANGLE_FALLBACK_PATH, TRIANGLE_OUTLINE_COLOR } from '../triangle3d';
 
 const mocks = vi.hoisted(() => ({
   dispose: vi.fn(),
@@ -31,10 +32,11 @@ describe('BackgroundTriangle3D', () => {
     const visibleFallback = wrapper.get('[data-triangle-fallback]');
     expect(visibleFallback.isVisible()).toBe(true);
     const fallbackPath = visibleFallback.get('path');
-    expect(fallbackPath.attributes('fill')).toBe('#f8cbc6');
+    expect(fallbackPath.attributes('d')).toBe(TRIANGLE_FALLBACK_PATH);
+    expect(fallbackPath.attributes('fill')).toBe(TRIANGLE_BODY_COLOR);
     expect(fallbackPath.attributes('fill-opacity')).toBe('0.28');
-    expect(fallbackPath.attributes('stroke')).toBe('#f58e85');
-    expect(fallbackPath.attributes('stroke-opacity')).toBe('0.6');
+    expect(fallbackPath.attributes('stroke')).toBe(TRIANGLE_OUTLINE_COLOR);
+    expect(fallbackPath.attributes('stroke-opacity')).toBe('0.42');
 
     mocks.notifyReady?.();
     await nextTick();
