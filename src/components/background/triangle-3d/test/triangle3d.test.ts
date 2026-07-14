@@ -1,4 +1,5 @@
-import { Box3, Vector3 } from 'three';
+import { Box3, Mesh, Vector3 } from 'three';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   STATIC_ROTATION,
@@ -26,17 +27,27 @@ describe('triangle3d scene model', () => {
 
   it('uses a 1.5 CSS pixel coral outline', () => {
     const object = createTriangleObject();
+    const outline = object.group.children.find((child) => child instanceof LineSegments2);
+    outline?.geometry.computeBoundingBox();
+    const outlineSize = outline?.geometry.boundingBox?.getSize(new Vector3());
 
     expect(object.outlineMaterial.linewidth).toBe(1.5);
     expect(object.outlineMaterial.opacity).toBe(0.8);
     expect(object.outlineMaterial.color.getHexString()).toBe('ee675c');
+    expect(outline?.geometry.getAttribute('instanceStart')?.count).toBeGreaterThan(50);
+    expect(outlineSize?.x).toBeGreaterThan(100);
+    expect(outlineSize?.y).toBeGreaterThan(90);
+    expect(outlineSize?.z).toBeCloseTo(TRIANGLE_TOTAL_DEPTH, 4);
 
     object.dispose();
   });
 
   it('disposes every owned GPU resource', () => {
     const object = createTriangleObject();
-    const disposeSpies = object.disposables.map((resource) => vi.spyOn(resource, 'dispose'));
+    const mesh = object.group.children.find((child) => child instanceof Mesh);
+    const outline = object.group.children.find((child) => child instanceof LineSegments2);
+    const resources = [mesh?.geometry, ...(Array.isArray(mesh?.material) ? mesh.material : []), outline?.geometry, outline?.material];
+    const disposeSpies = resources.filter((resource) => resource !== undefined).map((resource) => vi.spyOn(resource, 'dispose'));
 
     object.dispose();
 

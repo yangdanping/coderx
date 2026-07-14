@@ -1,14 +1,4 @@
-import {
-  EdgesGeometry,
-  Euler,
-  ExtrudeGeometry,
-  Group,
-  MathUtils,
-  Mesh,
-  MeshStandardMaterial,
-  Quaternion,
-  Shape,
-} from 'three';
+import { Euler, ExtrudeGeometry, Group, MathUtils, Mesh, MeshStandardMaterial, Quaternion, Shape } from 'three';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
@@ -44,7 +34,6 @@ export interface RotationTarget {
 export interface TriangleObject {
   group: Group;
   outlineMaterial: LineMaterial;
-  disposables: Array<{ dispose: () => void }>;
   dispose: () => void;
 }
 
@@ -64,6 +53,77 @@ function createTriangleShape() {
   return shape;
 }
 
+type Position = [x: number, y: number, z: number];
+
+function positionKey([x, y, z]: Position) {
+  return `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+}
+
+function createOutlinePositions(geometry: ExtrudeGeometry) {
+  const position = geometry.getAttribute('position');
+  const zLevels = new Map<string, number>();
+  for (let index = 0; index < position.count; index += 1) {
+    const z = position.getZ(index);
+    zLevels.set(z.toFixed(4), z);
+  }
+  const sortedZLevels = [...zLevels.values()].sort((a, b) => a - b);
+  const capLevels = [sortedZLevels[0], sortedZLevels.at(-1)].filter((z): z is number => z !== undefined);
+  const positions: number[] = [];
+
+  for (const capZ of capLevels) {
+    const edges = new Map<string, { count: number; end: Position; start: Position }>();
+    for (let index = 0; index < position.count; index += 3) {
+      const triangle: Position[] = [0, 1, 2].map((offset) => [position.getX(index + offset), position.getY(index + offset), position.getZ(index + offset)]);
+      if (!triangle.every((point) => Math.abs(point[2] - capZ) < 0.0001)) continue;
+
+      for (const [startIndex, endIndex] of [
+        [0, 1],
+        [1, 2],
+        [2, 0],
+      ] as const) {
+        const start = triangle[startIndex]!;
+        const end = triangle[endIndex]!;
+        const key = [positionKey(start), positionKey(end)].sort().join('|');
+        const edge = edges.get(key);
+        if (edge) edge.count += 1;
+        else edges.set(key, { count: 1, end, start });
+      }
+    }
+    edges.forEach((edge) => {
+      if (edge.count === 1) positions.push(...edge.start, ...edge.end);
+    });
+  }
+
+  const depthDirections = [
+    [-1, -1],
+    [1, -1],
+    [0, 1],
+  ] as const;
+  for (const [directionX, directionY] of depthDirections) {
+    const depthPath = sortedZLevels.map((z) => {
+      let best: Position | undefined;
+      let bestScore = Number.NEGATIVE_INFINITY;
+      for (let index = 0; index < position.count; index += 1) {
+        if (Math.abs(position.getZ(index) - z) >= 0.0001) continue;
+        const candidate: Position = [position.getX(index), position.getY(index), z];
+        const score = candidate[0] * directionX + candidate[1] * directionY;
+        if (score > bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      }
+      return best;
+    });
+    for (let index = 1; index < depthPath.length; index += 1) {
+      const start = depthPath[index - 1];
+      const end = depthPath[index];
+      if (start && end) positions.push(...start, ...end);
+    }
+  }
+
+  return positions;
+}
+
 export function createTriangleObject(): TriangleObject {
   const geometry = new ExtrudeGeometry(createTriangleShape(), {
     depth: CORE_DEPTH,
@@ -80,6 +140,9 @@ export function createTriangleObject(): TriangleObject {
     color: '#f3b2ac',
     metalness: 0,
     opacity: 0.5,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
     roughness: 0.95,
     transparent: true,
   });
@@ -87,13 +150,16 @@ export function createTriangleObject(): TriangleObject {
     color: '#e99289',
     metalness: 0,
     opacity: 0.58,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
     roughness: 0.95,
     transparent: true,
   });
   const mesh = new Mesh(geometry, [capMaterial, sideMaterial]);
 
-  const edges = new EdgesGeometry(geometry, 30);
-  const lineGeometry = new LineSegmentsGeometry().fromEdgesGeometry(edges);
+  const lineGeometry = new LineSegmentsGeometry();
+  lineGeometry.setPositions(createOutlinePositions(geometry));
   const outlineMaterial = new LineMaterial({
     color: '#ee675c',
     linewidth: 1.5,
@@ -107,11 +173,10 @@ export function createTriangleObject(): TriangleObject {
   group.position.set(TRIANGLE_WORLD_POSITION.x, TRIANGLE_WORLD_POSITION.y, TRIANGLE_WORLD_POSITION.z);
   group.add(mesh, outline);
 
-  const disposables = [geometry, capMaterial, sideMaterial, edges, lineGeometry, outlineMaterial];
+  const disposables = [geometry, capMaterial, sideMaterial, lineGeometry, outlineMaterial];
   return {
     group,
     outlineMaterial,
-    disposables,
     dispose: () => disposables.forEach((resource) => resource.dispose()),
   };
 }

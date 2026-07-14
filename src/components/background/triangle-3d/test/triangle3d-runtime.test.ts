@@ -1,3 +1,4 @@
+import type { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTriangle3DRuntime } from '../triangle3d-runtime';
 
@@ -31,7 +32,7 @@ function createRenderer() {
 
   return {
     dispose: vi.fn(),
-    render: vi.fn(),
+    render: vi.fn((_scene?: Scene) => undefined),
     setAnimationLoop: vi.fn((callback: AnimationLoop) => {
       loop = callback;
     }),
@@ -136,6 +137,80 @@ describe('triangle 3d runtime', () => {
 
     runtime.dispose();
     runtime.dispose();
+    expect(renderer.dispose).toHaveBeenCalledOnce();
+    expect(removeWindow).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(removeDocument).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(media.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  it('preserves the initial pose when the page starts hidden', () => {
+    let currentTime = 1_000;
+    const renderer = createRenderer();
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    const runtime = createTriangle3DRuntime(document.createElement('canvas'), {
+      createRenderer: () => renderer,
+      matchMedia: () => createMatchMedia(false),
+      now: () => currentTime,
+      random: () => 0.5,
+    });
+    const scene = renderer.render.mock.calls[0]?.[0];
+    const triangle = scene?.children.find((child) => child.type === 'Group');
+    const initialQuaternion = triangle?.quaternion.clone();
+
+    currentTime = 20_000;
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+    renderer.loop?.(currentTime);
+
+    expect(triangle?.quaternion.angleTo(initialQuaternion!)).toBeLessThan(0.0000001);
+    runtime.dispose();
+  });
+
+  it('starts immediately after reduced motion is disabled while hidden', () => {
+    let currentTime = 1_000;
+    const renderer = createRenderer();
+    const media = createMatchMedia(true);
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    const runtime = createTriangle3DRuntime(document.createElement('canvas'), {
+      createRenderer: () => renderer,
+      matchMedia: () => media,
+      now: () => currentTime,
+      random: () => 0.5,
+    });
+    const scene = renderer.render.mock.calls[0]?.[0];
+    const triangle = scene?.children.find((child) => child.type === 'Group');
+    const initialQuaternion = triangle?.quaternion.clone();
+
+    currentTime = 1_000_000;
+    media.setMatches(false);
+    currentTime = 1_001_000;
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+    renderer.loop?.(1_020_000);
+
+    expect(triangle?.quaternion.angleTo(initialQuaternion!)).toBeGreaterThan(0.1);
+    runtime.dispose();
+  });
+
+  it('cleans up renderer resources and listeners when the first frame fails', () => {
+    const renderer = createRenderer();
+    const media = createMatchMedia(false);
+    const removeWindow = vi.spyOn(window, 'removeEventListener');
+    const removeDocument = vi.spyOn(document, 'removeEventListener');
+    renderer.render.mockImplementationOnce(() => {
+      throw new Error('first frame failed');
+    });
+
+    expect(() =>
+      createTriangle3DRuntime(document.createElement('canvas'), {
+        createRenderer: () => renderer,
+        matchMedia: () => media,
+        now: () => 1_000,
+        random: () => 0.5,
+      }),
+    ).toThrow('first frame failed');
+
+    expect(renderer.setAnimationLoop).toHaveBeenCalledWith(null);
     expect(renderer.dispose).toHaveBeenCalledOnce();
     expect(removeWindow).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(removeDocument).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
