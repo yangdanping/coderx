@@ -1,19 +1,23 @@
-import { Box3, MathUtils, Mesh, Vector3 } from 'three';
+import { Box3, Color, MathUtils, Mesh, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ORBIT_DURATION_MS,
   STATIC_ROTATION,
+  TRIANGLE_BODY_COLOR,
+  TRIANGLE_FALLBACK_PATH,
+  TRIANGLE_OUTLINE_COLOR,
   TRIANGLE_TOTAL_DEPTH,
   TRIANGLE_WORLD_POSITION,
   calculateContinuousPose,
   calculateCoverFrustum,
   createMotionProfile,
   createTriangleObject,
+  createTriangleShape,
 } from '../triangle3d';
 
 describe('triangle3d scene model', () => {
-  it('builds the original rounded silhouette as a visible shallow prism', () => {
+  it('builds a near-front rounded navigation arrow as a visible shallow prism', () => {
     const object = createTriangleObject();
     const bounds = new Box3().setFromObject(object.group);
     const size = bounds.getSize(new Vector3());
@@ -21,13 +25,30 @@ describe('triangle3d scene model', () => {
     expect(size.x).toBeGreaterThanOrEqual(110);
     expect(size.y).toBeGreaterThanOrEqual(96);
     expect(size.z).toBeCloseTo(TRIANGLE_TOTAL_DEPTH, 4);
-    expect(TRIANGLE_TOTAL_DEPTH).toBeGreaterThanOrEqual(22);
-    expect(TRIANGLE_TOTAL_DEPTH).toBeLessThanOrEqual(28);
-    expect(Math.abs(MathUtils.radToDeg(STATIC_ROTATION.x))).toBeGreaterThanOrEqual(16);
-    expect(Math.abs(MathUtils.radToDeg(STATIC_ROTATION.y))).toBeGreaterThanOrEqual(22);
+    expect(TRIANGLE_TOTAL_DEPTH).toBe(24);
+    expect(MathUtils.radToDeg(STATIC_ROTATION.x)).toBeCloseTo(8, 6);
+    expect(MathUtils.radToDeg(STATIC_ROTATION.y)).toBeCloseTo(-12, 6);
+    expect(MathUtils.radToDeg(STATIC_ROTATION.z)).toBeCloseTo(0, 6);
     expect(TRIANGLE_WORLD_POSITION).toEqual({ x: -482.5, y: -130, z: 0 });
 
     object.dispose();
+  });
+
+  it('uses one curved, concave up-right arrow contour', () => {
+    const points = createTriangleShape().getPoints(32);
+    const turnSigns = points
+      .map((point, index) => {
+        const previous = points[(index - 1 + points.length) % points.length]!;
+        const next = points[(index + 1) % points.length]!;
+        const cross = (point.x - previous.x) * (next.y - point.y) - (point.y - previous.y) * (next.x - point.x);
+        return Math.abs(cross) > 0.01 ? Math.sign(cross) : 0;
+      })
+      .filter((sign) => sign !== 0);
+
+    expect(TRIANGLE_FALLBACK_PATH.match(/C/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(new Set(turnSigns)).toEqual(new Set([-1, 1]));
+    expect(Math.max(...points.map((point) => point.x))).toBeGreaterThan(40);
+    expect(Math.max(...points.map((point) => point.y))).toBeGreaterThan(40);
   });
 
   it('outlines both prism caps without protruding depth connectors', () => {
@@ -36,8 +57,9 @@ describe('triangle3d scene model', () => {
     outline?.geometry.computeBoundingBox();
     const outlineSize = outline?.geometry.boundingBox?.getSize(new Vector3());
 
-    expect(object.outlineMaterial.linewidth).toBeLessThanOrEqual(1.25);
-    expect(object.outlineMaterial.opacity).toBeLessThanOrEqual(0.65);
+    expect(object.outlineMaterial.linewidth).toBe(1);
+    expect(object.outlineMaterial.opacity).toBe(0.42);
+    expect(object.outlineMaterial.color.getHexString()).toBe(new Color(TRIANGLE_OUTLINE_COLOR).getHexString());
     expect(outline?.geometry.getAttribute('instanceStart')?.count).toBeGreaterThan(40);
     expect(outlineSize?.x).toBeGreaterThan(100);
     expect(outlineSize?.y).toBeGreaterThan(90);
@@ -51,6 +73,8 @@ describe('triangle3d scene model', () => {
 
     const mesh = object.group.children.find((child) => child instanceof Mesh);
     const materials = Array.isArray(mesh?.material) ? mesh.material : [];
+    expect(materials[0]?.color.getHexString()).toBe(new Color(TRIANGLE_BODY_COLOR).getHexString());
+    expect(materials[1]?.color.getHexString()).toBe(new Color(TRIANGLE_BODY_COLOR).getHexString());
     expect(materials[0]?.opacity).toBeLessThanOrEqual(0.32);
     expect(materials[1]?.opacity).toBeGreaterThanOrEqual(0.24);
     expect(materials[1]?.opacity).toBeLessThanOrEqual(0.3);

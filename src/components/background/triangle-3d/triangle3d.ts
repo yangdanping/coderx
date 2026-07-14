@@ -5,12 +5,14 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 
 export const SVG_VIEWBOX = { width: 1400, height: 800 } as const;
 export const TRIANGLE_TOTAL_DEPTH = 24;
+export const TRIANGLE_BODY_COLOR = '#f8cbc6';
+export const TRIANGLE_OUTLINE_COLOR = '#f7aaa3';
 export const TRIANGLE_WORLD_POSITION = { x: -482.5, y: -130, z: 0 } as const;
 export const ORBIT_DURATION_MS = 56_250;
 export const STATIC_ROTATION = {
-  x: MathUtils.degToRad(18),
-  y: MathUtils.degToRad(-26),
-  z: MathUtils.degToRad(8),
+  x: MathUtils.degToRad(8),
+  y: MathUtils.degToRad(-12),
+  z: 0,
 } as const;
 
 const TRIANGLE_CENTER = { x: 217.5, y: 530 } as const;
@@ -21,6 +23,27 @@ const ORBIT_OFFSET = {
 } as const;
 const BEVEL_SIZE = 0;
 const CORE_DEPTH = TRIANGLE_TOTAL_DEPTH - BEVEL_SIZE * 2;
+
+type PathPoint = readonly [x: number, y: number];
+type TrianglePathCommand =
+  | { type: 'M' | 'L'; point: PathPoint }
+  | { type: 'C'; control1: PathPoint; control2: PathPoint; point: PathPoint }
+  | { type: 'Z' };
+
+const TRIANGLE_ARROW_PATH: readonly TrianglePathCommand[] = [
+  { type: 'M', point: [258, 483] },
+  { type: 'C', control1: [268, 479], control2: [278, 483], point: [274, 493] },
+  { type: 'L', point: [241, 571] },
+  { type: 'C', control1: [237, 581], control2: [234, 584], point: [229, 583] },
+  { type: 'C', control1: [224, 583], control2: [221, 580], point: [218, 575] },
+  { type: 'L', point: [204, 552] },
+  { type: 'C', control1: [202, 549], control2: [200, 548], point: [196, 547] },
+  { type: 'L', point: [169, 538] },
+  { type: 'C', control1: [160, 535], control2: [156, 530], point: [157, 524] },
+  { type: 'C', control1: [158, 518], control2: [162, 515], point: [169, 513] },
+  { type: 'L', point: [258, 483] },
+  { type: 'Z' },
+];
 
 export interface CoverFrustum {
   left: number;
@@ -50,15 +73,37 @@ function localPoint(x: number, y: number): [number, number] {
   return [x - TRIANGLE_CENTER.x, TRIANGLE_CENTER.y - y];
 }
 
-function createTriangleShape() {
+function localPathPoint([x, y]: PathPoint): [number, number] {
+  return localPoint(x, y);
+}
+
+function pointText([x, y]: PathPoint) {
+  return `${x} ${y}`;
+}
+
+export const TRIANGLE_FALLBACK_PATH = TRIANGLE_ARROW_PATH.map((command) => {
+  if (command.type === 'Z') return 'Z';
+  if (command.type === 'C') {
+    return `C ${pointText(command.control1)} ${pointText(command.control2)} ${pointText(command.point)}`;
+  }
+  return `${command.type} ${pointText(command.point)}`;
+}).join(' ');
+
+export function createTriangleShape() {
   const shape = new Shape();
-  shape.moveTo(...localPoint(165, 580));
-  shape.lineTo(...localPoint(270, 580));
-  shape.quadraticCurveTo(...localPoint(275, 578), ...localPoint(270, 570));
-  shape.lineTo(...localPoint(223, 483));
-  shape.quadraticCurveTo(...localPoint(220, 480), ...localPoint(217, 483));
-  shape.lineTo(...localPoint(165, 570));
-  shape.quadraticCurveTo(...localPoint(160, 578), ...localPoint(165, 580));
+
+  for (const command of TRIANGLE_ARROW_PATH) {
+    if (command.type === 'Z') {
+      shape.closePath();
+      continue;
+    }
+
+    const point = localPathPoint(command.point);
+    if (command.type === 'M') shape.moveTo(...point);
+    else if (command.type === 'L') shape.lineTo(...point);
+    else shape.bezierCurveTo(...localPathPoint(command.control1), ...localPathPoint(command.control2), ...point);
+  }
+
   return shape;
 }
 
@@ -121,7 +166,7 @@ export function createTriangleObject(): TriangleObject {
   geometry.translate(0, 0, -CORE_DEPTH / 2);
 
   const capMaterial = new MeshStandardMaterial({
-    color: '#f8cbc6',
+    color: TRIANGLE_BODY_COLOR,
     metalness: 0,
     opacity: 0.28,
     polygonOffset: true,
@@ -131,7 +176,7 @@ export function createTriangleObject(): TriangleObject {
     transparent: true,
   });
   const sideMaterial = new MeshStandardMaterial({
-    color: '#f4bdb7',
+    color: TRIANGLE_BODY_COLOR,
     metalness: 0,
     opacity: 0.26,
     polygonOffset: true,
@@ -145,9 +190,9 @@ export function createTriangleObject(): TriangleObject {
   const lineGeometry = new LineSegmentsGeometry();
   lineGeometry.setPositions(createOutlinePositions(geometry));
   const outlineMaterial = new LineMaterial({
-    color: '#f58e85',
-    linewidth: 1.2,
-    opacity: 0.6,
+    color: TRIANGLE_OUTLINE_COLOR,
+    linewidth: 1,
+    opacity: 0.42,
     transparent: true,
     worldUnits: false,
   });
