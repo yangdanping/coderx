@@ -1,5 +1,6 @@
 <template>
   <div class="app">
+    <BackgroundTriangle3D />
     <!-- 除了编辑页面，其他页面都显示导航栏 -->
     <NavBar v-if="showNavBar" />
     <RouterView class="router-view" />
@@ -8,6 +9,7 @@
 </template>
 
 <script lang="ts" setup>
+import BackgroundTriangle3D from '@/components/background/triangle-3d/BackgroundTriangle3D.vue';
 import NavBar from '@/components/navbar/NavBar.vue';
 import useRootStore from '@/stores/index.store';
 // ============== 🔌 在线状态功能开关 ==============
@@ -114,7 +116,7 @@ function handleBeforeUnload() {
     bottom: 0;
     background: var(--bg);
     filter: var(--bg-filter);
-    z-index: -2;
+    z-index: -3;
     pointer-events: none;
     transition: filter 0.3s;
   }
