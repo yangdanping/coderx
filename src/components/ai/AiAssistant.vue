@@ -120,8 +120,7 @@ import useUserStore from '@/stores/user.store';
 import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
-import { ElMessage } from 'element-plus';
-import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
+import { LocalCache, Msg, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
 import { useResizable } from '@/composables/useResizable';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
@@ -392,10 +391,7 @@ const handleSubmit = async () => {
 
   // 检查 AI 服务状态
   if (aiServiceStatus.value === 'offline') {
-    ElMessage.error({
-      message: 'AI 服务暂时不可用，请检查 Ollama 是否运行',
-      duration: 3000,
-    });
+    Msg.showFail('AI 服务暂时不可用，请检查 Ollama 是否运行', { duration: 3000 });
     return;
   }
 
@@ -437,11 +433,7 @@ const handleSubmit = async () => {
       errorMsg = error.message;
     }
 
-    ElMessage.error({
-      message: errorMsg,
-      duration: 5000,
-      showClose: true,
-    });
+    Msg.showFail(errorMsg, { duration: 5000, closeButton: true });
 
     // 恢复用户输入
     input.value = userMessage;

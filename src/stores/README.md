@@ -21,7 +21,7 @@
 
 ---
 
-## `article.store.ts` — 文章业务状态（11 个 action）
+## `article.store.ts` — 文章业务状态（9 个 action）
 
 | action                   | 注释                                                               |
 | ------------------------ | ------------------------------------------------------------------ |
@@ -30,12 +30,12 @@
 | `getArticleListAction`   | 分页获取文章列表，支持追加模式（无限滚动）和覆盖模式               |
 | `getRecommendAction`     | 获取推荐文章列表（侧边栏展示）                                     |
 | `getTagsAction`          | 获取全部文章标签（导航栏标签列表）                                 |
-| `getDetailAction`        | 获取文章详情，附带浏览量+1、点赞状态、收藏夹、浏览记录等副作用     |
-| `getUserLikedAction`     | 拉取当前登录用户已点赞的文章 ID 列表，供 `isArticleUserLiked` 判断 |
+| `getDetailAction`        | 获取文章详情并写入 store，供编辑页预填                             |
 | `createAction`           | 发布新文章：创建文章 → 关联图片/视频/标签 → 清除草稿 → 跳转详情页  |
 | `updateAction`           | 更新已有文章：修改标签 → 修改内容 → 重新关联图片/视频 → 返回上一页 |
 | `removeAction`           | 删除指定文章并跳转回文章列表页                                     |
-| `likeAction`             | 切换文章点赞状态，并同步更新列表和详情中的点赞数                   |
+
+文章列表、详情和点赞状态由 `useArticleList`、`useArticleDetail`、`useUserLikedArticles` 与 `useLikeArticle` 统一管理，避免在 Pinia 与 TanStack Query 之间维护重复镜像。
 
 ---
 

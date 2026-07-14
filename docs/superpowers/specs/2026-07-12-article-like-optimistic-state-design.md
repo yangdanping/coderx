@@ -52,7 +52,7 @@
 
 - `ArticleAction` 保持展示组件职责：接收文章、`isLiked` 与点赞回调。
 - `DetailPanel` 改为使用 `useUserLikedArticles` 和 `useLikeArticle`，不再调用 Pinia 的 `likeAction`。
-- `useArticleDetail` 不再为了详情点赞触发 Pinia 点赞 ID 请求；Pinia 中仍被旧流程使用的代码不在本次做无关清理。
+- `useArticleDetail` 不再为了详情点赞触发 Pinia 点赞 ID 请求；review 确认 Pinia 的文章点赞 ID、getter 与 mutation action 已无消费者后，将这套重复镜像删除，仍保留收藏夹、评论和编辑页依赖的文章读取状态。
 - `Icon` 已支持 `isActive` 对图标和文字统一着色，不需要引入额外样式状态。
 
 ## 错误与边界处理

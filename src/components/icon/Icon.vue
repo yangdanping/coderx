@@ -31,11 +31,14 @@
     <template v-else-if="type === 'takeaway-box'">
       <Mail :size="iconSize" :color="color" />
     </template>
-    <span v-if="showLabel" :style="{ color }">{{ label ?? 0 }}</span>
+    <span v-if="showLabel" :style="{ color }">
+      <AnimatedNumber :value="label ?? 0" />
+    </span>
   </div>
 </template>
 
 <script lang="ts" setup>
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import { activeColor, defaultColor } from '@/global/constants/color';
 import { Eye, ThumbsUp, MessageSquare, UserPlus, Star, Flame, Coins, Briefcase, MapPin, Mail } from '@lucide/vue';
 import useRootStore from '@/stores/index.store';
@@ -108,6 +111,10 @@ const toggleHover = (toggle: boolean) => {
     position: relative;
     top: 1px;
     line-height: 1;
+
+    :deep(.animated-number) {
+      color: inherit;
+    }
   }
 }
 

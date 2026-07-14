@@ -1,0 +1,87 @@
+/* vue-sonner：与 NavBar 一致的毛玻璃底色，语义色仅落在 icon */
+
+[data-sonner-toaster] {
+  /* ===== 尺寸参数（按需调整） ===== */
+  --toast-width: 280px;
+  --toast-padding-block: 10px;
+  --toast-padding-inline: 12px;
+  --toast-font-size: 12px;
+  --toast-line-height: 1.35;
+  --toast-gap: 5px;
+  --toast-icon-size: 15px;
+
+  /* ===== 外观参数 ===== */
+  --border-radius: 2px;
+  --toast-blur: blur(12px);
+  --normal-bg: color-mix(in srgb, var(--glass-bg) 72%, transparent);
+  --normal-border: color-mix(in srgb, var(--border-color-default) 80%, transparent);
+  --normal-text: var(--text-primary);
+
+  /* 覆盖 vue-sonner 默认 356px */
+  --width: var(--toast-width) !important;
+}
+
+[data-sonner-toaster][data-sonner-theme='light'] {
+  /* 清新中高明度，避免默认过深的语义色 */
+  --success-text: #34d399;
+  --info-text: #38bdf8;
+  --warning-text: #fbbf24;
+  --error-text: #f87171;
+}
+
+[data-sonner-toaster][data-sonner-theme='dark'] {
+  --normal-bg: color-mix(in srgb, var(--glass-bg) 78%, transparent);
+  --normal-bg-hover: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+  --normal-border-hover: rgba(147, 161, 178, 0.35);
+
+  --success-text: #6ee7b7;
+  --info-text: #7dd3fc;
+  --warning-text: #fcd34d;
+  --error-text: #fca5a5;
+}
+
+[data-sonner-toast][data-styled='true'] {
+  width: var(--toast-width);
+  padding: var(--toast-padding-block) var(--toast-padding-inline);
+  font-size: var(--toast-font-size);
+  gap: var(--toast-gap);
+  backdrop-filter: var(--toast-blur);
+  -webkit-backdrop-filter: var(--toast-blur);
+  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.14);
+}
+
+[data-sonner-toast][data-styled='true'] [data-title] {
+  line-height: var(--toast-line-height);
+}
+
+html.dark [data-sonner-toast][data-styled='true'] {
+  box-shadow: 1px 1px 12px rgba(0, 0, 0, 0.32);
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  height: var(--toast-icon-size);
+  width: var(--toast-icon-size);
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] svg {
+  width: var(--toast-icon-size);
+  height: var(--toast-icon-size);
+  fill: none;
+  stroke: currentColor;
+}
+
+[data-sonner-toast][data-styled='true'][data-type='success'] [data-icon] {
+  color: var(--success-text);
+}
+
+[data-sonner-toast][data-styled='true'][data-type='info'] [data-icon] {
+  color: var(--info-text);
+}
+
+[data-sonner-toast][data-styled='true'][data-type='warning'] [data-icon] {
+  color: var(--warning-text);
+}
+
+[data-sonner-toast][data-styled='true'][data-type='error'] [data-icon] {
+  color: var(--error-text);
+}

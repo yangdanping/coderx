@@ -1,15 +1,36 @@
 <template>
   <div class="app">
+    <BackgroundTriangle3D />
     <!-- 除了编辑页面，其他页面都显示导航栏 -->
     <NavBar v-if="showNavBar" />
     <RouterView class="router-view" />
     <el-backtop v-bind="backTopPosition" :style="{ color: '#81c995' }" />
+    <Toaster position="bottom-right" :theme="toastTheme" :duration="1500">
+      <template #success-icon>
+        <CircleCheck :size="16" :stroke-width="2" />
+      </template>
+      <template #error-icon>
+        <CircleAlert :size="16" :stroke-width="2" />
+      </template>
+      <template #info-icon>
+        <Info :size="16" :stroke-width="2" />
+      </template>
+      <template #warning-icon>
+        <TriangleAlert :size="16" :stroke-width="2" />
+      </template>
+    </Toaster>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { Toaster } from 'vue-sonner';
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from '@lucide/vue';
+import 'vue-sonner/style.css';
+import '@/assets/css/sonner.scss';
+import BackgroundTriangle3D from '@/components/background/triangle-3d/BackgroundTriangle3D.vue';
 import NavBar from '@/components/navbar/NavBar.vue';
 import useRootStore from '@/stores/index.store';
+import { useTheme } from '@/composables/useTheme';
 // ============== 🔌 在线状态功能开关 ==============
 // 根据需要切换或注释掉任意一行即可：
 // - Socket.IO 版本：自动重连、跨浏览器兼容
@@ -21,6 +42,8 @@ import onlineStatusService from '@/service/online/socketio'; // Socket.IO 版本
 
 const rootStore = useRootStore();
 const { windowInfo, isSmallScreen, authStatus } = storeToRefs(rootStore);
+const { isDark } = useTheme();
+const toastTheme = computed(() => (isDark.value ? 'dark' : 'light'));
 let stopOnlineStatusWatch: (() => void) | undefined;
 
 // 根据路由判断是否显示导航栏
@@ -114,7 +137,7 @@ function handleBeforeUnload() {
     bottom: 0;
     background: var(--bg);
     filter: var(--bg-filter);
-    z-index: -2;
+    z-index: -3;
     pointer-events: none;
     transition: filter 0.3s;
   }

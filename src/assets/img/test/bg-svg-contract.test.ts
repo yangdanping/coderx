@@ -11,4 +11,13 @@ describe('home background SVG contract', () => {
 
     expect(blueCircle?.groups?.cx).toBe('-20');
   });
+
+  it('moves only the pink triangle out of the SVG background', () => {
+    const source = readBgSvg();
+
+    expect(source).not.toContain('rgb(243, 178, 172)');
+    expect(source).toContain('rgba(26, 115, 232)');
+    expect(source).toContain('rgba(190, 224, 198)');
+    expect(source).toContain('rgba(253, 214, 99)');
+  });
 });

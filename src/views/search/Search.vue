@@ -78,7 +78,7 @@ const { data, fetchNextPage, hasNextPage, isPending, isFetchingNextPage, isError
 const { isLiked } = useUserLikedArticles();
 
 // 点赞操作
-const { mutate: likeArticle } = useLikeArticle(requestParams);
+const { mutate: likeArticle } = useLikeArticle();
 
 // 计算总数
 const totalCount = computed(() => data.value?.pages[0]?.total ?? 0);

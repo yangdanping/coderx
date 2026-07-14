@@ -27,6 +27,9 @@ export const getTiptapExtensions = () => {
     StarterKit.configure({
       // 禁用默认 codeBlock，使用 CodeBlockLowlight 替代
       codeBlock: false,
+      // StarterKit v3 已内置 link / underline，避免与下方显式扩展重复注册
+      link: false,
+      underline: false,
     }),
 
     // 代码块高亮扩展

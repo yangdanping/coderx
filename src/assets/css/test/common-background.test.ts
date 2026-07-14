@@ -1,9 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const commonScss = readFileSync(join(process.cwd(), 'src/assets/css/common.scss'), 'utf8');
 const appVue = readFileSync(join(process.cwd(), 'src/App.vue'), 'utf8');
+const backgroundTrianglePath = join(process.cwd(), 'src/components/background/triangle-3d/BackgroundTriangle3D.vue');
+const backgroundTriangle = existsSync(backgroundTrianglePath) ? readFileSync(backgroundTrianglePath, 'utf8') : '';
 
 function getRuleBody(selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -23,6 +25,12 @@ describe('global background layering', () => {
     expect(commonScss).toMatch(/--bg:\s*url\(['"]?@\/assets\/img\/bg\.svg['"]?\)\s+center\/cover\s+no-repeat\s+fixed/);
     expect(appVue).toMatch(/&::before\s*\{[\s\S]*?background:\s*var\(--bg\)/);
     expect(appVue).toMatch(/&::after\s*\{[\s\S]*?background-image:\s*var\(--paper-noise\)/);
+
+    expect(appVue).toMatch(/<BackgroundTriangle3D\s*\/>/);
+    expect(appVue).toMatch(/&::before\s*\{[\s\S]*?z-index:\s*-3/);
+    expect(backgroundTriangle).toMatch(/\.background-triangle-3d\s*\{[\s\S]*?z-index:\s*-2/);
+    expect(backgroundTriangle).toMatch(/filter:\s*var\(--bg-filter\)/);
+    expect(appVue).toMatch(/&::after\s*\{[\s\S]*?z-index:\s*-1/);
 
     expect(commonScss).toMatch(/--paper-noise:\s*url\(['"]?@\/assets\/img\/paper-noise\.svg['"]?\)/);
     expect(commonScss).toMatch(/--paper-noise-opacity:\s*0\.\d+/);

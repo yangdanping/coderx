@@ -13,11 +13,11 @@
 
             <div class="stats-mobile">
               <div class="stat-item" @click="goFollowTab('following')">
-                <span class="count">{{ followingCount }}</span>
+                <AnimatedNumber class="count" :value="followingCount" />
                 <span class="label">关注</span>
               </div>
               <div class="stat-item" @click="goFollowTab('follower')">
-                <span class="count">{{ followerCount }}</span>
+                <AnimatedNumber class="count" :value="followerCount" />
                 <span class="label">粉丝</span>
               </div>
             </div>
@@ -45,12 +45,12 @@
           <div class="stats-desktop" v-if="!isSmallScreen">
             <div class="stat-item" @click="goFollowTab('following')">
               <span class="label">关注</span>
-              <span class="count">{{ followingCount }}</span>
+              <AnimatedNumber class="count" :value="followingCount" />
             </div>
             <div class="divider"></div>
             <div class="stat-item" @click="goFollowTab('follower')">
               <span class="label">粉丝</span>
-              <span class="count">{{ followerCount }}</span>
+              <AnimatedNumber class="count" :value="followerCount" />
             </div>
           </div>
 
@@ -101,6 +101,7 @@ import { emitter } from '@/utils';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import Icon from '@/components/icon/Icon.vue';
 import Tabs from '@/components/common/Tabs.vue';
 import TabItem from '@/components/common/TabItem.vue';

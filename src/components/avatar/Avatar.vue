@@ -11,8 +11,12 @@
           </div>
           <div>{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
-            <span class="btn" role="button" @click="goProfile('关注', 'following')">关注:{{ followCountById(info.id, 'following') }}</span>
-            <span class="btn" role="button" @click="goProfile('关注', 'follower')">粉丝:{{ followCountById(info.id, 'follower') }}</span>
+            <span class="btn" role="button" @click="goProfile('关注', 'following')">
+              关注:<AnimatedNumber :value="followCountById(info.id, 'following')" />
+            </span>
+            <span class="btn" role="button" @click="goProfile('关注', 'follower')">
+              粉丝:<AnimatedNumber :value="followCountById(info.id, 'follower')" />
+            </span>
           </div>
         </div>
       </div>
@@ -28,6 +32,7 @@
 </template>
 
 <script lang="ts" setup>
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import FollowButton from '@/components/FollowButton.vue';
 import { Mars, Venus } from '@lucide/vue';
 import { debounce, getImageUrl } from '@/utils';

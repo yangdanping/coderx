@@ -5,11 +5,11 @@
       <div class="nav-bar-user-panel" v-if="isShow">
         <div class="user-info">
           <div class="following btn" @click="goProfile('关注', 'following')">
-            <div>{{ myFollowCount('following') }}</div>
+            <div><AnimatedNumber :value="myFollowCount('following')" /></div>
             <div>关注</div>
           </div>
           <div class="follower btn" @click="goProfile('关注', 'follower')">
-            <div>{{ myFollowCount('follower') }}</div>
+            <div><AnimatedNumber :value="myFollowCount('follower')" /></div>
             <div>粉丝</div>
           </div>
         </div>
@@ -36,6 +36,7 @@
 </template>
 
 <script lang="ts" setup>
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import Avatar from '@/components/avatar/Avatar.vue';
 
 import useUserStore from '@/stores/user.store';

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/vue-query';
 import { computed, toValue, watch } from 'vue';
 import { addView, getDetail } from '@/service/article/article.request';
+import { articleKeys } from '@/composables/useArticleList';
 import useArticleStore from '@/stores/article.store';
 import useUserStore from '@/stores/user.store';
 import useHistoryStore from '@/stores/history.store';
@@ -21,7 +22,7 @@ export function useArticleDetail(articleId: ArticleIdSource) {
    * 2. 页面和后续副作用统一读取这一份状态，避免 Pinia 再重复维护 detailStatus。
    */
   const detailQuery = useQuery({
-    queryKey: computed(() => ['articles', 'detail', currentArticleId.value]),
+    queryKey: computed(() => articleKeys.detail(currentArticleId.value)),
     enabled: computed(() => !!currentArticleId.value),
     queryFn: async () => {
       const id = currentArticleId.value;
@@ -51,7 +52,6 @@ export function useArticleDetail(articleId: ArticleIdSource) {
       if (!nextArticleId) return;
 
       void addView(nextArticleId).catch(() => undefined);
-      void articleStore.getUserLikedAction().catch(() => undefined);
     },
     { immediate: true },
   );

@@ -1,7 +1,6 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 import router from '@/router'; //拿到router对象,进行路由跳转(.push)
-import { createArticle, getList, getDetail, likeArticle, updateArticle, removeArticle, getTags, getTagOrder, changeTags, getRecommend } from '@/service/article/article.request';
-import { getLiked } from '@/service/user/user.request';
+import { createArticle, getList, getDetail, updateArticle, removeArticle, getTags, getTagOrder, changeTags, getRecommend } from '@/service/article/article.request';
 import { addImgForArticle, addVideoForArticle } from '@/service/file/file.request';
 import { collectArticleMediaRefs, type ArticleStructuredContent } from '@/service/article/article.content';
 import useUserStore from '@/stores/user.store';
@@ -62,7 +61,6 @@ const useArticleStore = defineStore('article', {
     recommends: [] as IArticle[],
     recommendLoading: true,
     article: {} as IArticle,
-    userLikedArticleIdList: [] as number[], //该用户点赞过的文章id,通过computed计算是否有点赞
     tags: [] as Itag[],
     activeTagId: '综合' as string | number, // 记忆导航栏激活的标签ID
     activeOrder: 'date' as string, // 记忆文章列表的排序方式
@@ -70,9 +68,6 @@ const useArticleStore = defineStore('article', {
   getters: {
     isAuthor() {
       return (currentUserId?: number) => this.article.author?.id === currentUserId;
-    },
-    isArticleUserLiked() {
-      return (articleId?: number) => articleId != null && this.userLikedArticleIdList.includes(articleId);
     },
     isArticleUserCollected() {
       return (articleId: number) => {
@@ -124,7 +119,6 @@ const useArticleStore = defineStore('article', {
           this.articles = res.data;
           console.log('updateArticleList', this.articles.result);
         }
-        useUserStore().userInfo.id && this.getUserLikedAction(); //获取已登录用户点赞过哪些文章
       } else {
         Msg.showFail('获取文章列表失败');
       }
@@ -177,21 +171,6 @@ const useArticleStore = defineStore('article', {
         this.article = {};
         Msg.showFail('获取文章详情失败');
         return false;
-      }
-    },
-    /** 拉取当前登录用户已点赞的文章 ID 列表，供 isArticleUserLiked 判断 */
-    async getUserLikedAction() {
-      const { userInfo } = useUserStore();
-      if (userInfo.id == null) {
-        this.userLikedArticleIdList = [];
-        return;
-      }
-      const res = await getLiked(userInfo.id);
-      if (res.code === 0) {
-        const raw = res.data?.articleLiked;
-        // 接口正常时这里应当是数组；做 Array.isArray 兜底是为了避免后端返回 null / undefined 时
-        // 让后续 some / includes 之类的判断逻辑崩掉。
-        this.userLikedArticleIdList = Array.isArray(raw) ? raw : [];
       }
     },
     /** 发布新文章：创建文章 → 关联图片/视频/标签 → 清除草稿 → 跳转详情页 */
@@ -357,32 +336,6 @@ const useArticleStore = defineStore('article', {
         router.push({ path: `/article` });
       } else {
         Msg.showFail('删除文章失败');
-      }
-    },
-    /** 切换文章点赞状态，并同步更新列表和详情中的点赞数 */
-    async likeAction(articleId: RouteParam) {
-      const targetArticleId = Number(articleId);
-      const res = await likeArticle(articleId);
-      if (res.code === 0) {
-        // 根据返回的 liked 状态显示对应提示
-        res.data.liked ? Msg.showSuccess('已点赞文章') : Msg.showInfo('已取消点赞文章');
-        // 直接使用返回的点赞总数更新UI（不需要额外请求）
-        const newLikes = res.data.likes;
-        console.log('Store likeAction 收到新的点赞数:', newLikes);
-        // 更新列表中的点赞数
-        this.articles.result?.find((article) => {
-          if (article.id === targetArticleId) {
-            article.likes = newLikes;
-          }
-        });
-        // 更新文章详情的点赞数
-        if (this.article && this.article.id === targetArticleId) {
-          this.article.likes = newLikes;
-        }
-        // 更新用户点赞列表
-        this.getUserLikedAction();
-      } else {
-        Msg.showFail('操作失败，请重试');
       }
     },
     // async searchAction(keywords, loadingKey) {

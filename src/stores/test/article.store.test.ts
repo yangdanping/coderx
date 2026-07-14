@@ -16,6 +16,8 @@ const {
   showInfo,
   getTags,
   getTagOrder,
+  getList,
+  getLiked,
   getCache,
   setCache,
   userStoreState,
@@ -47,6 +49,8 @@ const {
     showInfo,
     getTags: vi.fn(),
     getTagOrder: vi.fn(),
+    getList: vi.fn(),
+    getLiked: vi.fn(),
     getCache: vi.fn(),
     setCache: vi.fn(),
     userStoreState: {
@@ -62,7 +66,7 @@ const {
 
 vi.mock('@/service/article/article.request', () => ({
   createArticle,
-  getList: vi.fn(),
+  getList,
   likeArticle: vi.fn(),
   updateArticle,
   removeArticle: vi.fn(),
@@ -82,7 +86,7 @@ vi.mock('@/service/draft/draft.request', () => ({
 }));
 
 vi.mock('@/service/user/user.request', () => ({
-  getLiked: vi.fn(),
+  getLiked,
 }));
 
 vi.mock('@/stores/user.store', () => ({
@@ -127,6 +131,33 @@ import useArticleStore from '../article.store';
 const buildStructuredDoc = (...content: Array<Record<string, unknown>>) => ({
   type: 'doc',
   content,
+});
+
+describe('article.store legacy list loading', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    getList.mockReset();
+    getLiked.mockReset();
+    userStoreState.userInfo = { id: 7 };
+    userStoreState.collects = [];
+  });
+
+  it('does not fetch a duplicate liked state when loading collection articles', async () => {
+    getList.mockResolvedValue({
+      code: 0,
+      data: {
+        result: [{ id: 9, likes: 3 }],
+        total: 1,
+      },
+    });
+    getLiked.mockResolvedValue({ code: 0, data: { articleLiked: [9] } });
+    const store = useArticleStore();
+
+    await store.getArticleListAction({ idList: [9] });
+
+    expect(store.articles.result).toEqual([{ id: 9, likes: 3 }]);
+    expect(getLiked).not.toHaveBeenCalled();
+  });
 });
 
 const buildParagraph = (text: string) => ({

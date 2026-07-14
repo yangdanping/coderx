@@ -37,7 +37,7 @@
         role="button"
       >
         <Heart :size="18" :fill="liked ? 'currentColor' : 'none'" />
-        <span v-if="likeCount > 0">{{ likeCount }}</span>
+        <AnimatedNumber v-if="likeCount > 0" :value="likeCount" />
       </button>
       <RouterLink
         v-if="navigable"
@@ -46,11 +46,11 @@
         aria-label="查看动态详情"
       >
         <MessageCircle :size="18" />
-        <span v-if="item.comments > 0">{{ item.comments }}</span>
+        <AnimatedNumber v-if="item.comments > 0" :value="item.comments" />
       </RouterLink>
       <span v-else class="action-btn comment-action">
         <MessageCircle :size="18" />
-        <span v-if="item.comments > 0">{{ item.comments }}</span>
+        <AnimatedNumber v-if="item.comments > 0" :value="item.comments" />
       </span>
       <button class="action-btn share-action excluded-from-detail" role="button" @click.stop>
         <Share2 :size="18" />
@@ -59,6 +59,7 @@
   </article>
 </template>
 <script setup lang="ts">
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import { Heart, MessageCircle, Share2, MoreHorizontal } from '@lucide/vue';
 import FlowMediaGallery from './FlowMediaGallery.vue';
 import dayjs from 'dayjs';

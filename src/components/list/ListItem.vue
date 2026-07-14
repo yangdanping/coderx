@@ -9,7 +9,7 @@
         <span>{{ item.author?.name }}</span>
         <span v-dateformat="item.createAt"></span>
       </div>
-      <el-tag v-for="tag in item.tags" size="small" :key="tag.name" @click="goTag(tag)" type="success">{{ tag.name }}</el-tag>
+      <el-tag v-for="tag in item.tags" size="small" effect="plain" :key="tag.name" @click="goTag(tag)" type="success">{{ tag.name }}</el-tag>
     </div>
     <a class="content-wrapper" :href="item.articleUrl" @click.stop.prevent="goDetail(item, $event)">
       <div class="content">

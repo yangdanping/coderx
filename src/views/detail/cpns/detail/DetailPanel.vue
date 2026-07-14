@@ -1,6 +1,6 @@
 <template>
   <div class="detail-panel">
-    <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="isArticleUserLiked(article.id)" :size="30" flex="column" :responsive="false" />
+    <Icon type="like" @click="likeClick(article.id)" :label="article.likes" :isActive="article.id ? isLiked(article.id) : false" :size="30" flex="column" :responsive="false" />
     <Icon type="comment" @click="gotoComment" :size="30" :label="article.commentCount" flex="column" :responsive="false" />
     <Icon type="views" :size="30" :label="article.views" flex="column" :responsive="false" />
     <Icon type="star" :isActive="isArticleUserCollected(article.id)" :size="30" ref="buttonRef" @click="onClickOutside" flex="column" :showLabel="false" :responsive="false" />
@@ -18,6 +18,7 @@ import { Msg, emitter } from '@/utils';
 import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import useArticleStore from '@/stores/article.store';
+import { useLikeArticle, useUserLikedArticles } from '@/composables/useArticleList';
 
 import type { IArticle } from '@/stores/types/article.result';
 import type { ElPopover } from 'element-plus';
@@ -32,7 +33,9 @@ const rootStore = useRootStore();
 // const commentStore = useCommentStore();
 const articleStore = useArticleStore();
 const { token } = storeToRefs(userStore);
-const { isArticleUserLiked, isArticleUserCollected } = storeToRefs(articleStore);
+const { isArticleUserCollected } = storeToRefs(articleStore);
+const { isLiked } = useUserLikedArticles();
+const likeMutation = useLikeArticle();
 // const { commentCount } = storeToRefs(commentStore);
 
 const buttonRef = ref();
@@ -44,13 +47,13 @@ onMounted(() => {
   disabled.value = token.value ? false : true;
 });
 
-const likeClick = debounce((articleId) => {
-  console.log('detail-panel likeClick', articleId);
+const likeClick = debounce((articleId?: number) => {
+  if (articleId == null) return;
   if (token.value) {
     if (article.status) {
       Msg.showFail('文章已被封禁,不可点赞');
     } else {
-      articleStore.likeAction(articleId);
+      likeMutation.mutate(articleId);
     }
   } else {
     Msg.showInfo('请先登录');

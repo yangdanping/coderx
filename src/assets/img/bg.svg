@@ -43,14 +43,6 @@
       values="0 210 530 ; -30 210 530 ; 0 210 530" keyTimes="0 ; 0.5 ; 1" repeatCount="indefinite" />
   </path>
 
-  <!-- 三角形 -->
-  <path class="item-style"
-    d="M 165 580 L 270 580 Q275 578 270 570 L 223 483 Q220 480 217 483 L 165 570 Q160 578 165 580"
-    stroke="rgba(238, 103, 92)" fill="rgb(243, 178, 172)">
-    <animateTransform attributeType="XML" attributeName="transform" begin="0s" dur="25s" type="rotate" from="0 100 380"
-      to="160 100 380" repeatCount="indefinite" />
-  </path>
-
   <!-- 下方小块 -->
   <path class="item-style" d="M 100 350 A 40 40 0 1 1 180 350 L 180 430 A 40 40 0 1 1 100 430 Z"
     stroke="rgba(241, 243, 244)" fill="rgba(241, 243, 244)">
