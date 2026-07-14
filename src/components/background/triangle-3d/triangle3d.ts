@@ -31,7 +31,8 @@ export interface TriangleGuide {
 
 export const TRIANGLE_SHAPE_CONFIG = {
   sideLength: 112,
-  heightScale: 1,
+  // 1 is mathematically equilateral; 1.03 compensates the initial X/Y tilt in screen space.
+  heightScale: 1.03,
   tipSkew: 0,
   notchDepth: 22,
   cornerRadius: 10,

@@ -1,4 +1,4 @@
-import { Box3, Color, MathUtils, Mesh, Vector3 } from 'three';
+import { Box3, Color, Euler, MathUtils, Mesh, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -27,16 +27,16 @@ function triangleArea(a: { x: number; y: number }, b: { x: number; y: number }, 
 }
 
 describe('triangle3d scene model', () => {
-  it('exposes developer-friendly defaults for an equilateral arrow guide', () => {
+  it('exposes developer-friendly defaults with a small initial-view compensation', () => {
     expect(TRIANGLE_SHAPE_CONFIG).toEqual({
       sideLength: 112,
-      heightScale: 1,
+      heightScale: 1.03,
       tipSkew: 0,
       notchDepth: 22,
       cornerRadius: 10,
     });
 
-    const guide = calculateTriangleGuide();
+    const guide = calculateTriangleGuide({ ...TRIANGLE_SHAPE_CONFIG, heightScale: 1 });
     const sides = [
       distance(guide.tip, guide.bottomRight),
       distance(guide.bottomRight, guide.bottomLeft),
@@ -44,6 +44,20 @@ describe('triangle3d scene model', () => {
     ];
 
     sides.forEach((side) => expect(side).toBeCloseTo(TRIANGLE_SHAPE_CONFIG.sideLength, 6));
+  });
+
+  it('projects the tuned default guide as near-equilateral at the initial 3d pose', () => {
+    const guide = calculateTriangleGuide();
+    const rotation = new Euler(STATIC_ROTATION.x, STATIC_ROTATION.y, STATIC_ROTATION.z, 'XYZ');
+    const projected = [guide.tip, guide.bottomRight, guide.bottomLeft].map((point) => new Vector3(point.x, -point.y, 0).applyEuler(rotation));
+    const projectedDistance = (a: Vector3, b: Vector3) => Math.hypot(b.x - a.x, b.y - a.y);
+    const sides = [
+      projectedDistance(projected[0]!, projected[1]!),
+      projectedDistance(projected[1]!, projected[2]!),
+      projectedDistance(projected[2]!, projected[0]!),
+    ];
+
+    expect(Math.max(...sides) / Math.min(...sides)).toBeLessThan(1.005);
   });
 
   it('lets height and skew tune the triangle without editing path coordinates', () => {
