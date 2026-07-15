@@ -16,7 +16,7 @@ declare module 'vue' {
     ArticleAction: typeof import('./components/list/cpns/ArticleAction.vue')['default']
     Avatar: typeof import('./components/avatar/Avatar.vue')['default']
     AvatarCropper: typeof import('./components/avatar/AvatarCropper.vue')['default']
-    BackgroundTriangle3D: typeof import('./components/background/triangle-3d/BackgroundTriangle3D.vue')['default']
+    BackgroundTriangle3D: typeof import('./components/background/shape-3d/triangle/BackgroundTriangle3D.vue')['default']
     CodeSpotlight: typeof import('./components/canvas/code-spot-light/CodeSpotlight.vue')['default']
     CodeSpotlightCanvas2D: typeof import('./components/canvas/code-spot-light/CodeSpotlightCanvas2D.vue')['default']
     CommentAction: typeof import('./components/list/cpns/CommentAction.vue')['default']

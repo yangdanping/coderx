@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const commonScss = readFileSync(join(process.cwd(), 'src/assets/css/common.scss'), 'utf8');
 const appVue = readFileSync(join(process.cwd(), 'src/App.vue'), 'utf8');
-const backgroundTrianglePath = join(process.cwd(), 'src/components/background/triangle-3d/BackgroundTriangle3D.vue');
+const backgroundTrianglePath = join(process.cwd(), 'src/components/background/shape-3d/triangle/BackgroundTriangle3D.vue');
 const backgroundTriangle = existsSync(backgroundTrianglePath) ? readFileSync(backgroundTrianglePath, 'utf8') : '';
 
 function getRuleBody(selector: string) {

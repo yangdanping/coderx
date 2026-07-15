@@ -27,7 +27,7 @@ import { Toaster } from 'vue-sonner';
 import { CircleAlert, CircleCheck, Info, TriangleAlert } from '@lucide/vue';
 import 'vue-sonner/style.css';
 import '@/assets/css/sonner.scss';
-import BackgroundTriangle3D from '@/components/background/triangle-3d/BackgroundTriangle3D.vue';
+import BackgroundTriangle3D from '@/components/background/shape-3d/triangle/BackgroundTriangle3D.vue';
 import NavBar from '@/components/navbar/NavBar.vue';
 import useRootStore from '@/stores/index.store';
 import { useTheme } from '@/composables/useTheme';
