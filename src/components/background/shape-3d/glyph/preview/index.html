@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>固定字符 $ · 三种 3D 轮廓对比</title>
+    <style>
+      :root {
+        color: #f7f4f2;
+        background: #17171a;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background: #17171a;
+      }
+
+      main {
+        width: min(1440px, 100%);
+        margin: 0 auto;
+        padding: 40px 28px 48px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+        line-height: 1.2;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      p {
+        max-width: 70ch;
+        margin: 0;
+        color: #c7c2c3;
+        line-height: 1.6;
+        text-wrap: pretty;
+      }
+
+      .current {
+        flex: none;
+        color: #ffc0b8;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.875rem;
+      }
+
+      .stage {
+        position: relative;
+        height: min(64vh, 620px);
+        min-height: 420px;
+        overflow: hidden;
+        border: 1px solid #49464c;
+        border-radius: 16px;
+        background: #242428;
+      }
+
+      canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .labels {
+        position: absolute;
+        inset: auto 24px 22px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      .card {
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid #545057;
+        border-radius: 12px;
+        background: rgb(24 24 27 / 96%);
+      }
+
+      .card[data-current='true'] {
+        border-color: #f7aaa3;
+        background: rgb(44 35 38 / 98%);
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #f7f4f2;
+        font-size: 0.875rem;
+        line-height: 1.35;
+      }
+
+      .card span {
+        color: #c2bdbe;
+        font-size: 0.75rem;
+        line-height: 1.4;
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 24px 16px 32px;
+        }
+
+        header {
+          align-items: start;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        h1 {
+          font-size: 1.75rem;
+        }
+
+        .stage {
+          height: 680px;
+          min-height: 680px;
+        }
+
+        .labels {
+          inset: 12px;
+          grid-template-columns: 1fr;
+          grid-template-rows: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .card {
+          align-self: end;
+          width: 56%;
+          margin-left: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>固定字符 $ · 三种 3D 轮廓</h1>
+          <p>同一深度、材质、描边与旋转，用于比较轮廓本身。</p>
+        </div>
+        <p class="current">当前配置：<strong data-current-style></strong></p>
+      </header>
+      <section class="stage" data-stage aria-label="三种美元符号 3D 轮廓对比">
+        <div class="labels">
+          <div class="card" data-style="rounded">
+            <strong>rounded · 圆润几何</strong>
+            <span>Nunito ExtraBold 800</span>
+          </div>
+          <div class="card" data-style="display">
+            <strong>display · 醒目展示</strong>
+            <span>Anton S + 双圆头竖线</span>
+          </div>
+          <div class="card" data-style="serif">
+            <strong>serif · 衬线编辑感</strong>
+            <span>Libre Baskerville Bold 700</span>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
