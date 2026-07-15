@@ -100,6 +100,28 @@ describe('glyph 3d object', () => {
     object.dispose();
   });
 
+  it('preserves complete cap outlines at small target heights', () => {
+    const targetHeight = 0.001;
+    const object = createGlyphObject({ ...GLYPH_3D_CONFIG, targetHeight });
+    const { object: defaultObject, outline: defaultOutline } = getParts();
+    const outline = object.group.children.find((child) => child instanceof LineSegments2);
+    if (!outline) throw new Error('glyph object is missing its outline');
+    const starts = outline.geometry.getAttribute('instanceStart');
+    const defaultStarts = defaultOutline.geometry.getAttribute('instanceStart');
+    const ends = outline.geometry.getAttribute('instanceEnd');
+    const size = new Box3().setFromObject(object.group).getSize(new Vector3());
+
+    expect(starts?.count).toBeGreaterThan(20);
+    expect(starts?.count).toBe(defaultStarts?.count);
+    for (let index = 0; index < (starts?.count ?? 0); index += 1) {
+      expect(starts?.getZ(index)).toBe(ends?.getZ(index));
+    }
+    expect(size.y).toBeCloseTo(targetHeight, 6);
+
+    defaultObject.dispose();
+    object.dispose();
+  });
+
   it('owns every GPU resource and makes dispose idempotent', () => {
     const { mesh, object, outline } = getParts();
     const resources = [

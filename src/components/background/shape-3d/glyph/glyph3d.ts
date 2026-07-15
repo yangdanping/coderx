@@ -30,7 +30,7 @@ function validateConfig(config: Glyph3DConfig) {
 }
 
 function positionKey([x, y, z]: Position) {
-  return `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+  return `${x},${y},${z}`;
 }
 
 function createOutlinePositions(geometry: ExtrudeGeometry) {
