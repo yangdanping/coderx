@@ -85,6 +85,21 @@ describe('glyph 3d object', () => {
     object.dispose();
   });
 
+  it('preserves cap-only outlines at shallow positive depths', () => {
+    const object = createGlyphObject({ ...GLYPH_3D_CONFIG, depth: 0.0001 });
+    const outline = object.group.children.find((child) => child instanceof LineSegments2);
+    if (!outline) throw new Error('glyph object is missing its outline');
+    const starts = outline.geometry.getAttribute('instanceStart');
+    const ends = outline.geometry.getAttribute('instanceEnd');
+
+    expect(starts?.count).toBeGreaterThan(0);
+    for (let index = 0; index < (starts?.count ?? 0); index += 1) {
+      expect(starts?.getZ(index)).toBe(ends?.getZ(index));
+    }
+
+    object.dispose();
+  });
+
   it('owns every GPU resource and makes dispose idempotent', () => {
     const { mesh, object, outline } = getParts();
     const resources = [

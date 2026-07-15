@@ -35,15 +35,10 @@ function positionKey([x, y, z]: Position) {
 
 function createOutlinePositions(geometry: ExtrudeGeometry) {
   const position = geometry.getAttribute('position');
-  const zLevels = new Map<string, number>();
-  for (let index = 0; index < position.count; index += 1) {
-    const z = position.getZ(index);
-    zLevels.set(z.toFixed(4), z);
-  }
-  const sortedZLevels = [...zLevels.values()].sort((a, b) => a - b);
-  const capLevels = [sortedZLevels.at(0), sortedZLevels.at(-1)].filter(
-    (z, index, levels): z is number => z !== undefined && levels.indexOf(z) === index,
-  );
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox;
+  if (!bounds) throw new Error('[glyph3d] extrusion has no bounding box for outlines');
+  const capLevels = [bounds.min.z, bounds.max.z];
   const positions: number[] = [];
 
   for (const capZ of capLevels) {
@@ -54,7 +49,7 @@ function createOutlinePositions(geometry: ExtrudeGeometry) {
         position.getY(index + offset),
         position.getZ(index + offset),
       ]);
-      if (!triangle.every((point) => Math.abs(point[2] - capZ) < 0.0001)) continue;
+      if (!triangle.every((point) => point[2] === capZ)) continue;
 
       for (const [startIndex, endIndex] of [
         [0, 1],
