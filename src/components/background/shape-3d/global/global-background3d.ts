@@ -6,6 +6,7 @@ import {
   GLOBAL_BACKGROUND_CONFIG,
   GLOBAL_SHAPE_DESCRIPTORS,
   type GlobalGeometryConfig,
+  type GlobalRenderingProfile,
   type GlobalShapeDescriptor,
   type GlobalShapeId,
 } from '../config';
@@ -15,6 +16,18 @@ export interface GlobalBackgroundObject {
   group: Group;
   outlineMaterial: LineMaterial;
   dispose(): void;
+}
+
+export interface CoverFrustum {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export interface GlobalBackgroundPose {
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
 }
 
 type Disposable = { dispose(): void };
@@ -227,4 +240,71 @@ export function createGlobalBackgroundObjects(): GlobalBackgroundObject[] {
     objects.reverse().forEach((object) => object.dispose());
     throw error;
   }
+}
+
+export function calculateCoverFrustum(width: number, height: number): CoverFrustum {
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  const { viewBox } = GLOBAL_BACKGROUND_CONFIG;
+  const scale = Math.max(safeWidth / viewBox.width, safeHeight / viewBox.height);
+  const visibleWidth = safeWidth / scale;
+  const visibleHeight = safeHeight / scale;
+  return {
+    left: -visibleWidth / 2,
+    right: visibleWidth / 2,
+    top: visibleHeight / 2,
+    bottom: -visibleHeight / 2,
+  };
+}
+
+export function getGlobalRenderingProfile(width: number): GlobalRenderingProfile {
+  return width <= GLOBAL_BACKGROUND_CONFIG.narrowMaxWidth ? GLOBAL_BACKGROUND_CONFIG.narrow : GLOBAL_BACKGROUND_CONFIG.desktop;
+}
+
+function initialRotation(descriptor: GlobalShapeDescriptor) {
+  return descriptor.rotationDegrees.map((degrees) => MathUtils.degToRad(degrees)) as [number, number, number];
+}
+
+export function calculateGlobalBackgroundPose(
+  descriptor: GlobalShapeDescriptor,
+  elapsedMs: number,
+  viewportWidth: number,
+  reducedMotion = false,
+): GlobalBackgroundPose {
+  const basePosition = descriptor.position;
+  const baseRotation = initialRotation(descriptor);
+  if (reducedMotion) {
+    return {
+      position: { x: basePosition[0], y: basePosition[1], z: basePosition[2] },
+      rotation: { x: baseRotation[0], y: baseRotation[1], z: baseRotation[2] },
+    };
+  }
+
+  const elapsed = Math.max(0, elapsedMs);
+  if (descriptor.motion.tier === 'spin') {
+    const progress = elapsed / descriptor.motion.durationMs;
+    return {
+      position: { x: basePosition[0], y: basePosition[1], z: basePosition[2] },
+      rotation: {
+        x: baseRotation[0] + progress * Math.PI * 2 * descriptor.motion.turns[0],
+        y: baseRotation[1] + progress * Math.PI * 2 * descriptor.motion.turns[1],
+        z: baseRotation[2] + progress * Math.PI * 2 * descriptor.motion.turns[2],
+      },
+    };
+  }
+
+  const profile = getGlobalRenderingProfile(viewportWidth);
+  const phase = (elapsed / descriptor.motion.durationMs) * Math.PI * 2 + descriptor.motion.phase;
+  return {
+    position: {
+      x: basePosition[0] + Math.sin(phase) * descriptor.motion.travel[0] * profile.motionScale,
+      y: basePosition[1] + Math.cos(phase) * descriptor.motion.travel[1] * profile.motionScale,
+      z: basePosition[2],
+    },
+    rotation: {
+      x: baseRotation[0] + MathUtils.degToRad(Math.sin(phase) * descriptor.motion.tiltDegrees[0] * profile.tiltScale),
+      y: baseRotation[1] + MathUtils.degToRad(Math.cos(phase) * descriptor.motion.tiltDegrees[1] * profile.tiltScale),
+      z: baseRotation[2] + MathUtils.degToRad(Math.sin(phase * 0.5) * descriptor.motion.tiltDegrees[2] * profile.tiltScale),
+    },
+  };
 }

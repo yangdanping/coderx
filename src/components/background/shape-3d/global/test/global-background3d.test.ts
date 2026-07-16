@@ -4,7 +4,13 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { describe, expect, it, vi } from 'vitest';
 import { GLOBAL_BACKGROUND_CONFIG, GLOBAL_SHAPE_DESCRIPTORS, type GlobalShapeDescriptor } from '../../config';
-import { createGlobalBackgroundObject, createGlobalBackgroundObjects } from '../global-background3d';
+import {
+  calculateCoverFrustum,
+  calculateGlobalBackgroundPose,
+  createGlobalBackgroundObject,
+  createGlobalBackgroundObjects,
+  getGlobalRenderingProfile,
+} from '../global-background3d';
 
 function getParts(descriptor: GlobalShapeDescriptor) {
   const object = createGlobalBackgroundObject(descriptor);
@@ -152,5 +158,67 @@ describe('global background 3d objects', () => {
     expect(localBounds.getCenter(new Vector3()).length()).toBeCloseTo(0, 5);
     expect(object.group.position.length()).toBeGreaterThan(0);
     object.dispose();
+  });
+});
+
+describe('global background motion and framing', () => {
+  it('matches the SVG center-cover framing in landscape and portrait viewports', () => {
+    expect(calculateCoverFrustum(1400, 800)).toEqual({ left: -700, right: 700, top: 400, bottom: -400 });
+
+    const mobile = calculateCoverFrustum(390, 844);
+    expect(mobile.left).toBeCloseTo(-184.8341, 4);
+    expect(mobile.right).toBeCloseTo(184.8341, 4);
+    expect(mobile.top).toBe(400);
+    expect(mobile.bottom).toBe(-400);
+  });
+
+  it('switches rendering and motion limits exactly below 768 CSS pixels', () => {
+    expect(getGlobalRenderingProfile(768)).toEqual({ dprCap: 1.5, fps: 30, motionScale: 1, tiltScale: 1 });
+    expect(getGlobalRenderingProfile(767)).toEqual({ dprCap: 1.25, fps: 24, motionScale: 0.6, tiltScale: 0.75 });
+  });
+
+  it('keeps large objects anchored while their rotations advance continuously', () => {
+    for (const descriptor of GLOBAL_SHAPE_DESCRIPTORS.filter(({ motion }) => motion.tier === 'spin')) {
+      if (descriptor.motion.tier !== 'spin') throw new Error('expected spin descriptor');
+      const initial = calculateGlobalBackgroundPose(descriptor, 0, 1440);
+      const quarter = calculateGlobalBackgroundPose(descriptor, descriptor.motion.durationMs / 4, 1440);
+
+      expect(quarter.position).toEqual(initial.position);
+      expect(quarter.rotation).not.toEqual(initial.rotation);
+    }
+  });
+
+  it('keeps small-object travel and tilt inside descriptor bounds', () => {
+    for (const width of [1440, 390]) {
+      const profile = getGlobalRenderingProfile(width);
+      for (const descriptor of GLOBAL_SHAPE_DESCRIPTORS.filter(({ motion }) => motion.tier === 'pace')) {
+        if (descriptor.motion.tier !== 'pace') throw new Error('expected pace descriptor');
+        const initialRotation = descriptor.rotationDegrees.map(MathUtils.degToRad);
+
+        for (let sample = 0; sample < 128; sample += 1) {
+          const elapsedMs = (descriptor.motion.durationMs * sample) / 127;
+          const pose = calculateGlobalBackgroundPose(descriptor, elapsedMs, width);
+          expect(Math.abs(pose.position.x - descriptor.position[0])).toBeLessThanOrEqual(descriptor.motion.travel[0] * profile.motionScale + 0.000001);
+          expect(Math.abs(pose.position.y - descriptor.position[1])).toBeLessThanOrEqual(descriptor.motion.travel[1] * profile.motionScale + 0.000001);
+          expect(Math.abs(pose.rotation.x - initialRotation[0]!)).toBeLessThanOrEqual(
+            MathUtils.degToRad(descriptor.motion.tiltDegrees[0] * profile.tiltScale) + 0.000001,
+          );
+          expect(Math.abs(pose.rotation.y - initialRotation[1]!)).toBeLessThanOrEqual(
+            MathUtils.degToRad(descriptor.motion.tiltDegrees[1] * profile.tiltScale) + 0.000001,
+          );
+          expect(Math.abs(pose.rotation.z - initialRotation[2]!)).toBeLessThanOrEqual(
+            MathUtils.degToRad(descriptor.motion.tiltDegrees[2] * profile.tiltScale) + 0.000001,
+          );
+        }
+      }
+    }
+  });
+
+  it('returns one deterministic static pose for reduced motion', () => {
+    for (const descriptor of GLOBAL_SHAPE_DESCRIPTORS) {
+      expect(calculateGlobalBackgroundPose(descriptor, 0, 390, true)).toEqual(
+        calculateGlobalBackgroundPose(descriptor, 10_000_000, 390, true),
+      );
+    }
   });
 });
