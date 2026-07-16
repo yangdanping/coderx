@@ -1,5 +1,5 @@
 import { DirectionalLight, HemisphereLight, OrthographicCamera, Scene, SRGBColorSpace, WebGLRenderer } from 'three';
-import { GLOBAL_SHAPE_DESCRIPTORS } from '../config';
+import { GLOBAL_SHAPE_DESCRIPTORS } from '../config/global-background3d.config';
 import {
   calculateCoverFrustum,
   calculateGlobalBackgroundPose,
@@ -77,6 +77,25 @@ export function createGlobalBackground3DRuntime(
     if (cleanupError && !suppressErrors) throw cleanupError;
   }
 
+  function failAfterReady() {
+    if (disposed) return;
+    try {
+      options.onUnavailable?.();
+    } catch {
+      // The fallback notification must never prevent resource cleanup.
+    }
+    cleanup(true);
+  }
+
+  function guardAfterReady(operation: () => void) {
+    if (disposed) return;
+    try {
+      operation();
+    } catch {
+      failAfterReady();
+    }
+  }
+
   try {
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.setClearColor(0x000000, 0);
@@ -142,7 +161,7 @@ export function createGlobalBackground3DRuntime(
     function animate() {
       const time = now();
       if (disposed || time - lastRenderedAt < 1000 / profile.fps) return;
-      render(time, false);
+      guardAfterReady(() => render(time, false));
     }
 
     function syncAnimationLoop() {
@@ -150,40 +169,44 @@ export function createGlobalBackground3DRuntime(
     }
 
     function onResize() {
-      if (disposed) return;
-      resize();
-      render(now());
+      guardAfterReady(() => {
+        resize();
+        render(now());
+      });
     }
 
     function onVisibilityChange() {
-      if (document.hidden) {
-        pausedAt = now();
-      } else if (pausedAt !== null) {
-        motionStartedAt += now() - pausedAt;
-        pausedAt = null;
-      }
-      syncAnimationLoop();
+      guardAfterReady(() => {
+        if (document.hidden) {
+          pausedAt = now();
+        } else if (pausedAt !== null) {
+          motionStartedAt += now() - pausedAt;
+          pausedAt = null;
+        }
+        syncAnimationLoop();
+      });
     }
 
     function onReducedMotionChange() {
-      const time = now();
-      if (reducedMotion?.matches) {
-        render(time, true);
-      } else {
-        motionStartedAt = time;
-        pausedAt = document.hidden ? time : null;
-        render(time, false);
-      }
-      syncAnimationLoop();
+      guardAfterReady(() => {
+        const time = now();
+        if (reducedMotion?.matches) {
+          render(time, true);
+        } else {
+          motionStartedAt = time;
+          pausedAt = document.hidden ? time : null;
+          render(time, false);
+        }
+        syncAnimationLoop();
+      });
     }
 
     function onContextLost(event: Event) {
       if (disposed) return;
-      event.preventDefault();
       try {
-        options.onUnavailable?.();
+        event.preventDefault();
       } finally {
-        cleanup(true);
+        failAfterReady();
       }
     }
 
@@ -202,8 +225,8 @@ export function createGlobalBackground3DRuntime(
 
     resize();
     render(now());
-    options.onReady?.();
     syncAnimationLoop();
+    options.onReady?.();
 
     return { dispose: cleanup };
   } catch (error) {

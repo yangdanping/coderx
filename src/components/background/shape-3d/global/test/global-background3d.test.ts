@@ -124,6 +124,20 @@ describe('global background 3d objects', () => {
     disposeSpies.forEach((spy) => expect(spy).toHaveBeenCalledOnce());
   });
 
+  it('attempts every owned resource disposal when one resource throws', () => {
+    const { mesh, object, outline } = getParts(GLOBAL_SHAPE_DESCRIPTORS[0]);
+    const resources = [mesh.geometry, ...(Array.isArray(mesh.material) ? mesh.material : [mesh.material]), outline.geometry, outline.material];
+    const disposeSpies = resources.map((resource) => vi.spyOn(resource, 'dispose'));
+    disposeSpies[0]?.mockImplementationOnce(() => {
+      throw new Error('synthetic disposal failure');
+    });
+
+    expect(() => object.dispose()).toThrow('synthetic disposal failure');
+    expect(() => object.dispose()).not.toThrow();
+
+    disposeSpies.forEach((spy) => expect(spy).toHaveBeenCalledOnce());
+  });
+
   it('releases allocated resources when construction fails later', () => {
     const geometryDispose = vi.spyOn(ExtrudeGeometry.prototype, 'dispose');
     const materialDispose = vi.spyOn(MeshStandardMaterial.prototype, 'dispose');
@@ -137,6 +151,29 @@ describe('global background 3d objects', () => {
       expect(geometryDispose).toHaveBeenCalledOnce();
       expect(materialDispose).toHaveBeenCalledTimes(2);
       expect(lineGeometryDispose).toHaveBeenCalledOnce();
+    } finally {
+      setPositions.mockRestore();
+      lineGeometryDispose.mockRestore();
+      materialDispose.mockRestore();
+      geometryDispose.mockRestore();
+    }
+  });
+
+  it('preserves the construction error while independently attempting cleanup', () => {
+    const geometryDispose = vi.spyOn(ExtrudeGeometry.prototype, 'dispose');
+    const materialDispose = vi.spyOn(MeshStandardMaterial.prototype, 'dispose');
+    const lineGeometryDispose = vi.spyOn(LineSegmentsGeometry.prototype, 'dispose').mockImplementationOnce(() => {
+      throw new Error('synthetic cleanup failure');
+    });
+    const setPositions = vi.spyOn(LineSegmentsGeometry.prototype, 'setPositions').mockImplementationOnce(() => {
+      throw new Error('synthetic outline failure');
+    });
+
+    try {
+      expect(() => createGlobalBackgroundObject(GLOBAL_SHAPE_DESCRIPTORS[0])).toThrow('synthetic outline failure');
+      expect(lineGeometryDispose).toHaveBeenCalledOnce();
+      expect(materialDispose).toHaveBeenCalledTimes(2);
+      expect(geometryDispose).toHaveBeenCalledOnce();
     } finally {
       setPositions.mockRestore();
       lineGeometryDispose.mockRestore();
@@ -211,6 +248,21 @@ describe('global background motion and framing', () => {
           );
         }
       }
+    }
+  });
+
+  it('closes every paced pose after one configured duration', () => {
+    for (const descriptor of GLOBAL_SHAPE_DESCRIPTORS.filter(({ motion }) => motion.tier === 'pace')) {
+      if (descriptor.motion.tier !== 'pace') throw new Error('expected pace descriptor');
+      const initial = calculateGlobalBackgroundPose(descriptor, 0, 1440);
+      const complete = calculateGlobalBackgroundPose(descriptor, descriptor.motion.durationMs, 1440);
+
+      expect(complete.position.x).toBeCloseTo(initial.position.x, 6);
+      expect(complete.position.y).toBeCloseTo(initial.position.y, 6);
+      expect(complete.position.z).toBeCloseTo(initial.position.z, 6);
+      expect(complete.rotation.x).toBeCloseTo(initial.rotation.x, 6);
+      expect(complete.rotation.y).toBeCloseTo(initial.rotation.y, 6);
+      expect(complete.rotation.z).toBeCloseTo(initial.rotation.z, 6);
     }
   });
 

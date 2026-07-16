@@ -9,7 +9,7 @@ import {
   type GlobalRenderingProfile,
   type GlobalShapeDescriptor,
   type GlobalShapeId,
-} from '../config';
+} from '../config/global-background3d.config';
 
 export interface GlobalBackgroundObject {
   id: GlobalShapeId;
@@ -32,6 +32,18 @@ export interface GlobalBackgroundPose {
 
 type Disposable = { dispose(): void };
 type Position = [x: number, y: number, z: number];
+
+function disposeAll(resources: Disposable[], suppressErrors = false) {
+  let firstError: unknown;
+  resources.forEach((resource) => {
+    try {
+      resource.dispose();
+    } catch (error) {
+      firstError ??= error;
+    }
+  });
+  if (firstError && !suppressErrors) throw firstError;
+}
 
 function assertPositiveFinite(name: string, value: number) {
   if (!Number.isFinite(value) || value <= 0) {
@@ -222,11 +234,11 @@ export function createGlobalBackgroundObject(descriptor: GlobalShapeDescriptor):
       dispose: () => {
         if (disposed) return;
         disposed = true;
-        disposables.forEach((resource) => resource.dispose());
+        disposeAll(disposables);
       },
     };
   } catch (error) {
-    disposables.reverse().forEach((resource) => resource.dispose());
+    disposeAll([...disposables].reverse(), true);
     throw error;
   }
 }
@@ -237,7 +249,7 @@ export function createGlobalBackgroundObjects(): GlobalBackgroundObject[] {
     GLOBAL_SHAPE_DESCRIPTORS.forEach((descriptor) => objects.push(createGlobalBackgroundObject(descriptor)));
     return objects;
   } catch (error) {
-    objects.reverse().forEach((object) => object.dispose());
+    disposeAll([...objects].reverse(), true);
     throw error;
   }
 }
@@ -304,7 +316,7 @@ export function calculateGlobalBackgroundPose(
     rotation: {
       x: baseRotation[0] + MathUtils.degToRad(Math.sin(phase) * descriptor.motion.tiltDegrees[0] * profile.tiltScale),
       y: baseRotation[1] + MathUtils.degToRad(Math.cos(phase) * descriptor.motion.tiltDegrees[1] * profile.tiltScale),
-      z: baseRotation[2] + MathUtils.degToRad(Math.sin(phase * 0.5) * descriptor.motion.tiltDegrees[2] * profile.tiltScale),
+      z: baseRotation[2] + MathUtils.degToRad(Math.sin(phase) * descriptor.motion.tiltDegrees[2] * profile.tiltScale),
     },
   };
 }

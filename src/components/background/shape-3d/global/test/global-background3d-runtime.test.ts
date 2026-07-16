@@ -247,6 +247,56 @@ describe('global background 3d runtime', () => {
     expect(removeCanvas).toHaveBeenCalledWith('webglcontextlost', expect.any(Function));
   });
 
+  it('falls back without leaking when an animation render fails after ready', () => {
+    let currentTime = 1_000;
+    const renderer = createRenderer();
+    const objects = createObjects();
+    const onUnavailable = vi.fn();
+    const runtime = createGlobalBackground3DRuntime(document.createElement('canvas'), {
+      createObjects: () => objects,
+      createRenderer: () => renderer,
+      matchMedia: () => createMatchMedia(false),
+      now: () => currentTime,
+      onUnavailable,
+    });
+    renderer.render.mockImplementationOnce(() => {
+      throw new Error('animation render failed');
+    });
+
+    currentTime = 1_034;
+    expect(() => renderer.loop?.(99_034)).not.toThrow();
+    runtime.dispose();
+
+    expect(onUnavailable).toHaveBeenCalledOnce();
+    expect(renderer.loop).toBeNull();
+    expect(renderer.dispose).toHaveBeenCalledOnce();
+    objects.forEach((object) => expect(object.dispose).toHaveBeenCalledOnce());
+  });
+
+  it('falls back without leaking when a resize fails after ready', () => {
+    const renderer = createRenderer();
+    const objects = createObjects();
+    const onUnavailable = vi.fn();
+    const runtime = createGlobalBackground3DRuntime(document.createElement('canvas'), {
+      createObjects: () => objects,
+      createRenderer: () => renderer,
+      matchMedia: () => createMatchMedia(false),
+      now: () => 1_000,
+      onUnavailable,
+    });
+    renderer.setSize.mockImplementationOnce(() => {
+      throw new Error('resize failed');
+    });
+
+    expect(() => window.dispatchEvent(new Event('resize'))).not.toThrow();
+    runtime.dispose();
+
+    expect(onUnavailable).toHaveBeenCalledOnce();
+    expect(renderer.loop).toBeNull();
+    expect(renderer.dispose).toHaveBeenCalledOnce();
+    objects.forEach((object) => expect(object.dispose).toHaveBeenCalledOnce());
+  });
+
   it('falls back and disposes once when the WebGL context is lost', () => {
     const renderer = createRenderer();
     const objects = createObjects();
