@@ -1,5 +1,6 @@
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'app--global-background-ready': globalBackgroundReady }">
+    <GlobalBackground3D @ready-change="globalBackgroundReady = $event" />
     <BackgroundTriangle3D />
     <!-- 除了编辑页面，其他页面都显示导航栏 -->
     <NavBar v-if="showNavBar" />
@@ -27,6 +28,7 @@ import { Toaster } from 'vue-sonner';
 import { CircleAlert, CircleCheck, Info, TriangleAlert } from '@lucide/vue';
 import 'vue-sonner/style.css';
 import '@/assets/css/sonner.scss';
+import GlobalBackground3D from '@/components/background/shape-3d/global/GlobalBackground3D.vue';
 import BackgroundTriangle3D from '@/components/background/shape-3d/triangle/BackgroundTriangle3D.vue';
 import NavBar from '@/components/navbar/NavBar.vue';
 import useRootStore from '@/stores/index.store';
@@ -44,6 +46,7 @@ const rootStore = useRootStore();
 const { windowInfo, isSmallScreen, authStatus } = storeToRefs(rootStore);
 const { isDark } = useTheme();
 const toastTheme = computed(() => (isDark.value ? 'dark' : 'light'));
+const globalBackgroundReady = shallowRef(false);
 let stopOnlineStatusWatch: (() => void) | undefined;
 
 // 根据路由判断是否显示导航栏
@@ -137,9 +140,16 @@ function handleBeforeUnload() {
     bottom: 0;
     background: var(--bg);
     filter: var(--bg-filter);
-    z-index: -3;
+    opacity: 1;
+    z-index: -4;
     pointer-events: none;
-    transition: filter 0.3s;
+    transition:
+      filter 0.3s,
+      opacity 0.3s;
+  }
+
+  &.app--global-background-ready::before {
+    opacity: 0;
   }
 
   // 纸张颗粒层 - 独立于动态 SVG，dark 模式由全局变量反相并降低强度

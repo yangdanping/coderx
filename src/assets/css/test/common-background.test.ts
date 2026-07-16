@@ -6,6 +6,8 @@ const commonScss = readFileSync(join(process.cwd(), 'src/assets/css/common.scss'
 const appVue = readFileSync(join(process.cwd(), 'src/App.vue'), 'utf8');
 const backgroundTrianglePath = join(process.cwd(), 'src/components/background/shape-3d/triangle/BackgroundTriangle3D.vue');
 const backgroundTriangle = existsSync(backgroundTrianglePath) ? readFileSync(backgroundTrianglePath, 'utf8') : '';
+const globalBackgroundPath = join(process.cwd(), 'src/components/background/shape-3d/global/GlobalBackground3D.vue');
+const globalBackground = existsSync(globalBackgroundPath) ? readFileSync(globalBackgroundPath, 'utf8') : '';
 
 function getRuleBody(selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -21,13 +23,23 @@ describe('global background layering', () => {
     expect(bodyRule).not.toMatch(/background(?:-color)?:/);
   });
 
-  it('layers theme-aware paper grain above the existing animated SVG background', () => {
+  it('crossfades the exact SVG fallback under the new global canvas', () => {
     expect(commonScss).toMatch(/--bg:\s*url\(['"]?@\/assets\/img\/bg\.svg['"]?\)\s+center\/cover\s+no-repeat\s+fixed/);
     expect(appVue).toMatch(/&::before\s*\{[\s\S]*?background:\s*var\(--bg\)/);
+    expect(appVue).toMatch(/<GlobalBackground3D\s+@ready-change="globalBackgroundReady = \$event"\s*\/>/);
+    expect(appVue).toMatch(/class="app"[\s\S]*?'app--global-background-ready':\s*globalBackgroundReady/);
+    expect(appVue).toMatch(/&::before\s*\{[\s\S]*?z-index:\s*-4/);
+    expect(appVue).toMatch(/&::before\s*\{[\s\S]*?opacity:\s*1/);
+    expect(appVue).toMatch(/&\.app--global-background-ready::before\s*\{[\s\S]*?opacity:\s*0/);
+    expect(globalBackground).toMatch(/\.global-background-3d\s*\{[\s\S]*?z-index:\s*-3/);
+    expect(globalBackground).toMatch(/filter:\s*var\(--bg-filter\)/);
+    expect(globalBackground).toMatch(/\.global-background-3d__canvas\.is-ready\s*\{[\s\S]*?opacity:\s*1/);
+  });
+
+  it('layers the protected arrow and theme-aware paper grain above the new scene', () => {
     expect(appVue).toMatch(/&::after\s*\{[\s\S]*?background-image:\s*var\(--paper-noise\)/);
 
     expect(appVue).toMatch(/<BackgroundTriangle3D\s*\/>/);
-    expect(appVue).toMatch(/&::before\s*\{[\s\S]*?z-index:\s*-3/);
     expect(backgroundTriangle).toMatch(/\.background-triangle-3d\s*\{[\s\S]*?z-index:\s*-2/);
     expect(backgroundTriangle).toMatch(/filter:\s*var\(--bg-filter\)/);
     expect(appVue).toMatch(/&::after\s*\{[\s\S]*?z-index:\s*-1/);

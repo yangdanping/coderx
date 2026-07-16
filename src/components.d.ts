@@ -51,6 +51,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     FollowButton: typeof import('./components/FollowButton.vue')['default']
+    GlobalBackground3D: typeof import('./components/background/shape-3d/global/GlobalBackground3D.vue')['default']
     Icon: typeof import('./components/icon/Icon.vue')['default']
     ILoading: typeof import('~icons/ep/loading')['default']
     ListAction: typeof import('./components/list/cpns/ListAction.vue')['default']
