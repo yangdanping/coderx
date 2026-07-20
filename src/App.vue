@@ -33,6 +33,7 @@ import BackgroundTriangle3D from '@/components/background/shape-3d/triangle/Back
 import NavBar from '@/components/navbar/NavBar.vue';
 import useRootStore from '@/stores/index.store';
 import { useTheme } from '@/composables/useTheme';
+import { useGoogleOneTap } from '@/composables/useGoogleOneTap';
 // ============== 🔌 在线状态功能开关 ==============
 // 根据需要切换或注释掉任意一行即可：
 // - Socket.IO 版本：自动重连、跨浏览器兼容
@@ -48,6 +49,9 @@ const { isDark } = useTheme();
 const toastTheme = computed(() => (isDark.value ? 'dark' : 'light'));
 const globalBackgroundReady = shallowRef(false);
 let stopOnlineStatusWatch: (() => void) | undefined;
+
+// Google One Tap：访客态自动提示，与现有跳转 OAuth 并存
+useGoogleOneTap();
 
 // 根据路由判断是否显示导航栏
 // - 编辑页面：完全不需要导航栏

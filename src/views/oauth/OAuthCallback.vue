@@ -20,15 +20,10 @@
 
 <script lang="ts" setup>
 import { Loading, CircleCloseFilled } from '@element-plus/icons-vue';
-import { LocalCache, Msg } from '@/utils';
-import { getUserInfoById } from '@/service/user/user.request';
-import { migrateGuestTagOrderToAccount } from '@/service/article/tagOrderPreference';
 import useUserStore from '@/stores/user.store';
-import useRootStore from '@/stores/index.store';
 import router from '@/router';
 
 const userStore = useUserStore();
-const rootStore = useRootStore();
 
 const loading = ref(true);
 const error = ref(false);
@@ -63,34 +58,14 @@ const handleOAuthCallback = async () => {
   }
 
   try {
-    // 1. 存储 token
-    LocalCache.setCache('token', token);
-    userStore.token = token;
-
-    // 2. 获取完整用户信息
-    const res = await getUserInfoById(userId);
-    if (res.code === 0) {
-      const userInfo = res.data;
-      userStore.userInfo = userInfo;
-      LocalCache.setCache('userInfo', userInfo);
-      rootStore.setAuthStatus('authenticated');
-
-      const migrationResult = await migrateGuestTagOrderToAccount();
-      if (migrationResult === 'failed') {
-        Msg.showWarn('标签顺序同步失败，已保留本地设置');
-      }
-
-      Msg.showSuccess('登录成功');
-
-      // 3. 跳转到首页
-      router.replace('/');
-    } else {
+    const ok = await userStore.loginWithOAuthTokenAction({ token, userId });
+    if (!ok) {
       throw new Error('获取用户信息失败');
     }
+    router.replace('/');
   } catch (err) {
     error.value = true;
     errorMessage.value = '登录过程中发生错误，请重试';
-    // 清理可能存储的无效数据
     userStore.clearAuthState();
   } finally {
     loading.value = false;
