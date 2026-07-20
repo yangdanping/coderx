@@ -5,6 +5,7 @@ interface OAuthStatusResponse {
   data: {
     google: boolean;
     github: boolean;
+    googleClientId?: string | null;
   };
 }
 
@@ -15,9 +16,19 @@ interface AuthUrlResponse {
   };
 }
 
+interface GoogleIdTokenLoginResponse {
+  code: number;
+  msg?: string;
+  data: {
+    id: number;
+    name: string;
+    token: string;
+  };
+}
+
 /**
  * 检查 OAuth 配置状态
- * 用于前端判断是否显示 OAuth 登录按钮
+ * 用于前端判断是否显示 OAuth 登录按钮 / One Tap
  */
 export const getOAuthStatus = () => {
   return myRequest.get<OAuthStatusResponse>({
@@ -32,6 +43,17 @@ export const getOAuthStatus = () => {
 export const getGoogleAuthUrl = () => {
   return myRequest.get<AuthUrlResponse>({
     url: '/oauth/google',
+  });
+};
+
+/**
+ * Google One Tap / GIS：用 credential (id_token) 换取站点 JWT
+ */
+export const loginWithGoogleIdToken = (credential: string) => {
+  return myRequest.post<GoogleIdTokenLoginResponse>({
+    url: '/oauth/google/idtoken',
+    data: { credential },
+    showLoading: false,
   });
 };
 

@@ -200,6 +200,33 @@ const useUserStore = defineStore('user', {
         Msg.showFail(res1.msg); //若是登录用户信息则不用再请求了
       }
     },
+    /**
+     * OAuth / One Tap 共用：写入 JWT + 拉取用户信息（不整页刷新）
+     */
+    async loginWithOAuthTokenAction({ token, userId }: { token: string; userId: number | string }) {
+      this.token = token;
+      LocalCache.setCache('token', token);
+
+      const res = await getUserInfoById(userId);
+      if (res.code !== 0) {
+        this.clearAuthState();
+        Msg.showFail('获取用户信息失败');
+        return false;
+      }
+
+      this.userInfo = res.data;
+      LocalCache.setCache('userInfo', res.data);
+      useRootStore().setAuthStatus('authenticated');
+      useRootStore().closeLoginDialog();
+
+      const migrationResult = await migrateGuestTagOrderToAccount();
+      if (migrationResult === 'failed') {
+        Msg.showWarn('标签顺序同步失败，已保留本地设置');
+      }
+
+      Msg.showSuccess('登录成功');
+      return true;
+    },
     async followAction(userId, isFollowListItem = false) {
       console.log('followAction follow', userId);
       const res = await follow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
