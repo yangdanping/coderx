@@ -136,9 +136,14 @@ class LocalCache {
     try {
       const parsed: unknown = JSON.parse(legacyRawValue);
       if (Array.isArray(parsed)) {
+        const seenIds = new Set<string>();
         legacyItems = parsed
           .map((item) => (typeof item === 'string' ? toSearchHistoryItem(item) : null))
-          .filter((item): item is SearchHistoryItem => item !== null)
+          .filter((item): item is SearchHistoryItem => {
+            if (!item || seenIds.has(item.id)) return false;
+            seenIds.add(item.id);
+            return true;
+          })
           .slice(0, SEARCH_HISTORY_LIMIT);
       }
     } catch {

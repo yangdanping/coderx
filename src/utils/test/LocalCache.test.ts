@@ -7,7 +7,7 @@ describe('LocalCache search history', () => {
   });
 
   it('migrates legacy keyword strings into typed v2 history', () => {
-    localStorage.setItem('coderx_search_history', JSON.stringify([' Vue ', 'TypeScript']));
+    localStorage.setItem('coderx_search_history', JSON.stringify([' Vue ', 'TypeScript', 'vue']));
 
     expect(LocalCache.getSearchHistory()).toEqual([
       { id: 'query:vue', value: 'Vue' },
