@@ -92,4 +92,3 @@ GLOBAL_SHAPE_DESCRIPTORS.rotationDegrees
 - 大型对象仍保持边缘裁切，小型对象仍保持安静的视觉权重。
 - 动画速度、位移边界和响应式行为与调整前一致。
 - 箭头的外观与运动完全不变。
-
