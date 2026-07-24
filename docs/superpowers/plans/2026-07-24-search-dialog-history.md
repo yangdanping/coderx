@@ -4,7 +4,7 @@
 
 **Goal:** Build a compact, theme-aware search dialog with typed local search/favorite history, loading/search icon switching, and keyboard-first article navigation.
 
-**Architecture:** `LocalCache` owns validation, migration, deduplication, limits, and the two storage keys. `NavBarSearch.vue` owns transient dialog/search/selection state and routes all mouse and keyboard activation through the same navigation functions. Existing Vue Query search, focus trapping, modal cleanup, and navbar shortcut behavior remain in place.
+**Architecture:** `LocalCache` owns validation, migration, deduplication, limits, and the two storage keys. `SearchHistorySection.vue` is a typed, presentational list shared by normal and favorite history. `NavBarSearch.vue` owns transient dialog/search/selection state and routes all mouse and keyboard activation through the same navigation functions. Existing Vue Query search, focus trapping, modal cleanup, and navbar shortcut behavior remain in place.
 
 **Tech Stack:** Vue 3.5 `<script setup>`, TypeScript 6, Vue Router, TanStack Vue Query, Lucide Vue icons, SCSS, Vitest, Vue Test Utils.
 
@@ -182,16 +182,51 @@ git commit -m "feat(search): add typed local search history"
 ### Task 2: Search dialog behavior and keyboard navigation
 
 **Files:**
+- Create: `src/components/navbar/cpns/SearchHistorySection.vue`
+- Create: `src/components/navbar/cpns/test/SearchHistorySection.test.ts`
 - Modify: `src/components/navbar/cpns/NavBarSearch.vue`
 - Modify: `src/components/navbar/cpns/test/NavBarSearch.test.ts`
 
 **Interfaces:**
 - Consumes: Task 1 `SearchHistoryItem` and `LocalCache` methods.
+- Produces: `SearchHistorySection` props `title`, `items`, `favoriteIds`, `clearable` and emits `activate`, `toggle-favorite`, `remove`, `clear`.
 - Produces: shared `activateSearchResult`, `activateHistoryItem`, `toggleFavorite`, `moveResultSelection`, and `handleSearchEnter` behavior.
 
 - [ ] **Step 1: Add failing interaction tests**
 
-Extend `NavBarSearch.test.ts` with tests that seed the v2 keys and exercise the public DOM:
+Create `SearchHistorySection.test.ts` first to assert typed props and events:
+
+```ts
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import SearchHistorySection from '../SearchHistorySection.vue';
+
+describe('SearchHistorySection', () => {
+  it('emits activation, favorite, removal, and clear actions', async () => {
+    const item = { id: 'query:vue', value: 'Vue' };
+    const wrapper = mount(SearchHistorySection, {
+      props: {
+        title: '搜索历史',
+        items: [item],
+        favoriteIds: new Set<string>(),
+        clearable: true,
+      },
+    });
+
+    await wrapper.get('.history-item').trigger('click');
+    await wrapper.get('.history-favorite').trigger('click');
+    await wrapper.get('.history-delete').trigger('click');
+    await wrapper.get('.history-clear').trigger('click');
+
+    expect(wrapper.emitted('activate')?.[0]).toEqual([item]);
+    expect(wrapper.emitted('toggle-favorite')?.[0]).toEqual([item]);
+    expect(wrapper.emitted('remove')?.[0]).toEqual([item.id]);
+    expect(wrapper.emitted('clear')).toHaveLength(1);
+  });
+});
+```
+
+Then extend `NavBarSearch.test.ts` with tests that seed the v2 keys and exercise the public DOM:
 
 ```ts
 it('restores keyword history to the input without navigating', async () => {
@@ -264,9 +299,11 @@ Run:
 pnpm vitest run src/components/navbar/cpns/test/NavBarSearch.test.ts
 ```
 
-Expected: new tests fail because history is still string-based and there is no selection/favorite behavior.
+Expected: new tests fail because the child component does not exist, history is still string-based, and there is no selection/favorite behavior.
 
 - [ ] **Step 3: Implement shared activation and selection state**
+
+Create `SearchHistorySection.vue` as a stateless typed list. It renders one section heading, history rows, star buttons with `aria-pressed`, delete buttons, and an optional clear action; all mutations are emitted to the parent.
 
 In `NavBarSearch.vue`:
 
@@ -330,7 +367,7 @@ Replace history deletion with stable-ID deletion. Add `toggleFavorite(item)`, `i
 Run:
 
 ```bash
-pnpm vitest run src/components/navbar/cpns/test/NavBarSearch.test.ts
+pnpm vitest run src/components/navbar/cpns/test/SearchHistorySection.test.ts src/components/navbar/cpns/test/NavBarSearch.test.ts
 ```
 
 Expected: all existing and new component interaction tests pass.
@@ -338,7 +375,7 @@ Expected: all existing and new component interaction tests pass.
 - [ ] **Step 5: Commit behavior**
 
 ```bash
-git add src/components/navbar/cpns/NavBarSearch.vue src/components/navbar/cpns/test/NavBarSearch.test.ts
+git add src/components/navbar/cpns/SearchHistorySection.vue src/components/navbar/cpns/test/SearchHistorySection.test.ts src/components/navbar/cpns/NavBarSearch.vue src/components/navbar/cpns/test/NavBarSearch.test.ts
 git commit -m "feat(search): add history favorites and keyboard navigation"
 ```
 
