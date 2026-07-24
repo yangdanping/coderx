@@ -3,15 +3,17 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createPinia, setActivePinia } from 'pinia';
-import { createMemoryHistory, createRouter } from 'vue-router';
+import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import NavBarSearch from '../NavBarSearch.vue';
 import { search } from '@/service/article/article.request';
 import useRootStore from '@/stores/index.store';
+import LocalCache, { FAVORITE_SEARCH_HISTORY_STORAGE_KEY, SEARCH_HISTORY_STORAGE_KEY } from '@/utils/LocalCache';
 
 const mountedWrappers: VueWrapper[] = [];
 let updateMobileViewport = (_matches: boolean) => undefined;
+let activeRouter: Router;
 
 function installLocalStorage() {
   const store = new Map<string, string>();
@@ -99,6 +101,7 @@ async function mountSearch(platform = 'MacIntel', mobile = false) {
       { name: 'detail', path: '/article/:articleId', component: { template: '<div />' } },
     ],
   });
+  activeRouter = router;
   await router.push('/');
   await router.isReady();
 
@@ -165,6 +168,18 @@ describe('NavBarSearch', () => {
     expect(wrapper.find('.search-trigger').exists()).toBe(true);
     expect(wrapper.find('.search-trigger').text()).toContain('⌘\u00a0K');
     expect(wrapper.find('.search > .el-input__inner').exists()).toBe(false);
+  });
+
+  it('anchors a decorative custom sparkle to the search icon', async () => {
+    const wrapper = await mountSearch('MacIntel');
+
+    const iconWrap = wrapper.get('.search-trigger-icon-wrap');
+    expect(iconWrap.find('.search-trigger-icon').exists()).toBe(true);
+
+    const sparkle = iconWrap.get('svg.search-trigger-sparkle');
+    expect(sparkle.attributes('aria-hidden')).toBe('true');
+    expect(sparkle.attributes('focusable')).toBe('false');
+    expect(sparkle.find('path').exists()).toBe(true);
   });
 
   it('contains desktop focus while open and restores the trigger after backdrop close', async () => {
@@ -251,7 +266,7 @@ describe('NavBarSearch', () => {
     expect(appRoot.hasAttribute('inert')).toBe(false);
   });
 
-  it('skips v-show-hidden history controls when wrapping focus backward', async () => {
+  it('wraps backward focus to the final visible history action', async () => {
     window.localStorage.setItem('coderx_search_history', JSON.stringify(['Vue']));
     const wrapper = await mountSearch('MacIntel', true);
 
@@ -259,11 +274,11 @@ describe('NavBarSearch', () => {
     await flushPromises();
 
     const input = wrapper.get<HTMLInputElement>('.search-input').element;
-    const lastVisibleHistoryItem = wrapper.get<HTMLButtonElement>('.history-item').element;
+    const lastVisibleHistoryAction = wrapper.get<HTMLButtonElement>('.history-delete').element;
     input.focus();
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
 
-    expect(document.activeElement).toBe(lastVisibleHistoryItem);
+    expect(document.activeElement).toBe(lastVisibleHistoryAction);
   });
 
   it('restores focus and background interactivity when Escape closes the dialog', async () => {
@@ -294,7 +309,79 @@ describe('NavBarSearch', () => {
     expect(search).toHaveBeenCalledWith('vue', expect.anything());
   });
 
-  it('renders results as safe native links and announces async result counts', async () => {
+  it('restores keyword history to the input without navigating', async () => {
+    window.localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify([{ id: 'query:vue', value: 'Vue' }]));
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.history-item').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get<HTMLInputElement>('.search-input').element.value).toBe('Vue');
+    expect(activeRouter.currentRoute.value.path).toBe('/');
+    expect(wrapper.find('.search-dialog').exists()).toBe(true);
+  });
+
+  it('opens linked history directly in the article route', async () => {
+    window.localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify([{ id: 'article:21', value: 'Vue Query', articleId: 21 }]));
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.history-item').trigger('click');
+    await flushPromises();
+
+    expect(activeRouter.currentRoute.value.path).toBe('/article/21');
+    expect(wrapper.find('.search-dialog').exists()).toBe(false);
+  });
+
+  it('keeps favorites when deleting the matching normal-history item', async () => {
+    const article = { id: 'article:21', value: 'Vue Query', articleId: 21 };
+    window.localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify([article]));
+    window.localStorage.setItem(FAVORITE_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify([article]));
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-history-section .history-delete').trigger('click');
+
+    expect(wrapper.find('.search-history-section').exists()).toBe(false);
+    expect(wrapper.get('.favorite-history-section').text()).toContain('Vue Query');
+    expect(LocalCache.getFavoriteSearchHistory()).toEqual([article]);
+  });
+
+  it('uses arrow keys and Enter to open the highlighted article', async () => {
+    vi.mocked(search).mockResolvedValue({
+      data: [
+        { id: 21, title: 'Vue basics' },
+        { id: 22, title: 'Vue Query' },
+      ],
+    } as never);
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('vue');
+    await flushPromises();
+    await wrapper.get('.search-input').trigger('keydown', { key: 'ArrowDown' });
+    await wrapper.get('.search-input').trigger('keydown', { key: 'Enter' });
+    await flushPromises();
+
+    expect(activeRouter.currentRoute.value.path).toBe('/article/22');
+    expect(LocalCache.getSearchHistory()[0]).toMatchObject({ id: 'article:22', value: 'Vue Query' });
+  });
+
+  it('falls back to the full search page when no article is highlighted', async () => {
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('TypeScript');
+    await flushPromises();
+    await wrapper.get('.search-input').trigger('keydown', { key: 'Enter' });
+    await flushPromises();
+
+    expect(activeRouter.currentRoute.value.fullPath).toBe('/search?q=TypeScript');
+    expect(LocalCache.getSearchHistory()[0]).toEqual({ id: 'query:typescript', value: 'TypeScript' });
+  });
+
+  it('renders results as selectable options and announces async result counts', async () => {
     vi.mocked(search).mockResolvedValue({ data: [{ id: 21, title: 'Vue knowledge' }] } as never);
     const wrapper = await mountSearch();
 
@@ -302,15 +389,15 @@ describe('NavBarSearch', () => {
     await wrapper.get('.search-input').setValue('vue');
     await flushPromises();
 
-    const result = wrapper.get<HTMLAnchorElement>('.result-item');
-    expect(result.element.tagName).toBe('A');
-    expect(result.attributes('href')).toBe('/article/21');
-    expect(result.attributes('target')).toBe('_blank');
-    expect(result.attributes('rel')).toContain('noopener');
-    expect(result.attributes('rel')).toContain('noreferrer');
+    const result = wrapper.get<HTMLButtonElement>('.search-result-option');
+    expect(result.element.tagName).toBe('BUTTON');
+    expect(result.attributes('role')).toBe('option');
+    expect(result.attributes('aria-selected')).toBe('true');
     expect(wrapper.get('[role="status"]').text()).toContain('找到 1 条相关内容');
 
     await result.trigger('click');
+    await flushPromises();
+    expect(activeRouter.currentRoute.value.path).toBe('/article/21');
     expect(wrapper.find('.search-dialog').exists()).toBe(false);
   });
 
@@ -343,6 +430,32 @@ describe('NavBarSearch', () => {
     expect(shortcutBlock).toContain('border: 0;');
     expect(shortcutBlock).toContain('background: transparent;');
     expect(shortcutBlock).not.toMatch(/border:\s*1px/);
+  });
+
+  it('uses reversible fine-pointer motion with keyboard and reduced-motion fallbacks', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+    const iconBlock = source.match(/\.search-trigger-icon\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+    const sparkleBlock = source.match(/\.search-trigger-sparkle\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+    const finePointerStart = source.indexOf('@media (hover: hover) and (pointer: fine)');
+    const reducedMotionStart = source.indexOf('@media (prefers-reduced-motion: reduce)');
+    const mobileStylesStart = source.lastIndexOf('@media (max-width: 768px)');
+    const finePointerStyles = source.slice(finePointerStart, reducedMotionStart);
+    const reducedMotionStyles = source.slice(reducedMotionStart, mobileStylesStart);
+
+    expect(sparkleBlock).toContain('position: absolute;');
+    expect(sparkleBlock).toContain('top: -5px;');
+    expect(sparkleBlock).toContain('right: -5px;');
+    expect(sparkleBlock).toContain('pointer-events: none;');
+    expect(sparkleBlock).toContain('opacity: 0;');
+    expect(sparkleBlock).toContain('transform: scale(0.55) rotate(-75deg);');
+    expect(sparkleBlock).toMatch(/transition:[\s\S]*?opacity[\s\S]*?transform/);
+    expect(iconBlock).not.toMatch(/transform|transition/);
+    expect(source).toMatch(/\.search-trigger:focus-visible[\s\S]*?\.search-trigger-sparkle[\s\S]*?opacity:\s*1;[\s\S]*?transform:\s*scale\(1\) rotate\(0deg\);/);
+    expect(finePointerStyles).toMatch(/\.search-trigger:hover[\s\S]*?\.search-trigger-sparkle[\s\S]*?opacity:\s*1;/);
+    expect(source).not.toMatch(/\.search-trigger:focus-visible\s+\.search-trigger-icon/);
+    expect(finePointerStyles).not.toMatch(/\.search-trigger:hover\s+\.search-trigger-icon/);
+    expect(reducedMotionStyles).toMatch(/\.search-trigger-sparkle[\s\S]*?transition:\s*none;/);
+    expect(reducedMotionStyles).toMatch(/\.search-trigger-sparkle[\s\S]*?transform:\s*scale\(1\) rotate\(0deg\);/);
   });
 
   it('defines compact mobile layout without shortcut noise and keeps touch targets usable', () => {

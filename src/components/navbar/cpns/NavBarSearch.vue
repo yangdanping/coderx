@@ -1,7 +1,12 @@
 <template>
   <div class="search">
     <button ref="searchTrigger" type="button" class="search-trigger" :aria-expanded="isDialogOpen" aria-haspopup="dialog" aria-label="打开搜索面板" @click="toggleDialog">
-      <Search class="search-trigger-icon" :size="18" aria-hidden="true" />
+      <span class="search-trigger-icon-wrap">
+        <Search class="search-trigger-icon" :size="18" aria-hidden="true" />
+        <svg class="search-trigger-sparkle" viewBox="0 0 12 12" fill="none" focusable="false" aria-hidden="true">
+          <path d="M6 0.75C6.25 3.9 8.1 5.75 11.25 6C8.1 6.25 6.25 8.1 6 11.25C5.75 8.1 3.9 6.25 0.75 6C3.9 5.75 5.75 3.9 6 0.75Z" fill="currentColor" />
+        </svg>
+      </span>
       <kbd class="search-shortcut">{{ shortcutText }}</kbd>
     </button>
 
@@ -22,7 +27,9 @@
                 autocomplete="off"
                 inputmode="search"
                 spellcheck="false"
-                @keyup.enter="submitSearch"
+                @keydown.down.prevent="moveResultSelection(1)"
+                @keydown.up.prevent="moveResultSelection(-1)"
+                @keydown.enter.prevent="handleSearchEnter"
                 @compositionstart="handleCompositionStart"
                 @compositionend="handleCompositionEnd"
               />
@@ -32,46 +39,55 @@
             </div>
 
             <div class="search-panel" :aria-busy="isLoading">
-              <template v-if="!searchValue && searchHistory.length">
-                <div class="search-panel-header">
-                  <span class="header-title">历史记录</span>
-                  <button type="button" class="clear-btn" @click="clearAllHistory">清空</button>
-                </div>
-
-                <div class="history-content">
-                  <div
-                    v-for="(item, index) in searchHistory"
-                    :key="item"
-                    class="history-chip"
-                    @mouseenter="hoveredIndex = index"
-                    @mouseleave="hoveredIndex = -1"
-                    @focusin="hoveredIndex = index"
-                    @focusout="hoveredIndex = -1"
-                  >
-                    <button type="button" class="history-item" :style="getItemStyle(index)" @click="selectHistoryItem(item)">
-                      <span class="history-text">{{ item }}</span>
-                    </button>
-                    <button v-show="hoveredIndex === index" type="button" class="delete-icon" aria-label="删除历史记录" @click.stop="removeHistoryItem(item)">
-                      <Trash2 :size="12" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-              </template>
-
-              <div v-if="searchValue" class="search-result-content" :class="{ showborder: searchHistory.length > 0 }">
+              <div v-if="searchValue" class="search-result-content">
                 <div v-if="isError" class="search-error">搜索失败，请稍后重试</div>
                 <template v-else-if="!isLoading">
-                  <template v-if="searchResults.length">
-                    <a v-for="item in searchResults" :key="item.id" class="result-item" :href="getArticleHref(item)" target="_blank" rel="noopener noreferrer" @click="handleResultClick(item)">
+                  <div v-if="searchResults.length" class="search-result-list" role="listbox" aria-label="文章搜索结果">
+                    <button
+                      v-for="(item, index) in searchResults"
+                      :key="item.id"
+                      type="button"
+                      class="search-result-option"
+                      :class="{ 'is-active': activeResultIndex === index }"
+                      role="option"
+                      :aria-selected="activeResultIndex === index"
+                      @mouseenter="activeResultIndex = index"
+                      @focus="activeResultIndex = index"
+                      @click="activateSearchResult(item)"
+                    >
                       <span v-for="(part, partIndex) in getHighlightedSearchParts(item.title, searchValue)" :key="`${item.id}-${partIndex}`" :class="{ 'search-match': part.matched }">
                         {{ part.text }}
                       </span>
-                    </a>
-                  </template>
+                    </button>
+                  </div>
                   <div v-else class="no-data-text">未找到相关内容</div>
                 </template>
                 <div v-else class="loading" v-loading="true"></div>
               </div>
+
+              <SearchHistorySection
+                v-if="searchHistory.length"
+                class="search-history-section"
+                title="搜索历史"
+                :items="searchHistory"
+                :favorite-ids="favoriteHistoryIds"
+                clearable
+                @activate="activateHistoryItem"
+                @toggle-favorite="toggleFavorite"
+                @remove="removeHistoryItem"
+                @clear="clearAllHistory"
+              />
+
+              <SearchHistorySection
+                v-if="favoriteSearchHistory.length"
+                class="favorite-history-section"
+                title="收藏"
+                :items="favoriteSearchHistory"
+                :favorite-ids="favoriteHistoryIds"
+                @activate="activateHistoryItem"
+                @toggle-favorite="toggleFavorite"
+                @remove="removeFavoriteItem"
+              />
             </div>
             <p class="search-status" role="status" aria-live="polite" aria-atomic="true">{{ searchStatusText }}</p>
           </section>
@@ -82,12 +98,13 @@
 </template>
 
 <script lang="ts" setup>
-import { Search, Trash2, X } from '@lucide/vue';
+import { Search, X } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
 import { useRoute, useRouter } from 'vue-router';
+import SearchHistorySection from './SearchHistorySection.vue';
 import { debounce } from '@/utils';
 import { getHighlightedSearchParts, getSearchShortcutText, isSearchToggleShortcut, normalizeSearchKeyword } from '@/utils/search';
-import LocalCache from '@/utils/LocalCache';
+import LocalCache, { type SearchHistoryItem } from '@/utils/LocalCache';
 import useArticleStore from '@/stores/article.store';
 import { search } from '@/service/article/article.request';
 
@@ -104,10 +121,12 @@ const searchValue = shallowRef('');
 const debouncedSearchValue = shallowRef('');
 const isDialogOpen = shallowRef(false);
 const isMobileDialog = shallowRef(false);
-const searchHistory = shallowRef<string[]>([]);
-const hoveredIndex = shallowRef(-1);
+const searchHistory = shallowRef<SearchHistoryItem[]>([]);
+const favoriteSearchHistory = shallowRef<SearchHistoryItem[]>([]);
+const activeResultIndex = shallowRef(-1);
 const isComposing = shallowRef(false);
 const shortcutText = computed(() => getSearchShortcutText());
+const favoriteHistoryIds = computed(() => new Set(favoriteSearchHistory.value.map((item) => item.id)));
 
 const articleStore = useArticleStore();
 const router = useRouter();
@@ -147,6 +166,11 @@ const { data: searchData, isLoading, isError } = useQuery({
 });
 
 const searchResults = computed(() => searchData.value || []);
+
+watch(searchResults, (results) => {
+  activeResultIndex.value = results.length ? 0 : -1;
+});
+
 const searchStatusText = computed(() => {
   if (!normalizedDebouncedSearchValue.value) return '';
   if (isLoading.value) return '正在搜索…';
@@ -224,7 +248,7 @@ const openDialog = () => {
 
 const closeDialog = () => {
   isDialogOpen.value = false;
-  hoveredIndex.value = -1;
+  activeResultIndex.value = -1;
 };
 
 const toggleDialog = () => {
@@ -307,30 +331,61 @@ const handleCompositionEnd = () => {
   setTimeout(() => (isComposing.value = false), 100);
 };
 
-const borderColors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#ff6b9d', '#9c27b0', '#00bcd4', '#ff9800', '#795548'];
-
-const getItemStyle = (index: number) => {
-  const color = borderColors[index % borderColors.length];
-  return { borderColor: color, color };
-};
-
 const loadSearchHistory = () => {
   searchHistory.value = LocalCache.getSearchHistory();
+  favoriteSearchHistory.value = LocalCache.getFavoriteSearchHistory();
 };
 
-const selectHistoryItem = (value: string) => {
-  searchValue.value = value;
-  submitSearch();
+const activateHistoryItem = async (item: SearchHistoryItem) => {
+  if (item.articleId !== undefined) {
+    closeDialog();
+    await router.push({ name: 'detail', params: { articleId: item.articleId } });
+    return;
+  }
+
+  searchValue.value = item.value;
+  await nextTick();
+  searchInput.value?.focus();
 };
 
-const removeHistoryItem = (item: string) => {
-  LocalCache.removeSearchHistory(item);
+const toggleFavorite = (item: SearchHistoryItem) => {
+  LocalCache.toggleFavoriteSearchHistory(item);
+  loadSearchHistory();
+};
+
+const removeHistoryItem = (id: string) => {
+  LocalCache.removeSearchHistory(id);
+  loadSearchHistory();
+};
+
+const removeFavoriteItem = (id: string) => {
+  const item = favoriteSearchHistory.value.find((favoriteItem) => favoriteItem.id === id);
+  if (!item) return;
+
+  LocalCache.toggleFavoriteSearchHistory(item);
   loadSearchHistory();
 };
 
 const clearAllHistory = () => {
   LocalCache.clearSearchHistory();
   loadSearchHistory();
+};
+
+const moveResultSelection = (direction: 1 | -1) => {
+  const resultCount = searchResults.value.length;
+  if (!resultCount) {
+    activeResultIndex.value = -1;
+    return;
+  }
+
+  activeResultIndex.value = (activeResultIndex.value + direction + resultCount) % resultCount;
+};
+
+const activateSearchResult = async (item: SearchResultItem) => {
+  LocalCache.addSearchHistory({ value: item.title, articleId: item.id });
+  loadSearchHistory();
+  closeDialog();
+  await router.push({ name: 'detail', params: { articleId: item.id } });
 };
 
 const submitSearch = () => {
@@ -347,12 +402,16 @@ const submitSearch = () => {
   router.push({ path: '/search', query: { q: visibleKeyword } });
 };
 
-const getArticleHref = (item: SearchResultItem) => router.resolve({ name: 'detail', params: { articleId: item.id } }).href;
+const handleSearchEnter = () => {
+  if (isComposing.value) return;
 
-const handleResultClick = (item: SearchResultItem) => {
-  LocalCache.addSearchHistory(item.title);
-  loadSearchHistory();
-  closeDialog();
+  const selectedResult = searchResults.value[activeResultIndex.value];
+  if (selectedResult) {
+    void activateSearchResult(selectedResult);
+    return;
+  }
+
+  submitSearch();
 };
 
 onMounted(() => {
@@ -403,8 +462,39 @@ onUnmounted(() => {
   }
 }
 
+.search-trigger-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
 .search-trigger-icon {
-  flex: 0 0 auto;
+  display: block;
+}
+
+.search-trigger-sparkle {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.55) rotate(-75deg);
+  transform-origin: center;
+  transition:
+    opacity 160ms cubic-bezier(0.25, 1, 0.5, 1),
+    transform 160ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.search-trigger:focus-visible .search-trigger-sparkle {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  transition-duration: 220ms;
 }
 
 .search-shortcut {
@@ -722,6 +812,14 @@ onUnmounted(() => {
   }
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .search-trigger:hover .search-trigger-sparkle {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    transition-duration: 220ms;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .search-trigger,
   .search-dialog-close,
@@ -738,6 +836,11 @@ onUnmounted(() => {
   .search-overlay-enter-from .search-dialog,
   .search-overlay-leave-to .search-dialog {
     transform: none;
+  }
+
+  .search-trigger-sparkle {
+    transform: scale(1) rotate(0deg);
+    transition: none;
   }
 }
 
