@@ -15,7 +15,8 @@
         <div v-if="isDialogOpen" class="search-overlay" @click="closeDialog">
           <section ref="searchDialog" class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索 CoderX" tabindex="-1" @click.stop @keydown="handleDialogKeydown">
             <div class="search-input-shell">
-              <Search class="search-input-icon" :size="24" aria-hidden="true" />
+              <LoaderCircle v-if="isLoading && normalizedDebouncedSearchValue" class="search-loading-icon" :size="22" aria-hidden="true" />
+              <Search v-else class="search-input-icon" :size="22" aria-hidden="true" />
               <input
                 ref="searchInput"
                 v-model="searchValue"
@@ -33,6 +34,9 @@
                 @compositionstart="handleCompositionStart"
                 @compositionend="handleCompositionEnd"
               />
+              <button v-if="searchValue" type="button" class="search-input-clear" aria-label="清空搜索输入" @click="clearSearchInput">
+                <X :size="19" aria-hidden="true" />
+              </button>
               <button v-if="isMobileDialog" ref="searchDialogClose" type="button" class="search-dialog-close" aria-label="关闭搜索面板" @click="closeDialog">
                 <X :size="22" aria-hidden="true" />
               </button>
@@ -62,7 +66,7 @@
                   </div>
                   <div v-else class="no-data-text">未找到相关内容</div>
                 </template>
-                <div v-else class="loading" v-loading="true"></div>
+                <div v-else class="loading">正在搜索…</div>
               </div>
 
               <SearchHistorySection
@@ -89,6 +93,11 @@
                 @remove="removeFavoriteItem"
               />
             </div>
+            <footer class="search-footer" aria-hidden="true">
+              <span class="search-footer-hint"><kbd>↵</kbd> 选择</span>
+              <span class="search-footer-hint"><kbd>↑</kbd><kbd>↓</kbd> 切换</span>
+              <span class="search-footer-hint"><kbd>Esc</kbd> 关闭</span>
+            </footer>
             <p class="search-status" role="status" aria-live="polite" aria-atomic="true">{{ searchStatusText }}</p>
           </section>
         </div>
@@ -98,7 +107,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Search, X } from '@lucide/vue';
+import { LoaderCircle, Search, X } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
 import { useRoute, useRouter } from 'vue-router';
 import SearchHistorySection from './SearchHistorySection.vue';
@@ -371,6 +380,14 @@ const clearAllHistory = () => {
   loadSearchHistory();
 };
 
+const clearSearchInput = async () => {
+  searchValue.value = '';
+  debouncedSearchValue.value = '';
+  activeResultIndex.value = -1;
+  await nextTick();
+  searchInput.value?.focus();
+};
+
 const moveResultSelection = (direction: 1 | -1) => {
   const resultCount = searchResults.value.length;
   if (!resultCount) {
@@ -517,46 +534,54 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: calc(var(--navbarHeight) + 28px) 16px 24px;
-  background: rgba(31, 36, 48, 0.54);
-  backdrop-filter: blur(4px);
+  padding: calc(var(--navbarHeight) + 24px) 16px 24px;
+  background: color-mix(in srgb, var(--text-primary) 14%, rgba(14, 18, 26, 0.42));
+  backdrop-filter: blur(3px);
   overscroll-behavior: contain;
 }
 
 .search-dialog {
-  width: min(720px, 100%);
-  max-height: min(72vh, 680px);
   display: flex;
   flex-direction: column;
+  width: min(640px, 100%);
+  max-height: min(70dvh, 560px);
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--el-color-primary) 44%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--glass-bg-popup) 96%, var(--bg-color-primary));
+  border: 1px solid color-mix(in srgb, var(--border-color-default) 82%, var(--el-color-primary) 18%);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-bg-popup) 97%, var(--bg-color-primary));
   overscroll-behavior: contain;
-  box-shadow:
-    0 22px 70px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.18);
 }
 
 .search-input-shell {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 18px 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-color-list) 78%, transparent);
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color-list) 86%, transparent);
+  transition:
+    border-color 180ms cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 180ms cubic-bezier(0.25, 1, 0.5, 1);
+
   &:focus-within {
-    border-bottom-color: color-mix(in srgb, var(--el-color-primary) 72%, transparent);
-    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--el-color-primary) 48%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--el-color-primary) 76%, transparent);
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--el-color-primary) 44%, transparent);
   }
 }
 
-.search-input-icon {
+.search-input-icon,
+.search-loading-icon {
   color: var(--el-color-primary);
 }
 
+.search-loading-icon {
+  animation: search-spin 800ms linear infinite;
+}
+
+.search-input-clear,
 .search-dialog-close {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -579,151 +604,63 @@ onUnmounted(() => {
 
   &:focus-visible {
     outline: 2px solid var(--el-color-primary);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 }
 
 .search-input {
   min-width: 0;
-  height: 42px;
+  height: 40px;
   border: 0;
   outline: 0;
   color: var(--text-primary);
   background: transparent;
   font: inherit;
-  font-size: 22px;
+  font-size: 18px;
+  line-height: 1.35;
   letter-spacing: 0;
 
   &::placeholder {
-    color: color-mix(in srgb, var(--text-secondary) 58%, transparent);
+    color: var(--text-secondary);
+    opacity: 0.86;
   }
+}
+
+.search-input::-webkit-search-cancel-button {
+  display: none;
 }
 
 .search-panel {
-  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 12px 20px 18px;
-}
+  padding: 12px 14px 14px;
 
-.search-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.header-title {
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.clear-btn {
-  min-height: 32px;
-  padding: 0 4px;
-  border: 0;
-  color: var(--el-color-primary);
-  background: transparent;
-  font-size: 13px;
-
-  &:hover {
-    color: #66b1ff;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--el-color-primary);
-    outline-offset: 2px;
-  }
-}
-
-.history-content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.history-chip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  max-width: 140px;
-}
-
-.history-item {
-  display: inline-flex;
-  align-items: center;
-  max-width: 140px;
-  min-height: 32px;
-  padding: 4px 10px;
-  border: 1px solid currentColor;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--bg-color-primary) 68%, transparent);
-  font-size: 12px;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    background: color-mix(in srgb, currentColor 8%, var(--bg-color-primary));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
-  }
-
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-}
-
-.history-text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.delete-icon {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: #fff;
-  background: #b9b4ae;
-
-  &:hover {
-    background: #f78989;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--el-color-primary);
-    outline-offset: 2px;
+  &:empty {
+    display: none;
   }
 }
 
 .search-result-content {
-  min-height: 44px;
-
-  &.showborder {
-    border-top: 1px solid var(--border-color-list);
-    padding-top: 10px;
-  }
+  flex: 0 0 auto;
 }
 
-.result-item {
+.search-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result-option {
   display: block;
   width: 100%;
-  min-height: 42px;
-  padding: 10px 0;
+  min-height: 44px;
+  padding: 10px 12px;
   border: 0;
+  border-radius: 8px;
   color: var(--text-primary);
   background: transparent;
   font: inherit;
@@ -734,14 +671,19 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition:
+    color 160ms cubic-bezier(0.25, 1, 0.5, 1),
+    background-color 160ms cubic-bezier(0.25, 1, 0.5, 1);
 
-  &:hover {
-    color: #03a9f4;
+  &:hover,
+  &.is-active {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--el-color-primary) 15%, transparent);
   }
 
   &:focus-visible {
     outline: 2px solid var(--el-color-primary);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 }
 
@@ -755,10 +697,7 @@ onUnmounted(() => {
 }
 
 .search-match {
-  padding: 1px 2px;
-  border-radius: 2px;
-  color: #29313a;
-  background-color: #9de0ff;
+  color: var(--el-color-primary);
   font-weight: 700;
 }
 
@@ -766,7 +705,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 72px;
+  min-height: 48px;
   color: var(--text-secondary);
   font-size: 14px;
 }
@@ -776,7 +715,52 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 60px;
+  min-height: 48px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.search-history-section,
+.favorite-history-section {
+  flex: 0 0 auto;
+}
+
+.search-history-section + .favorite-history-section,
+.search-result-content + .search-history-section,
+.search-result-content + .favorite-history-section {
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color-list) 82%, transparent);
+}
+
+.search-footer {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 38px;
+  padding: 6px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color-list) 82%, transparent);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-color-secondary) 54%, transparent);
+  font-size: 12px;
+}
+
+.search-footer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.search-footer kbd {
+  min-width: 20px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  font-family: MapleMono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .search-status {
@@ -789,6 +773,12 @@ onUnmounted(() => {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@keyframes search-spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 .search-overlay-enter-active,
@@ -822,8 +812,10 @@ onUnmounted(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .search-trigger,
+  .search-input-shell,
+  .search-input-clear,
   .search-dialog-close,
-  .history-item,
+  .search-result-option,
   .search-overlay-enter-active,
   .search-overlay-leave-active,
   .search-overlay-enter-active .search-dialog,
@@ -832,7 +824,6 @@ onUnmounted(() => {
   }
 
   .search-trigger:hover,
-  .history-item:hover,
   .search-overlay-enter-from .search-dialog,
   .search-overlay-leave-to .search-dialog {
     transform: none;
@@ -841,6 +832,10 @@ onUnmounted(() => {
   .search-trigger-sparkle {
     transform: scale(1) rotate(0deg);
     transition: none;
+  }
+
+  .search-loading-icon {
+    animation: none;
   }
 }
 
@@ -863,40 +858,36 @@ onUnmounted(() => {
   }
 
   .search-overlay {
-    display: block;
+    display: flex;
+    align-items: flex-start;
     overflow: hidden;
-    padding: 0;
-    background: rgba(31, 36, 48, 0.66);
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .search-dialog {
-    width: 100vw;
-    max-width: 100vw;
-    min-height: 100vh;
-    max-height: none;
-    border-width: 0;
-    border-radius: 0;
-    background: var(--bg-color-primary);
-  }
-
-  @supports (min-height: 100dvh) {
-    .search-dialog {
-      min-height: 100dvh;
-    }
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 12px;
   }
 
   .search-input-shell {
     padding:
-      max(16px, env(safe-area-inset-top))
-      max(16px, env(safe-area-inset-right))
-      14px
-      max(16px, env(safe-area-inset-left));
-    grid-template-columns: 26px minmax(0, 1fr) 3.667rem;
+      10px
+      max(12px, env(safe-area-inset-right))
+      10px
+      max(12px, env(safe-area-inset-left));
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    gap: 6px;
   }
 
   .search-input {
     height: 40px;
-    font-size: 1.5rem;
+    font-size: 1rem;
   }
 
   .search-dialog-close {
@@ -905,13 +896,17 @@ onUnmounted(() => {
   }
 
   .search-panel {
-    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+    padding: 10px 12px 12px;
   }
 
-  .history-chip,
-  .history-item {
-    min-height: 36px;
-    max-width: min(44vw, 180px);
+  .search-footer {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding:
+      7px
+      max(12px, env(safe-area-inset-right))
+      max(7px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 }
 </style>

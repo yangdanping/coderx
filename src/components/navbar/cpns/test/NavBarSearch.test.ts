@@ -413,6 +413,54 @@ describe('NavBarSearch', () => {
     expect(wrapper.get('[role="status"]').text()).toContain('搜索失败，请稍后重试');
   });
 
+  it('switches between search and loading icons while querying', async () => {
+    let resolveSearch!: (value: unknown) => void;
+    vi.mocked(search).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSearch = resolve;
+      }) as never,
+    );
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('vue');
+    await flushPromises();
+
+    expect(wrapper.find('.search-loading-icon').exists()).toBe(true);
+    expect(wrapper.find('.search-input-icon').exists()).toBe(false);
+
+    resolveSearch({ data: [] });
+    await flushPromises();
+
+    expect(wrapper.find('.search-loading-icon').exists()).toBe(false);
+    expect(wrapper.find('.search-input-icon').exists()).toBe(true);
+  });
+
+  it('clears the input without closing the dialog', async () => {
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+    await wrapper.get('.search-input').setValue('Vue');
+    await wrapper.get('.search-input-clear').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get<HTMLInputElement>('.search-input').element.value).toBe('');
+    expect(wrapper.find('.search-dialog').exists()).toBe(true);
+    expect(document.activeElement).toBe(wrapper.get<HTMLInputElement>('.search-input').element);
+  });
+
+  it('renders concise keyboard guidance without provider branding', async () => {
+    const wrapper = await mountSearch();
+
+    await wrapper.get('.search-trigger').trigger('click');
+
+    const footer = wrapper.get('.search-footer');
+    expect(footer.text()).toContain('选择');
+    expect(footer.text()).toContain('切换');
+    expect(footer.text()).toContain('关闭');
+    expect(wrapper.text().toLocaleLowerCase()).not.toContain('algolia');
+  });
+
   it('uses Ctrl+K on non-Apple platforms', async () => {
     const wrapper = await mountSearch('Win32');
 
@@ -466,6 +514,9 @@ describe('NavBarSearch', () => {
     expect(mobileStyles).toMatch(/\.search-shortcut\s*{[\s\S]*?display:\s*none;/);
     expect(mobileStyles).toMatch(/\.search-trigger\s*{[\s\S]*?min-width:\s*3\.667rem;[\s\S]*?height:\s*3\.667rem;/);
     expect(mobileStyles).toMatch(/\.search-dialog-close\s*{[\s\S]*?width:\s*3\.667rem;[\s\S]*?height:\s*3\.667rem;/);
+    expect(mobileStyles).toMatch(/\.search-dialog\s*{[\s\S]*?width:\s*calc\(100vw - 24px\);/);
+    expect(mobileStyles).toMatch(/\.search-dialog\s*{[\s\S]*?max-height:\s*calc\(100dvh - 24px\);/);
+    expect(mobileStyles).not.toMatch(/\.search-dialog\s*{[\s\S]*?min-height:\s*100(?:d)?vh;/);
   });
 
   it('provides a compound focus treatment and landscape safe-area padding', () => {
@@ -475,5 +526,28 @@ describe('NavBarSearch', () => {
     expect(source).toMatch(/\.search-input-shell\s*{[\s\S]*?&:focus-within\s*{[\s\S]*?box-shadow:/);
     expect(mobileStyles).toContain('env(safe-area-inset-left)');
     expect(mobileStyles).toContain('env(safe-area-inset-right)');
+  });
+
+  it('uses compact theme-aware panel dimensions and restrained overlay styling', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+    const historySource = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/SearchHistorySection.vue'), 'utf8');
+    const dialogStyles = source.match(/\.search-dialog\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+    const overlayStyles = source.match(/\.search-overlay\s*{([\s\S]*?)\n}/)?.[1] ?? '';
+
+    expect(dialogStyles).toMatch(/width:\s*min\(640px,\s*100%\)/);
+    expect(dialogStyles).toMatch(/max-height:\s*min\(70dvh,\s*560px\)/);
+    expect(dialogStyles).toContain('var(--glass-bg-popup)');
+    expect(overlayStyles).toContain('color-mix(');
+    expect(overlayStyles).toMatch(/backdrop-filter:\s*blur\([1-3]px\)/);
+    expect(source).toContain('color-mix(');
+    expect(historySource).toContain('var(--text-primary)');
+    expect(historySource).toContain('var(--el-color-primary)');
+    expect(source).not.toContain('组合式 API');
+  });
+
+  it('hides the browser-native search cancel control beside the custom clear button', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavBarSearch.vue'), 'utf8');
+
+    expect(source).toMatch(/\.search-input::?-webkit-search-cancel-button\s*{[\s\S]*?display:\s*none;/);
   });
 });
