@@ -1,3 +1,73 @@
+export const SEARCH_HISTORY_STORAGE_KEY = 'coderx_search_history_v2';
+export const FAVORITE_SEARCH_HISTORY_STORAGE_KEY = 'coderx_favorite_search_history';
+
+const LEGACY_SEARCH_HISTORY_STORAGE_KEY = 'coderx_search_history';
+const SEARCH_HISTORY_LIMIT = 20;
+
+export interface SearchHistoryItem {
+  id: string;
+  value: string;
+  articleId?: string | number;
+}
+
+export type SearchHistoryInput = string | Pick<SearchHistoryItem, 'value' | 'articleId'>;
+
+const toSearchHistoryItem = (input: SearchHistoryInput): SearchHistoryItem | null => {
+  const value = (typeof input === 'string' ? input : input.value).trim();
+  if (!value) return null;
+
+  const articleId = typeof input === 'string' ? undefined : input.articleId;
+  const hasArticleId =
+    (typeof articleId === 'number' && Number.isFinite(articleId)) || (typeof articleId === 'string' && articleId.trim().length > 0);
+
+  if (hasArticleId) {
+    return {
+      id: `article:${String(articleId).trim()}`,
+      value,
+      articleId,
+    };
+  }
+
+  return {
+    id: `query:${value.toLocaleLowerCase()}`,
+    value,
+  };
+};
+
+const parseSearchHistory = (rawValue: string | null): SearchHistoryItem[] | null => {
+  if (rawValue === null) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(rawValue);
+    if (!Array.isArray(parsed)) return [];
+
+    const seenIds = new Set<string>();
+    return parsed
+      .map((item): SearchHistoryItem | null => {
+        if (!item || typeof item !== 'object' || !('value' in item)) return null;
+
+        const candidate = item as { value?: unknown; articleId?: unknown };
+        if (typeof candidate.value !== 'string') return null;
+        if (candidate.articleId !== undefined && typeof candidate.articleId !== 'string' && typeof candidate.articleId !== 'number') {
+          return null;
+        }
+
+        return toSearchHistoryItem({
+          value: candidate.value,
+          articleId: candidate.articleId,
+        });
+      })
+      .filter((item): item is SearchHistoryItem => {
+        if (!item || seenIds.has(item.id)) return false;
+        seenIds.add(item.id);
+        return true;
+      })
+      .slice(0, SEARCH_HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+};
+
 class LocalCache {
   /**
    * 进行本地数据缓存
@@ -41,60 +111,87 @@ class LocalCache {
     window.localStorage.clear();
   }
 
-  /**
-   * 添加搜索记录
-   * @param searchText 搜索文本
-   */
-  static addSearchHistory(searchText: string) {
-    if (!searchText || !searchText.trim()) return;
+  private static readSearchHistory(key: string): SearchHistoryItem[] | null {
+    return parseSearchHistory(window.localStorage.getItem(key));
+  }
 
-    const key = 'coderx_search_history';
-    const maxItems = 20;
-    const trimmedText = searchText.trim();
+  private static writeSearchHistory(key: string, items: SearchHistoryItem[]) {
+    const nextItems = items.slice(0, SEARCH_HISTORY_LIMIT);
+    this.setCache(key, nextItems);
+    return nextItems;
+  }
 
-    // 获取现有搜索记录
-    let searchHistory: string[] = this.getCache(key) || [];
-    // 如果已经存在相同记录，直接返回
-    if (searchHistory.includes(trimmedText)) return;
-    // 添加新记录到开头
-    searchHistory.unshift(trimmedText);
+  private static updateSearchHistory(key: string, currentItems: SearchHistoryItem[], input: SearchHistoryInput) {
+    const item = toSearchHistoryItem(input);
+    if (!item) return currentItems;
 
-    // 限制最大数量
-    if (searchHistory.length > maxItems) {
-      searchHistory = searchHistory.slice(0, maxItems);
+    return this.writeSearchHistory(key, [item, ...currentItems.filter((currentItem) => currentItem.id !== item.id)]);
+  }
+
+  private static migrateLegacySearchHistory() {
+    const legacyRawValue = window.localStorage.getItem(LEGACY_SEARCH_HISTORY_STORAGE_KEY);
+    if (legacyRawValue === null) return [];
+
+    let legacyItems: SearchHistoryItem[] = [];
+    try {
+      const parsed: unknown = JSON.parse(legacyRawValue);
+      if (Array.isArray(parsed)) {
+        legacyItems = parsed
+          .map((item) => (typeof item === 'string' ? toSearchHistoryItem(item) : null))
+          .filter((item): item is SearchHistoryItem => item !== null)
+          .slice(0, SEARCH_HISTORY_LIMIT);
+      }
+    } catch {
+      legacyItems = [];
     }
 
-    // 保存到本地存储
-    this.setCache(key, searchHistory);
+    this.writeSearchHistory(SEARCH_HISTORY_STORAGE_KEY, legacyItems);
+    window.localStorage.removeItem(LEGACY_SEARCH_HISTORY_STORAGE_KEY);
+    return legacyItems;
   }
 
-  /**
-   * 获取搜索记录
-   * @returns 搜索记录数组
-   */
-  static getSearchHistory(): string[] {
-    const key = 'coderx_search_history';
-    return this.getCache(key) || [];
+  static addSearchHistory(input: SearchHistoryInput) {
+    return this.updateSearchHistory(SEARCH_HISTORY_STORAGE_KEY, this.getSearchHistory(), input);
   }
 
-  /**
-   * 删除单个搜索记录
-   * @param searchText 要删除的搜索文本
-   */
-  static removeSearchHistory(searchText: string) {
-    const key = 'coderx_search_history';
-    let searchHistory: string[] = this.getCache(key) || [];
-
-    searchHistory = searchHistory.filter((item) => item !== searchText);
-    this.setCache(key, searchHistory);
+  static getSearchHistory(): SearchHistoryItem[] {
+    const storedItems = this.readSearchHistory(SEARCH_HISTORY_STORAGE_KEY);
+    return storedItems ?? this.migrateLegacySearchHistory();
   }
 
-  /**
-   * 清空所有搜索记录
-   */
+  static removeSearchHistory(id: string) {
+    const nextItems = this.getSearchHistory().filter((item) => item.id !== id);
+    return this.writeSearchHistory(SEARCH_HISTORY_STORAGE_KEY, nextItems);
+  }
+
   static clearSearchHistory() {
-    const key = 'coderx_search_history';
-    this.removeCache(key);
+    this.removeCache(SEARCH_HISTORY_STORAGE_KEY);
+    this.removeCache(LEGACY_SEARCH_HISTORY_STORAGE_KEY);
+  }
+
+  static getFavoriteSearchHistory(): SearchHistoryItem[] {
+    return this.readSearchHistory(FAVORITE_SEARCH_HISTORY_STORAGE_KEY) ?? [];
+  }
+
+  static toggleFavoriteSearchHistory(input: SearchHistoryInput) {
+    const item = toSearchHistoryItem(input);
+    const currentItems = this.getFavoriteSearchHistory();
+    if (!item) return currentItems;
+
+    const isFavorite = currentItems.some((currentItem) => currentItem.id === item.id);
+    if (isFavorite) {
+      return this.writeSearchHistory(
+        FAVORITE_SEARCH_HISTORY_STORAGE_KEY,
+        currentItems.filter((currentItem) => currentItem.id !== item.id),
+      );
+    }
+
+    return this.updateSearchHistory(FAVORITE_SEARCH_HISTORY_STORAGE_KEY, currentItems, item);
+  }
+
+  static isFavoriteSearchHistory(input: SearchHistoryInput) {
+    const item = toSearchHistoryItem(input);
+    return !!item && this.getFavoriteSearchHistory().some((currentItem) => currentItem.id === item.id);
   }
 }
 
