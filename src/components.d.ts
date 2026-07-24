@@ -91,4 +91,7 @@ declare module 'vue' {
     TiptapEditorFlow: typeof import('./components/tiptap-editor-flow/TiptapEditorFlow.vue')['default']
     TiptapToolbar: typeof import('./components/tiptap-editor/TiptapToolbar.vue')['default']
   }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+  }
 }
