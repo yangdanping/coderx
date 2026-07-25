@@ -1,0 +1,23 @@
+{
+  "skill_name": "coderx-raw-content-ops",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "CoderX 的人工智能板块再补 5 篇真实文章，直接抓英文原文和正文图片入本地库，不需要翻译，完成后停在生产部署前。",
+      "expected_output": "Uses the existing backfill-raw path for at most five explicit candidate IDs, preserves English source headings and paragraphs, localizes images, uses existing authors, verifies the local database/API/assets, never calls or downloads Ollama, never changes VPN, and does not deploy.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "把本地数据库里那种只有“摘要 / 为什么值得阅读 / 来源 / 阅读原文”的自动文章清掉，同时确保正常长文和图片不受影响。",
+      "expected_output": "Runs purge-placeholders without --apply first, saves and reviews the full manifest, applies only the exact structural matches, then verifies zero remaining placeholders and valid images; it does not translate content, touch VPN, or mutate production.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "昨天抓的 CoderX 原文文章图片打不开。帮我快速查清楚并修好本地预览，别输出一大串排查日志，也别动线上。",
+      "expected_output": "Runs the bundled preflight first, checks the API process cwd against the asset output directory before hypothesizing about routes, synchronizes only the exact generated local assets when needed, runs the compact verifier, and stops before production without touching Ollama or VPN.",
+      "files": []
+    }
+  ]
+}
