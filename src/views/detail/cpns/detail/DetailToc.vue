@@ -1,17 +1,74 @@
 <template>
   <div class="detail-toc" v-if="titles.length">
     <!-- Desktop View -->
-    <div class="toc-desktop hidden-sm-and-down">
-      <div class="toc-title">目录</div>
-      <div class="toc-list-shell" :style="tocSliderStyle">
-        <span class="toc-active-slider" aria-hidden="true"></span>
-        <ul class="toc-list">
-          <li v-for="item in titles" :key="item.id" :class="['toc-item', `level-${item.level}`, { active: activeId === item.id }]" @click="scrollTo(item.id)">
-            {{ item.title }}
-          </li>
-        </ul>
+    <aside
+      ref="desktopTocRef"
+      :class="[
+        'toc-desktop',
+        'hidden-sm-and-down',
+        {
+          'is-expanded': isDesktopExpanded,
+          'is-pinned': isPinnedOpen,
+        },
+      ]"
+      aria-label="文章目录"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
+    >
+      <button
+        ref="desktopToggleRef"
+        type="button"
+        class="toc-rail-toggle"
+        aria-controls="detail-toc-panel"
+        :aria-expanded="isDesktopExpanded"
+        :aria-label="isPinnedOpen ? '取消固定目录' : '展开并固定目录'"
+        @click="togglePinned"
+      >
+        <span class="visually-hidden">{{ isPinnedOpen ? '取消固定目录' : '展开并固定目录' }}</span>
+        <span class="toc-rail" aria-hidden="true">
+          <span
+            v-for="item in titles"
+            :key="item.id"
+            :class="['toc-rail__tick', `level-${item.level}`, { active: activeId === item.id }]"
+          ></span>
+        </span>
+      </button>
+
+      <div id="detail-toc-panel" class="toc-panel" :aria-hidden="!isDesktopExpanded">
+        <div class="toc-panel__header">
+          <span class="toc-panel__title">目录</span>
+          <span class="toc-panel__progress">{{ activePosition }} / {{ titles.length }}</span>
+          <button
+            type="button"
+            class="toc-panel__toggle"
+            :tabindex="isDesktopExpanded ? 0 : -1"
+            :aria-label="isPinnedOpen ? '取消固定目录' : '固定目录'"
+            :aria-pressed="isPinnedOpen"
+            @click="togglePinned"
+          >
+            {{ isPinnedOpen ? '已固定' : '固定' }}
+          </button>
+        </div>
+
+        <div class="toc-list-shell">
+          <ul class="toc-list">
+            <li v-for="item in titles" :key="item.id" :class="['toc-item', `level-${item.level}`, { active: activeId === item.id }]">
+              <a
+                class="toc-link"
+                :href="`#${item.id}`"
+                :aria-current="activeId === item.id ? 'location' : undefined"
+                :tabindex="isDesktopExpanded ? 0 : -1"
+                @click.prevent="scrollTo(item.id)"
+              >
+                {{ item.title }}
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
-    </div>
+    </aside>
 
     <!-- Mobile View -->
     <div class="toc-mobile hidden-md-and-up">
@@ -47,24 +104,24 @@ const props = defineProps<{
   titles: DetailTocTitle[];
 }>();
 
-const TOC_ITEM_HEIGHT = 40;
-
 const showDrawer = ref(false);
 const activeId = ref(props.titles[0]?.id ?? '');
+const desktopTocRef = ref<HTMLElement | null>(null);
+const desktopToggleRef = ref<HTMLButtonElement | null>(null);
+const isHovered = ref(false);
+const hasFocusWithin = ref(false);
+const isPinnedOpen = ref(false);
+const isDismissed = ref(false);
+let isRestoringDismissedFocus = false;
 
 const activeIndex = computed(() => props.titles.findIndex((item) => item.id === activeId.value));
-const tocSliderStyle = computed(() => {
-  const index = activeIndex.value >= 0 ? activeIndex.value : 0;
-
-  return {
-    '--toc-active-y': `${index * TOC_ITEM_HEIGHT}px`,
-    '--toc-active-opacity': activeIndex.value >= 0 ? '1' : '0',
-  };
-});
+const activePosition = computed(() => (activeIndex.value >= 0 ? activeIndex.value + 1 : 0));
+const isDesktopExpanded = computed(() => !isDismissed.value && (isHovered.value || hasFocusWithin.value || isPinnedOpen.value));
 
 const scrollTo = (id: string) => {
   const el = document.getElementById(id);
   if (el) {
+    activeId.value = id;
     // 减去头部导航的高度，避免遮挡
     const top = el.getBoundingClientRect().top + window.scrollY - 100;
     window.scrollTo({
@@ -77,6 +134,61 @@ const scrollTo = (id: string) => {
 const handleMobileClick = (id: string) => {
   scrollTo(id);
   showDrawer.value = false;
+};
+
+const handleMouseEnter = () => {
+  isHovered.value = true;
+  isDismissed.value = false;
+};
+
+const handleMouseLeave = () => {
+  isHovered.value = false;
+};
+
+const handleFocusIn = () => {
+  hasFocusWithin.value = true;
+  if (!isRestoringDismissedFocus) {
+    isDismissed.value = false;
+  }
+};
+
+const handleFocusOut = (event: FocusEvent) => {
+  const nextTarget = event.relatedTarget;
+  if (!nextTarget || !desktopTocRef.value?.contains(nextTarget as Node)) {
+    hasFocusWithin.value = false;
+  }
+};
+
+const togglePinned = () => {
+  isDismissed.value = false;
+  isPinnedOpen.value = !isPinnedOpen.value;
+};
+
+const dismissDesktopToc = (restoreFocus = false) => {
+  isPinnedOpen.value = false;
+  isDismissed.value = true;
+
+  if (!restoreFocus) return;
+
+  isRestoringDismissedFocus = true;
+  desktopToggleRef.value?.focus({ preventScroll: true });
+  queueMicrotask(() => {
+    isRestoringDismissedFocus = false;
+  });
+};
+
+const handleOutsidePointerDown = (event: PointerEvent) => {
+  const target = event.target;
+  if (!(target instanceof Node) || desktopTocRef.value?.contains(target)) return;
+  if (isDesktopExpanded.value || isPinnedOpen.value) {
+    dismissDesktopToc();
+  }
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape' || (!isDesktopExpanded.value && !isPinnedOpen.value)) return;
+  event.preventDefault();
+  dismissDesktopToc(true);
 };
 
 // 监听滚动，高亮当前标题 (简单实现)
@@ -96,12 +208,16 @@ const handleScroll = () => {
 };
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('keydown', handleKeydown);
+  document.addEventListener('pointerdown', handleOutsidePointerDown);
   handleScroll();
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('keydown', handleKeydown);
+  document.removeEventListener('pointerdown', handleOutsidePointerDown);
 });
 </script>
 
