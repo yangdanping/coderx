@@ -271,8 +271,11 @@ onUnmounted(() => {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--toc-accent-color);
-    outline-offset: 2px;
+    outline: 0;
+  }
+
+  &:focus-visible .toc-rail__tick.active {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--toc-accent-color) 28%, transparent);
   }
 }
 

@@ -44,6 +44,12 @@ describe('article detail table of contents visual contract', () => {
     expect(detailSource).toContain('@media (prefers-reduced-motion: reduce)');
     expect(detailSource).not.toMatch(/transition:[^;]*(width|max-height|height)/);
   });
+
+  it('keeps keyboard focus visible without outlining the full-height rail', () => {
+    expect(detailSource).toMatch(/\.toc-rail-toggle\s*\{[\s\S]*&:focus-visible\s*\{[\s\S]*outline:\s*0/);
+    expect(detailSource).toContain('&:focus-visible .toc-rail__tick.active');
+    expect(detailSource).toMatch(/&:focus-visible \.toc-rail__tick\.active\s*\{[\s\S]*box-shadow:/);
+  });
 });
 
 describe('homepage article TOC demo visual contract', () => {
