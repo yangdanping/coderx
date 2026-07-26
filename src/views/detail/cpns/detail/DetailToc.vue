@@ -28,11 +28,7 @@
       >
         <span class="visually-hidden">{{ isPinnedOpen ? '取消固定目录' : '展开并固定目录' }}</span>
         <span class="toc-rail" aria-hidden="true">
-          <span
-            v-for="item in titles"
-            :key="item.id"
-            :class="['toc-rail__tick', `level-${item.level}`, { active: activeId === item.id }]"
-          ></span>
+          <span v-for="item in titles" :key="item.id" :class="['toc-rail__tick', `level-${item.level}`, { active: activeId === item.id }]"></span>
         </span>
       </button>
 
@@ -95,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ListTree } from '@lucide/vue';
 
 import type { DetailTocTitle } from './types/detail-toc.type';
@@ -190,6 +186,23 @@ const handleKeydown = (event: KeyboardEvent) => {
   event.preventDefault();
   dismissDesktopToc(true);
 };
+
+watch(
+  () => props.titles,
+  (nextTitles) => {
+    if (!nextTitles.some((item) => item.id === activeId.value)) {
+      activeId.value = nextTitles[0]?.id ?? '';
+    }
+  },
+);
+
+watch([activeId, isDesktopExpanded], async ([, expanded]) => {
+  if (!expanded) return;
+
+  await nextTick();
+  const activeLink = desktopTocRef.value?.querySelector<HTMLElement>('.toc-link[aria-current="location"]');
+  activeLink?.scrollIntoView?.({ block: 'nearest' });
+});
 
 // 监听滚动，高亮当前标题 (简单实现)
 const handleScroll = () => {

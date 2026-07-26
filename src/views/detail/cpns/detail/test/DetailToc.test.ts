@@ -160,4 +160,46 @@ describe('DetailToc desktop disclosure', () => {
     await wrapper.get('.toc-list-mobile .toc-item').trigger('click');
     expect(wrapper.find('.drawer-stub').exists()).toBe(false);
   });
+
+  it('falls back to the first heading when titles replace the active heading', async () => {
+    const wrapper = mountDetailToc();
+
+    await wrapper.setProps({
+      titles: [{ id: 'replacement-heading', title: 'Replacement heading', level: 1 }],
+    });
+
+    const replacementLink = wrapper.get('.toc-link');
+    expect(replacementLink.attributes('href')).toBe('#replacement-heading');
+    expect(replacementLink.attributes('aria-current')).toBe('location');
+  });
+
+  it('reveals the active link inside the directory when expanded', async () => {
+    const wrapper = mountDetailToc();
+    const activeLink = wrapper.get<HTMLElement>('.toc-link[aria-current="location"]');
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(activeLink.element, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    await wrapper.get('.toc-rail-toggle').trigger('click');
+    await nextTick();
+    await nextTick();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      block: 'nearest',
+    });
+  });
+
+  it('removes its global listeners on unmount', () => {
+    const removeDocumentListener = vi.spyOn(document, 'removeEventListener');
+    const removeWindowListener = vi.spyOn(window, 'removeEventListener');
+    const wrapper = mountDetailToc();
+
+    wrapper.unmount();
+
+    expect(removeDocumentListener).toHaveBeenCalledWith('pointerdown', expect.any(Function));
+    expect(removeWindowListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+    expect(removeWindowListener).toHaveBeenCalledWith('scroll', expect.any(Function));
+  });
 });
