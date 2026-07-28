@@ -33,6 +33,7 @@ export function useTocScrollSpy({
   const pendingTargetId = shallowRef<string | null>(null);
   const activeId = computed(() => pendingTargetId.value ?? observedId.value);
   let animationFrameId: number | null = null;
+  let isAnimationFrameScheduled = false;
   let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null;
   const interruptKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
@@ -80,11 +81,15 @@ export function useTocScrollSpy({
   };
 
   const onScroll = () => {
-    if (animationFrameId !== null) return;
-    animationFrameId = window.requestAnimationFrame(() => {
-      animationFrameId = null;
-      syncActiveFromScroll();
-    });
+    if (!isAnimationFrameScheduled) {
+      isAnimationFrameScheduled = true;
+      const frameId = window.requestAnimationFrame(() => {
+        isAnimationFrameScheduled = false;
+        animationFrameId = null;
+        syncActiveFromScroll();
+      });
+      if (isAnimationFrameScheduled) animationFrameId = frameId;
+    }
 
     if (!pendingTargetId.value) return;
     if (targetReached()) {
@@ -135,6 +140,8 @@ export function useTocScrollSpy({
     window.removeEventListener('keydown', onKeydown);
     if ('onscrollend' in document) document.removeEventListener('scrollend', onScrollEnd);
     if (animationFrameId !== null) window.cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    isAnimationFrameScheduled = false;
     clearScrollIdleTimer();
   });
 

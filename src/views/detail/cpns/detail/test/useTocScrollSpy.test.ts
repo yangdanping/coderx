@@ -118,6 +118,48 @@ describe('useTocScrollSpy', () => {
     expect(result.activeId.value).toBe('three');
   });
 
+  it('clears pending when a second scroll reaches the target before the scheduled frame runs', () => {
+    let scheduledFrame: FrameRequestCallback | undefined;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrame = callback;
+      return 42;
+    });
+    appendHeading('one', -80, 8_000);
+    appendHeading('two', 300, 10);
+    appendHeading('three', 900, 20);
+    const { result } = mountScrollSpy();
+
+    result.scrollToHeading('three');
+    positions.set('two', 60);
+    positions.set('three', 500);
+    window.dispatchEvent(new Event('scroll'));
+    positions.set('three', 100);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(scheduledFrame).toBeDefined();
+    expect(result.pendingTargetId.value).toBeNull();
+    expect(result.activeId.value).toBe('three');
+  });
+
+  it('resets the idle timer for a second scroll before the scheduled frame runs', () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 42);
+    appendHeading('one', -80, 8_000);
+    appendHeading('two', 300, 10);
+    appendHeading('three', 900, 20);
+    const { result } = mountScrollSpy();
+
+    result.scrollToHeading('three');
+    positions.set('two', 60);
+    positions.set('three', 500);
+    window.dispatchEvent(new Event('scroll'));
+    vi.advanceTimersByTime(100);
+    window.dispatchEvent(new Event('scroll'));
+    vi.advanceTimersByTime(41);
+
+    expect(result.pendingTargetId.value).toBe('three');
+  });
+
   it('finishes from scroll inactivity rather than a click-duration timeout', async () => {
     vi.useFakeTimers();
     appendHeading('one', -80, 8_000);
