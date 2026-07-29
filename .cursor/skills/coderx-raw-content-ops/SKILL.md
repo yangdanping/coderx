@@ -60,8 +60,10 @@ Never print or persist the password.
 
 ### 1. Establish the exact batch
 
-If published candidate IDs already exist, use them directly. Do not browse for
-replacement sources or recollect feeds.
+If candidate IDs already exist, use them directly. Do not browse for
+replacement sources or recollect feeds. `backfill-raw` accepts either unmapped
+`pending` candidates for new publication or mapped `published` candidates for
+in-place replacement.
 
 If candidates do not exist, collect without enrichment:
 
@@ -70,15 +72,18 @@ pnpm ingest collect --days 30 --limit 10 --per-source-limit 2
 pnpm ingest list --status pending,published --limit 20
 ```
 
-Do not run `enrich`. Approval/publication is a separate stage and requires the
-existing configured author and `人工智能` tag.
+Do not run `enrich`. Raw publication requires existing configured authors and
+the existing `人工智能` tag.
 
-Before replacement, confirm:
+Before mutation, confirm:
 
-- every requested candidate is already mapped to a published article;
+- every requested candidate is either unmapped `pending` or correctly mapped
+  `published`;
 - canonical URLs are unique;
+- sources are distinct within the batch;
 - there are 1–5 candidate IDs;
 - the author pool contains enough distinct existing user IDs.
+- the `人工智能` tag already exists.
 
 ### 2. Import raw source content
 
@@ -90,16 +95,18 @@ PGUSER=postgres \
 PGPASSWORD='<local password>' \
 INGEST_AUTHOR_IDS='1,2,3,4,5' \
 PUBLIC_API_ORIGIN='http://192.168.3.96:8000' \
-pnpm ingest backfill-raw --ids '70,21,54,149,60' --limit 5
+pnpm ingest backfill-raw --ids '72,3,35,23,55' --limit 5
 ```
 
 Replace IDs and authors with the reviewed batch. `backfill-raw` must retain
 readable source structure, write editable Tiptap JSON, download up to three
-useful images per article, create JPEG thumbnails, and update each article
-transactionally.
+useful images per article, create JPEG thumbnails, and transactionally create
+an article for an eligible `pending` candidate or update the mapped article for
+a `published` candidate.
 
 Do not retry a failed source blindly. Record the candidate ID and concise root
-cause, leave its current article unchanged, and continue with other candidates.
+cause, leave a pending candidate unmapped or its current article unchanged, and
+continue with other candidates.
 
 ### 3. Clean fixed placeholders only when requested
 
@@ -164,7 +171,7 @@ frontend builds.
 |---|---|---|
 | Source extraction fails | HTTP status, final canonical URL, readable character count | Switching to translation or inventing content |
 | No usable image | Content type, decoded dimensions, local staged file count | Downloading random unrelated cover art |
-| Article unchanged | Candidate publication mapping and transaction error | Direct ad-hoc SQL mutation |
+| Article not created or unchanged | Candidate eligibility/mapping and transaction error | Direct ad-hoc SQL mutation |
 | Image row exists but URL fails | API process cwd and exact physical filename | Guessing about router order |
 | Slow model or model download | Stop the command and confirm `backfill-raw` | Waiting for Ollama |
 | One candidate fails | Isolate it and finish the remaining reviewed IDs | Restarting the entire batch |
@@ -176,8 +183,9 @@ Keep task updates compact:
 1. Start: batch size, backend directory, local-only boundary.
 2. Progress: one line only when the phase changes.
 3. Blocker: candidate ID, failing boundary, and next safe action.
-4. Finish: updated/deleted/failed counts, article IDs, image count, verification
-   result, branch, and explicit statement that production was untouched.
+4. Finish: created/updated/deleted/failed counts, candidate and article IDs,
+   image count, verification result, branch, and explicit statement that
+   production was untouched.
 
 Suppress normal per-image HTTP lines and successful per-test output. Show
 detailed logs only for failures. Do not repeatedly narrate unchanged state.
