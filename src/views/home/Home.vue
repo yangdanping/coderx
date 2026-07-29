@@ -10,11 +10,28 @@
               class="title-word title-word-sizer"
               :frame="titleWidthReserve"
               :target="titleWidthReserve"
-              accent-outline
+              accent-acrylic
               :accent-gradient-start-offset="titleWidthReserve === 'CoderX' ? '30%' : '20%'"
+              :accent-default-tilt-x="-3"
+              :accent-default-tilt-y="6"
+              :accent-depth-x="5"
+              :accent-depth-y="5"
+              :accent-max-pointer-tilt="7"
               aria-hidden="true"
             />
-            <ScrambleFrameText class="title-word" :frame="frame" :target="target" accent-outline :accent-gradient-start-offset="target === 'CoderX' ? '30%' : '20%'" />
+            <ScrambleFrameText
+              class="title-word"
+              :frame="frame"
+              :target="target"
+              accent-acrylic
+              accent-follow-pointer
+              :accent-gradient-start-offset="target === 'CoderX' ? '30%' : '20%'"
+              :accent-default-tilt-x="-3"
+              :accent-default-tilt-y="6"
+              :accent-depth-x="5"
+              :accent-depth-y="5"
+              :accent-max-pointer-tilt="7"
+            />
           </div>
           <HomeExploreLink class="title-explore-link" />
         </div>
@@ -233,7 +250,7 @@ $TitleSize: 2em;
           }
 
           .title-word :deep(.scramble-last-character),
-          .title-word :deep(.scramble-accent-character:not(.scramble-accent-outline)) {
+          .title-word :deep(.scramble-accent-character:not(.scramble-accent-outline):not(.scramble-accent-acrylic)) {
             background-image: var(--active-x-gradient);
             -webkit-background-clip: text;
             background-clip: text;

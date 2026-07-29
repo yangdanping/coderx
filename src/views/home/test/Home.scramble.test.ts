@@ -86,13 +86,31 @@ describe('Home scramble title', () => {
   it('keeps the title and retro component in the existing hero layout', () => {
     const wrapper = mountHome();
     const titleWords = wrapper.findAllComponents(ScrambleFrameText);
+    const [sizer, visible] = titleWords;
 
     expect(wrapper.get('.title-line-2').exists()).toBe(true);
     expect(titleWords).toHaveLength(2);
-    expect(titleWords.every((titleWord) => titleWord.props('accentOutline') === true)).toBe(true);
-    expect(titleWords[0]?.classes()).toContain('title-word-sizer');
-    expect(titleWords[1]?.classes()).toContain('title-word');
-    expect(titleWords[1]?.classes()).not.toContain('title-word-sizer');
+    expect(sizer?.props()).toMatchObject({
+      accentAcrylic: true,
+      accentFollowPointer: false,
+      accentDefaultTiltX: -3,
+      accentDefaultTiltY: 6,
+      accentDepthX: 5,
+      accentDepthY: 5,
+      accentMaxPointerTilt: 7,
+    });
+    expect(visible?.props()).toMatchObject({
+      accentAcrylic: true,
+      accentFollowPointer: true,
+      accentDefaultTiltX: -3,
+      accentDefaultTiltY: 6,
+      accentDepthX: 5,
+      accentDepthY: 5,
+      accentMaxPointerTilt: 7,
+    });
+    expect(sizer?.classes()).toContain('title-word-sizer');
+    expect(visible?.classes()).toContain('title-word');
+    expect(visible?.classes()).not.toContain('title-word-sizer');
     expect(wrapper.getComponent({ name: 'RetroComputerShader' }).classes()).toContain('shader');
   });
 
@@ -161,6 +179,7 @@ describe('Home scramble title', () => {
     expect(homeSource).toContain('width: var(--scramble-x-cell-width) !important');
     expect(homeSource).toContain('margin-left: var(--scramble-x-gap)');
     expect(homeSource).toContain('padding-right: var(--scramble-x-right-space)');
+    expect(homeSource).toContain(':not(.scramble-accent-outline):not(.scramble-accent-acrylic)');
   });
 
   it('uses content-driven title sizing and stacks before the hero overlaps', () => {
