@@ -1,9 +1,35 @@
 import { mount } from '@vue/test-utils';
 import { defineComponent } from 'vue';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import ScrambleAcrylicGlyph from '../ScrambleAcrylicGlyph.vue';
 import ScrambleFrameText from '../ScrambleFrameText.vue';
 
+function stubMotionCapabilities({ finePointer = true, reducedMotion = false } = {}) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => {
+      const matches = query === '(pointer: fine)' ? finePointer : query === '(prefers-reduced-motion: reduce)' ? reducedMotion : false;
+
+      return {
+        matches,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    }),
+  );
+}
+
 describe('ScrambleFrameText', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it('renders one stable cell per controlled frame character', () => {
     const wrapper = mount(ScrambleFrameText, {
       props: {
@@ -65,6 +91,147 @@ describe('ScrambleFrameText', () => {
     expect(gradient?.get('.scramble-outline-gradient-end').attributes('offset')).toBe('100%');
     expect(secondTitle?.get('linearGradient').attributes('id')).not.toBe(gradientId);
     expect(secondTitle?.get('.scramble-outline-gradient-start').attributes('offset')).toBe('30%');
+  });
+
+  it('applies acrylic material to the live target-index scramble character', () => {
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'Writerケ',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentDepthX: 6,
+        accentDepthY: 4,
+      },
+    });
+    const accentCell = wrapper.get('.scramble-accent-character');
+
+    expect(accentCell.classes()).toContain('scramble-accent-acrylic');
+    expect(wrapper.getComponent(ScrambleAcrylicGlyph).props()).toMatchObject({
+      character: 'ケ',
+      depthX: 6,
+      depthY: 4,
+    });
+  });
+
+  it('tilts toward a fine pointer and returns to the configured default orientation', async () => {
+    stubMotionCapabilities();
+    let frameCallback: FrameRequestCallback | undefined;
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      frameCallback = callback;
+      return 17;
+    });
+    const cancelFrame = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', requestFrame);
+    vi.stubGlobal('cancelAnimationFrame', cancelFrame);
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'WriterX',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentFollowPointer: true,
+        accentDefaultTiltX: -3,
+        accentDefaultTiltY: 6,
+        accentDepthX: 5,
+        accentDepthY: 5,
+        accentMaxPointerTilt: 7,
+      },
+    });
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    wrapper.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 200, clientY: 0 }));
+    await wrapper.vm.$nextTick();
+    expect(requestFrame).toHaveBeenCalledTimes(1);
+    frameCallback?.(0);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-x: 4deg');
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 13deg');
+    expect(wrapper.getComponent(ScrambleAcrylicGlyph).props()).toMatchObject({
+      depthX: 3.5,
+      depthY: 6.5,
+    });
+
+    await wrapper.trigger('pointerleave');
+
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-x: -3deg');
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 6deg');
+    expect(wrapper.getComponent(ScrambleAcrylicGlyph).props()).toMatchObject({
+      depthX: 5,
+      depthY: 5,
+    });
+    expect(cancelFrame).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { label: 'pointer following is disabled', followPointer: false, finePointer: true, reducedMotion: false },
+    { label: 'the pointer is not fine', followPointer: true, finePointer: false, reducedMotion: false },
+    { label: 'reduced motion is requested', followPointer: true, finePointer: true, reducedMotion: true },
+  ])('keeps the configured default orientation when $label', async ({ followPointer, finePointer, reducedMotion }) => {
+    stubMotionCapabilities({ finePointer, reducedMotion });
+    const requestFrame = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', requestFrame);
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'WriterX',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentFollowPointer: followPointer,
+        accentDefaultTiltX: -4,
+        accentDefaultTiltY: 5,
+      },
+    });
+
+    wrapper.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 120, clientY: 10 }));
+    await wrapper.vm.$nextTick();
+
+    expect(requestFrame).not.toHaveBeenCalled();
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-x: -4deg');
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 5deg');
+  });
+
+  it('cancels a pending pointer frame when unmounted', async () => {
+    stubMotionCapabilities();
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 29),
+    );
+    const cancelFrame = vi.fn();
+    vi.stubGlobal('cancelAnimationFrame', cancelFrame);
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'WriterX',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentFollowPointer: true,
+      },
+    });
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    wrapper.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 150, clientY: 25 }));
+    await wrapper.vm.$nextTick();
+    wrapper.unmount();
+
+    expect(cancelFrame).toHaveBeenCalledWith(29);
   });
 
   it('keeps ordinary text rendering when the outline is disabled', () => {

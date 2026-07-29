@@ -1,5 +1,133 @@
+<script setup lang="ts">
+import ScrambleAcrylicGlyph from './ScrambleAcrylicGlyph.vue';
+
+const props = withDefaults(
+  defineProps<{
+    as?: string;
+    frame: string;
+    target: string;
+    accentOutline?: boolean;
+    accentAcrylic?: boolean;
+    accentFollowPointer?: boolean;
+    accentGradientStartOffset?: string;
+    accentDefaultTiltX?: number;
+    accentDefaultTiltY?: number;
+    accentDepthX?: number;
+    accentDepthY?: number;
+    accentMaxPointerTilt?: number;
+  }>(),
+  {
+    as: 'span',
+    accentOutline: false,
+    accentAcrylic: false,
+    accentFollowPointer: false,
+    accentGradientStartOffset: '20%',
+    accentDefaultTiltX: -3,
+    accentDefaultTiltY: 6,
+    accentDepthX: 5,
+    accentDepthY: 5,
+    accentMaxPointerTilt: 7,
+  },
+);
+
+const characters = computed(() => Array.from(props.frame));
+const accentGradientId = `scramble-accent-${useId()}`;
+const accentIndex = computed(() => {
+  const targetLength = Array.from(props.target).length;
+
+  return targetLength > 0 ? targetLength - 1 : -1;
+});
+
+const tiltX = shallowRef(props.accentDefaultTiltX);
+const tiltY = shallowRef(props.accentDefaultTiltY);
+const depthX = shallowRef(props.accentDepthX);
+const depthY = shallowRef(props.accentDepthY);
+let pointerFrameId: number | null = null;
+let pendingPointer: { x: number; y: number } | null = null;
+
+const acrylicStyle = computed(() => ({
+  '--scramble-acrylic-tilt-x': `${tiltX.value}deg`,
+  '--scramble-acrylic-tilt-y': `${tiltY.value}deg`,
+}));
+
+function resetAcrylicOrientation() {
+  tiltX.value = props.accentDefaultTiltX;
+  tiltY.value = props.accentDefaultTiltY;
+  depthX.value = props.accentDepthX;
+  depthY.value = props.accentDepthY;
+}
+
+function canFollowPointer() {
+  if (typeof window === 'undefined' || !props.accentAcrylic || !props.accentFollowPointer) return false;
+
+  return window.matchMedia?.('(pointer: fine)').matches === true && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches !== true;
+}
+
+function clampUnit(value: number) {
+  return Math.min(1, Math.max(-1, value));
+}
+
+function roundOrientation(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function applyPendingPointer() {
+  pointerFrameId = null;
+  if (!pendingPointer) return;
+
+  const { x, y } = pendingPointer;
+  pendingPointer = null;
+  tiltX.value = roundOrientation(props.accentDefaultTiltX - y * props.accentMaxPointerTilt);
+  tiltY.value = roundOrientation(props.accentDefaultTiltY + x * props.accentMaxPointerTilt);
+  depthX.value = roundOrientation(props.accentDepthX - x * 1.5);
+  depthY.value = roundOrientation(props.accentDepthY - y * 1.5);
+}
+
+function handlePointerMove(event: PointerEvent) {
+  if (!canFollowPointer()) return;
+
+  const target = event.currentTarget;
+  if (!(target instanceof HTMLElement)) return;
+  const bounds = target.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return;
+
+  pendingPointer = {
+    x: clampUnit(((event.clientX - bounds.left) / bounds.width) * 2 - 1),
+    y: clampUnit(((event.clientY - bounds.top) / bounds.height) * 2 - 1),
+  };
+  if (pointerFrameId === null) {
+    pointerFrameId = requestAnimationFrame(applyPendingPointer);
+  }
+}
+
+function handlePointerLeave() {
+  pendingPointer = null;
+  if (pointerFrameId !== null) {
+    cancelAnimationFrame(pointerFrameId);
+    pointerFrameId = null;
+  }
+  resetAcrylicOrientation();
+}
+
+watch(
+  () => [props.accentDefaultTiltX, props.accentDefaultTiltY, props.accentDepthX, props.accentDepthY],
+  resetAcrylicOrientation,
+);
+
+onBeforeUnmount(() => {
+  if (pointerFrameId !== null) cancelAnimationFrame(pointerFrameId);
+});
+</script>
+
 <template>
-  <component :is="props.as" :data-scramble-word="props.target" :aria-label="props.target" class="scramble-frame-text">
+  <component
+    :is="props.as"
+    :data-scramble-word="props.target"
+    :aria-label="props.target"
+    class="scramble-frame-text"
+    @pointermove="handlePointerMove"
+    @pointerleave="handlePointerLeave"
+  >
     <span
       v-for="(character, index) in characters"
       :key="index"
@@ -7,11 +135,20 @@
       :class="{
         'scramble-accent-character': index === accentIndex,
         'scramble-accent-outline': props.accentOutline && index === accentIndex,
+        'scramble-accent-acrylic': props.accentAcrylic && index === accentIndex,
       }"
+      :style="props.accentAcrylic && index === accentIndex ? acrylicStyle : undefined"
       aria-hidden="true"
     >
+      <ScrambleAcrylicGlyph
+        v-if="props.accentAcrylic && index === accentIndex"
+        :character="character"
+        :gradient-start-offset="props.accentGradientStartOffset"
+        :depth-x="depthX"
+        :depth-y="depthY"
+      />
       <svg
-        v-if="props.accentOutline && index === accentIndex"
+        v-else-if="props.accentOutline && index === accentIndex"
         class="scramble-outline-glyph"
         viewBox="0 0 70 100"
         preserveAspectRatio="xMidYMid meet"
@@ -41,31 +178,6 @@
   </component>
 </template>
 
-<script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    as?: string;
-    frame: string;
-    target: string;
-    accentOutline?: boolean;
-    accentGradientStartOffset?: string;
-  }>(),
-  {
-    as: 'span',
-    accentOutline: false,
-    accentGradientStartOffset: '20%',
-  },
-);
-
-const characters = computed(() => Array.from(props.frame));
-const accentGradientId = `scramble-accent-${useId()}`;
-const accentIndex = computed(() => {
-  const targetLength = Array.from(props.target).length;
-
-  return targetLength > 0 ? targetLength - 1 : -1;
-});
-</script>
-
 <style scoped>
 .scramble-frame-text {
   white-space: pre-wrap;
@@ -91,6 +203,14 @@ const accentIndex = computed(() => {
   overflow: visible;
 }
 
+.scramble-accent-acrylic :deep(.scramble-acrylic-glyph) {
+  transform: perspective(420px) rotateX(var(--scramble-acrylic-tilt-x)) rotateY(var(--scramble-acrylic-tilt-y));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 160ms cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
 .scramble-outline-gradient-start {
   stop-color: var(--scramble-accent-gradient-start, currentColor);
 }
@@ -106,5 +226,11 @@ const accentIndex = computed(() => {
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scramble-accent-acrylic :deep(.scramble-acrylic-glyph) {
+    transition: none;
+  }
 }
 </style>
