@@ -13,7 +13,7 @@
       <svg
         v-if="props.accentOutline && index === accentIndex"
         class="scramble-outline-glyph"
-        viewBox="0 0 100 100"
+        viewBox="0 0 70 100"
         preserveAspectRatio="xMidYMid meet"
         focusable="false"
         aria-hidden="true"
@@ -24,7 +24,15 @@
             <stop class="scramble-outline-gradient-end" offset="100%" />
           </linearGradient>
         </defs>
-        <text class="scramble-outline-character" x="50" y="86" text-anchor="middle" fill="none" :stroke="`url(#${accentGradientId})`">
+        <text
+          class="scramble-outline-character"
+          x="35"
+          y="86"
+          font-size="100"
+          text-anchor="middle"
+          fill="none"
+          :stroke="`url(#${accentGradientId})`"
+        >
           {{ character }}
         </text>
       </svg>
@@ -93,7 +101,6 @@ const accentIndex = computed(() => {
 
 .scramble-outline-character {
   font-family: sans-serif;
-  font-size: 100px;
   font-style: oblique;
   stroke-width: clamp(1px, 0.015em, 2px);
   stroke-linecap: round;

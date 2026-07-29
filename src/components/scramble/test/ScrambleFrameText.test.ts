@@ -48,13 +48,17 @@ describe('ScrambleFrameText', () => {
     );
     const [firstTitle, secondTitle] = wrapper.findAllComponents(ScrambleFrameText);
     const accentCell = firstTitle?.findAll('.scrambl-cell').at(7);
+    const outlineGlyph = accentCell?.get('.scramble-outline-glyph');
     const gradient = firstTitle?.get('linearGradient');
     const gradientId = gradient?.attributes('id');
     const outlineCharacter = firstTitle?.get('.scramble-outline-character');
 
     expect(accentCell?.classes()).toContain('scramble-accent-outline');
-    expect(accentCell?.get('.scramble-outline-glyph').exists()).toBe(true);
+    expect(outlineGlyph?.exists()).toBe(true);
+    expect(outlineGlyph?.attributes('viewBox')).toBe('0 0 70 100');
     expect(outlineCharacter?.text()).toBe('X');
+    expect(outlineCharacter?.attributes('x')).toBe('35');
+    expect(outlineCharacter?.attributes('font-size')).toBe('100');
     expect(outlineCharacter?.attributes('fill')).toBe('none');
     expect(outlineCharacter?.attributes('stroke')).toBe(`url(#${gradientId})`);
     expect(gradient?.get('.scramble-outline-gradient-start').attributes('offset')).toBe('20%');
