@@ -22,7 +22,7 @@
       <hr />
       <div class="brief">
         <div>Power By ⚡⚡yangdanping⚡⚡</div>
-        <div>Email📧:1240645840@qq.com</div>
+        <div>Email📧:ydp9801@gmail.com</div>
         <div class="btn" role="button" @click="goGitHub">GitHub😺:{{ githubUrl }}</div>
       </div>
     </div>

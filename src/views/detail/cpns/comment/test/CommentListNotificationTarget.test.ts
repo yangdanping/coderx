@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing';
 import { flushPromises, mount } from '@vue/test-utils';
-import { defineComponent, h, reactive } from 'vue';
+import { defineComponent, h, reactive, readonly } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { IComment } from '@/service/comment/comment.request';
@@ -84,6 +84,7 @@ vi.mock('../CommentListItem.vue', () => ({
 }));
 
 import CommentList from '../CommentList.vue';
+import useArticleStore from '@/stores/article.store';
 
 class MockIntersectionObserver {
   observe = vi.fn();
@@ -186,5 +187,60 @@ describe('CommentList notification target', () => {
     expect(loadedItems[0]?.attributes('data-target-reply-id')).toBe('');
     expect(loadedItems[1]?.attributes('data-comment-id')).toBe('202');
     expect(loadedItems[1]?.attributes('data-target-reply-id')).toBe('909');
+  });
+
+  it('syncs the comment count without mutating a readonly article query result', async () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        article: {
+          article: {},
+        },
+        comment: {
+          activeReplyId: null,
+          activeEditId: null,
+        },
+      },
+    });
+    const articleStore = useArticleStore(pinia);
+    articleStore.article = readonly({
+      id: 12,
+      commentCount: 0,
+    }) as typeof articleStore.article;
+    commentHarness.data.value = { pages: [] };
+    commentHarness.hasNextPage.value = false;
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const wrapper = mount(CommentList, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          ElButton: true,
+          ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
+          ElDropdownItem: { template: '<button><slot /></button>' },
+          ElDropdownMenu: { template: '<div><slot /></div>' },
+          ElIcon: { template: '<span><slot /></span>' },
+          ElSkeleton: true,
+        },
+      },
+    });
+
+    commentHarness.data.value = {
+      pages: [
+        {
+          items: [createComment(101)],
+          hasMore: false,
+          nextCursor: null,
+          totalCount: 2,
+        },
+      ],
+    };
+    await flushPromises();
+
+    expect(articleStore.article.commentCount).toBe(2);
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('commentCount'), expect.anything());
+
+    wrapper.unmount();
+    warnSpy.mockRestore();
   });
 });

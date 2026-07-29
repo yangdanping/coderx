@@ -20,7 +20,7 @@
 $detail-readable-max: min(1100px, 60vw);
 
 /// 窄屏下正文可读列最大宽度
-$detail-readable-narrow-max: min(90%, 1000px);
+$detail-readable-narrow-max: 100%;
 
 /// 左侧 DetailPanel 所在列的最小宽度(保证 sticky 面板始终有位置)
 $detail-panel-col-min: 90px;
@@ -33,6 +33,9 @@ $detail-layout-gap: 20px;
 
 /// 正文/评论区横向内边距(桌面)
 $detail-content-padding: 24px;
+
+/// 移动端正文安全边距
+$detail-mobile-gutter: clamp(12px, 4vw, 16px);
 
 // ---------- 断点 ----------
 

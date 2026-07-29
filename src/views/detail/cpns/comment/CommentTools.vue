@@ -1,26 +1,31 @@
 <template>
   <div class="comment-tools">
     <el-dropdown trigger="click" @command="handleCommand">
-      <el-icon style="cursor: pointer" size="20px"><MoreHorizontal /></el-icon>
+      <button class="tools-trigger" type="button" aria-label="更多评论操作">
+        <el-icon aria-hidden="true" size="20px"><MoreHorizontal /></el-icon>
+      </button>
       <template #dropdown>
         <el-dropdown-menu v-if="isOwner">
           <el-dropdown-item command="edit">
-            <el-icon size="20px"><Edit /></el-icon>
+            <el-icon aria-hidden="true" size="20px"><Edit /></el-icon>
+            <span>编辑</span>
           </el-dropdown-item>
           <el-dropdown-item command="remove">
-            <el-icon size="20px"><Trash2 /></el-icon>
+            <el-icon aria-hidden="true" size="20px"><Trash2 /></el-icon>
+            <span>删除</span>
           </el-dropdown-item>
         </el-dropdown-menu>
         <el-dropdown-menu v-else>
           <el-dropdown-item command="report">
-            <el-icon size="20px"><AlertTriangle /></el-icon>
+            <el-icon aria-hidden="true" size="20px"><AlertTriangle /></el-icon>
+            <span>举报</span>
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>
 
     <!-- 编辑对话框 -->
-    <el-dialog width="50%" title="修改我的评论" v-model="isShowEdit" append-to-body destroy-on-close center>
+    <el-dialog width="min(92vw, 640px)" title="修改我的评论" v-model="isShowEdit" append-to-body destroy-on-close center>
       <TiptapEditorComment @update:content="(valueHtml) => (editContent = valueHtml)" :editComment="comment.content" />
       <el-button @click="submitEdit" :loading="isUpdating" type="primary" style="margin-top: 10px">修改</el-button>
     </el-dialog>
@@ -135,5 +140,32 @@ const submitReport = ({ reportOptions, otherReport }: { reportOptions: string[];
   position: absolute;
   right: 30px;
   top: 20px;
+}
+
+.tools-trigger {
+  display: inline-flex;
+  width: 44PX;
+  height: 44PX;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 992px) {
+  .comment-tools {
+    position: static;
+    width: 44PX;
+    height: 44PX;
+  }
 }
 </style>

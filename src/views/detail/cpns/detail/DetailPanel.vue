@@ -76,6 +76,8 @@ const onClickOutside = () => {
 </script>
 
 <style lang="scss" scoped>
+@use '@/assets/css/detail-layout' as *;
+
 // 布局定位(左侧栏 / 水平对齐)由父级 .detail-main grid 负责,
 // 本组件只关心"随阅读滚动时贴在视口偏上中部"这一行为.
 // 因此不再使用 position: fixed + top:50% + translateY(-50%),
@@ -89,5 +91,23 @@ const onClickOutside = () => {
   justify-content: center;
   gap: 20px;
   font-size: 30px;
+
+  @media (max-width: $detail-breakpoint-tablet) {
+    position: static;
+    min-width: 0;
+    min-height: 60px;
+    box-sizing: border-box;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 4px;
+    padding-block: 8px;
+    border-block: 1px solid var(--border-color-list);
+
+    :deep(.icon) {
+      min-width: 44PX;
+      min-height: 44PX;
+      justify-content: center;
+    }
+  }
 }
 </style>

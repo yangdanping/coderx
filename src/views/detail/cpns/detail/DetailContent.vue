@@ -299,17 +299,17 @@ watch(
   z-index: var(--z-popover, 2100);
   height: 28px;
   padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--el-color-primary) 45%, transparent);
+  border: 1px solid var(--el-border-color);
   border-radius: 4px;
-  background: var(--bg-color-primary);
-  color: var(--el-color-primary);
+  background: var(--bg-color-secondary);
+  color: var(--text-primary);
   font-size: 12px;
   line-height: 26px;
   cursor: var(--cursorPointer);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   &:hover {
-    background: color-mix(in srgb, var(--el-color-primary) 10%, var(--bg-color-primary));
+    background: var(--bg-color-primary);
   }
 }
 </style>

@@ -1,14 +1,26 @@
 <template>
   <div class="comment-action">
     <!-- 点赞 -->
-    <div class="action-item" @click="handleLike">
-      <Icon type="like" :isActive="isLiked" :label="comment.likes ? String(comment.likes) : '点赞'" />
-    </div>
+    <button
+      class="action-item"
+      type="button"
+      :aria-label="isLiked ? '取消点赞' : '点赞'"
+      :aria-pressed="isLiked"
+      @click="handleLike"
+    >
+      <Icon role="presentation" aria-hidden="true" type="like" :isActive="isLiked" :label="comment.likes ? String(comment.likes) : '点赞'" />
+    </button>
 
     <!-- 回复 -->
-    <div class="action-item" @click="handleReply">
-      <Icon type="comment" :label="isActiveReply ? '取消回复' : '回复'" :isActive="isActiveReply" />
-    </div>
+    <button
+      class="action-item"
+      type="button"
+      :aria-label="isActiveReply ? '取消回复' : '回复'"
+      :aria-expanded="isActiveReply"
+      @click="handleReply"
+    >
+      <Icon role="presentation" aria-hidden="true" type="comment" :label="isActiveReply ? '取消回复' : '回复'" :isActive="isActiveReply" />
+    </button>
   </div>
 </template>
 
@@ -79,7 +91,32 @@ const handleReply = () => {
   margin-top: 8px;
 
   .action-item {
+    display: inline-flex;
+    min-width: 44PX;
+    min-height: 44PX;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--el-color-primary);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+  }
+
+  @media (max-width: 992px) {
+    gap: 4px;
+    margin-top: 4px;
+
+    .action-item {
+      font-size: 14PX;
+    }
   }
 }
 </style>

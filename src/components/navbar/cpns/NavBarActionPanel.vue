@@ -1,6 +1,7 @@
 <template>
   <div ref="rootRef" class="navbar-action-panel">
     <button
+      ref="triggerRef"
       type="button"
       class="navbar-action-panel__trigger"
       :aria-label="ariaLabel"
@@ -12,7 +13,14 @@
     </button>
 
     <Transition name="navbar-action-panel">
-      <section v-if="isOpen" class="navbar-action-panel__popup" role="dialog" :aria-label="title">
+      <section
+        v-if="isOpen"
+        ref="popupRef"
+        class="navbar-action-panel__popup"
+        role="dialog"
+        :aria-label="title"
+        :style="popupStyle"
+      >
         <div class="navbar-action-panel__header">
           <div class="navbar-action-panel__title">
             <slot name="title-icon"></slot>
@@ -50,8 +58,47 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+const MOBILE_BREAKPOINT = 768;
+const POPUP_GAP = 12;
+const VIEWPORT_PADDING = 12;
+
 const rootRef = ref<HTMLElement | null>(null);
+const triggerRef = ref<HTMLButtonElement | null>(null);
+const popupRef = ref<HTMLElement | null>(null);
+const popupStyle = ref<Record<string, string>>({});
 const isOpen = ref(false);
+
+const isMobileViewport = () => window.innerWidth <= MOBILE_BREAKPOINT;
+
+const updatePopupPosition = () => {
+  if (!isOpen.value || isMobileViewport()) {
+    popupStyle.value = {};
+    return;
+  }
+
+  const trigger = triggerRef.value;
+  const popup = popupRef.value;
+  if (!trigger || !popup) return;
+
+  const triggerRect = trigger.getBoundingClientRect();
+  const popupWidth = popup.offsetWidth;
+  const viewportWidth = document.documentElement.clientWidth;
+
+  // 弹窗右缘与触发按钮右缘对齐
+  let right = viewportWidth - triggerRect.right;
+
+  // 避免弹窗超出视口左侧
+  const popupLeft = triggerRect.right - popupWidth;
+  if (popupLeft < VIEWPORT_PADDING) {
+    right = Math.max(VIEWPORT_PADDING, viewportWidth - popupWidth - VIEWPORT_PADDING);
+  }
+
+  popupStyle.value = {
+    top: `${triggerRect.bottom + POPUP_GAP}px`,
+    right: `${right}px`,
+    left: 'auto',
+  };
+};
 
 const openPanel = () => {
   if (isOpen.value) return;
@@ -86,6 +133,18 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
+watch(isOpen, async (open) => {
+  if (open) {
+    await nextTick();
+    updatePopupPosition();
+    window.addEventListener('resize', updatePopupPosition);
+    return;
+  }
+
+  window.removeEventListener('resize', updatePopupPosition);
+  popupStyle.value = {};
+});
+
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick);
   document.addEventListener('keydown', handleKeydown);
@@ -94,6 +153,7 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick);
   document.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('resize', updatePopupPosition);
 });
 
 defineExpose({
@@ -148,8 +208,6 @@ void props;
 
   &__popup {
     position: fixed;
-    top: calc(var(--navbarHeight) + 12px);
-    right: max(20px, calc((100vw - 1280px) / 2 + 20px));
     z-index: var(--z-navbar-popup);
     display: flex;
     flex-direction: column;

@@ -66,6 +66,17 @@
   --blockBg: linear-gradient(90deg, rgba(224, 243, 224, 0.7), rgba(255, 255, 255, 0.7));
   --marker-color: #88feca;
 
+  /* ========== 评论溯源 ========== */
+  --comment-reply-surface: rgba(255, 255, 255, 0.62);
+  --comment-quote-surface: rgba(247, 247, 244, 0.82);
+  --comment-thread-rail: rgba(48, 49, 51, 0.16);
+  --comment-trace-surface: rgba(64, 158, 255, 0.1);
+  --comment-trace-target-surface: rgba(64, 158, 255, 0.05);
+  --comment-trace-border: rgba(64, 158, 255, 0.58);
+  --comment-trace-glow: rgba(106, 187, 255, 0.82);
+  --comment-trace-label-bg: #d9ecff;
+  --comment-trace-label-text: #245d86;
+
   /* ========== 调色板 ========== */
   --red: #ea3329;
   --orange: #eb6a2c;
@@ -226,6 +237,17 @@ html.dark {
   /* 装饰块背景 */
   --blockBg: linear-gradient(90deg, rgba(30, 50, 30, 0.7), rgba(15, 15, 15, 0.7));
   --marker-color: rgba(136, 254, 202, 0.35);
+
+  /* 评论溯源 */
+  --comment-reply-surface: rgba(26, 26, 26, 0.78);
+  --comment-quote-surface: rgba(255, 255, 255, 0.035);
+  --comment-thread-rail: rgba(147, 161, 178, 0.24);
+  --comment-trace-surface: rgba(64, 158, 255, 0.16);
+  --comment-trace-target-surface: rgba(64, 158, 255, 0.08);
+  --comment-trace-border: rgba(121, 187, 255, 0.72);
+  --comment-trace-glow: rgba(173, 222, 255, 0.9);
+  --comment-trace-label-bg: #18344d;
+  --comment-trace-label-text: #d9ecff;
 
   /* 文字选中颜色 */
   ::selection {

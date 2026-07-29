@@ -4,24 +4,19 @@
       <template #center> <DetailTools :article="article" :isAuthor="isAuthor" /></template>
     </NavBar>
 
-    <!--
-      ┌─────────────┬────────────────────┬─────────────┐
-      │ panel (col1)│ content (col2)     │ toc (col3)  │
-      │  sticky     │  DetailContent +   │  sticky     │
-      │  20vh       │  Comment           │  80px       │
-      └─────────────┴────────────────────┴─────────────┘
-      左右两个 1fr 列共同保证中间正文列在视口居中。
-      DetailPanel / DetailToc 不再需要 position: fixed，
-      也就不再需要 DetailContent/Comment 自己算"让位空间"。
-    -->
     <div class="detail-main">
+      <DetailContent
+        class="detail-main__article"
+        :article="article"
+        :status="detailStatus"
+        @update:toc="tocTitles = $event"
+        @add:selection-context="addSelectionContext"
+      />
+
       <DetailPanel v-if="isDetailReady" class="detail-main__panel" :article="article" />
 
-      <div class="detail-main__content">
-        <DetailContent :article="article" :status="detailStatus" @update:toc="tocTitles = $event" @add:selection-context="addSelectionContext" />
-        <div ref="commentSectionRef" class="detail-main__comments">
-          <Comment />
-        </div>
+      <div ref="commentSectionRef" class="detail-main__comments">
+        <Comment />
       </div>
 
       <DetailToc v-if="isDetailReady && tocTitles.length" :titles="tocTitles" class="detail-main__toc" />
@@ -151,27 +146,69 @@ watch(
 
   &__panel {
     grid-column: 1;
+    grid-row: 1 / span 2;
     // 贴近视口左边缘, 近似保留原本 `left: 2vw` 的位置感
     justify-self: start;
     align-self: start;
     margin-left: 2vw;
   }
 
-  &__content {
+  &__article {
     grid-column: 2;
+    grid-row: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
+  }
+
+  &__comments {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
   }
 
   &__toc {
     grid-column: 3;
+    grid-row: 1 / span 2;
     justify-self: start;
     align-self: start;
     width: $detail-toc-col-width;
     max-width: 100%;
     position: sticky;
     top: 80px;
+  }
+
+  @media (max-width: $detail-breakpoint-tablet) {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    padding-inline: $detail-mobile-gutter;
+    box-sizing: border-box;
+
+    &__article {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    &__panel {
+      grid-column: 1;
+      grid-row: 2;
+      width: 100%;
+      margin-left: 0;
+      justify-self: stretch;
+    }
+
+    &__comments {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    // DetailToc 自带固定定位的移动入口；其 grid 根节点不再占据内容宽度。
+    &__toc {
+      grid-column: 1;
+      grid-row: 1;
+      width: 0;
+      height: 0;
+      justify-self: end;
+      position: static;
+    }
   }
 }
 </style>

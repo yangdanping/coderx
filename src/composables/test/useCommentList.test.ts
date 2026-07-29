@@ -10,10 +10,12 @@ import {
   useLikeUserComment,
   userCommentInfiniteOptions,
 } from '@/composables/useCommentList';
-import { getUserCommentList, likeComment } from '@/service/comment/comment.request';
+import * as commentQueries from '@/composables/useCommentList';
+import { getCommentById, getUserCommentList, likeComment } from '@/service/comment/comment.request';
 
 vi.mock('@/service/comment/comment.request', () => ({
   getCommentList: vi.fn(),
+  getCommentById: vi.fn(),
   getReplies: vi.fn(),
   getUserCommentList: vi.fn(),
   addComment: vi.fn(),
@@ -39,6 +41,41 @@ vi.mock('@/utils', () => ({
 }));
 
 describe('user comment query options', () => {
+  it('locates one comment by id through the query cache', async () => {
+    const locatorFactory = (
+      commentQueries as typeof commentQueries & {
+        useCommentLocator?: () => { locateComment: (commentId: number) => Promise<{ id: number }> };
+      }
+    ).useCommentLocator;
+    expect(locatorFactory).toBeTypeOf('function');
+
+    vi.mocked(getCommentById).mockResolvedValue({
+      code: 0,
+      data: { id: 77 },
+    } as never);
+    const queryClient = new QueryClient();
+    let locateComment: ((commentId: number) => Promise<{ id: number }>) | undefined;
+
+    mount(
+      defineComponent({
+        setup() {
+          ({ locateComment } = locatorFactory!());
+          return () => h('div');
+        },
+      }),
+      {
+        global: {
+          plugins: [[VueQueryPlugin, { queryClient }]],
+        },
+      },
+    );
+
+    await expect(locateComment?.(77)).resolves.toMatchObject({ id: 77 });
+    expect(getCommentById).toHaveBeenCalledWith(77);
+    await locateComment?.(77);
+    expect(getCommentById).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the user id in the key, forwards cancellation, and advances from page metadata', async () => {
     vi.mocked(getUserCommentList).mockResolvedValue({
       code: 0,

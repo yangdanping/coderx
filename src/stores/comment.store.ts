@@ -1,9 +1,16 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 
+export interface IReplyTraceTarget {
+  commentId: number;
+  sourceReplyId: number;
+  targetReplyId: number;
+}
+
 const useCommentStore = defineStore('comment', {
   state: () => ({
     activeReplyId: null as number | null,
     activeEditId: null as number | null,
+    activeTrace: null as IReplyTraceTarget | null,
   }),
   actions: {
     setActiveReply(commentId: number | null) {
@@ -25,6 +32,13 @@ const useCommentStore = defineStore('comment', {
     closeAllForms() {
       this.activeReplyId = null;
       this.activeEditId = null;
+      this.activeTrace = null;
+    },
+    setActiveTrace(trace: IReplyTraceTarget) {
+      this.activeTrace = trace;
+    },
+    clearActiveTrace() {
+      this.activeTrace = null;
     },
   },
 });

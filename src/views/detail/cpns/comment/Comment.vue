@@ -6,7 +6,7 @@
     </template>
     <template v-else>
       <div class="showLogin">
-        <h1>请先登录后评论</h1>
+        <h2 class="comment-login-title">请先登录后评论</h2>
         <el-button @click="rootStore.toggleLoginDialog" type="primary" plain>登录</el-button>
       </div>
     </template>
@@ -45,8 +45,16 @@ const { token } = storeToRefs(userStore);
   align-items: center;
   padding: 30px 0;
 
-  h1 {
+  .comment-login-title {
+    margin: 0;
     padding-bottom: 20px;
+    font-size: 20px;
+  }
+
+  @media (max-width: 992px) {
+    .comment-login-title {
+      font-size: 20PX;
+    }
   }
 }
 </style>

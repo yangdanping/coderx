@@ -1,44 +1,32 @@
 <template>
   <div class="reply-item">
-    <Avatar :info="item.author" :size="35" />
+    <Avatar :info="item.author" :size="28" />
     <div class="reply-box">
       <!-- 用户信息 -->
       <div class="user-info-box">
-        <div class="user-info">
+        <div class="reply-meta-primary">
           <div class="name">
             <span>{{ item.author?.name }}</span>
             <el-tag v-if="isAuthor(item.author?.id)" size="small">作者</el-tag>
+            <span v-if="traceRole" class="trace-role">
+              {{ traceRole === 'source' ? '当前回复' : '原回复' }}
+            </span>
           </div>
         </div>
-        <div class="floor">
+        <div class="reply-meta-secondary">
           <span v-dateformat="item.createAt"></span>
         </div>
       </div>
 
-      <!-- 被引用的回复内容 (QuotedReply) -->
-      <div v-if="quotedContent" class="quoted-reply">
-        <el-tooltip effect="dark" content="转到回复位置" placement="top">
-          <div class="quoted-wrapper" role="button" @click.stop="handleScrollToParent">
-            <!-- 引用头部 -->
-            <div class="quoted-header">
-              <span class="quoted-author">{{ replyToName }} 回复:</span>
-              <el-icon class="goto-icon"><CornerDownRight /></el-icon>
-            </div>
-            <!-- 引用内容 -->
-            <div ref="quotedBodyRef" class="quoted-body" :class="{ 'is-collapsed': isCollapsed && needsCollapse }">
-              <div class="quoted-content editor-content-view" v-dompurify-html="quotedContent"></div>
-              <!-- 渐变遮罩（仅折叠时显示） -->
-              <div v-if="isCollapsed && needsCollapse" class="collapse-overlay"></div>
-            </div>
-            <!-- 展开/收起按钮 -->
-            <div v-if="needsCollapse" class="collapse-toggle">
-              <span class="toggle-text" @click.stop="toggleCollapse">
-                {{ isCollapsed ? 'Click to expand...' : '收起' }}
-              </span>
-            </div>
-          </div>
-        </el-tooltip>
-      </div>
+      <ReplyQuote
+        v-if="quotedContent && item.rid"
+        :source-reply-id="item.id"
+        :target-reply-id="item.rid"
+        :reply-to-name="replyToName"
+        :content="quotedContent"
+        @navigate="emit('scrollToParent', $event)"
+        @layout-change="emit('layoutChange')"
+      />
 
       <!-- 回复内容 -->
       <div class="editor-content">
@@ -56,28 +44,28 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 import Avatar from '@/components/avatar/Avatar.vue';
 import CommentAction from './CommentAction.vue';
 import CommentForm from './CommentForm.vue';
 import CommentTools from './CommentTools.vue';
+import ReplyQuote from './ReplyQuote.vue';
 import useArticleStore from '@/stores/article.store';
 import useCommentStore from '@/stores/comment.store';
 import { codeHeightlight } from '@/utils';
-import { CornerDownRight } from '@lucide/vue';
 
 import type { IComment } from '@/service/comment/comment.request';
-
-const COLLAPSE_HEIGHT = 150; // 折叠阈值（px）
 
 const props = defineProps<{
   item: IComment;
   parentComment: IComment; // 父级一级评论
+  traceRole?: 'source' | 'target' | null;
 }>();
 
 const emit = defineEmits<{
   scrollToParent: [replyId: number];
+  layoutChange: [];
 }>();
 
 const articleStore = useArticleStore();
@@ -86,10 +74,7 @@ const { isAuthor } = storeToRefs(articleStore);
 
 // ==================== 引用内容相关 ====================
 
-const quotedBodyRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
-const isCollapsed = ref(true); // 默认折叠
-const needsCollapse = ref(false); // 是否需要折叠（内容超过阈值）
 
 // 被回复的用户名（只有回复其他回复时使用）
 const replyToName = computed(() => props.item.replyTo?.name || null);
@@ -104,36 +89,12 @@ const quotedContent = computed(() => {
   return props.item.replyTo?.content || null;
 });
 
-// 检测内容高度，判断是否需要折叠
-const checkContentHeight = async () => {
-  await nextTick();
-  if (quotedBodyRef.value) {
-    const scrollHeight = quotedBodyRef.value.scrollHeight;
-    needsCollapse.value = scrollHeight > COLLAPSE_HEIGHT;
-  }
-};
-
-// 切换折叠状态
-const toggleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value;
-};
-
-// 点击跳转到被回复的位置
-const handleScrollToParent = () => {
-  emit('scrollToParent', props.item.id);
-};
-
-onMounted(() => {
-  checkContentHeight();
-});
-
 // 代码高亮处理
 watch(
-  [() => contentRef.value, () => quotedBodyRef.value],
-  ([contentEl, quotedEl]) => {
+  () => contentRef.value,
+  (contentEl) => {
     nextTick(() => {
       if (contentEl) codeHeightlight(contentEl);
-      if (quotedEl) codeHeightlight(quotedEl);
     });
   },
   { immediate: true },
@@ -154,24 +115,27 @@ const closeReplyForm = () => {
 .reply-item {
   display: flex;
   position: relative;
-  background-image: var(--blockBg);
+  background-color: var(--comment-reply-surface);
+  box-shadow: var(--border-shadow-list-bottom);
   padding: 10px;
   margin-bottom: 8px;
   border-radius: 4px;
 
   .reply-box {
     display: flex;
+    flex: 1;
+    width: auto;
+    min-width: 0;
     flex-direction: column;
     margin-left: 10px;
-    width: 100%;
 
     .user-info-box {
       display: flex;
-      align-items: center;
-      padding-top: 5px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 35px;
 
-      .user-info {
+      .reply-meta-primary {
         display: flex;
         align-items: center;
 
@@ -181,119 +145,102 @@ const closeReplyForm = () => {
           flex-wrap: wrap;
           gap: 4px;
 
-          span:not(.el-tag):not(.reply-to) {
+          span:not(.el-tag):not(.reply-to):not(.trace-role) {
             font-weight: 700;
             font-size: 15px;
           }
         }
       }
 
-      .floor span {
-        margin-left: 10px;
-        font-size: 10px;
-      }
-    }
-
-    // ==================== 引用回复样式 ====================
-    .quoted-reply {
-      margin: 8px 0;
-
-      .quoted-wrapper {
-        border-left: 2px solid #4a5568;
-        padding: 10px 12px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-          border-left-color: #66b1ff;
-        }
-      }
-
-      .quoted-header {
+      .reply-meta-secondary {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        padding-bottom: 6px;
-        @include thin-border(bottom, var(--border-color-list));
-
-        .quoted-author {
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        .goto-icon {
-          font-size: 14px;
-          color: #909399;
-          transform: rotate(180deg);
-          transition: color 0.2s;
-        }
-      }
-
-      .quoted-wrapper:hover .goto-icon {
-        color: #66b1ff;
-      }
-
-      .quoted-body {
-        position: relative;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-
-        &.is-collapsed {
-          max-height: 150px;
-        }
-
-        .quoted-content {
-          font-size: 13px;
-          line-height: 1.6;
-
-          :deep(p) {
-            margin: 4px 0;
-          }
-
-          :deep(img) {
-            max-width: 100%;
-            border-radius: 4px;
-          }
-        }
-
-        .collapse-overlay {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 60px;
-          background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.1) 70%);
-          pointer-events: none;
-        }
-      }
-
-      .collapse-toggle {
-        margin-top: 8px;
-        text-align: center;
-
-        .toggle-text {
-          font-size: 12px;
-          color: #66b1ff;
-          cursor: pointer;
-          padding: 4px 12px;
-          border-radius: 4px;
-          transition: all 0.2s;
-        }
+        min-height: 18px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 1.5;
       }
     }
 
     .editor-content {
       padding: 10px 0;
+
+      .editor-content-view {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
     }
   }
 }
 
-// Popover 内容样式
-.popover-content {
-  text-align: center;
-  font-size: 13px;
-  color: #606266;
+.trace-role {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: 17PX;
+  align-items: center;
+  padding: 0 5PX;
+  border-radius: 999px;
+  background-color: var(--comment-trace-label-bg);
+  color: var(--comment-trace-label-text);
+  font-size: 12PX;
+  font-weight: 500;
+  line-height: 1;
+}
+
+@media (max-width: 992px) {
+  .reply-item {
+    display: grid;
+    grid-template-columns: 28PX minmax(0, 1fr) 44PX;
+    column-gap: 8PX;
+    margin-bottom: 6px;
+    padding: 8px;
+
+    > .avatar {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    .reply-box {
+      grid-column: 2 / -1;
+      grid-row: 1;
+      margin-left: 0;
+
+      .user-info-box {
+        min-height: 44PX;
+        padding-right: 44PX;
+
+        .reply-meta-primary {
+          min-height: 22PX;
+        }
+
+        .reply-meta-secondary {
+          min-height: 20PX;
+          font-size: 12PX;
+        }
+      }
+
+      .editor-content {
+        padding: 6px 0 2px;
+
+        .editor-content-view {
+          padding-inline: 0;
+          font-size: 15PX;
+        }
+      }
+    }
+
+    > .comment-tools {
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+    }
+  }
+
+  .trace-role {
+    height: 20PX;
+    padding: 1PX 6PX;
+    line-height: 1.4;
+  }
 }
 </style>

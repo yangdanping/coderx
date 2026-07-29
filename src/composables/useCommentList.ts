@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import {
   getCommentList,
+  getCommentById,
   getUserCommentList,
   getReplies,
   addComment,
@@ -31,6 +32,7 @@ export const commentKeys = {
   userLists: () => [...commentKeys.all, 'user-list'] as const,
   userList: (userId: number, pageSize: number) => [...commentKeys.userLists(), userId, pageSize] as const,
   replies: (commentId: number) => [...commentKeys.all, 'replies', commentId] as const,
+  detail: (commentId: number) => [...commentKeys.all, 'detail', commentId] as const,
   userLiked: (userId: number) => [...commentKeys.all, 'userLiked', userId] as const,
 };
 
@@ -87,6 +89,22 @@ export function useReplyList(commentId: Ref<number>, limit = 10, enabled: Ref<bo
     },
     enabled: computed(() => !!commentId.value && enabled.value),
   });
+}
+
+export function useCommentLocator() {
+  const queryClient = useQueryClient();
+
+  const locateComment = (commentId: number) =>
+    queryClient.fetchQuery({
+      queryKey: commentKeys.detail(commentId),
+      queryFn: async () => {
+        const res = await getCommentById(commentId);
+        return res.data;
+      },
+      staleTime: 60_000,
+    });
+
+  return { locateComment };
 }
 
 // ==================== 个人资料评论列表 ====================

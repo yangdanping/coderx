@@ -444,12 +444,27 @@ const handleSubmit = async () => {
   scrollToBottom();
 };
 
+const openAssistant = () => {
+  if (isOpen.value) return;
+  isOpen.value = true;
+  scrollToBottom();
+};
+
 const toggleOpen = () => {
   isOpen.value = !isOpen.value;
   if (isOpen.value) {
     scrollToBottom();
   }
 };
+
+watch(
+  () => pendingSelectionContexts.value.length,
+  (newLen, oldLen) => {
+    if (newLen > oldLen) {
+      openAssistant();
+    }
+  },
+);
 
 const onEnter = (e: Event | KeyboardEvent) => {
   // 类型守卫：确保是 KeyboardEvent

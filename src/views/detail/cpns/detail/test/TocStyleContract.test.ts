@@ -9,6 +9,9 @@ const demoSource = readSource('src/views/home/cpns/features/demos/ArticleTocDemo
 
 const tocLightAccentColor = '#81c995';
 const tocDarkAccentColor = '#c0e0c7';
+const detailActiveLinkRule =
+  detailSource.match(/^\.toc-item\.active \.toc-link\s*\{([^}]*)\}/m)?.[1] ?? '';
+const detailBaseLinkRule = detailSource.match(/^\.toc-link\s*\{([^}]*)\}/m)?.[1] ?? '';
 
 describe('article detail table of contents visual contract', () => {
   it('uses a collapsed rail and a bounded expanded panel', () => {
@@ -20,16 +23,33 @@ describe('article detail table of contents visual contract', () => {
     expect(detailSource).toMatch(/\.toc-list-shell\s*\{[\s\S]*max-height:\s*min\(60vh,\s*520px\)/);
   });
 
-  it('keeps long inactive titles compact and gives the active title two lines', () => {
-    expect(detailSource).toMatch(/\.toc-link\s*\{[\s\S]*text-overflow:\s*ellipsis/);
-    expect(detailSource).toMatch(/\.toc-item\.active\s+\.toc-link\s*\{[\s\S]*-webkit-line-clamp:\s*2/);
+  it('keeps titles fully readable and only changes active styling', () => {
+    expect(detailSource).toMatch(/\.toc-link\s*\{[\s\S]*white-space:\s*normal/);
+    expect(detailActiveLinkRule).toContain('color: var(--toc-accent-text)');
+    expect(detailSource).not.toMatch(/\.toc-link\s*\{[\s\S]*text-overflow:\s*ellipsis/);
     expect(detailSource).toContain('overflow-wrap: anywhere');
   });
 
-  it('keeps readable light and dark accent colors', () => {
-    expect(detailSource).toMatch(new RegExp(`--toc-accent-color:\\s*${tocLightAccentColor};`));
-    expect(detailSource).toMatch(new RegExp(`:where\\(html\\.dark\\)[\\s\\S]*--toc-accent-color:\\s*${tocDarkAccentColor};`));
-    expect(detailSource).toMatch(/\.toc-item\.active[\s\S]*color:\s*var\(--toc-accent-color\)/);
+  it('keeps active styling layout-neutral', () => {
+    expect(detailActiveLinkRule).not.toMatch(
+      /\b(?:padding|margin|font-size|font-weight|line-height|display|white-space)\s*:/,
+    );
+    expect(detailBaseLinkRule).not.toMatch(/font-weight\s+0\.18s/);
+    expect(detailSource).toMatch(/&\.level-1 \.toc-link\s*\{[^}]*padding-left:\s*14px/);
+    expect(detailSource).toMatch(/&\.level-2 \.toc-link\s*\{[^}]*padding-left:\s*18px/);
+    expect(detailSource).toMatch(/^\.toc-item::before\s*\{[^}]*opacity:\s*0/m);
+  });
+
+  it('separates readable text colors from decorative accents', () => {
+    expect(detailSource).toContain('--toc-text-muted: #686868;');
+    expect(detailSource).toContain('--toc-accent-text: #347a4e;');
+    expect(detailSource).toContain(`--toc-accent-decorative: ${tocLightAccentColor};`);
+    expect(detailSource).toMatch(
+      new RegExp(
+        `:where\\(html\\.dark\\)[\\s\\S]*--toc-accent-text:\\s*${tocDarkAccentColor};[\\s\\S]*--toc-accent-decorative:\\s*${tocDarkAccentColor};`,
+      ),
+    );
+    expect(detailSource).toMatch(/\.toc-item\s*\{[^}]*color:\s*var\(--toc-text-muted\)/);
   });
 
   it('removes fixed-height slider math from the detail page', () => {

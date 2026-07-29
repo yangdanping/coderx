@@ -44,7 +44,8 @@
             :aria-pressed="isPinnedOpen"
             @click="togglePinned"
           >
-            {{ isPinnedOpen ? '已固定' : '固定' }}
+            <Lock v-if="isPinnedOpen" :size="14" :stroke-width="2" aria-hidden="true" />
+            <Unlock v-else :size="14" :stroke-width="2" aria-hidden="true" />
           </button>
         </div>
 
@@ -56,7 +57,7 @@
                 :href="`#${item.id}`"
                 :aria-current="activeId === item.id ? 'location' : undefined"
                 :tabindex="isDesktopExpanded ? 0 : -1"
-                @click.prevent="scrollTo(item.id)"
+                @click.prevent="scrollToHeading(item.id)"
               >
                 {{ item.title }}
               </a>
@@ -92,16 +93,19 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { ListTree } from '@lucide/vue';
+import { ListTree, Lock, Unlock } from '@lucide/vue';
 
 import type { DetailTocTitle } from './types/detail-toc.type';
+import { useTocScrollSpy } from './useTocScrollSpy';
 
 const props = defineProps<{
   titles: DetailTocTitle[];
 }>();
 
 const showDrawer = ref(false);
-const activeId = ref(props.titles[0]?.id ?? '');
+const { activeId, scrollToHeading } = useTocScrollSpy({
+  titles: () => props.titles,
+});
 const desktopTocRef = ref<HTMLElement | null>(null);
 const desktopToggleRef = ref<HTMLButtonElement | null>(null);
 const isHovered = ref(false);
@@ -114,21 +118,8 @@ const activeIndex = computed(() => props.titles.findIndex((item) => item.id === 
 const activePosition = computed(() => (activeIndex.value >= 0 ? activeIndex.value + 1 : 0));
 const isDesktopExpanded = computed(() => !isDismissed.value && (isHovered.value || hasFocusWithin.value || isPinnedOpen.value));
 
-const scrollTo = (id: string) => {
-  const el = document.getElementById(id);
-  if (el) {
-    activeId.value = id;
-    // 减去头部导航的高度，避免遮挡
-    const top = el.getBoundingClientRect().top + window.scrollY - 100;
-    window.scrollTo({
-      top,
-      behavior: 'smooth',
-    });
-  }
-};
-
 const handleMobileClick = (id: string) => {
-  scrollTo(id);
+  scrollToHeading(id);
   showDrawer.value = false;
 };
 
@@ -155,7 +146,8 @@ const handleFocusOut = (event: FocusEvent) => {
   }
 };
 
-const togglePinned = () => {
+const togglePinned = (event?: MouseEvent) => {
+  event?.stopPropagation();
   isDismissed.value = false;
   isPinnedOpen.value = !isPinnedOpen.value;
 };
@@ -176,7 +168,9 @@ const dismissDesktopToc = (restoreFocus = false) => {
 const handleOutsidePointerDown = (event: PointerEvent) => {
   const target = event.target;
   if (!(target instanceof Node) || desktopTocRef.value?.contains(target)) return;
-  if (isDesktopExpanded.value || isPinnedOpen.value) {
+  // 固定状态下仅允许用户主动取消固定或按 Escape 关闭
+  if (isPinnedOpen.value) return;
+  if (isDesktopExpanded.value) {
     dismissDesktopToc();
   }
 };
@@ -187,48 +181,37 @@ const handleKeydown = (event: KeyboardEvent) => {
   dismissDesktopToc(true);
 };
 
-watch(
-  () => props.titles,
-  (nextTitles) => {
-    if (!nextTitles.some((item) => item.id === activeId.value)) {
-      activeId.value = nextTitles[0]?.id ?? '';
-    }
-  },
-);
+function revealActiveLink(shell: HTMLElement, activeLink: HTMLElement, edgePadding = 6) {
+  const shellRect = shell.getBoundingClientRect();
+  const linkRect = activeLink.getBoundingClientRect();
+  let nextScrollTop = shell.scrollTop;
+
+  if (linkRect.top < shellRect.top + edgePadding) {
+    nextScrollTop -= shellRect.top + edgePadding - linkRect.top;
+  } else if (linkRect.bottom > shellRect.bottom - edgePadding) {
+    nextScrollTop += linkRect.bottom - (shellRect.bottom - edgePadding);
+  }
+
+  shell.scrollTop = Math.max(0, nextScrollTop);
+}
 
 watch([activeId, isDesktopExpanded], async ([, expanded]) => {
   if (!expanded) return;
 
   await nextTick();
+  const shell = desktopTocRef.value?.querySelector<HTMLElement>('.toc-list-shell');
   const activeLink = desktopTocRef.value?.querySelector<HTMLElement>('.toc-link[aria-current="location"]');
-  activeLink?.scrollIntoView?.({ block: 'nearest' });
+  if (!shell || !activeLink) return;
+
+  revealActiveLink(shell, activeLink);
 });
 
-// 监听滚动，高亮当前标题 (简单实现)
-const handleScroll = () => {
-  // 简单的滚动监听逻辑，找到当前视口中最接近顶部的标题
-  // 实际项目中可能需要更复杂的 IntersectionObserver
-  const scrollY = window.scrollY + 120; // 偏移量
-  for (let i = props.titles.length - 1; i >= 0; i--) {
-    const item = props.titles[i];
-    if (!item) continue;
-    const el = document.getElementById(item.id);
-    if (el && el.offsetTop <= scrollY) {
-      activeId.value = item.id;
-      break;
-    }
-  }
-};
-
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true });
   window.addEventListener('keydown', handleKeydown);
   document.addEventListener('pointerdown', handleOutsidePointerDown);
-  handleScroll();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
   window.removeEventListener('keydown', handleKeydown);
   document.removeEventListener('pointerdown', handleOutsidePointerDown);
 });
@@ -236,8 +219,10 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .toc-desktop {
-  --toc-accent-color: #81c995;
-  --toc-muted-color: color-mix(in srgb, var(--text-secondary) 78%, var(--text-primary));
+  --toc-text-muted: #686868;
+  --toc-accent-text: #347a4e;
+  --toc-accent-decorative: #81c995;
+  --toc-rail-color: color-mix(in srgb, var(--text-secondary) 78%, var(--text-primary));
 
   position: relative;
   width: 100%;
@@ -246,8 +231,10 @@ onUnmounted(() => {
 }
 
 :where(html.dark) .toc-desktop {
-  --toc-accent-color: #c0e0c7;
-  --toc-muted-color: color-mix(in srgb, var(--text-secondary) 82%, var(--text-primary));
+  --toc-text-muted: color-mix(in srgb, var(--text-secondary) 82%, var(--text-primary));
+  --toc-accent-text: #c0e0c7;
+  --toc-accent-decorative: #c0e0c7;
+  --toc-rail-color: color-mix(in srgb, var(--text-secondary) 82%, var(--text-primary));
 }
 
 .toc-rail-toggle {
@@ -262,7 +249,7 @@ onUnmounted(() => {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--toc-muted-color);
+  color: var(--toc-rail-color);
   cursor: var(--cursorPointer);
 
   &:hover .toc-rail__tick,
@@ -275,7 +262,7 @@ onUnmounted(() => {
   }
 
   &:focus-visible .toc-rail__tick.active {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--toc-accent-color) 28%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--toc-accent-text) 28%, transparent);
   }
 }
 
@@ -311,7 +298,7 @@ onUnmounted(() => {
   }
 
   &.active {
-    background: var(--toc-accent-color);
+    background: var(--toc-accent-decorative);
     opacity: 1;
     transform: scaleX(1.38);
   }
@@ -325,8 +312,9 @@ onUnmounted(() => {
   box-sizing: border-box;
   padding: 12px 10px 12px 30px;
   border-radius: 10px;
-  background: var(--el-bg-color-overlay, var(--el-bg-color));
-  box-shadow: 0 4px 8px color-mix(in srgb, var(--text-primary) 10%, transparent);
+  @include glass-effect;
+  @include thin-border(all, var(--el-border-color-lighter));
+  box-shadow: 1px 1px 10px color-mix(in srgb, var(--text-primary) 12%, transparent);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -363,21 +351,25 @@ onUnmounted(() => {
 
 .toc-panel__progress {
   margin-right: auto;
-  color: var(--toc-muted-color);
+  color: var(--toc-text-muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
 .toc-panel__toggle {
-  min-height: 24px;
-  padding: 0 6px;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--toc-muted-color);
+  color: var(--toc-text-muted);
   cursor: var(--cursorPointer);
-  font-size: 11px;
   line-height: 1;
   transition:
     background-color 0.18s ease,
@@ -385,22 +377,24 @@ onUnmounted(() => {
 
   &:hover,
   &[aria-pressed='true'] {
-    background: color-mix(in srgb, var(--toc-accent-color) 12%, transparent);
-    color: var(--text-primary);
+    background: color-mix(in srgb, var(--toc-accent-decorative) 12%, transparent);
+    color: var(--toc-accent-text);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--toc-accent-color);
+    outline: 2px solid var(--toc-accent-text);
     outline-offset: 1px;
   }
 }
 
 .toc-list-shell {
   max-height: min(60vh, 520px);
+  padding-block: 6px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-color: color-mix(in srgb, var(--toc-muted-color) 40%, transparent) transparent;
+  scroll-padding-block: 6px;
+  scrollbar-color: color-mix(in srgb, var(--toc-rail-color) 40%, transparent) transparent;
   scrollbar-width: thin;
 }
 
@@ -413,9 +407,10 @@ onUnmounted(() => {
 .toc-item {
   position: relative;
   margin-block: 1px;
-  color: var(--toc-muted-color);
+  color: var(--toc-text-muted);
 
   &.level-1 .toc-link {
+    padding-left: 14px;
     font-size: 14px;
     font-weight: 560;
   }
@@ -430,15 +425,13 @@ onUnmounted(() => {
   min-height: 30px;
   box-sizing: border-box;
   padding: 6px 8px;
-  overflow: hidden;
   border-radius: 6px;
   color: inherit;
   font-size: 13px;
   line-height: 1.4;
   overflow-wrap: anywhere;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   transition:
     background-color 0.18s ease,
     color 0.18s ease;
@@ -449,34 +442,35 @@ onUnmounted(() => {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--toc-accent-color);
+    outline: 2px solid var(--toc-accent-text);
     outline-offset: -2px;
   }
 }
 
-.toc-item.active::before {
+.toc-item::before {
   position: absolute;
   z-index: 1;
-  top: 50%;
+  top: calc(6px + 0.5 * 1.4 * 1em);
   left: 4px;
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--toc-accent-color);
+  background: var(--toc-accent-decorative);
   content: '';
-  transform: translateY(-50%);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.6);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.toc-item.active::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
 }
 
 .toc-item.active .toc-link {
-  display: -webkit-box;
-  padding-left: 14px;
-  overflow: hidden;
-  color: var(--toc-accent-color);
-  font-weight: 650;
-  overflow-wrap: anywhere;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  color: var(--toc-accent-text);
 }
 
 .visually-hidden {
@@ -495,6 +489,7 @@ onUnmounted(() => {
   .toc-panel,
   .toc-rail__tick,
   .toc-panel__toggle,
+  .toc-item::before,
   .toc-link {
     transition: none;
   }

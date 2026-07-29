@@ -1,11 +1,11 @@
 <template>
-  <div class="comment-list">
+  <div class="comment-list" @click="handleCommentListClick">
     <div v-if="totalCount" ref="listRef" class="comment-header">
-      <span class="comment-title">最新评论({{ totalCount }})</span>
+      <span class="comment-title">最新评论 · {{ totalCount }}</span>
       <el-dropdown trigger="click" @command="handleSortChange">
         <button class="sort-trigger" type="button" aria-label="切换评论排序">
           <span>{{ currentSortLabel }}</span>
-          <el-icon><ChevronDown :size="16" /></el-icon>
+          <el-icon aria-hidden="true"><ChevronDown :size="16" /></el-icon>
         </button>
         <template #dropdown>
           <el-dropdown-menu>
@@ -75,7 +75,6 @@ const sortOptions: Array<{ label: string; value: CommentSortType }> = [
 const route = useRoute();
 const articleStore = useArticleStore();
 const commentStore = useCommentStore();
-const { article } = storeToRefs(articleStore);
 const articleId = computed(() => String(route.params.articleId ?? ''));
 const sortType = ref<CommentSortType>('latest');
 const currentSortLabel = computed(() => sortOptions.find((item) => item.value === sortType.value)?.label ?? '最新');
@@ -112,8 +111,11 @@ const totalCount = computed(() => getTotalCount(data.value));
 watch(
   () => totalCount.value,
   (newCount) => {
-    if (article.value?.id != null) {
-      article.value.commentCount = newCount;
+    if (articleStore.article.id != null) {
+      articleStore.article = {
+        ...articleStore.article,
+        commentCount: newCount,
+      };
     }
   },
 );
@@ -132,6 +134,12 @@ const handleSortChange = (value: CommentSortType) => {
   if (value === sortType.value) return;
   commentStore.closeAllForms();
   sortType.value = value;
+};
+
+const handleCommentListClick = (event: MouseEvent) => {
+  const target = event.target;
+  if (target instanceof Element && target.closest('[data-reply-trace-control]')) return;
+  commentStore.clearActiveTrace();
 };
 
 const completedTargetCommentLoads = new Set<string>();
@@ -227,7 +235,10 @@ onUnmounted(() => {
 
   .sort-trigger {
     display: inline-flex;
+    min-width: 44PX;
+    min-height: 44PX;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     padding: 6px 8px;
     border: 1px solid var(--el-border-color);
@@ -273,6 +284,26 @@ onUnmounted(() => {
   .load-more-sentinel {
     height: 1px;
     width: 100%;
+  }
+
+  @media (max-width: 992px) {
+    margin-bottom: 0;
+    padding-inline: 12PX;
+    padding-block: 16px 24px;
+
+    .comment-title {
+      font-size: 18PX;
+    }
+
+    .sort-trigger {
+      font-size: 14PX;
+    }
+
+    .no-data {
+      display: block;
+      padding: 48px 0;
+      font-size: 16PX;
+    }
   }
 }
 </style>
