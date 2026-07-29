@@ -6,6 +6,7 @@
 export interface IAccount {
   name: string;
   password: string;
+  nickname?: string | null;
 }
 
 /* 真实开发中是拿到用户数据只会更多的,一开始按下登录按钮,给到我们数据只有这三个

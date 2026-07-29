@@ -45,6 +45,7 @@ function createStubs(validate = vi.fn().mockResolvedValue(true)) {
           ...attrs,
           value: props.modelValue ?? '',
           placeholder: props.placeholder,
+          maxlength: props.maxlength,
           onInput: (event: Event) => emit('update:modelValue', (event.target as HTMLInputElement).value),
         });
     },
@@ -146,6 +147,7 @@ describe('ProfilePanel', () => {
     const wrapper = mount(ProfilePanel, {
       props: {
         editForm: {
+          nickname: '小杨',
           sex: '男',
           age: 23,
           email: 'coderx@example.com',
@@ -168,7 +170,9 @@ describe('ProfilePanel', () => {
     expect(wrapper.find('[data-test="profile-gender-male"]').classes()).toContain('gender-option--male');
     expect(wrapper.find('[data-test="profile-gender-female"]').classes()).toContain('gender-option--female');
     expect(wrapper.find('.form-stack').exists()).toBe(true);
-    expect(wrapper.findAll('.form-stack [data-prop]').map((item) => item.attributes('data-prop'))).toEqual(['age', 'career', 'email', 'address']);
+    expect(wrapper.findAll('.form-stack [data-prop]').map((item) => item.attributes('data-prop'))).toEqual(['nickname', 'age', 'career', 'email', 'address']);
+    expect(wrapper.get('[data-test="profile-nickname"]').attributes('maxlength')).toBe('30');
+    expect((wrapper.get('[data-test="profile-nickname"]').element as HTMLInputElement).value).toBe('小杨');
     expect(wrapper.find('[data-test="profile-career"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="profile-age"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="profile-email"]').exists()).toBe(true);
@@ -196,5 +200,50 @@ describe('ProfilePanel', () => {
 
     expect(validate).toHaveBeenCalledTimes(1);
     expect(storeMock.updateProfileAction).not.toHaveBeenCalled();
+  });
+
+  it('submits a trimmed nickname with the profile payload', async () => {
+    const { stubs } = createStubs();
+    const wrapper = mount(ProfilePanel, {
+      props: {
+        editForm: {
+          nickname: '旧昵称',
+          sex: '男',
+        },
+      },
+      global: { stubs },
+    });
+
+    await wrapper.get('[data-test="profile-nickname"]').setValue('  新昵称  ');
+    await wrapper.get('[data-test="profile-submit"]').trigger('click');
+
+    expect(storeMock.updateProfileAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nickname: '新昵称',
+        sex: '男',
+      }),
+    );
+  });
+
+  it('submits an empty nickname so the backend can clear it', async () => {
+    const { stubs } = createStubs();
+    const wrapper = mount(ProfilePanel, {
+      props: {
+        editForm: {
+          nickname: '旧昵称',
+          sex: '男',
+        },
+      },
+      global: { stubs },
+    });
+
+    await wrapper.get('[data-test="profile-nickname"]').setValue('');
+    await wrapper.get('[data-test="profile-submit"]').trigger('click');
+
+    expect(storeMock.updateProfileAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nickname: '',
+      }),
+    );
   });
 });

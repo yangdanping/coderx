@@ -57,8 +57,72 @@ const tabItemStub = defineComponent({
 });
 
 import useArticleStore from '@/stores/article.store';
+import useRootStore from '@/stores/index.store';
 import useUserStore from '@/stores/user.store';
 import UserProfile from '../UserProfile.vue';
+
+function mountIdentityProfile(profile: { id: number; name: string; nickname?: string | null; sex: string }, width = 1440) {
+  route.query = {};
+
+  return mount(UserProfile, {
+    props: { profile },
+    global: {
+      plugins: [
+        createTestingPinia({
+          createSpy: vi.fn,
+          initialState: {
+            root: {
+              authStatus: 'authenticated',
+              windowInfo: { width, height: 900 },
+            },
+            user: {
+              token: 'token',
+              userInfo: { id: 42, name: 'current-user' },
+              profile,
+              followInfoCache: {
+                [profile.id]: {
+                  data: { following: [], follower: [] },
+                  timestamp: Date.now(),
+                },
+              },
+              pendingFollowRequests: [],
+              myFollowInfo: {},
+              collects: [],
+            },
+            online: {
+              onlineUsers: [],
+            },
+            article: {
+              articles: {},
+              recommends: [],
+              article: {},
+              tags: [],
+              activeTagId: '综合',
+              activeOrder: 'date',
+            },
+            comment: {
+              userComments: [],
+              userLikedCommentIdList: [],
+              activeReplyId: null,
+              activeEditId: null,
+            },
+            history: {},
+          },
+        }),
+      ],
+      stubs: {
+        UserAvatar: true,
+        UserProfileMenu: true,
+        FollowButton: true,
+        Icon: true,
+        Tabs: tabsStub,
+        TabItem: tabItemStub,
+        ElTag: true,
+        ElButton: true,
+      },
+    },
+  });
+}
 
 describe('UserProfile', () => {
   beforeEach(() => {
@@ -239,5 +303,36 @@ describe('UserProfile', () => {
         subTabName: 'follower',
       },
     });
+  });
+
+  it('shows nickname as the primary identity and @account name as secondary on desktop and mobile', async () => {
+    const wrapper = mountIdentityProfile({
+      id: 99,
+      name: 'ydp',
+      nickname: '小杨',
+      sex: '男',
+    });
+
+    expect(wrapper.get('[data-test="profile-display-name"]').text()).toBe('小杨');
+    expect(wrapper.get('[data-test="profile-account-name"]').text()).toBe('@ydp');
+
+    const rootStore = useRootStore();
+    rootStore.windowInfo = { width: 390, height: 844 };
+    await nextTick();
+
+    expect(wrapper.get('[data-test="profile-display-name"]').text()).toBe('小杨');
+    expect(wrapper.get('[data-test="profile-account-name"]').text()).toBe('@ydp');
+  });
+
+  it('falls back to account name as the primary identity when nickname is absent', () => {
+    const wrapper = mountIdentityProfile({
+      id: 99,
+      name: 'ydp',
+      nickname: null,
+      sex: '男',
+    });
+
+    expect(wrapper.get('[data-test="profile-display-name"]').text()).toBe('ydp');
+    expect(wrapper.get('[data-test="profile-account-name"]').text()).toBe('@ydp');
   });
 });

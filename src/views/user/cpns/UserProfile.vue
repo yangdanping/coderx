@@ -6,7 +6,10 @@
           <UserAvatar :info="profile" :size="isSmallScreen ? 70 : 100" />
           <div class="mobile-header-right" v-if="isSmallScreen">
             <div class="name-row">
-              <span class="name">{{ profile.name }}</span>
+              <div class="identity-copy">
+                <span class="name" data-test="profile-display-name">{{ displayName }}</span>
+                <span class="account-name" data-test="profile-account-name">@{{ profile.name }}</span>
+              </div>
               <component :is="genderIcon" :class="['gender-icon', genderClass]" />
               <el-tag size="small" effect="plain" :type="onlineStatus.type">{{ onlineStatus.msg }}</el-tag>
             </div>
@@ -36,7 +39,10 @@
 
         <div class="profile-info">
           <div class="name-row" v-if="!isSmallScreen">
-            <span class="name">{{ profile.name }}</span>
+            <div class="identity-copy">
+              <span class="name" data-test="profile-display-name">{{ displayName }}</span>
+              <span class="account-name" data-test="profile-account-name">@{{ profile.name }}</span>
+            </div>
             <component :is="genderIcon" :class="['gender-icon', genderClass]" />
             <el-tag size="small" effect="plain" :type="onlineStatus.type">{{ onlineStatus.msg }}</el-tag>
           </div>
@@ -98,6 +104,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { Mars, Venus } from '@lucide/vue';
 import { emitter } from '@/utils';
+import { getDisplayName } from '@/utils/nickname';
 import UserAvatar from './UserAvatar.vue';
 import UserProfileMenu from './UserProfileMenu.vue';
 import FollowButton from '@/components/FollowButton.vue';
@@ -145,6 +152,7 @@ const currentUserId = computed(() => {
 });
 const isMe = computed(() => isCurrentUser(currentUserId.value));
 const currentProfilePath = computed(() => (currentUserId.value ? `/user/${currentUserId.value}` : ''));
+const displayName = computed(() => getDisplayName(profile.value));
 
 const genderIcon = computed(() => (profile.value.sex === '女' ? Venus : Mars));
 const genderClass = computed(() => (profile.value.sex === '女' ? 'female' : 'male'));
@@ -491,6 +499,20 @@ watch(
     padding-bottom: 10px;
     padding-left: 10px; // Add some bottom padding
   }
+}
+
+.identity-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.account-name {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .profile-content {

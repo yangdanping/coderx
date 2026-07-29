@@ -2,14 +2,25 @@
   <div class="avatar">
     <el-popover popper-class="user-popover" :width="`calc(200px + ${nameCount}em)`" :disabled="disabled" placement="top-start" trigger="hover" :open-delay="400">
       <div class="user">
-        <el-avatar :src="avatarUrl" @click="goProfile()" :size="60" :class="{ 'online-border': isOnline }" />
+        <RouterLink class="avatar-link" :to="profileRoute" :aria-label="`查看${displayName}的主页`">
+          <el-avatar
+            :src="avatarUrl"
+            :alt="avatarAlt"
+            :size="60"
+            :style="{ width: '60px', height: '60px' }"
+            :class="{ 'online-border': isOnline }"
+          />
+        </RouterLink>
         <el-tag size="small" effect="plain" :type="userOnlineStatusByUserId(info.id).type">{{ userOnlineStatusByUserId(info.id).msg }}</el-tag>
         <div class="user-info">
           <div class="info1">
-            <h2>{{ info.name }}</h2>
+            <div class="identity-copy">
+              <h2 data-test="avatar-display-name">{{ displayName }}</h2>
+              <div class="account-name" data-test="avatar-account-name">@{{ info.name }}</div>
+            </div>
             <component :is="info.sex === '女' ? Venus : Mars" :class="['gender-icon', info.sex === '女' ? 'female' : 'male']" />
           </div>
-          <div>{{ info.career ?? 'Coder' }}</div>
+          <div class="career">{{ info.career ?? 'Coder' }}</div>
           <div class="info2">
             <span class="btn" role="button" @click="goProfile('关注', 'following')">
               关注:<AnimatedNumber :value="followCountById(info.id, 'following')" />
@@ -24,7 +35,30 @@
         <FollowButton :isFollowed="isFollowedById(info.id)" :profile="info" />
       </div>
       <template #reference>
-        <el-avatar :src="avatarUrl" @mouseenter="mouseenter" @click="goProfile()" :size="size" :class="{ 'online-border': isOnline }" />
+        <RouterLink
+          v-if="!disabled"
+          class="avatar-link"
+          :to="profileRoute"
+          :aria-label="`查看${displayName}的主页`"
+          @mouseenter="mouseenter"
+        >
+          <el-avatar
+            :src="avatarUrl"
+            :alt="avatarAlt"
+            :size="avatarSize"
+            :style="avatarSizeStyle"
+            :class="{ 'online-border': isOnline }"
+          />
+        </RouterLink>
+        <span v-else class="avatar-static">
+          <el-avatar
+            :src="avatarUrl"
+            :alt="avatarAlt"
+            :size="avatarSize"
+            :style="avatarSizeStyle"
+            :class="{ 'online-border': isOnline }"
+          />
+        </span>
       </template>
     </el-popover>
     <div class="avatar-icon" v-if="showSet && isMe"><slot name="icon"></slot></div>
@@ -35,7 +69,7 @@
 import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 import FollowButton from '@/components/FollowButton.vue';
 import { Mars, Venus } from '@lucide/vue';
-import { debounce, getImageUrl } from '@/utils';
+import { debounce, getDisplayName, getImageUrl } from '@/utils';
 import useUserStore from '@/stores/user.store';
 import useOnlineStore from '@/stores/online.store';
 import { useAuth } from '@/composables/useAuth';
@@ -67,9 +101,19 @@ const { onlineUsers, userOnlineStatusByUserId } = storeToRefs(onlineStore);
 
 // 判断是否为当前登录用户（用于控制头像编辑图标显示）
 const isMe = computed(() => isCurrentUser(info.id));
+const profileRoute = computed(() => ({ path: `/user/${info.id}` }));
+const displayName = computed(() => getDisplayName(info));
+const accountName = computed(() => `@${info.name ?? ''}`);
+const avatarAlt = computed(() => `${displayName.value}的头像`);
+const avatarSize = computed(() => size ?? 40);
+const avatarSizeStyle = computed(() => ({
+  width: `${avatarSize.value}px`,
+  height: `${avatarSize.value}px`,
+}));
 
 const nameCount = computed(() => {
-  let count = info.name?.length! - 4; //名字超出4个则,弹框宽度增加1em
+  const identityLength = Math.max(Array.from(displayName.value).length, Array.from(accountName.value).length);
+  const count = identityLength - 4; // 身份文字超出 4 个字符时，弹框宽度增加。
   return count > 0 ? count + 1 : 0;
 });
 
@@ -155,6 +199,25 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
     }
   }
 }
+
+.avatar-link,
+.avatar-static {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.avatar-link {
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 3px;
+  }
+}
+
+.avatar-static :deep(.el-avatar) {
+  cursor: default;
+}
+
 :deep(.el-avatar) {
   cursor: pointer;
   transition: box-shadow 0.3s ease;
@@ -183,6 +246,24 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
       .info1 {
         display: flex;
         align-items: center;
+        gap: 4px;
+
+        .identity-copy {
+          min-width: 0;
+
+          h2 {
+            margin: 0;
+            overflow-wrap: anywhere;
+          }
+        }
+
+        .account-name {
+          color: var(--el-text-color-secondary);
+          font-size: 12px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
         .gender-icon {
           margin: 2px 0 0 2px;
           width: 16px;
@@ -194,6 +275,9 @@ const goProfile = (tabName?: string, subTabName?: 'following' | 'follower') => {
             color: #f56c6c;
           }
         }
+      }
+      .career {
+        margin-top: 2px;
       }
       .info2 {
         display: flex;

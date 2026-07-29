@@ -2,21 +2,36 @@
   <div class="register-account">
     <el-form :rules="rules" :model="form" status-icon ref="registerForm">
       <el-form-item prop="name">
-        <el-input v-model.trim="form.name" placeholder="用户名" @keyup.enter="focusNext1" clearable>
+        <el-input v-model.trim="form.name" placeholder="用户名" @keyup.enter="focusNickname" clearable>
           <template #prefix>
             <User :size="16" />
           </template>
         </el-input>
       </el-form-item>
+      <el-form-item prop="nickname">
+        <el-input
+          ref="nicknameInput"
+          v-model="form.nickname"
+          data-test="register-nickname"
+          placeholder="昵称（可选）"
+          :maxlength="NICKNAME_MAX_LENGTH"
+          clearable
+          @keyup.enter="focusPassword"
+        >
+          <template #prefix>
+            <UserRound :size="16" />
+          </template>
+        </el-input>
+      </el-form-item>
       <el-form-item prop="password">
-        <el-input v-model.trim="form.password" placeholder="密码" clearable show-password ref="nextRef1" @keyup.enter="focusNext2" type="password">
+        <el-input ref="passwordInput" v-model.trim="form.password" placeholder="密码" clearable show-password @keyup.enter="focusConfirmation" type="password">
           <template #prefix>
             <Lock :size="16" />
           </template>
         </el-input>
       </el-form-item>
       <el-form-item prop="confirm">
-        <el-input v-model.trim="form.confirm" placeholder="确认密码" clearable show-password ref="nextRef2" @keyup.enter="register" type="password">
+        <el-input ref="confirmationInput" v-model.trim="form.confirm" placeholder="确认密码" clearable show-password @keyup.enter="register" type="password">
           <template #prefix>
             <ShieldCheck :size="16" />
           </template>
@@ -31,28 +46,39 @@
 
 <script lang="ts" setup>
 import { Msg } from '@/utils';
-import { User, Lock, ShieldCheck } from '@lucide/vue';
+import { NICKNAME_MAX_LENGTH, normalizeNickname, validateNickname } from '@/utils/nickname';
+import { User, UserRound, Lock, ShieldCheck } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 
-import type { ElForm, ElInput } from 'element-plus';
+import type { ElForm, ElInput, FormItemRule } from 'element-plus';
 const userStore = useUserStore();
 
 const registerForm = ref<InstanceType<typeof ElForm>>();
-const nextRef1 = ref<InstanceType<typeof ElInput>>();
-const nextRef2 = ref<InstanceType<typeof ElInput>>();
+const nicknameInput = ref<InstanceType<typeof ElInput>>();
+const passwordInput = ref<InstanceType<typeof ElInput>>();
+const confirmationInput = ref<InstanceType<typeof ElInput>>();
 
-const form = reactive({ name: '', password: '', confirm: '' });
+const form = reactive({ name: '', nickname: '', password: '', confirm: '' });
+
+const validateNicknameRule: FormItemRule['validator'] = (_rule, value, callback) => {
+  const message = validateNickname(value);
+  message ? callback(new Error(message)) : callback();
+};
+
 const rules = ref({
   name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  nickname: [{ validator: validateNicknameRule, trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   confirm: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 });
 
 const register = () => {
   registerForm.value?.validate((valid) => {
-    const { name, password, confirm } = form;
+    const { name, nickname, password, confirm } = form;
     if (valid) {
-      password === confirm ? userStore.registerAction({ name, password }) : Msg.showFail('两次密码输入不一致');
+      password === confirm
+        ? userStore.registerAction({ name, password, nickname: normalizeNickname(nickname) || null })
+        : Msg.showFail('两次密码输入不一致');
       // password === confirm ? Msg.showSuccess(`${name},${password}`) : Msg.showFail('两次密码输入不一致');
     } else {
       Msg.showFail('请输入正确的用户名和密码');
@@ -60,8 +86,9 @@ const register = () => {
   });
 };
 
-const focusNext1 = () => nextRef1.value?.focus();
-const focusNext2 = () => nextRef2.value?.focus();
+const focusNickname = () => nicknameInput.value?.focus();
+const focusPassword = () => passwordInput.value?.focus();
+const focusConfirmation = () => confirmationInput.value?.focus();
 </script>
 
 <style lang="scss" scoped>

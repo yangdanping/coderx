@@ -1,6 +1,7 @@
 export interface IUserInfo {
   id?: number;
   name?: string;
+  nickname?: string | null;
   avatarUrl?: string;
   age?: number;
   sex?: string;

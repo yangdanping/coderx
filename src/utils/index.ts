@@ -19,6 +19,13 @@ import { renderCopyButtons } from './renderCopyButtons';
 // 键盘快捷键工具
 export { isMacOS, MacKeySymbols, formatShortcut, aiShortcuts, getAiShortcutText, isAiToggleShortcut, type ShortcutConfig } from './keyboard';
 export { escapeRegExp, getHighlightedSearchParts, getSearchShortcutText, isSearchToggleShortcut, normalizeSearchKeyword, type HighlightPart } from './search';
+export {
+  getDisplayName,
+  INVALID_NICKNAME_MESSAGE,
+  NICKNAME_MAX_LENGTH,
+  normalizeNickname,
+  validateNickname,
+} from './nickname';
 
 export {
   LocalCache,

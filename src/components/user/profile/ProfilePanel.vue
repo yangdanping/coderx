@@ -23,6 +23,18 @@
       </el-form-item>
 
       <div class="form-stack">
+        <el-form-item label="昵称" prop="nickname">
+          <el-input
+            v-model="form.nickname"
+            data-test="profile-nickname"
+            name="profile-nickname"
+            placeholder="例如 小杨…"
+            :maxlength="NICKNAME_MAX_LENGTH"
+            autocomplete="nickname"
+            clearable
+          />
+        </el-form-item>
+
         <el-form-item label="年龄" prop="age">
           <el-input
             v-model="form.age"
@@ -93,11 +105,13 @@ import { provinceAndCityData, codeToText } from 'element-china-area-data';
 import type { FormInstance, FormItemRule, FormRules } from 'element-plus';
 import { Mars, Venus } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
+import { NICKNAME_MAX_LENGTH, normalizeNickname, validateNickname } from '@/utils/nickname';
 import type { IUserInfo } from '@/stores/types/user.result';
 
 type GenderValue = '男' | '女';
 
 interface ProfileFormModel {
+  nickname: string;
   sex: GenderValue;
   age: number | string | null;
   email: string;
@@ -128,6 +142,7 @@ const genderOptions = [
 ];
 
 const createFormModel = (editForm: IUserInfo = {}): ProfileFormModel => ({
+  nickname: editForm.nickname ?? '',
   sex: editForm.sex === '女' ? '女' : '男',
   age: editForm.age ?? null,
   email: editForm.email ?? '',
@@ -144,6 +159,11 @@ const validateSex: FormItemRule['validator'] = (_rule, value, callback) => {
   }
 
   callback(new Error('请选择性别'));
+};
+
+const validateNicknameRule: FormItemRule['validator'] = (_rule, value, callback) => {
+  const message = validateNickname(value);
+  message ? callback(new Error(message)) : callback();
 };
 
 const validateCareer: FormItemRule['validator'] = (_rule, value, callback) => {
@@ -189,6 +209,7 @@ const validateAddress: FormItemRule['validator'] = (_rule, value, callback) => {
 };
 
 const rules: FormRules<ProfileFormModel> = {
+  nickname: [{ validator: validateNicknameRule, trigger: 'blur' }],
   sex: [{ validator: validateSex, trigger: 'change' }],
   career: [{ validator: validateCareer, trigger: 'change' }],
   age: [{ validator: validateAge, trigger: 'blur' }],
@@ -235,6 +256,7 @@ const handleAddressChange = (value: Array<string | number>) => {
 
 const createProfilePayload = (model: ProfileFormModel) => {
   const payload: Partial<IUserInfo> = {
+    nickname: normalizeNickname(model.nickname),
     sex: model.sex,
   };
 
