@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { defineComponent } from 'vue';
 import { describe, expect, it } from 'vitest';
 import ScrambleFrameText from '../ScrambleFrameText.vue';
 
@@ -31,6 +32,47 @@ describe('ScrambleFrameText', () => {
 
     expect(cells[5].classes()).toContain('scramble-accent-character');
     expect(cells[7].classes()).not.toContain('scramble-accent-character');
+  });
+
+  it('renders the accent cell as a hollow gradient outline when enabled', () => {
+    const wrapper = mount(
+      defineComponent({
+        components: { ScrambleFrameText },
+        template: `
+          <div>
+            <ScrambleFrameText frame="BuilderX" target="BuilderX" accent-outline />
+            <ScrambleFrameText frame="CoderX" target="CoderX" accent-outline accent-gradient-start-offset="30%" />
+          </div>
+        `,
+      }),
+    );
+    const [firstTitle, secondTitle] = wrapper.findAllComponents(ScrambleFrameText);
+    const accentCell = firstTitle?.findAll('.scrambl-cell').at(7);
+    const gradient = firstTitle?.get('linearGradient');
+    const gradientId = gradient?.attributes('id');
+    const outlineCharacter = firstTitle?.get('.scramble-outline-character');
+
+    expect(accentCell?.classes()).toContain('scramble-accent-outline');
+    expect(accentCell?.get('.scramble-outline-glyph').exists()).toBe(true);
+    expect(outlineCharacter?.text()).toBe('X');
+    expect(outlineCharacter?.attributes('fill')).toBe('none');
+    expect(outlineCharacter?.attributes('stroke')).toBe(`url(#${gradientId})`);
+    expect(gradient?.get('.scramble-outline-gradient-start').attributes('offset')).toBe('20%');
+    expect(gradient?.get('.scramble-outline-gradient-end').attributes('offset')).toBe('100%');
+    expect(secondTitle?.get('linearGradient').attributes('id')).not.toBe(gradientId);
+    expect(secondTitle?.get('.scramble-outline-gradient-start').attributes('offset')).toBe('30%');
+  });
+
+  it('keeps ordinary text rendering when the outline is disabled', () => {
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'CoderX',
+        target: 'CoderX',
+      },
+    });
+
+    expect(wrapper.find('.scramble-outline-glyph').exists()).toBe(false);
+    expect(wrapper.findAll('.scrambl-cell').at(5)?.text()).toBe('X');
   });
 
   it('keeps the target metadata while the initialization frame is blank', () => {

@@ -22,10 +22,18 @@
   font-family: 'Hiragino Sans GB', sans-serif;
   --markdown-editor-font: 'SFMono-Regular', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   /* 首页角色标题末尾 X 的渐变色 */
-  --coder-x-gradient: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
-  --writer-x-gradient: linear-gradient(135deg, rgba(255, 211, 88, 0.82) 20%, rgba(235, 106, 44, 0.82) 100%);
-  --creator-x-gradient: linear-gradient(135deg, rgba(255, 111, 174, 0.78) 20%, rgba(132, 0, 255, 0.76) 100%);
-  --builder-x-gradient: linear-gradient(135deg, rgba(0, 240, 255, 0.72) 20%, rgba(12, 140, 254, 0.8) 100%);
+  --coder-x-gradient-start: rgba(143, 235, 135, 0.7);
+  --coder-x-gradient-end: rgba(56, 72, 249, 0.7);
+  --coder-x-gradient: linear-gradient(135deg, var(--coder-x-gradient-start) 30%, var(--coder-x-gradient-end) 100%);
+  --writer-x-gradient-start: rgba(255, 211, 88, 0.82);
+  --writer-x-gradient-end: rgba(235, 106, 44, 0.82);
+  --writer-x-gradient: linear-gradient(135deg, var(--writer-x-gradient-start) 20%, var(--writer-x-gradient-end) 100%);
+  --creator-x-gradient-start: rgba(255, 111, 174, 0.78);
+  --creator-x-gradient-end: rgba(132, 0, 255, 0.76);
+  --creator-x-gradient: linear-gradient(135deg, var(--creator-x-gradient-start) 20%, var(--creator-x-gradient-end) 100%);
+  --builder-x-gradient-start: rgba(0, 240, 255, 0.72);
+  --builder-x-gradient-end: rgba(12, 140, 254, 0.8);
+  --builder-x-gradient: linear-gradient(135deg, var(--builder-x-gradient-start) 20%, var(--builder-x-gradient-end) 100%);
   --xfontStyle: var(--coder-x-gradient);
   // --xfontStyle: linear-gradient(to bottom right, #70b8ff, #edeef0);
   --navbarHeight: 56px;

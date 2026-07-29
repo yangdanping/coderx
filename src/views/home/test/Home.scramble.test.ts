@@ -89,6 +89,7 @@ describe('Home scramble title', () => {
 
     expect(wrapper.get('.title-line-2').exists()).toBe(true);
     expect(titleWords).toHaveLength(2);
+    expect(titleWords.every((titleWord) => titleWord.props('accentOutline') === true)).toBe(true);
     expect(titleWords[0]?.classes()).toContain('title-word-sizer');
     expect(titleWords[1]?.classes()).toContain('title-word');
     expect(titleWords[1]?.classes()).not.toContain('title-word-sizer');
@@ -131,8 +132,19 @@ describe('Home scramble title', () => {
     expect(commonScss).toContain('--writer-x-gradient:');
     expect(commonScss).toContain('--creator-x-gradient:');
     expect(commonScss).toContain('--builder-x-gradient:');
+    expect(commonScss).toContain('--coder-x-gradient-start:');
+    expect(commonScss).toContain('--coder-x-gradient-end:');
+    expect(commonScss).toContain('--writer-x-gradient-start:');
+    expect(commonScss).toContain('--writer-x-gradient-end:');
+    expect(commonScss).toContain('--creator-x-gradient-start:');
+    expect(commonScss).toContain('--creator-x-gradient-end:');
+    expect(commonScss).toContain('--builder-x-gradient-start:');
+    expect(commonScss).toContain('--builder-x-gradient-end:');
     expect(homeSource).not.toContain('width: 7ch');
     expect(homeSource).toContain('.scramble-accent-character');
+    expect(homeSource).toContain('--scramble-accent-gradient-start');
+    expect(homeSource).toContain('--scramble-accent-gradient-end');
+    expect(homeSource).toContain('accent-gradient-start-offset');
     expect(homeSource).toContain('.scrambl-cell:first-child');
     expect(homeSource).toContain('overflow: visible !important');
     expect(homeSource).toContain('--scramble-x-cell-width: 1.18ch');

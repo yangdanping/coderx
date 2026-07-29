@@ -6,8 +6,15 @@
           <div class="title-line-1">Welcome to</div>
           <div class="title-line-2">
             <!-- 桌面隐形尺子：与可见词同组件，按最长词占位；样式约定见 .title-line-2 注释 -->
-            <ScrambleFrameText class="title-word title-word-sizer" :frame="titleWidthReserve" :target="titleWidthReserve" aria-hidden="true" />
-            <ScrambleFrameText class="title-word" :frame="frame" :target="target" />
+            <ScrambleFrameText
+              class="title-word title-word-sizer"
+              :frame="titleWidthReserve"
+              :target="titleWidthReserve"
+              accent-outline
+              :accent-gradient-start-offset="titleWidthReserve === 'CoderX' ? '30%' : '20%'"
+              aria-hidden="true"
+            />
+            <ScrambleFrameText class="title-word" :frame="frame" :target="target" accent-outline :accent-gradient-start-offset="target === 'CoderX' ? '30%' : '20%'" />
           </div>
           <HomeExploreLink class="title-explore-link" />
         </div>
@@ -159,6 +166,8 @@ $TitleSize: 2em;
 
           .title-word {
             --active-x-gradient: var(--coder-x-gradient);
+            --scramble-accent-gradient-start: var(--coder-x-gradient-start);
+            --scramble-accent-gradient-end: var(--coder-x-gradient-end);
             // X 动画字符格：分别控制宽度、左侧间隔和右侧安全留白。
             --scramble-x-cell-width: 1.18ch;
             --scramble-x-gap: 0.02em;
@@ -181,14 +190,20 @@ $TitleSize: 2em;
 
           .title-word[data-scramble-word='WriterX'] {
             --active-x-gradient: var(--writer-x-gradient);
+            --scramble-accent-gradient-start: var(--writer-x-gradient-start);
+            --scramble-accent-gradient-end: var(--writer-x-gradient-end);
           }
 
           .title-word[data-scramble-word='CreatorX'] {
             --active-x-gradient: var(--creator-x-gradient);
+            --scramble-accent-gradient-start: var(--creator-x-gradient-start);
+            --scramble-accent-gradient-end: var(--creator-x-gradient-end);
           }
 
           .title-word[data-scramble-word='BuilderX'] {
             --active-x-gradient: var(--builder-x-gradient);
+            --scramble-accent-gradient-start: var(--builder-x-gradient-start);
+            --scramble-accent-gradient-end: var(--builder-x-gradient-end);
           }
 
           .title-word :deep(.scrambl-cell) {
@@ -213,12 +228,16 @@ $TitleSize: 2em;
             margin-left: var(--scramble-x-gap);
             padding-right: var(--scramble-x-right-space);
             font-style: oblique;
+            font-family: sans-serif;
+            text-shadow: none;
+          }
+
+          .title-word :deep(.scramble-last-character),
+          .title-word :deep(.scramble-accent-character:not(.scramble-accent-outline)) {
             background-image: var(--active-x-gradient);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            font-family: sans-serif;
-            text-shadow: none;
           }
         }
         &:hover {
