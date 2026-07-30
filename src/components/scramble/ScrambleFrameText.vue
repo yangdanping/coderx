@@ -8,25 +8,21 @@ const props = withDefaults(
     target: string;
     accentOutline?: boolean;
     accentAcrylic?: boolean;
-    accentFollowPointer?: boolean;
     accentGradientStartOffset?: string;
-    accentDefaultTiltX?: number;
-    accentDefaultTiltY?: number;
+    accentTiltX?: number;
+    accentTiltY?: number;
     accentDepthX?: number;
     accentDepthY?: number;
-    accentMaxPointerTilt?: number;
   }>(),
   {
     as: 'span',
     accentOutline: false,
     accentAcrylic: false,
-    accentFollowPointer: false,
     accentGradientStartOffset: '20%',
-    accentDefaultTiltX: -3,
-    accentDefaultTiltY: 6,
+    accentTiltX: -3,
+    accentTiltY: 6,
     accentDepthX: 5,
     accentDepthY: 5,
-    accentMaxPointerTilt: 7,
   },
 );
 
@@ -38,170 +34,14 @@ const accentIndex = computed(() => {
   return targetLength > 0 ? targetLength - 1 : -1;
 });
 
-const tiltX = shallowRef(props.accentDefaultTiltX);
-const tiltY = shallowRef(props.accentDefaultTiltY);
-const depthX = shallowRef(props.accentDepthX);
-const depthY = shallowRef(props.accentDepthY);
-let pointerFrameId: number | null = null;
-let pendingPointer: { x: number; y: number } | null = null;
-let finePointerQuery: MediaQueryList | null = null;
-let reducedMotionQuery: MediaQueryList | null = null;
-let isMounted = false;
-
 const acrylicStyle = computed(() => ({
-  '--scramble-acrylic-tilt-x': `${tiltX.value}deg`,
-  '--scramble-acrylic-tilt-y': `${tiltY.value}deg`,
+  '--scramble-acrylic-tilt-x': `${props.accentTiltX}deg`,
+  '--scramble-acrylic-tilt-y': `${props.accentTiltY}deg`,
 }));
-
-function resetAcrylicOrientation() {
-  tiltX.value = props.accentDefaultTiltX;
-  tiltY.value = props.accentDefaultTiltY;
-  depthX.value = props.accentDepthX;
-  depthY.value = props.accentDepthY;
-}
-
-function cancelPendingPointerFrame() {
-  pendingPointer = null;
-  if (pointerFrameId === null) return;
-
-  cancelAnimationFrame(pointerFrameId);
-  pointerFrameId = null;
-}
-
-function resetAcrylicInteraction() {
-  cancelPendingPointerFrame();
-  resetAcrylicOrientation();
-}
-
-function canFollowPointer() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !props.accentAcrylic || !props.accentFollowPointer) return false;
-
-  const hasFinePointer = finePointerQuery?.matches ?? window.matchMedia('(pointer: fine)').matches;
-  const prefersReducedMotion = reducedMotionQuery?.matches ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  return hasFinePointer === true && prefersReducedMotion !== true;
-}
-
-function handleMotionCapabilityChange() {
-  if (!canFollowPointer()) resetAcrylicInteraction();
-}
-
-function addMotionCapabilityListener(query: MediaQueryList) {
-  if (typeof query.addEventListener === 'function') {
-    query.addEventListener('change', handleMotionCapabilityChange);
-    return;
-  }
-
-  query.addListener?.(handleMotionCapabilityChange);
-}
-
-function removeMotionCapabilityListener(query: MediaQueryList) {
-  if (typeof query.removeEventListener === 'function') {
-    query.removeEventListener('change', handleMotionCapabilityChange);
-    return;
-  }
-
-  query.removeListener?.(handleMotionCapabilityChange);
-}
-
-function startMotionCapabilityTracking() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function' || finePointerQuery || reducedMotionQuery) return;
-
-  finePointerQuery = window.matchMedia('(pointer: fine)');
-  reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  addMotionCapabilityListener(finePointerQuery);
-  addMotionCapabilityListener(reducedMotionQuery);
-}
-
-function stopMotionCapabilityTracking() {
-  if (finePointerQuery) removeMotionCapabilityListener(finePointerQuery);
-  if (reducedMotionQuery) removeMotionCapabilityListener(reducedMotionQuery);
-  finePointerQuery = null;
-  reducedMotionQuery = null;
-}
-
-function syncPointerTracking() {
-  if (!isMounted) return;
-
-  if (props.accentAcrylic && props.accentFollowPointer) {
-    startMotionCapabilityTracking();
-    handleMotionCapabilityChange();
-    return;
-  }
-
-  stopMotionCapabilityTracking();
-  resetAcrylicInteraction();
-}
-
-function clampUnit(value: number) {
-  return Math.min(1, Math.max(-1, value));
-}
-
-function roundOrientation(value: number) {
-  return Math.round(value * 1000) / 1000;
-}
-
-function applyPendingPointer() {
-  pointerFrameId = null;
-  if (!pendingPointer) return;
-
-  const { x, y } = pendingPointer;
-  pendingPointer = null;
-  tiltX.value = roundOrientation(props.accentDefaultTiltX - y * props.accentMaxPointerTilt);
-  tiltY.value = roundOrientation(props.accentDefaultTiltY + x * props.accentMaxPointerTilt);
-  depthX.value = roundOrientation(props.accentDepthX - x * 1.5);
-  depthY.value = roundOrientation(props.accentDepthY - y * 1.5);
-}
-
-function handlePointerMove(event: PointerEvent) {
-  if (!canFollowPointer()) return;
-
-  const target = event.currentTarget;
-  if (!(target instanceof HTMLElement)) return;
-  const bounds = target.getBoundingClientRect();
-  if (bounds.width <= 0 || bounds.height <= 0) return;
-
-  pendingPointer = {
-    x: clampUnit(((event.clientX - bounds.left) / bounds.width) * 2 - 1),
-    y: clampUnit(((event.clientY - bounds.top) / bounds.height) * 2 - 1),
-  };
-  if (pointerFrameId === null) {
-    pointerFrameId = requestAnimationFrame(applyPendingPointer);
-  }
-}
-
-function handlePointerLeave() {
-  resetAcrylicInteraction();
-}
-
-watch(
-  () => [props.accentDefaultTiltX, props.accentDefaultTiltY, props.accentDepthX, props.accentDepthY],
-  resetAcrylicInteraction,
-);
-
-watch(() => [props.accentAcrylic, props.accentFollowPointer], syncPointerTracking);
-
-onMounted(() => {
-  isMounted = true;
-  syncPointerTracking();
-});
-
-onBeforeUnmount(() => {
-  isMounted = false;
-  stopMotionCapabilityTracking();
-  cancelPendingPointerFrame();
-});
 </script>
 
 <template>
-  <component
-    :is="props.as"
-    :data-scramble-word="props.target"
-    :aria-label="props.target"
-    class="scramble-frame-text"
-    @pointermove="handlePointerMove"
-    @pointerleave="handlePointerLeave"
-  >
+  <component :is="props.as" :data-scramble-word="props.target" :aria-label="props.target" class="scramble-frame-text">
     <span
       v-for="(character, index) in characters"
       :key="index"
@@ -218,8 +58,8 @@ onBeforeUnmount(() => {
         v-if="props.accentAcrylic && index === accentIndex"
         :character="character"
         :gradient-start-offset="props.accentGradientStartOffset"
-        :depth-x="depthX"
-        :depth-y="depthY"
+        :depth-x="props.accentDepthX"
+        :depth-y="props.accentDepthY"
       />
       <svg
         v-else-if="props.accentOutline && index === accentIndex"
@@ -281,8 +121,6 @@ onBeforeUnmount(() => {
   transform: perspective(420px) rotateX(var(--scramble-acrylic-tilt-x)) rotateY(var(--scramble-acrylic-tilt-y));
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 160ms cubic-bezier(0.25, 1, 0.5, 1);
-  will-change: transform;
 }
 
 .scramble-outline-gradient-start {
@@ -302,9 +140,4 @@ onBeforeUnmount(() => {
   vector-effect: non-scaling-stroke;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .scramble-accent-acrylic :deep(.scramble-acrylic-glyph) {
-    transition: none;
-  }
-}
 </style>

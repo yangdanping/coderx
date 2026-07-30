@@ -12,11 +12,10 @@
               :target="titleWidthReserve"
               accent-acrylic
               :accent-gradient-start-offset="titleWidthReserve === 'CoderX' ? '30%' : '20%'"
-              :accent-default-tilt-x="-3"
-              :accent-default-tilt-y="6"
+              :accent-tilt-x="-3"
+              :accent-tilt-y="6"
               :accent-depth-x="5"
               :accent-depth-y="5"
-              :accent-max-pointer-tilt="7"
               aria-hidden="true"
             />
             <ScrambleFrameText
@@ -24,13 +23,11 @@
               :frame="frame"
               :target="target"
               accent-acrylic
-              accent-follow-pointer
               :accent-gradient-start-offset="target === 'CoderX' ? '30%' : '20%'"
-              :accent-default-tilt-x="-3"
-              :accent-default-tilt-y="6"
+              :accent-tilt-x="-3"
+              :accent-tilt-y="6"
               :accent-depth-x="5"
               :accent-depth-y="5"
-              :accent-max-pointer-tilt="7"
             />
           </div>
           <HomeExploreLink class="title-explore-link" />

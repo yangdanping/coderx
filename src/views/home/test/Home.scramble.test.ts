@@ -92,22 +92,21 @@ describe('Home scramble title', () => {
     expect(titleWords).toHaveLength(2);
     expect(sizer?.props()).toMatchObject({
       accentAcrylic: true,
-      accentFollowPointer: false,
-      accentDefaultTiltX: -3,
-      accentDefaultTiltY: 6,
+      accentTiltX: -3,
+      accentTiltY: 6,
       accentDepthX: 5,
       accentDepthY: 5,
-      accentMaxPointerTilt: 7,
     });
     expect(visible?.props()).toMatchObject({
       accentAcrylic: true,
-      accentFollowPointer: true,
-      accentDefaultTiltX: -3,
-      accentDefaultTiltY: 6,
+      accentTiltX: -3,
+      accentTiltY: 6,
       accentDepthX: 5,
       accentDepthY: 5,
-      accentMaxPointerTilt: 7,
     });
+    expect(sizer?.props()).not.toHaveProperty('accentFollowPointer');
+    expect(visible?.props()).not.toHaveProperty('accentFollowPointer');
+    expect(visible?.props()).not.toHaveProperty('accentMaxPointerTilt');
     expect(sizer?.classes()).toContain('title-word-sizer');
     expect(visible?.classes()).toContain('title-word');
     expect(visible?.classes()).not.toContain('title-word-sizer');
@@ -178,6 +177,8 @@ describe('Home scramble title', () => {
     expect(homeSource).toContain('--scramble-x-right-space: 0.2em');
     expect(homeSource).toContain('width: var(--scramble-x-cell-width) !important');
     expect(homeSource).toContain('margin-left: var(--scramble-x-gap)');
+    expect(homeSource).not.toContain('accent-follow-pointer');
+    expect(homeSource).not.toContain('accent-max-pointer-tilt');
     expect(homeSource).toContain('padding-right: var(--scramble-x-right-space)');
     expect(homeSource).toContain(':not(.scramble-accent-outline):not(.scramble-accent-acrylic)');
   });
