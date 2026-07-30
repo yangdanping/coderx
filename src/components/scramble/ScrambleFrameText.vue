@@ -74,10 +74,10 @@ function resetAcrylicInteraction() {
 }
 
 function canFollowPointer() {
-  if (typeof window === 'undefined' || !props.accentAcrylic || !props.accentFollowPointer) return false;
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !props.accentAcrylic || !props.accentFollowPointer) return false;
 
-  const hasFinePointer = finePointerQuery?.matches ?? window.matchMedia?.('(pointer: fine)').matches;
-  const prefersReducedMotion = reducedMotionQuery?.matches ?? window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const hasFinePointer = finePointerQuery?.matches ?? window.matchMedia('(pointer: fine)').matches;
+  const prefersReducedMotion = reducedMotionQuery?.matches ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return hasFinePointer === true && prefersReducedMotion !== true;
 }
@@ -86,18 +86,36 @@ function handleMotionCapabilityChange() {
   if (!canFollowPointer()) resetAcrylicInteraction();
 }
 
+function addMotionCapabilityListener(query: MediaQueryList) {
+  if (typeof query.addEventListener === 'function') {
+    query.addEventListener('change', handleMotionCapabilityChange);
+    return;
+  }
+
+  query.addListener?.(handleMotionCapabilityChange);
+}
+
+function removeMotionCapabilityListener(query: MediaQueryList) {
+  if (typeof query.removeEventListener === 'function') {
+    query.removeEventListener('change', handleMotionCapabilityChange);
+    return;
+  }
+
+  query.removeListener?.(handleMotionCapabilityChange);
+}
+
 function startMotionCapabilityTracking() {
-  if (typeof window === 'undefined' || finePointerQuery || reducedMotionQuery) return;
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function' || finePointerQuery || reducedMotionQuery) return;
 
   finePointerQuery = window.matchMedia('(pointer: fine)');
   reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  finePointerQuery.addEventListener('change', handleMotionCapabilityChange);
-  reducedMotionQuery.addEventListener('change', handleMotionCapabilityChange);
+  addMotionCapabilityListener(finePointerQuery);
+  addMotionCapabilityListener(reducedMotionQuery);
 }
 
 function stopMotionCapabilityTracking() {
-  finePointerQuery?.removeEventListener('change', handleMotionCapabilityChange);
-  reducedMotionQuery?.removeEventListener('change', handleMotionCapabilityChange);
+  if (finePointerQuery) removeMotionCapabilityListener(finePointerQuery);
+  if (reducedMotionQuery) removeMotionCapabilityListener(reducedMotionQuery);
   finePointerQuery = null;
   reducedMotionQuery = null;
 }
