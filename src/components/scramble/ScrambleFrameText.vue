@@ -44,6 +44,9 @@ const depthX = shallowRef(props.accentDepthX);
 const depthY = shallowRef(props.accentDepthY);
 let pointerFrameId: number | null = null;
 let pendingPointer: { x: number; y: number } | null = null;
+let finePointerQuery: MediaQueryList | null = null;
+let reducedMotionQuery: MediaQueryList | null = null;
+let isMounted = false;
 
 const acrylicStyle = computed(() => ({
   '--scramble-acrylic-tilt-x': `${tiltX.value}deg`,
@@ -57,10 +60,59 @@ function resetAcrylicOrientation() {
   depthY.value = props.accentDepthY;
 }
 
+function cancelPendingPointerFrame() {
+  pendingPointer = null;
+  if (pointerFrameId === null) return;
+
+  cancelAnimationFrame(pointerFrameId);
+  pointerFrameId = null;
+}
+
+function resetAcrylicInteraction() {
+  cancelPendingPointerFrame();
+  resetAcrylicOrientation();
+}
+
 function canFollowPointer() {
   if (typeof window === 'undefined' || !props.accentAcrylic || !props.accentFollowPointer) return false;
 
-  return window.matchMedia?.('(pointer: fine)').matches === true && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches !== true;
+  const hasFinePointer = finePointerQuery?.matches ?? window.matchMedia?.('(pointer: fine)').matches;
+  const prefersReducedMotion = reducedMotionQuery?.matches ?? window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  return hasFinePointer === true && prefersReducedMotion !== true;
+}
+
+function handleMotionCapabilityChange() {
+  if (!canFollowPointer()) resetAcrylicInteraction();
+}
+
+function startMotionCapabilityTracking() {
+  if (typeof window === 'undefined' || finePointerQuery || reducedMotionQuery) return;
+
+  finePointerQuery = window.matchMedia('(pointer: fine)');
+  reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  finePointerQuery.addEventListener('change', handleMotionCapabilityChange);
+  reducedMotionQuery.addEventListener('change', handleMotionCapabilityChange);
+}
+
+function stopMotionCapabilityTracking() {
+  finePointerQuery?.removeEventListener('change', handleMotionCapabilityChange);
+  reducedMotionQuery?.removeEventListener('change', handleMotionCapabilityChange);
+  finePointerQuery = null;
+  reducedMotionQuery = null;
+}
+
+function syncPointerTracking() {
+  if (!isMounted) return;
+
+  if (props.accentAcrylic && props.accentFollowPointer) {
+    startMotionCapabilityTracking();
+    handleMotionCapabilityChange();
+    return;
+  }
+
+  stopMotionCapabilityTracking();
+  resetAcrylicInteraction();
 }
 
 function clampUnit(value: number) {
@@ -101,21 +153,25 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 function handlePointerLeave() {
-  pendingPointer = null;
-  if (pointerFrameId !== null) {
-    cancelAnimationFrame(pointerFrameId);
-    pointerFrameId = null;
-  }
-  resetAcrylicOrientation();
+  resetAcrylicInteraction();
 }
 
 watch(
   () => [props.accentDefaultTiltX, props.accentDefaultTiltY, props.accentDepthX, props.accentDepthY],
-  resetAcrylicOrientation,
+  resetAcrylicInteraction,
 );
 
+watch(() => [props.accentAcrylic, props.accentFollowPointer], syncPointerTracking);
+
+onMounted(() => {
+  isMounted = true;
+  syncPointerTracking();
+});
+
 onBeforeUnmount(() => {
-  if (pointerFrameId !== null) cancelAnimationFrame(pointerFrameId);
+  isMounted = false;
+  stopMotionCapabilityTracking();
+  cancelPendingPointerFrame();
 });
 </script>
 

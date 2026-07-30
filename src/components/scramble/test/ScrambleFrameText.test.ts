@@ -5,23 +5,47 @@ import ScrambleAcrylicGlyph from '../ScrambleAcrylicGlyph.vue';
 import ScrambleFrameText from '../ScrambleFrameText.vue';
 
 function stubMotionCapabilities({ finePointer = true, reducedMotion = false } = {}) {
+  const state = { finePointer, reducedMotion };
+  const listeners = {
+    finePointer: new Set<EventListenerOrEventListenerObject>(),
+    reducedMotion: new Set<EventListenerOrEventListenerObject>(),
+  };
+  const createQuery = (media: string, key: keyof typeof state) =>
+    ({
+      get matches() {
+        return state[key];
+      },
+      media,
+      onchange: null,
+      addEventListener: vi.fn((_type: string, listener: EventListenerOrEventListenerObject) => listeners[key].add(listener)),
+      removeEventListener: vi.fn((_type: string, listener: EventListenerOrEventListenerObject) => listeners[key].delete(listener)),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }) as unknown as MediaQueryList;
+  const finePointerQuery = createQuery('(pointer: fine)', 'finePointer');
+  const reducedMotionQuery = createQuery('(prefers-reduced-motion: reduce)', 'reducedMotion');
+
   vi.stubGlobal(
     'matchMedia',
-    vi.fn((query: string) => {
-      const matches = query === '(pointer: fine)' ? finePointer : query === '(prefers-reduced-motion: reduce)' ? reducedMotion : false;
-
-      return {
-        matches,
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      } as unknown as MediaQueryList;
-    }),
+    vi.fn((query: string) => (query === '(pointer: fine)' ? finePointerQuery : reducedMotionQuery)),
   );
+
+  const setCapability = (key: keyof typeof state, value: boolean) => {
+    state[key] = value;
+    const media = key === 'finePointer' ? '(pointer: fine)' : '(prefers-reduced-motion: reduce)';
+    const event = { matches: value, media } as MediaQueryListEvent;
+
+    listeners[key].forEach((listener) => {
+      if (typeof listener === 'function') listener(event);
+      else listener.handleEvent(event);
+    });
+  };
+
+  return {
+    setFinePointer: (value: boolean) => setCapability('finePointer', value),
+    setReducedMotion: (value: boolean) => setCapability('reducedMotion', value),
+  };
 }
 
 describe('ScrambleFrameText', () => {
@@ -170,6 +194,107 @@ describe('ScrambleFrameText', () => {
       depthY: 5,
     });
     expect(cancelFrame).not.toHaveBeenCalled();
+  });
+
+  it('returns to the configured default orientation when pointer following is switched off after tilting', async () => {
+    stubMotionCapabilities();
+    let frameCallback: FrameRequestCallback | undefined;
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        frameCallback = callback;
+        return 19;
+      }),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'WriterX',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentFollowPointer: true,
+        accentDefaultTiltX: -3,
+        accentDefaultTiltY: 6,
+        accentDepthX: 5,
+        accentDepthY: 5,
+      },
+    });
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    wrapper.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 200, clientY: 0 }));
+    frameCallback?.(0);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 13deg');
+
+    await wrapper.setProps({ accentFollowPointer: false });
+
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-x: -3deg');
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 6deg');
+    expect(wrapper.getComponent(ScrambleAcrylicGlyph).props()).toMatchObject({
+      depthX: 5,
+      depthY: 5,
+    });
+  });
+
+  it('returns to the configured default orientation when reduced motion is enabled after tilting', async () => {
+    const { setReducedMotion } = stubMotionCapabilities();
+    let frameCallback: FrameRequestCallback | undefined;
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        frameCallback = callback;
+        return 23;
+      }),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const wrapper = mount(ScrambleFrameText, {
+      props: {
+        frame: 'WriterX',
+        target: 'WriterX',
+        accentAcrylic: true,
+        accentFollowPointer: true,
+        accentDefaultTiltX: -3,
+        accentDefaultTiltY: 6,
+        accentDepthX: 5,
+        accentDepthY: 5,
+      },
+    });
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    wrapper.element.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 200, clientY: 0 }));
+    frameCallback?.(0);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 13deg');
+
+    setReducedMotion(true);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-x: -3deg');
+    expect(wrapper.get('.scramble-accent-acrylic').attributes('style')).toContain('--scramble-acrylic-tilt-y: 6deg');
+    expect(wrapper.getComponent(ScrambleAcrylicGlyph).props()).toMatchObject({
+      depthX: 5,
+      depthY: 5,
+    });
   });
 
   it.each([
