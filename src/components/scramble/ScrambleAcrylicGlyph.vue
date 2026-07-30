@@ -29,7 +29,7 @@ const layerPosition = (progress: number) => ({
 </script>
 
 <template>
-  <svg class="scramble-acrylic-glyph" viewBox="-8 -8 94 118" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
+  <svg class="scramble-acrylic-glyph" viewBox="0 0 70 100" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
     <defs>
       <linearGradient :id="gradientIds.edge" class="scramble-acrylic-edge-gradient" x1="15%" y1="15%" x2="85%" y2="85%">
         <stop class="scramble-acrylic-edge-start" :offset="props.gradientStartOffset" />

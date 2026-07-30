@@ -16,7 +16,7 @@ describe('ScrambleAcrylicGlyph', () => {
     const depthLayers = wrapper.findAll('.scramble-acrylic-depth');
     const allTextLayers = wrapper.findAll('text');
 
-    expect(wrapper.get('.scramble-acrylic-glyph').attributes('viewBox')).toBe('-8 -8 94 118');
+    expect(wrapper.get('.scramble-acrylic-glyph').attributes('viewBox')).toBe('0 0 70 100');
     expect(depthLayers).toHaveLength(4);
     expect(allTextLayers.every((layer) => layer.text() === 'ケ')).toBe(true);
     expect(allTextLayers.every((layer) => layer.attributes('font-size') === '100')).toBe(true);
