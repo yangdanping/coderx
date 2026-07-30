@@ -29,7 +29,7 @@
 - Consumes: the global `:root` custom-property scope from `src/assets/css/common.scss`.
 - Produces: `--flow-nav-gradient`, consumed only by `.special-flow` in `NavMenu.vue`.
 
-- [ ] **Step 1: Write the failing style-contract test**
+- [x] **Step 1: Write the failing style-contract test**
 
 Add this test inside the existing `describe('NavMenu', ...)` block:
 
@@ -47,7 +47,7 @@ it('keeps the Flow label on its historical gradient independently from the Home 
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -57,7 +57,7 @@ pnpm exec vitest run src/components/navbar/cpns/test/NavMenu.test.ts
 
 Expected: FAIL because `--flow-nav-gradient` is not defined and `.special-flow` still uses `var(--xfontStyle)`.
 
-- [ ] **Step 3: Add the independent theme token**
+- [x] **Step 3: Add the independent theme token**
 
 In the `:root` theme variables in `src/assets/css/common.scss`, immediately after `--xfontStyle`, add:
 
@@ -68,7 +68,7 @@ In the `:root` theme variables in `src/assets/css/common.scss`, immediately afte
 
 Do not add an `html.dark` override: both themes intentionally use this historical value.
 
-- [ ] **Step 4: Point the Flow label at the semantic token**
+- [x] **Step 4: Point the Flow label at the semantic token**
 
 In `.menu-item.special-flow` in `src/components/navbar/cpns/NavMenu.vue`, replace only the background token:
 
@@ -78,7 +78,7 @@ In `.menu-item.special-flow` in `src/components/navbar/cpns/NavMenu.vue`, replac
 
 Leave all surrounding typography, clipping, hover, responsive, and active styles unchanged.
 
-- [ ] **Step 5: Run focused verification and verify GREEN**
+- [x] **Step 5: Run focused verification and verify GREEN**
 
 Run:
 
@@ -88,7 +88,7 @@ pnpm exec vitest run src/components/navbar/cpns/test/NavMenu.test.ts
 
 Expected: all `NavMenu` tests PASS.
 
-- [ ] **Step 6: Run project verification**
+- [x] **Step 6: Run project verification**
 
 Run:
 
@@ -100,7 +100,7 @@ pnpm run build
 
 Expected: every command exits with code `0`.
 
-- [ ] **Step 7: Review the final diff**
+- [x] **Step 7: Review the final diff**
 
 Run:
 
