@@ -69,4 +69,16 @@ describe('NavMenu', () => {
     expect(source).toContain('&.special-flow');
     expect(flowBlock).toContain('font-weight: 600;');
   });
+
+  it('keeps the Flow label on its historical gradient independently from the Home X treatment', () => {
+    const navMenuSource = readFileSync(join(process.cwd(), 'src/components/navbar/cpns/NavMenu.vue'), 'utf8');
+    const commonStyles = readFileSync(join(process.cwd(), 'src/assets/css/common.scss'), 'utf8');
+    const flowBlock = navMenuSource.match(/&\.special-flow\s*{([\s\S]*?)\n\s*}/)?.[1] ?? '';
+
+    expect(commonStyles).toContain(
+      '--flow-nav-gradient: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);',
+    );
+    expect(flowBlock).toContain('background-image: var(--flow-nav-gradient);');
+    expect(flowBlock).not.toContain('var(--xfontStyle)');
+  });
 });

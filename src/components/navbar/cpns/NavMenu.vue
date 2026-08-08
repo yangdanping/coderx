@@ -86,7 +86,7 @@ const handleSelect = (event: MouseEvent, key: string) => {
         font-weight: 600;
         letter-spacing: 0;
         text-transform: none;
-        background-image: var(--xfontStyle);
+        background-image: var(--flow-nav-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;

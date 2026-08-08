@@ -83,6 +83,7 @@ declare module 'vue' {
     ScrambleWord: typeof import('./components/scramble/ScrambleWord.vue')['default']
     ScrollView: typeof import('./components/scroll-view/ScrollView.vue')['default']
     SearchHistorySection: typeof import('./components/navbar/cpns/SearchHistorySection.vue')['default']
+    SplitPreviewToggleIcon: typeof import('./components/tiptap-editor/SplitPreviewToggleIcon.vue')['default']
     TabItem: typeof import('./components/common/TabItem.vue')['default']
     Tabs: typeof import('./components/common/Tabs.vue')['default']
     ThinkingShimmer: typeof import('./components/icon/cpns/ThinkingShimmer.vue')['default']

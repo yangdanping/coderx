@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { mount } from '@vue/test-utils';
 import { defineComponent } from 'vue';
 import { describe, expect, it } from 'vitest';
@@ -21,6 +23,7 @@ describe('ScrambleAcrylicGlyph', () => {
     expect(allTextLayers.every((layer) => layer.text() === 'ケ')).toBe(true);
     expect(allTextLayers.every((layer) => layer.attributes('font-size') === '100')).toBe(true);
     expect(wrapper.get('.scramble-acrylic-face').text()).toBe('ケ');
+    expect(wrapper.get('.scramble-acrylic-definition').text()).toBe('ケ');
     expect(wrapper.get('.scramble-acrylic-highlight').text()).toBe('ケ');
     expect(depthLayers.at(3)?.attributes('x')).toBe('41');
     expect(depthLayers.at(3)?.attributes('y')).toBe('90');
@@ -49,5 +52,19 @@ describe('ScrambleAcrylicGlyph', () => {
     expect(firstIds.every((id) => !secondIds.includes(id))).toBe(true);
     expect(new Set(firstIds).size).toBe(firstIds.length);
     expect(new Set(secondIds).size).toBe(secondIds.length);
+  });
+
+  it('strengthens the light material while preserving the existing dark material values', () => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/components/scramble/ScrambleAcrylicGlyph.vue'), 'utf8');
+
+    expect(source).toContain('--scramble-acrylic-depth-opacity: 0.34');
+    expect(source).toContain('--scramble-acrylic-definition-opacity: 0.58');
+    expect(source).toContain('--scramble-acrylic-face-start-opacity: 0.18');
+    expect(source).toContain('--scramble-acrylic-face-end-opacity: 0.34');
+    expect(source).toContain(':global(html.dark) .scramble-acrylic-glyph');
+    expect(source).toContain('--scramble-acrylic-depth-opacity: 0.18');
+    expect(source).toContain('--scramble-acrylic-definition-opacity: 0');
+    expect(source).toContain('--scramble-acrylic-face-start-opacity: 0.08');
+    expect(source).toContain('--scramble-acrylic-face-end-opacity: 0.16');
   });
 });

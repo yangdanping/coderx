@@ -76,6 +76,17 @@ const layerPosition = (progress: number) => ({
         {{ props.character }}
       </text>
       <text
+        class="scramble-acrylic-character scramble-acrylic-definition"
+        x="35"
+        y="86"
+        font-size="100"
+        text-anchor="middle"
+        fill="none"
+        :stroke="`url(#${gradientIds.edge})`"
+      >
+        {{ props.character }}
+      </text>
+      <text
         class="scramble-acrylic-character scramble-acrylic-highlight"
         x="34.35"
         y="85.2"
@@ -97,6 +108,31 @@ const layerPosition = (progress: number) => ({
   height: 1em;
   overflow: visible;
   transform-style: preserve-3d;
+  --scramble-acrylic-depth-opacity: 0.34;
+  --scramble-acrylic-definition-opacity: 0.58;
+  --scramble-acrylic-face-highlight-color: var(--scramble-accent-gradient-end, currentColor);
+  --scramble-acrylic-face-highlight-opacity: 0.18;
+  --scramble-acrylic-face-start-opacity: 0.18;
+  --scramble-acrylic-face-end-opacity: 0.34;
+  --scramble-acrylic-side-start-opacity: 0.16;
+  --scramble-acrylic-side-end-opacity: 0.36;
+  --scramble-acrylic-highlight-color: var(--scramble-accent-gradient-start, currentColor);
+  --scramble-acrylic-highlight-start-opacity: 0.48;
+  --scramble-acrylic-highlight-end-opacity: 0.04;
+}
+
+:global(html.dark) .scramble-acrylic-glyph {
+  --scramble-acrylic-depth-opacity: 0.18;
+  --scramble-acrylic-definition-opacity: 0;
+  --scramble-acrylic-face-highlight-color: #fff;
+  --scramble-acrylic-face-highlight-opacity: 0.38;
+  --scramble-acrylic-face-start-opacity: 0.08;
+  --scramble-acrylic-face-end-opacity: 0.16;
+  --scramble-acrylic-side-start-opacity: 0.07;
+  --scramble-acrylic-side-end-opacity: 0.18;
+  --scramble-acrylic-highlight-color: #fff;
+  --scramble-acrylic-highlight-start-opacity: 0.92;
+  --scramble-acrylic-highlight-end-opacity: 0;
 }
 
 .scramble-acrylic-character {
@@ -109,12 +145,17 @@ const layerPosition = (progress: number) => ({
 }
 
 .scramble-acrylic-depth {
-  opacity: 0.18;
+  opacity: var(--scramble-acrylic-depth-opacity);
   stroke-width: 1;
 }
 
 .scramble-acrylic-face {
   stroke-width: clamp(1px, 0.015em, 2px);
+}
+
+.scramble-acrylic-definition {
+  opacity: var(--scramble-acrylic-definition-opacity);
+  stroke-width: clamp(1.2px, 0.018em, 2.4px);
 }
 
 .scramble-acrylic-highlight {
@@ -135,33 +176,33 @@ const layerPosition = (progress: number) => ({
 }
 
 .scramble-acrylic-face-highlight {
-  stop-color: #fff;
-  stop-opacity: 0.38;
+  stop-color: var(--scramble-acrylic-face-highlight-color);
+  stop-opacity: var(--scramble-acrylic-face-highlight-opacity);
 }
 
 .scramble-acrylic-face-start {
-  stop-opacity: 0.08;
+  stop-opacity: var(--scramble-acrylic-face-start-opacity);
 }
 
 .scramble-acrylic-face-end {
-  stop-opacity: 0.16;
+  stop-opacity: var(--scramble-acrylic-face-end-opacity);
 }
 
 .scramble-acrylic-side-start {
-  stop-opacity: 0.07;
+  stop-opacity: var(--scramble-acrylic-side-start-opacity);
 }
 
 .scramble-acrylic-side-end {
-  stop-opacity: 0.18;
+  stop-opacity: var(--scramble-acrylic-side-end-opacity);
 }
 
 .scramble-acrylic-highlight-start {
-  stop-color: #fff;
-  stop-opacity: 0.92;
+  stop-color: var(--scramble-acrylic-highlight-color);
+  stop-opacity: var(--scramble-acrylic-highlight-start-opacity);
 }
 
 .scramble-acrylic-highlight-end {
-  stop-color: #fff;
-  stop-opacity: 0;
+  stop-color: var(--scramble-acrylic-highlight-color);
+  stop-opacity: var(--scramble-acrylic-highlight-end-opacity);
 }
 </style>

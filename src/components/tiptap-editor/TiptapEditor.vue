@@ -10,7 +10,6 @@
       :resolveImageUploadOptions="resolveToolbarImageUploadOptions"
       :resolveVideoUploadOptions="resolveToolbarVideoUploadOptions"
       :insertSplitPreviewBlockquote="insertSplitPreviewBlockquote"
-      @toggle-split-preview="toggleSplitPreview"
     />
 
     <div
@@ -40,7 +39,21 @@
         data-testid="markdown-split-preview"
       >
         <section class="markdown-panel markdown-panel--source">
-          <div class="markdown-panel__label">Markdown</div>
+          <div class="markdown-panel__header">
+            <div class="markdown-panel__label">Markdown</div>
+          </div>
+          <!-- 绝对定位叠在标题行右侧，避免撑高 header 挤占内容区 -->
+          <el-tooltip :content="splitPreviewTooltip" placement="bottom" :show-after="500">
+            <button
+              type="button"
+              class="split-preview-toggle"
+              data-testid="split-preview-toggle"
+              :aria-label="splitPreviewTooltip"
+              @click="toggleSplitPreview"
+            >
+              <SplitPreviewToggleIcon :expanded="isSplitPreviewActive" />
+            </button>
+          </el-tooltip>
           <textarea
             ref="markdownSourceInputRef"
             v-model="markdownSource"
@@ -59,17 +72,28 @@
         <div class="split-preview-divider" data-testid="split-preview-divider" aria-hidden="true"></div>
 
         <section class="markdown-panel markdown-panel--preview">
-          <div class="markdown-panel__label">Preview</div>
+          <div class="markdown-panel__header">
+            <div class="markdown-panel__label">Preview</div>
+          </div>
           <div data-testid="markdown-preview-panel" class="markdown-panel__preview editor-content-view" v-dompurify-html="renderedMarkdownPreview"></div>
         </section>
       </div>
 
       <!-- 编辑区域 -->
-      <EditorContent
-        v-show="!isSplitPreviewActive"
-        :editor="editor"
-        class="tiptap-editor-content"
-      />
+      <div v-show="!isSplitPreviewActive" class="tiptap-editor-view">
+        <el-tooltip :content="splitPreviewTooltip" placement="bottom" :show-after="500">
+          <button
+            type="button"
+            class="split-preview-toggle split-preview-toggle--floating"
+            data-testid="split-preview-toggle"
+            :aria-label="splitPreviewTooltip"
+            @click="toggleSplitPreview"
+          >
+            <SplitPreviewToggleIcon :expanded="isSplitPreviewActive" />
+          </button>
+        </el-tooltip>
+        <EditorContent :editor="editor" class="tiptap-editor-content" />
+      </div>
     </div>
 
     <!-- BubbleMenu：仅选中文字时显示 -->
@@ -109,6 +133,7 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 // Tiptap v3.x 中 BubbleMenu 需要从 /menus 子路径导入
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import TiptapToolbar from './TiptapToolbar.vue';
+import SplitPreviewToggleIcon from './SplitPreviewToggleIcon.vue';
 import CompletionPopover from './extensions/AiCompletion/CompletionPopover.vue';
 import { resolveArticleEditorContent } from '@/service/article/article.content';
 import { getTiptapExtensions } from './config';
@@ -175,6 +200,7 @@ const emit = defineEmits<{
 const isDragging = ref(false);
 const initialSplitPreviewActive = SessionCache.getCache(SPLIT_PREVIEW_SESSION_KEY);
 const isSplitPreviewActive = ref(typeof initialSplitPreviewActive === 'boolean' ? initialSplitPreviewActive : true);
+const splitPreviewTooltip = computed(() => (isSplitPreviewActive.value ? '关闭 Markdown 分栏预览' : '打开 Markdown 分栏预览'));
 const markdownSource = ref('');
 const markdownSourceInputRef = ref<HTMLTextAreaElement | null>(null);
 const markdownSourceSelection = ref<MarkdownSourceSelection>({
@@ -1041,6 +1067,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 // 组件特有样式（全局样式在 ./styles/tiptap.scss）
 .tiptap-editor-container {
+  --editor-preview-toggle-top: 14px;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1101,6 +1128,11 @@ onBeforeUnmount(() => {
 }
 
 .tiptap-split-preview {
+  --markdown-panel-pad-y: 14px;
+  --markdown-panel-pad-x: 24px;
+  --markdown-panel-header-gap: 8px;
+  --markdown-panel-label-size: 12px;
+
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1113,15 +1145,24 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 18px 24px;
+  padding: var(--markdown-panel-pad-y) var(--markdown-panel-pad-x);
+
+  &--source {
+    position: relative;
+  }
+
+  // Markdown / Preview 共用同一套紧凑 header，避免一侧被按钮撑高
+  &__header {
+    margin-bottom: var(--markdown-panel-header-gap);
+  }
 
   &__label {
-    margin-bottom: 16px;
     font-family: var(--markdown-editor-font);
-    font-size: 12px;
+    font-size: var(--markdown-panel-label-size);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-secondary);
+    line-height: 1;
   }
 
   &__textarea,
@@ -1198,12 +1239,69 @@ onBeforeUnmount(() => {
 
 .split-preview-divider {
   position: absolute;
-  top: 18px;
-  bottom: 18px;
+  top: var(--markdown-panel-pad-y, 14px);
+  bottom: var(--markdown-panel-pad-y, 14px);
   left: 50%;
   transform: translateX(-50%);
   border-left: 2px dashed #e5e7eb;
   pointer-events: none;
+}
+
+.tiptap-editor-view {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.split-preview-toggle {
+  --split-preview-toggle-size: 28px;
+
+  position: absolute;
+  // 与 12px 标签垂直居中：padY + label/2 - button/2，再 -4px 避免 hover 高亮遮挡 active 线框
+  top: calc(
+    var(--markdown-panel-pad-y, 14px) + var(--markdown-panel-label-size, 12px) / 2 - var(--split-preview-toggle-size) / 2 - 4px
+  );
+  right: calc(var(--markdown-panel-pad-x, 24px) - 6px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--split-preview-toggle-size);
+  height: var(--split-preview-toggle-size);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  // 分栏开：仅 hover Markdown 区；分栏关：仅 hover 富文本编辑区
+  .markdown-panel--source:hover &,
+  .tiptap-editor-view:hover &,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  &:hover {
+    background: var(--bg-color-secondary, rgba(15, 23, 42, 0.06));
+    color: var(--text-primary);
+  }
+
+  &--floating {
+    top: calc(var(--editor-preview-toggle-top, 14px) - 4px);
+    right: var(--editor-edge-toggle-right, 24px);
+  }
+}
+
+.split-preview-toggle-icon {
+  display: block;
 }
 
 .tiptap-editor-content {

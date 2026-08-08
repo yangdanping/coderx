@@ -114,12 +114,6 @@
         </el-button>
       </el-tooltip>
 
-      <el-tooltip :content="splitPreviewTooltip" placement="bottom" :show-after="500">
-        <el-button class="toolbar-btn" :class="{ 'is-active-preview': isSplitPreviewActive }" data-testid="split-preview-toggle" @click="emit('toggle-split-preview')">
-          <el-icon><View /></el-icon>
-        </el-button>
-      </el-tooltip>
-
       <el-tooltip :content="`AI 助手 (${aiShortcut})`" placement="bottom" :show-after="500">
         <el-button @click="toggleAiAssistant" class="toolbar-btn">
           <el-icon><MagicStick /></el-icon>
@@ -178,7 +172,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue';
-import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick, View, Loading } from '@element-plus/icons-vue';
+import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, Picture, VideoCamera, RefreshLeft, RefreshRight, MagicStick, Loading } from '@element-plus/icons-vue';
 import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
 import { emitter, getAiShortcutText } from '@/utils';
 
@@ -195,10 +189,6 @@ const props = defineProps<{
   resolveImageUploadOptions?: () => ImageUploadCommandOptions | null;
   resolveVideoUploadOptions?: () => UploadVideoOptions | null;
   insertSplitPreviewBlockquote?: (() => void) | null;
-}>();
-
-const emit = defineEmits<{
-  (e: 'toggle-split-preview'): void;
 }>();
 
 // 快捷键显示（根据系统自动适配）
@@ -224,7 +214,6 @@ const linkForm = reactive({
 
 // AI 助手快捷键提示（从全局 utils 获取，根据系统自动适配）
 const aiShortcut = getAiShortcutText();
-const splitPreviewTooltip = computed(() => (props.isSplitPreviewActive ? '关闭 Markdown 分栏预览' : '打开 Markdown 分栏预览'));
 const showDraftStatus = computed(() => ['dirty', 'saving', 'saved', 'error', 'conflict'].includes(props.draftStatus ?? ''));
 const formatSavedTime = (value?: string | null) => {
   if (!value) return '';
@@ -470,18 +459,6 @@ const toggleAiAssistant = () => {
       }
     }
 
-    &.is-active-preview {
-      color: var(--el-color-primary);
-      background-color: var(--el-color-primary-light-8);
-      border-color: var(--el-color-primary-light-5);
-
-      &:hover,
-      &:focus {
-        background-color: var(--el-color-primary-light-7);
-        color: var(--el-color-primary);
-        border-color: var(--el-color-primary-light-5);
-      }
-    }
   }
 
   .draft-status {

@@ -600,6 +600,8 @@ const formSubmit = async (formData: { title: string; tags: string[] }) => {
 
   // 确保编辑器能占满剩余空间
   :deep(.tiptap-editor-container) {
+    // 与 .tiptap-toolbar.has-draft-status 的 padding-right 一致，为右侧拉绳预留点击区域
+    --editor-edge-toggle-right: 88px;
     flex: 1;
     min-height: 0;
     transition:

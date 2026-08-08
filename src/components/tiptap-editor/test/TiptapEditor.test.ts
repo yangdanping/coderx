@@ -261,11 +261,10 @@ vi.mock('../TiptapToolbar.vue', () => ({
         default: undefined,
       },
     },
-    emits: ['toggle-split-preview'],
-    setup(props, { emit }) {
+    emits: [],
+    setup(props) {
       return () =>
         h('div', [
-          h('button', { 'data-testid': 'toolbar-toggle', 'data-active': String(props.isSplitPreviewActive), onClick: () => emit('toggle-split-preview') }, 'toggle'),
           h(
             'button',
             {
@@ -446,7 +445,6 @@ describe('TiptapEditor', () => {
 
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="toolbar-toggle"]').attributes('data-active')).toBe('false');
     expect(wrapper.find('[data-testid="editor-content-stub"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="markdown-split-preview"]').attributes('style')).toContain('display: none;');
   });
@@ -745,22 +743,20 @@ describe('TiptapEditor', () => {
     expect(wrapper.get('[data-testid="markdown-preview-panel"]').text()).not.toContain('未解析视频 428');
   });
 
-  // 用例 ③：验证 toolbar 切换按钮能在"分栏预览"和"富文本编辑"之间来回切换
-  it('switches between split preview and editor view from the toolbar toggle without losing the split view on return', async () => {
+  // 用例 ③：验证分栏预览切换按钮能在"分栏预览"和"富文本编辑"之间来回切换
+  it('switches between split preview and editor view from the markdown panel toggle without losing the split view on return', async () => {
     const wrapper = mountEditor();
 
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="toolbar-toggle"]').attributes('data-active')).toBe('true');
+    expect(wrapper.find('[data-testid="markdown-preview-panel"]').exists()).toBe(true);
 
-    await wrapper.get('[data-testid="toolbar-toggle"]').trigger('click');
+    await wrapper.get('[data-testid="split-preview-toggle"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="toolbar-toggle"]').attributes('data-active')).toBe('false');
     expect(wrapper.find('[data-testid="editor-content-stub"]').exists()).toBe(true);
 
-    await wrapper.get('[data-testid="toolbar-toggle"]').trigger('click');
+    await wrapper.get('[data-testid="split-preview-toggle"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="toolbar-toggle"]').attributes('data-active')).toBe('true');
     expect(wrapper.find('[data-testid="markdown-preview-panel"]').exists()).toBe(true);
   });
 
@@ -768,7 +764,7 @@ describe('TiptapEditor', () => {
     const wrapper = mountEditor();
 
     await flushPromises();
-    await wrapper.get('[data-testid="toolbar-toggle"]').trigger('click');
+    await wrapper.get('[data-testid="split-preview-toggle"]').trigger('click');
 
     expect(sessionCacheSetMock).toHaveBeenCalledWith('tiptap-editor-split-preview-active', false);
   });

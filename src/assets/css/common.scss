@@ -21,20 +21,22 @@
   font-size: clamp(12px, 1.5vw, 16px);
   font-family: 'Hiragino Sans GB', sans-serif;
   --markdown-editor-font: 'SFMono-Regular', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  /* 首页角色标题末尾 X 的渐变色 */
-  --coder-x-gradient-start: rgba(143, 235, 135, 0.7);
-  --coder-x-gradient-end: rgba(56, 72, 249, 0.7);
+  /* 首页角色标题末尾 X 的渐变色：浅色背景使用更深、更不透明的同色相版本 */
+  --coder-x-gradient-start: rgba(74, 166, 64, 0.94);
+  --coder-x-gradient-end: rgba(54, 70, 225, 0.94);
   --coder-x-gradient: linear-gradient(135deg, var(--coder-x-gradient-start) 30%, var(--coder-x-gradient-end) 100%);
-  --writer-x-gradient-start: rgba(255, 211, 88, 0.82);
-  --writer-x-gradient-end: rgba(235, 106, 44, 0.82);
+  --writer-x-gradient-start: rgba(187, 120, 0, 0.95);
+  --writer-x-gradient-end: rgba(211, 80, 24, 0.94);
   --writer-x-gradient: linear-gradient(135deg, var(--writer-x-gradient-start) 20%, var(--writer-x-gradient-end) 100%);
-  --creator-x-gradient-start: rgba(255, 111, 174, 0.78);
-  --creator-x-gradient-end: rgba(132, 0, 255, 0.76);
+  --creator-x-gradient-start: rgba(218, 54, 125, 0.93);
+  --creator-x-gradient-end: rgba(116, 20, 215, 0.92);
   --creator-x-gradient: linear-gradient(135deg, var(--creator-x-gradient-start) 20%, var(--creator-x-gradient-end) 100%);
-  --builder-x-gradient-start: rgba(0, 240, 255, 0.72);
-  --builder-x-gradient-end: rgba(12, 140, 254, 0.8);
+  --builder-x-gradient-start: rgba(0, 143, 166, 0.95);
+  --builder-x-gradient-end: rgba(0, 96, 205, 0.94);
   --builder-x-gradient: linear-gradient(135deg, var(--builder-x-gradient-start) 20%, var(--builder-x-gradient-end) 100%);
   --xfontStyle: var(--coder-x-gradient);
+  /* 顶栏 Flow 保留原有渐变，不跟随首页角色 X 的主题调色 */
+  --flow-nav-gradient: linear-gradient(135deg, rgba(143, 235, 135, 0.7) 30%, rgba(56, 72, 249, 0.7) 100%);
   // --xfontStyle: linear-gradient(to bottom right, #70b8ff, #edeef0);
   --navbarHeight: 56px;
   /* ========== 光标样式 ========== */
@@ -221,6 +223,16 @@ h6 {
 /* ========== Dark Mode ========== */
 html.dark {
   color-scheme: dark;
+
+  /* 深色背景保留原有高亮渐变 */
+  --coder-x-gradient-start: rgba(143, 235, 135, 0.7);
+  --coder-x-gradient-end: rgba(56, 72, 249, 0.7);
+  --writer-x-gradient-start: rgba(255, 211, 88, 0.82);
+  --writer-x-gradient-end: rgba(235, 106, 44, 0.82);
+  --creator-x-gradient-start: rgba(255, 111, 174, 0.78);
+  --creator-x-gradient-end: rgba(132, 0, 255, 0.76);
+  --builder-x-gradient-start: rgba(0, 240, 255, 0.72);
+  --builder-x-gradient-end: rgba(12, 140, 254, 0.8);
 
   /* 主题色 - Dark Mode (基底 #0f0f0f) */
   --bg-color-primary: #0f0f0f;
