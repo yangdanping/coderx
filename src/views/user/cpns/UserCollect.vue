@@ -473,7 +473,7 @@ onUnmounted(() => {
   .item.card-style {
     min-height: 128px;
     border: 1px solid var(--collect-card-border);
-    border-radius: 6px;
+    border-radius: var(--card-border-radius);
     padding: 16px;
     display: flex;
     flex-direction: column;

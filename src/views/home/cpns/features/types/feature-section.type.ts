@@ -1,7 +1,7 @@
 export type FeatureAction =
   | {
       kind: 'random-toc';
-      label: 'Go check';
+      label: 'Go check' | 'Go chat';
     }
   | {
       kind: 'edit';

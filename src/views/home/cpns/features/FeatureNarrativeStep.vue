@@ -27,13 +27,7 @@ const emit = defineEmits<{
       <p class="feature-narrative__position">{{ index + 1 }} / {{ total }}</p>
       <h2 class="feature-narrative__title">{{ feature.title }}</h2>
       <p class="feature-narrative__description">{{ feature.description }}</p>
-      <button
-        type="button"
-        class="feature-narrative__action"
-        :disabled="loading"
-        :aria-busy="loading || undefined"
-        @click="emit('featureAction', feature)"
-      >
+      <button type="button" class="feature-narrative__action" :disabled="loading" :aria-busy="loading || undefined" @click="emit('featureAction', feature)">
         <span>{{ loading ? 'Loading…' : feature.action.label }}</span>
         <span class="feature-narrative__action-arrow" aria-hidden="true">↗</span>
       </button>
@@ -157,7 +151,7 @@ const emit = defineEmits<{
       padding: 18px;
       overflow: hidden;
       background: color-mix(in srgb, var(--glass-bg) 88%, transparent);
-      border-radius: 12px;
+      border-radius: var(--card-border-radius);
       box-shadow: inset 0 0 0 1px var(--border-color-default);
     }
 

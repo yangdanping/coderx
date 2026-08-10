@@ -71,10 +71,10 @@ describe('FeatureSection scroll story', () => {
     });
   }
 
-  it('maps reading features to Go check and writing features to Go edit', () => {
+  it('maps reading, chat, and writing features to their contextual CTA labels', () => {
     expect(featuresData.map((feature) => feature.action)).toEqual([
       { kind: 'random-toc', label: 'Go check' },
-      { kind: 'random-toc', label: 'Go check' },
+      { kind: 'random-toc', label: 'Go chat' },
       { kind: 'edit', label: 'Go edit' },
       { kind: 'edit', label: 'Go edit' },
     ]);
@@ -85,7 +85,7 @@ describe('FeatureSection scroll story', () => {
 
     expect(wrapper.findAll('.feature-demo-stage')).toHaveLength(1);
     expect(wrapper.findAll('article.feature-narrative')).toHaveLength(4);
-    expect(wrapper.findAll('.feature-narrative__action').map((button) => button.get('span').text())).toEqual(['Go check', 'Go check', 'Go edit', 'Go edit']);
+    expect(wrapper.findAll('.feature-narrative__action').map((button) => button.get('span').text())).toEqual(['Go check', 'Go chat', 'Go edit', 'Go edit']);
     expect(wrapper.findAll('.feature-narrative__title').map((title) => title.text())).toEqual(featuresData.map((feature) => feature.title));
     expect(wrapper.get('.feature-demo-stage').attributes('aria-live')).toBe('polite');
   });

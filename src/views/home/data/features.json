@@ -9,7 +9,7 @@
     "id": "ai-summary",
     "title": "AI 助手：文章总结",
     "description": "看到文章有疑问,没关系,直接向AI助手输入你的问题,他将会为你解答",
-    "action": { "kind": "random-toc", "label": "Go check" }
+    "action": { "kind": "random-toc", "label": "Go chat" }
   },
   {
     "id": "ai-completion",

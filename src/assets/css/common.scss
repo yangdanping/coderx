@@ -66,6 +66,8 @@
   --border-color-default: #ebeef5;
   --border-color-list: #eee;
   --border-shadow-list-bottom: 0 0.5px 0 0 var(--border-color-list);
+  /* 卡片默认圆角：以收藏夹卡片原有的 6px 为全局基准 */
+  --card-border-radius: 6px;
 
   /* ========== 玻璃效果 ========== */
   --glass-bg: rgba(255, 255, 255, 0.6);
