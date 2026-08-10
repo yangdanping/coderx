@@ -14,7 +14,7 @@ vi.mock('@/service', () => ({
   },
 }));
 
-import { createArticle, search, updateArticle } from '../article.request';
+import { createArticle, getRandomTocArticle, search, updateArticle } from '../article.request';
 
 describe('article.request', () => {
   beforeEach(() => {
@@ -32,6 +32,16 @@ describe('article.request', () => {
       url: '/article/search',
       params: { keywords: 'vue' },
       signal,
+    });
+  });
+
+  it('requests a random article that can demonstrate the table of contents', () => {
+    getRandomTocArticle();
+
+    expect(getMock).toHaveBeenCalledWith({
+      url: '/article/random/toc',
+      showLoading: false,
+      showError: false,
     });
   });
 

@@ -123,3 +123,11 @@ export const getRecommend = (params?: IPage) => {
     params,
   });
 };
+
+export const getRandomTocArticle = () => {
+  return myRequest.get<IResData<{ id: number }>>({
+    url: `${urlHead}/random/toc`,
+    showLoading: false,
+    showError: false,
+  });
+};

@@ -26,6 +26,7 @@ interface MyRequestConfig<T = AxiosResponse> extends AxiosRequestConfig {
   // 对原来的ARC类型做扩展(在原来的基础上增添了可选的interceptors属性)
   interceptors?: MyRequestInterceptors<T>; //注意!当MyRequestInterceptors的类型参数不再是默认的AxiosResponse类型时,要通过MyRequestConfig的接口给他传入泛型
   showLoading?: boolean; //showLoading控制各个请求是否显示loading
+  showError?: boolean; //showError控制失败提示是否交由全局拦截器展示
   loadingKey?: string; //loadingKey控制各个请求的loadingKey
 }
 
