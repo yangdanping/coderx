@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
 import FlowEditorModal from '../FlowEditorModal.vue';
 
 const modalSource = readFileSync(join(process.cwd(), 'src/views/flow/cpns/FlowEditorModal.vue'), 'utf8');
@@ -67,6 +68,46 @@ afterEach(() => {
 });
 
 describe('FlowEditorModal', () => {
+  it('suppresses the old document update when the real Tiptap editor becomes disabled', async () => {
+    const wrapper = mount(TiptapEditorFlow, {
+      props: {
+        editDocument: {
+          type: 'doc',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: '清空前的内容' }] }],
+        },
+        disabled: false,
+      },
+      global: {
+        stubs: {
+          CommentToolbar: true,
+          BubbleMenu: true,
+          ElButton: true,
+        },
+      },
+    });
+    mountedWrappers.push(wrapper);
+    await flushPromises();
+
+    const editor = (wrapper.vm as unknown as { getEditor: () => { setEditable: (editable: boolean, emitUpdate?: boolean) => void } }).getEditor();
+    const beforeDefaultToggle = wrapper.emitted('update:document')?.length ?? 0;
+
+    editor.setEditable(false);
+    await nextTick();
+    const afterDefaultToggle = wrapper.emitted('update:document') ?? [];
+    expect(afterDefaultToggle).toHaveLength(beforeDefaultToggle + 1);
+    expect(afterDefaultToggle.at(-1)?.[0]).toEqual({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '清空前的内容' }] }],
+    });
+
+    editor.setEditable(true, false);
+    const beforePropToggle = wrapper.emitted('update:document')?.length ?? 0;
+    await wrapper.setProps({ disabled: true });
+    await nextTick();
+
+    expect(wrapper.emitted('update:document') ?? []).toHaveLength(beforePropToggle);
+  });
+
   it('keeps the Vue transition active for the complete cord pull duration', () => {
     expect(modalSource).toMatch(/<Transition\s+name="flow-editor-modal"\s+:duration="420"/);
   });
@@ -148,7 +189,7 @@ describe('FlowEditorModal', () => {
     const editor = wrapper.findComponent({ name: 'TiptapEditorFlow' });
     expect(editor.props('disabled')).toBe(true);
     expect(wrapper.get('.editor-stub').attributes('contenteditable')).toBe('false');
-    expect(editorSource).toMatch(/watch\([\s\S]*props\.disabled[\s\S]*setEditable\(!disabled\)/);
+    expect(editorSource).toMatch(/watch\([\s\S]*props\.disabled[\s\S]*setEditable\(!disabled, false\)/);
   });
 
   it('keeps the editor mounted while closing and reopening', async () => {

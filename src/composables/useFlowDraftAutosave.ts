@@ -312,6 +312,9 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     errorMessage.value = '';
 
     const local = readLocalFallback();
+    if (local) {
+      hydrateFromLocal(local);
+    }
     let remote: FlowDraftRecord | null = null;
     let restoredSnapshot: FlowDraftSnapshot | null = null;
     let snapshotToSync: FlowDraftSnapshot | null = null;
@@ -426,6 +429,26 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     await scheduler.waitForIdle();
   };
 
+  const clearRemoteDraft = async () => {
+    let lastNotFoundError: unknown;
+
+    for (let reconciliationAttempt = 0; reconciliationAttempt < 2; reconciliationAttempt += 1) {
+      const response = await getFlowDraftRequest();
+      const currentDraft = response.data;
+      if (!currentDraft) return;
+
+      try {
+        await deleteFlowDraftRequest(currentDraft.id);
+        return;
+      } catch (error) {
+        if (getErrorStatus(error) !== 404) throw error;
+        lastNotFoundError = error;
+      }
+    }
+
+    throw lastNotFoundError;
+  };
+
   const clearDraft = async () => {
     isClearing.value = true;
     status.value = 'clearing';
@@ -435,12 +458,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     try {
       await scheduler.waitForIdle();
 
-      if (canSync && draftId.value) {
-        try {
-          await deleteFlowDraftRequest(draftId.value);
-        } catch (error) {
-          if (getErrorStatus(error) !== 404) throw error;
-        }
+      if (canSync) {
+        await clearRemoteDraft();
       }
 
       removeLocalFallback();

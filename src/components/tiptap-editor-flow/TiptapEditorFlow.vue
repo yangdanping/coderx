@@ -61,7 +61,7 @@ const setEditorContent = (content: string | TiptapDocContent) => {
 watch(
   () => props.disabled,
   (disabled) => {
-    editor.value?.setEditable(!disabled);
+    editor.value?.setEditable(!disabled, false);
   },
   { immediate: true },
 );

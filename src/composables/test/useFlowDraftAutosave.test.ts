@@ -146,6 +146,54 @@ describe('useFlowDraftAutosave', () => {
     expect(autosave.status.value).toBe('dirty');
   });
 
+  it('keeps cached identity when initialize fails after a newer local edit', async () => {
+    vi.useFakeTimers();
+    let rejectInitialize!: (reason: unknown) => void;
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 1,
+      actorKey: 'user:7',
+      ...textSnapshot('初始化前的本地内容'),
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:05:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockImplementation(
+      () =>
+        new Promise<never>((_resolve, reject) => {
+          rejectInitialize = reject;
+        }),
+    );
+    saveFlowDraftRequestMock.mockResolvedValue({
+      data: remoteDraft({ version: 5, content: textSnapshot('网络恢复后的输入').content }),
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+
+    const initializePromise = autosave.initialize();
+    await flushPromises();
+    autosave.recordSnapshot(textSnapshot('请求期间的新输入'));
+
+    const cachedDuringInitialize = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
+    expect(cachedDuringInitialize).toMatchObject({
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      content: textSnapshot('请求期间的新输入').content,
+    });
+
+    rejectInitialize(new Error('network unavailable'));
+    expect(await initializePromise).toBeNull();
+    autosave.recordSnapshot(textSnapshot('网络恢复后的输入'));
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
+      ...textSnapshot('网络恢复后的输入'),
+      version: 4,
+    });
+  });
+
   it('writes locally immediately and sends only the latest rapid edit after the debounce', async () => {
     vi.useFakeTimers();
     saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1, content: textSnapshot('最终').content }) });
@@ -238,6 +286,7 @@ describe('useFlowDraftAutosave', () => {
           resolveSave = resolve;
         }),
     );
+    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 18, version: 1 }) });
     const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 1200 });
     await autosave.initialize();
     autosave.recordSnapshot(textSnapshot('正在首次保存'));
@@ -309,6 +358,74 @@ describe('useFlowDraftAutosave', () => {
       version: 0,
     });
     expect(autosave.status.value).toBe('saved');
+  });
+
+  it('resolves an unknown conflicted draft id before clearing remotely', async () => {
+    vi.useFakeTimers();
+    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 31, version: 6 }) });
+    saveFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+    await autosave.initialize();
+
+    autosave.recordSnapshot(textSnapshot('未知身份冲突'));
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+    expect(autosave.status.value).toBe('conflict');
+    expect(autosave.draftId.value).toBeNull();
+
+    await autosave.clearDraft();
+
+    expect(getFlowDraftRequestMock).toHaveBeenCalledTimes(2);
+    expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(31);
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+  });
+
+  it('reconciles a stale cached id after delete returns 404', async () => {
+    getFlowDraftRequestMock
+      .mockResolvedValueOnce({ data: remoteDraft({ id: 18 }) })
+      .mockResolvedValueOnce({ data: remoteDraft({ id: 18 }) })
+      .mockResolvedValueOnce({ data: remoteDraft({ id: 27, version: 7 }) });
+    deleteFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 404 } }).mockResolvedValueOnce({ data: { id: 27 } });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+
+    await autosave.clearDraft();
+
+    expect(deleteFlowDraftRequestMock.mock.calls).toEqual([[18], [27]]);
+    expect(getFlowDraftRequestMock).toHaveBeenCalledTimes(3);
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+  });
+
+  it('preserves the local fallback and halted scheduler when remote reconciliation fails', async () => {
+    vi.useFakeTimers();
+    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockRejectedValueOnce(new Error('network unavailable'));
+    saveFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('必须保留的冲突内容'));
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+
+    await expect(autosave.clearDraft()).rejects.toThrow('network unavailable');
+    expect(autosave.status.value).toBe('error');
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
+
+    autosave.recordSnapshot(textSnapshot('失败后继续本地输入'));
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves the local fallback when the remote delete fails', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    deleteFlowDraftRequestMock.mockRejectedValue(new Error('delete unavailable'));
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+
+    await expect(autosave.clearDraft()).rejects.toThrow('delete unavailable');
+
+    expect(autosave.status.value).toBe('error');
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
   });
 
   it('drops an untouched empty local-only snapshot instead of creating a draft', async () => {
