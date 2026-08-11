@@ -88,10 +88,18 @@ describe('FlowEditorModal', () => {
     mountedWrappers.push(wrapper);
     await flushPromises();
 
-    const editor = (wrapper.vm as unknown as { getEditor: () => { setEditable: (editable: boolean, emitUpdate?: boolean) => void } }).getEditor();
+    const editor = (
+      wrapper.vm as unknown as {
+        getEditor: () => {
+          getJSON: () => unknown;
+          setEditable: (editable: boolean, emitUpdate?: boolean) => void;
+        };
+      }
+    ).getEditor();
+    editor.setEditable(false, false);
     const beforeDefaultToggle = wrapper.emitted('update:document')?.length ?? 0;
 
-    editor.setEditable(false);
+    editor.setEditable(true);
     await nextTick();
     const afterDefaultToggle = wrapper.emitted('update:document') ?? [];
     expect(afterDefaultToggle).toHaveLength(beforeDefaultToggle + 1);
@@ -100,12 +108,21 @@ describe('FlowEditorModal', () => {
       content: [{ type: 'paragraph', content: [{ type: 'text', text: '清空前的内容' }] }],
     });
 
-    editor.setEditable(true, false);
-    const beforePropToggle = wrapper.emitted('update:document')?.length ?? 0;
     await wrapper.setProps({ disabled: true });
     await nextTick();
+    const beforeClearUnlock = wrapper.emitted('update:document')?.length ?? 0;
 
-    expect(wrapper.emitted('update:document') ?? []).toHaveLength(beforePropToggle);
+    // `clearDraft()` releases isClearing before Flow.vue's await continuation applies the empty document.
+    await wrapper.setProps({ disabled: false });
+    await nextTick();
+    expect(wrapper.emitted('update:document') ?? []).toHaveLength(beforeClearUnlock);
+
+    const emptyDocument = { type: 'doc', content: [{ type: 'paragraph' }] };
+    await wrapper.setProps({ editDocument: emptyDocument });
+    await nextTick();
+
+    expect(wrapper.emitted('update:document') ?? []).toHaveLength(beforeClearUnlock);
+    expect(editor.getJSON()).toEqual(emptyDocument);
   });
 
   it('keeps the Vue transition active for the complete cord pull duration', () => {
