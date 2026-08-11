@@ -25,7 +25,7 @@ function openFileInput(): void {
 
 function handleInputChange(event: Event): void {
   const input = event.currentTarget as HTMLInputElement;
-  if (input.files) emitCandidates(input.files);
+  if (!isFull.value && input.files) emitCandidates(input.files);
   input.value = '';
 }
 
@@ -57,6 +57,7 @@ function handlePaste(event: ClipboardEvent): void {
       type="file"
       accept="image/jpeg,image/png,image/webp"
       multiple
+      :disabled="isFull"
       tabindex="-1"
       aria-hidden="true"
       @change="handleInputChange"

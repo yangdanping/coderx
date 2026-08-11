@@ -40,7 +40,7 @@ describe('FlowAttachmentPicker', () => {
     expect(click).toHaveBeenCalledOnce();
 
     setInputFiles(inputElement, [image]);
-    await input.trigger('change');
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(wrapper.emitted('files')?.[0]).toEqual([[image]]);
     expect(inputElement.value).toBe('');
@@ -69,10 +69,25 @@ describe('FlowAttachmentPicker', () => {
     const wrapper = mount(FlowAttachmentPicker, { props: { retainedCount: 9 } });
     const surface = wrapper.get('[aria-label="图片添加区域"]');
     const image = new File(['full'], 'full.webp', { type: 'image/webp' });
+    const input = wrapper.get('input[type="file"]');
+    const inputElement = input.element as HTMLInputElement;
+    let inputValue = 'C:\\fakepath\\full.webp';
+
+    Object.defineProperty(inputElement, 'value', {
+      configurable: true,
+      get: () => inputValue,
+      set: (value: string) => {
+        inputValue = value;
+      },
+    });
+    setInputFiles(inputElement, [image]);
 
     expect(wrapper.get('button[aria-label="添加图片，最多 9 张"]').attributes('disabled')).toBeDefined();
     expect(dispatchTransferEvent(surface.element, 'drop', [image]).defaultPrevented).toBe(true);
     dispatchPasteEvent(surface.element, [image]);
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
     expect(wrapper.emitted('files')).toBeUndefined();
+    expect(input.attributes('disabled')).toBeDefined();
+    expect(inputValue).toBe('');
   });
 });
