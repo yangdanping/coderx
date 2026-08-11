@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { validateFlowImageFiles } from '@/components/tiptap-editor-flow/uploadPolicy';
 import { useFlowImageUploads } from '@/composables/useFlowImageUploads';
-import type { FlowImageAsset } from '@/service/flow/flow.types';
+import type { FlowImageAsset, FlowImageAttachment } from '@/service/flow/flow.types';
 
 const MB = 1024 * 1024;
 
@@ -264,18 +264,24 @@ describe('useFlowImageUploads', () => {
     const uploaded = queue.attachments.value[0]!;
 
     const removal = queue.remove(uploaded.clientId);
+    const duplicateRemoval = queue.remove(uploaded.clientId);
     expect(deleteImage).toHaveBeenCalledWith(42);
+    expect(deleteImage).toHaveBeenCalledTimes(1);
     expect(queue.attachments.value).toHaveLength(1);
+    expect(queue.isUploading.value).toBe(true);
+    expect(queue.uploadedMediaIds.value).toEqual([]);
 
     deletion.resolve();
-    await removal;
+    await Promise.all([removal, duplicateRemoval]);
     expect(queue.attachments.value).toHaveLength(0);
+    expect(queue.isUploading.value).toBe(false);
     expect(adapters.revokeObjectUrl).toHaveBeenCalledWith(uploaded.previewUrl);
   });
 
   it('retains uploaded media with an actionable error when pending deletion fails', async () => {
+    const deletion = deferred<void>();
     const adapters = queueAdapters({
-      deleteImage: vi.fn().mockRejectedValue(new Error('delete failed')),
+      deleteImage: vi.fn(() => deletion.promise),
       uploadImage: vi.fn().mockResolvedValue(imageAsset(42)),
     });
     const queue = useFlowImageUploads(adapters);
@@ -283,11 +289,18 @@ describe('useFlowImageUploads', () => {
     await vi.waitFor(() => expect(queue.attachments.value[0]?.status).toBe('uploaded'));
     const uploaded = queue.attachments.value[0]!;
 
-    await queue.remove(uploaded.clientId);
+    const removal = queue.remove(uploaded.clientId);
+    expect(queue.isUploading.value).toBe(true);
+    expect(queue.uploadedMediaIds.value).toEqual([]);
+
+    deletion.reject(new Error('delete failed'));
+    await removal;
 
     expect(queue.attachments.value).toHaveLength(1);
     expect(queue.attachments.value[0]?.status).toBe('uploaded');
     expect(queue.attachments.value[0]?.error).toBe('delete failed');
+    expect(queue.isUploading.value).toBe(false);
+    expect(queue.uploadedMediaIds.value).toEqual([42]);
     expect(adapters.revokeObjectUrl).not.toHaveBeenCalled();
   });
 
@@ -316,6 +329,25 @@ describe('useFlowImageUploads', () => {
     expect(queue.move(0, 3)).toBe(false);
     expect(queue.move(1, 1)).toBe(false);
     expect(queue.attachments.value.map((item) => item.file.name)).toEqual(['b.png', 'c.png', 'a.png']);
+  });
+
+  it('exposes runtime-readonly attachment snapshots that cannot bypass queue actions', async () => {
+    const adapters = queueAdapters({ uploadImage: vi.fn(() => new Promise<FlowImageAsset>(() => {})) });
+    const queue = useFlowImageUploads(adapters);
+    queue.addFiles([file('protected.png')]);
+    const external = queue.attachments.value as unknown as FlowImageAttachment[];
+    const attachment = external[0]!;
+
+    expect(() => {
+      attachment.status = 'failed';
+    }).toThrow(TypeError);
+    expect(() => external.pop()).toThrow(TypeError);
+    expect(queue.attachments.value).toHaveLength(1);
+    expect(queue.attachments.value[0]?.status).toBe('uploading');
+
+    await queue.remove(attachment.clientId);
+    expect(queue.attachments.value).toEqual([]);
+    expect(adapters.revokeObjectUrl).toHaveBeenCalledOnce();
   });
 
   it('dispose aborts active work, revokes every preview once, ignores late callbacks, and never deletes uploaded assets', async () => {

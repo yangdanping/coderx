@@ -49,15 +49,27 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   const generations = new Map<string, number>();
   const revokedClientIds = new Set<string>();
   const deletionPromises = new Map<string, Promise<boolean>>();
+  const deletingClientIds = shallowRef<ReadonlySet<string>>(new Set());
   let activeCount = 0;
   let disposed = false;
 
-  const attachments = computed<readonly Readonly<FlowImageAttachment>[]>(() => attachmentState.value);
-  const isUploading = computed(() => attachmentState.value.some((attachment) => attachment.status === 'queued' || attachment.status === 'uploading'));
+  const attachments = computed<readonly Readonly<FlowImageAttachment>[]>(() => Object.freeze(attachmentState.value.map((attachment) => Object.freeze({ ...attachment }))));
+  const isUploading = computed(
+    () => deletingClientIds.value.size > 0 || attachmentState.value.some((attachment) => attachment.status === 'queued' || attachment.status === 'uploading'),
+  );
   const hasFailed = computed(() => attachmentState.value.some((attachment) => attachment.status === 'failed'));
   const uploadedMediaIds = computed(() =>
-    attachmentState.value.flatMap((attachment) => (attachment.status === 'uploaded' && attachment.mediaId !== null ? [attachment.mediaId] : [])),
+    attachmentState.value.flatMap((attachment) =>
+      attachment.status === 'uploaded' && attachment.mediaId !== null && !deletingClientIds.value.has(attachment.clientId) ? [attachment.mediaId] : [],
+    ),
   );
+
+  function setDeleting(clientId: string, deleting: boolean): void {
+    const next = new Set(deletingClientIds.value);
+    if (deleting) next.add(clientId);
+    else next.delete(clientId);
+    deletingClientIds.value = next;
+  }
 
   function findAttachment(clientId: string): FlowImageAttachment | undefined {
     return attachmentState.value.find((attachment) => attachment.clientId === clientId);
@@ -235,6 +247,7 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
 
     if (attachment.status === 'uploaded' && attachment.mediaId !== null) {
       replaceAttachment(clientId, (current) => ({ ...current, error: null }));
+      setDeleting(clientId, true);
       const generation = generations.get(clientId) ?? 0;
       const deletion = (async () => {
         try {
@@ -254,6 +267,7 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
           return false;
         } finally {
           deletionPromises.delete(clientId);
+          setDeleting(clientId, false);
         }
       })();
       deletionPromises.set(clientId, deletion);
@@ -286,7 +300,10 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
       revokePreview(attachment);
     }
     attachmentState.value = [];
+    deletingClientIds.value = new Set();
     for (const upload of active.values()) upload.controller.abort();
+    generations.clear();
+    revokedClientIds.clear();
   }
 
   return {
