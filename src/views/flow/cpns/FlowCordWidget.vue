@@ -1,8 +1,8 @@
 <template>
-  <div class="flow-cord-widget" :style="cordStyle">
+  <div class="flow-cord-widget" :class="{ 'is-editor-open': panelOpen }" :style="cordStyle">
     <div class="flow-cord-outside">
       <div class="flow-cord-wrap" :class="{ 'is-visible': cordRevealed, 'is-editor-open': panelOpen }">
-        <button type="button" class="flow-cord-handle" :aria-expanded="panelOpen" :aria-controls="controlsId" @click="onCordClick">
+        <button ref="handleRef" type="button" class="flow-cord-handle" :aria-expanded="panelOpen" :aria-controls="controlsId" @click="onCordClick">
           <img src="@/assets/img/pull.png" alt="" class="flow-rope-img" draggable="false" />
         </button>
       </div>
@@ -39,6 +39,7 @@ const props = withDefaults(
 const panelOpen = defineModel<boolean>({ default: false });
 
 const cordRevealed = ref(false);
+const handleRef = useTemplateRef<HTMLButtonElement>('handleRef');
 
 /** 勿在元素上写 `var(--flow-cord-right, …)` 引用自身，易导致解析失败、`fixed right` 失效 */
 const cordStyle = computed(() => {
@@ -53,7 +54,10 @@ const cordStyle = computed(() => {
 
 function onCordClick() {
   panelOpen.value = !panelOpen.value;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function focusHandle() {
+  handleRef.value?.focus();
 }
 
 onMounted(() => {
@@ -67,6 +71,8 @@ onBeforeRouteLeave((_to, _from, next) => {
   cordRevealed.value = false;
   window.setTimeout(() => next(), LEAVE_MS);
 });
+
+defineExpose({ focusHandle });
 </script>
 
 <style lang="scss" scoped>
@@ -83,8 +89,8 @@ onBeforeRouteLeave((_to, _from, next) => {
     transform: translateY(-130%);
     opacity: 0;
     transition:
-      transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1),
-      opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 1);
+      transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
 
     &.is-visible:not(.is-editor-open) {
@@ -130,6 +136,16 @@ onBeforeRouteLeave((_to, _from, next) => {
     filter: drop-shadow(4px 5px 5px rgba(0, 0, 0, 0.25));
     transition: filter 0.3s ease;
     pointer-events: none;
+  }
+}
+
+.flow-cord-widget.is-editor-open .flow-cord-outside {
+  z-index: calc(var(--z-modal) + 2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-cord-widget .flow-cord-wrap {
+    transition-duration: 1ms;
   }
 }
 </style>

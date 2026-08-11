@@ -1,21 +1,25 @@
 <template>
   <div class="flow-page" ref="containerRef">
-    <FlowCordWidget v-model="editorOpen" controls-id="flow-editor-panel" />
+    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" />
+    <FlowEditorModal
+      :open="editorOpen"
+      :content="flowDraft"
+      :document="flowDraftDocument"
+      :draft-status="flowDraftAutosave.status.value"
+      :draft-status-text="flowDraftAutosave.statusText.value"
+      :draft-error="flowDraftAutosave.errorMessage.value"
+      :has-draft="flowDraftAutosave.hasDraft.value"
+      :clear-disabled="flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
+      :editor-disabled="flowDraftAutosave.isClearing.value"
+      controls-id="flow-editor-panel"
+      @close="editorOpen = false"
+      @update:content="flowDraft = $event"
+      @update:document="handleFlowDocumentUpdate"
+      @clear-draft="handleClearFlowDraft"
+      @after-close="restoreCordFocus"
+    />
 
-    <div class="flow-column">
-      <div class="flow-editor-stack">
-        <div id="flow-editor-panel" class="flow-editor-reveal" :class="{ 'is-open': editorOpen }" :inert="!editorOpen">
-          <div class="flow-editor-reveal-inner">
-            <div class="flow-editor-input">
-              <TiptapEditorFlow @update:content="(html) => (flowDraft = html)" />
-              <div class="flow-editor-publish">
-                <el-button type="primary" plain disabled>发布</el-button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div class="flow-column" :inert="editorOpen" :aria-hidden="editorOpen ? 'true' : undefined">
       <div class="pull-indicator" :style="{ height: `${pullDistance}px`, opacity: pullDistance > 10 ? 1 : 0 }">
         <div class="pull-indicator-content" :class="{ refreshing: isRefreshing, ready: pullReady }">
           <Loader2 :size="20" class="pull-icon" :class="{ spinning: isRefreshing }" />
@@ -32,15 +36,32 @@
 <script setup lang="ts">
 import FlowFeed from './cpns/FlowFeed.vue';
 import FlowCordWidget from './cpns/FlowCordWidget.vue';
-import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
+import FlowEditorModal from './cpns/FlowEditorModal.vue';
+import { normalizeFlowDraftDocument, useFlowDraftAutosave } from '@/composables/useFlowDraftAutosave';
 import { usePullToRefresh } from '@/composables/usePullToRefresh';
+import useUserStore from '@/stores/user.store';
+import { LocalCache, Msg } from '@/utils';
+import { ElMessageBox } from 'element-plus';
 import { Loader2 } from '@lucide/vue';
+
+import type { TiptapDocContent } from '@/service/draft/draft.types';
 
 const containerRef = ref<HTMLElement | null>(null);
 const feedRef = ref<InstanceType<typeof FlowFeed> | null>(null);
+const cordRef = ref<InstanceType<typeof FlowCordWidget> | null>(null);
 
-const editorOpen = ref(false);
-const flowDraft = ref('');
+const editorOpen = shallowRef(false);
+const flowDraft = shallowRef('');
+const flowDraftDocument = shallowRef<TiptapDocContent>();
+
+const userStore = useUserStore();
+const normalizedUserId = Number(userStore.userInfo.id);
+const flowDraftUserId = Number.isSafeInteger(normalizedUserId) && normalizedUserId > 0 ? normalizedUserId : null;
+const flowDraftAutosave = useFlowDraftAutosave({
+  userId: flowDraftUserId,
+  canSync: Boolean(flowDraftUserId && (userStore.token || LocalCache.getCache('token'))),
+  debounceMs: 1200,
+});
 
 const { pullDistance, isRefreshing } = usePullToRefresh({
   containerRef,
@@ -50,6 +71,51 @@ const { pullDistance, isRefreshing } = usePullToRefresh({
 });
 
 const pullReady = computed(() => pullDistance.value >= 70);
+
+function restoreCordFocus() {
+  cordRef.value?.focusHandle();
+}
+
+function handleFlowDocumentUpdate(document: TiptapDocContent) {
+  const normalizedDocument = normalizeFlowDraftDocument(document);
+  flowDraftDocument.value = normalizedDocument;
+  flowDraftAutosave.recordSnapshot({
+    content: normalizedDocument,
+    meta: {
+      imageIds: [],
+      videoIds: [],
+    },
+  });
+}
+
+async function handleClearFlowDraft() {
+  try {
+    await ElMessageBox.confirm('清空后无法恢复，确定继续吗？', '清空 Flow 草稿', {
+      confirmButtonText: '清空',
+      cancelButtonText: '取消',
+      type: 'warning',
+      autofocus: false,
+    });
+  } catch {
+    return;
+  }
+
+  try {
+    await flowDraftAutosave.clearDraft();
+    flowDraft.value = '';
+    flowDraftDocument.value = normalizeFlowDraftDocument(null);
+    Msg.showSuccess('Flow 草稿已清空');
+  } catch {
+    Msg.showFail(flowDraftAutosave.errorMessage.value || 'Flow 草稿清空失败');
+  }
+}
+
+onMounted(async () => {
+  const restoredDraft = await flowDraftAutosave.initialize();
+  if (restoredDraft) {
+    flowDraftDocument.value = restoredDraft.content;
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -84,55 +150,6 @@ const pullReady = computed(() => pullDistance.value >= 70);
       -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
       mask-image: linear-gradient(to bottom, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
     }
-  }
-
-  .flow-editor-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    padding-top: 0;
-  }
-
-  .flow-editor-reveal {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.44s cubic-bezier(0.16, 1, 0.3, 1);
-    width: 100%;
-
-    &.is-open {
-      grid-template-rows: 1fr;
-      margin-top: 4px;
-      margin-bottom: 12px;
-    }
-  }
-
-  .flow-editor-reveal-inner {
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* 与 CommentForm `.input` + `.input-action` 一致：按钮叠在编辑器右下 */
-  .flow-editor-input {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .flow-editor-publish {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    display: flex;
-    gap: 8px;
-    z-index: 2;
-    pointer-events: auto;
-  }
-
-  :deep(.flow-editor-content) {
-    padding-bottom: 50px;
   }
 
   .pull-indicator {

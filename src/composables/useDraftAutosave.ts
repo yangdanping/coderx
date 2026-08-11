@@ -4,12 +4,7 @@ import { useMutation } from '@tanstack/vue-query';
 import { deleteDraftRequest, getDraftByArticleIdRequest, getDraftRequest, saveDraftRequest } from '@/service/draft/draft.request';
 import type { DraftRecord, SaveDraftPayload } from '@/service/draft/draft.types';
 
-import type {
-  DraftAutosaveStatus,
-  DraftSaveSchedulerOptions,
-  DraftSnapshotInput,
-  UseDraftAutosaveOptions,
-} from './types/use-draft-autosave.type';
+import type { DraftAutosaveStatus, DraftSaveSchedulerOptions, DraftSnapshotInput, UseDraftAutosaveOptions } from './types/use-draft-autosave.type';
 
 export type { DraftAutosaveStatus, DraftSnapshotInput, UseDraftAutosaveOptions } from './types/use-draft-autosave.type';
 
@@ -21,6 +16,16 @@ export function createDraftSaveScheduler<TSnapshot, TResult>(options: DraftSaveS
   let isInFlight = false;
   let isHalted = false;
   let isDisposed = false;
+  const idleResolvers = new Set<() => void>();
+
+  const resolveIdleWaiters = () => {
+    if (isInFlight || queuedSnapshot) {
+      return;
+    }
+
+    idleResolvers.forEach((resolve) => resolve());
+    idleResolvers.clear();
+  };
 
   const clearTimer = () => {
     if (timer) {
@@ -60,6 +65,8 @@ export function createDraftSaveScheduler<TSnapshot, TResult>(options: DraftSaveS
 
     if (!isDisposed && !isHalted && queuedSnapshot) {
       void flush();
+    } else {
+      resolveIdleWaiters();
     }
   };
 
@@ -79,6 +86,7 @@ export function createDraftSaveScheduler<TSnapshot, TResult>(options: DraftSaveS
   const cancel = () => {
     clearTimer();
     queuedSnapshot = null;
+    resolveIdleWaiters();
   };
 
   const dispose = () => {
@@ -86,11 +94,32 @@ export function createDraftSaveScheduler<TSnapshot, TResult>(options: DraftSaveS
     cancel();
   };
 
+  const waitForIdle = () => {
+    if (!isInFlight && !queuedSnapshot) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      idleResolvers.add(resolve);
+    });
+  };
+
+  const resume = () => {
+    if (isDisposed || isInFlight) {
+      return false;
+    }
+
+    isHalted = false;
+    return true;
+  };
+
   return {
     schedule,
     flush,
     cancel,
     dispose,
+    waitForIdle,
+    resume,
     isInFlight: () => isInFlight,
     isHalted: () => isHalted,
     hasQueuedSnapshot: () => queuedSnapshot !== null,

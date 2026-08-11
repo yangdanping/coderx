@@ -73,10 +73,7 @@ describe('createDraftSaveScheduler', () => {
   it('stops scheduling new saves after a halted error such as conflict', async () => {
     vi.useFakeTimers();
 
-    const save = vi
-      .fn<({ title: string }) => Promise<{ ok: true }>>()
-      .mockRejectedValueOnce(new Error('conflict'))
-      .mockResolvedValue({ ok: true });
+    const save = vi.fn<({ title: string }) => Promise<{ ok: true }>>().mockRejectedValueOnce(new Error('conflict')).mockResolvedValue({ ok: true });
 
     const scheduler = createDraftSaveScheduler({
       debounceMs: 100,
@@ -96,5 +93,61 @@ describe('createDraftSaveScheduler', () => {
 
     scheduler.dispose();
     vi.useRealTimers();
+  });
+
+  it('resumes new saves only after an explicitly halted scheduler is idle', async () => {
+    vi.useFakeTimers();
+
+    const save = vi.fn<({ title: string }) => Promise<{ ok: true }>>().mockRejectedValueOnce(new Error('conflict')).mockResolvedValue({ ok: true });
+    const scheduler = createDraftSaveScheduler({
+      debounceMs: 100,
+      save,
+      onError: () => 'halt',
+    });
+
+    scheduler.schedule({ title: 'conflicted' });
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+    expect(scheduler.isHalted()).toBe(true);
+
+    expect(scheduler.resume()).toBe(true);
+
+    scheduler.schedule({ title: 'after-clear' });
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith({ title: 'after-clear' });
+
+    scheduler.dispose();
+    vi.useRealTimers();
+  });
+
+  it('waits for an in-flight save before reporting idle', async () => {
+    let finishSave!: () => void;
+    const scheduler = createDraftSaveScheduler({
+      debounceMs: 0,
+      save: () =>
+        new Promise<{ ok: true }>((resolve) => {
+          finishSave = () => resolve({ ok: true });
+        }),
+    });
+
+    scheduler.schedule({ body: 'draft' });
+    const flushPromise = scheduler.flush();
+    await flushPromises();
+
+    let idle = false;
+    void scheduler.waitForIdle().then(() => {
+      idle = true;
+    });
+    await flushPromises();
+    expect(idle).toBe(false);
+
+    finishSave();
+    await flushPromise;
+    await flushPromises();
+    expect(idle).toBe(true);
+
+    scheduler.dispose();
   });
 });

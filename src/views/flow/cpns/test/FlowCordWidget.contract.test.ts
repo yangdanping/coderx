@@ -13,4 +13,10 @@ describe('FlowCordWidget layout contract', () => {
     expect(outsideBlock).toContain('z-index: var(--z-sticky);');
     expect(outsideBlock).not.toContain('navbarHeight');
   });
+
+  it('keeps the pulled cord above the modal and exposes focus restoration', () => {
+    expect(source).toContain('ref="handleRef"');
+    expect(source).toMatch(/defineExpose\(\{[\s\S]*focusHandle/);
+    expect(source).toMatch(/\.flow-cord-widget\.is-editor-open[\s\S]*z-index:\s*calc\(var\(--z-modal\) \+ 2\)/);
+  });
 });

@@ -25,6 +25,27 @@ describe('Flow visual contract', () => {
     expect(editorSource).toMatch(/:deep\(\.comment-toolbar[\s\S]*--el-button-text-color:\s*var\(--text-primary/);
   });
 
+  it('renders the Flow editor as a retained pulled modal instead of an inline reveal', () => {
+    expect(flowSource).toContain("import FlowEditorModal from './cpns/FlowEditorModal.vue';");
+    expect(flowSource).toMatch(/<FlowEditorModal[\s\S]*:open="editorOpen"[\s\S]*:content="flowDraft"/);
+    expect(flowSource).toContain(':document="flowDraftDocument"');
+    expect(flowSource).toContain(':draft-status="flowDraftAutosave.status.value"');
+    expect(flowSource).toContain(':editor-disabled="flowDraftAutosave.isClearing.value"');
+    expect(flowSource).toContain('@update:document="handleFlowDocumentUpdate"');
+    expect(flowSource).toContain('@clear-draft="handleClearFlowDraft"');
+    expect(flowSource).toContain('@close="editorOpen = false"');
+    expect(flowSource).toContain('@after-close="restoreCordFocus"');
+    expect(flowSource).toContain(':inert="editorOpen"');
+    expect(flowSource).not.toContain('flow-editor-reveal');
+    expect(flowSource).not.toContain('@/components/tiptap-editor-flow/TiptapEditorFlow.vue');
+  });
+
+  it('keeps Flow text structured for server drafts while retaining HTML output', () => {
+    expect(editorSource).toContain('editDocument?: TiptapDocContent');
+    expect(editorSource).toMatch(/emit\('update:document',\s*editorInstance\.getJSON\(\)\)/);
+    expect(editorSource).toMatch(/emit\('update:content',\s*editorInstance\.getHTML\(\)/);
+  });
+
   it('reuses the shared infinite scroll composable', () => {
     expect(flowFeedSource).toMatch(/useInfiniteScroll/);
     expect(flowFeedSource).not.toMatch(/new IntersectionObserver/);

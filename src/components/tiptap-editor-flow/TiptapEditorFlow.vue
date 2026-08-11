@@ -1,17 +1,3 @@
-<template>
-  <div class="flow-editor-container" ref="editorContainerRef">
-    <CommentToolbar :editor="editor" />
-
-    <EditorContent :editor="editor" class="flow-editor-content" :class="{ 'is-focused': isFocused }" />
-
-    <BubbleMenu :editor="editor as any" :tippy-options="{ duration: 100 }" v-if="editor" class="flow-bubble-menu">
-      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" plain @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
-      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" plain @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
-      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" plain @click="handleBubbleLink"> 链接 </el-button>
-    </BubbleMenu>
-  </div>
-</template>
-
 <script lang="ts" setup>
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import { BubbleMenu } from '@tiptap/vue-3/menus';
@@ -20,31 +6,38 @@ import { getCommentEditorExtensions, defaultCommentEditorConfig } from './config
 import './styles/flow-editor.scss';
 
 import type { Extensions } from '@tiptap/core';
+import type { TiptapDocContent } from '@/service/draft/draft.types';
 
 const props = withDefaults(
   defineProps<{
     editContent?: string;
+    editDocument?: TiptapDocContent;
     placeholder?: string;
+    disabled?: boolean;
   }>(),
   {
     editContent: '',
     placeholder: '分享一点文字、链接或排版…',
+    disabled: false,
   },
 );
 
 const emit = defineEmits<{
   (e: 'update:content', content: string): void;
+  (e: 'update:document', content: TiptapDocContent): void;
 }>();
 
 const editorContainerRef = ref<HTMLElement | null>(null);
-const isFocused = ref(false);
+const isFocused = shallowRef(false);
 
 const editor: any = useEditor({
   extensions: getCommentEditorExtensions(props.placeholder) as Extensions,
   content: '',
+  editable: !props.disabled,
   ...defaultCommentEditorConfig,
   onUpdate: ({ editor: editorInstance }) => {
     emit('update:content', editorInstance.getHTML() || '');
+    emit('update:document', editorInstance.getJSON());
   },
   onFocus: () => {
     isFocused.value = true;
@@ -54,25 +47,46 @@ const editor: any = useEditor({
   },
 });
 
+const isSameDocument = (content: TiptapDocContent) => JSON.stringify(editor.value?.getJSON()) === JSON.stringify(content);
+
+const setEditorContent = (content: string | TiptapDocContent) => {
+  if (!editor.value) return;
+
+  if (typeof content === 'object' && isSameDocument(content)) return;
+  if (typeof content === 'string' && editor.value.getHTML() === content) return;
+
+  editor.value.commands.setContent(content, { emitUpdate: false });
+};
+
+watch(
+  () => props.disabled,
+  (disabled) => {
+    editor.value?.setEditable(!disabled);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.editDocument,
+  (newDocument) => {
+    if (newDocument) setEditorContent(newDocument);
+  },
+  { deep: true },
+);
+
 watch(
   () => props.editContent,
   (newContent) => {
-    if (editor.value && newContent !== undefined) {
-      const current = editor.value.getHTML();
-      const empty = current === '<p></p>' || current === '';
-      if (empty || current !== newContent) {
-        editor.value.chain().setContent(newContent).run();
-      }
-    }
+    if (props.editDocument || newContent === undefined) return;
+    setEditorContent(newContent);
   },
 );
 
 onMounted(() => {
   nextTick(() => {
     if (!editor.value) return;
-    if (props.editContent) {
-      editor.value.chain().setContent(props.editContent).run();
-    }
+    const initialContent = props.editDocument ?? props.editContent;
+    if (initialContent) setEditorContent(initialContent);
   });
 });
 
@@ -95,10 +109,33 @@ const handleBubbleLink = () => {
 
 defineExpose({
   getHTML: () => editor.value?.getHTML() ?? '',
-  setContent: (content: string) => editor.value?.chain().setContent(content).run(),
+  getJSON: () => normalizeFlowDocument(editor.value?.getJSON()),
+  setContent: setEditorContent,
   getEditor: () => editor.value,
 });
+
+function normalizeFlowDocument(content: unknown): TiptapDocContent {
+  if (content && typeof content === 'object' && !Array.isArray(content)) {
+    return content as TiptapDocContent;
+  }
+
+  return { type: 'doc', content: [{ type: 'paragraph' }] };
+}
 </script>
+
+<template>
+  <div ref="editorContainerRef" class="flow-editor-container" :inert="disabled ? '' : undefined" :aria-disabled="disabled ? 'true' : undefined">
+    <CommentToolbar :editor="editor" />
+
+    <EditorContent :editor="editor" class="flow-editor-content" :class="{ 'is-focused': isFocused }" />
+
+    <BubbleMenu v-if="editor" :editor="editor as any" :tippy-options="{ duration: 100 }" class="flow-bubble-menu">
+      <el-button size="small" :type="editor.isActive('bold') ? 'primary' : ''" plain @click="editor.chain().focus().toggleBold().run()"> 加粗 </el-button>
+      <el-button size="small" :type="editor.isActive('italic') ? 'primary' : ''" plain @click="editor.chain().focus().toggleItalic().run()"> 斜体 </el-button>
+      <el-button size="small" :type="editor.isActive('link') ? 'primary' : ''" plain @click="handleBubbleLink"> 链接 </el-button>
+    </BubbleMenu>
+  </div>
+</template>
 
 <style lang="scss" scoped>
 .flow-editor-container {
