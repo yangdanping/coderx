@@ -77,6 +77,21 @@ function mountGrid() {
 }
 
 describe('FlowAttachmentGrid', () => {
+  it('keeps an empty live region mounted before the first upload status arrives', async () => {
+    const wrapper = mount(FlowAttachmentGrid, {
+      props: { attachments: [] },
+      global: {
+        stubs: { VueEasyLightbox: true },
+      },
+    });
+
+    expect(wrapper.get('[aria-live="polite"]').text()).toBe('');
+
+    await wrapper.setProps({ attachments: [attachments[0]!] });
+
+    expect(wrapper.get('[aria-live="polite"]').text()).toContain('1 张图片上传中');
+  });
+
   it('renders retained attachment state and exposes accessible recovery and ordering controls', async () => {
     const wrapper = mountGrid();
 
@@ -95,6 +110,17 @@ describe('FlowAttachmentGrid', () => {
     expect(wrapper.emitted('remove')?.[0]).toEqual(['failed']);
     expect(wrapper.get('[aria-label="将第 1 张图片前移"]').attributes('disabled')).toBeDefined();
     expect(wrapper.get('[aria-label="将第 4 张图片后移"]').attributes('disabled')).toBeDefined();
+  });
+
+  it('removes unavailable previews from keyboard navigation without misleading labels', () => {
+    const wrapper = mountGrid();
+    const previews = wrapper.findAll('button.flow-attachment-tile__preview');
+
+    expect(previews.slice(0, 3).every((preview) => preview.attributes('disabled') !== undefined)).toBe(true);
+    expect(previews[0]!.attributes('aria-label')).toBe('第 1 张图片尚未上传，无法预览');
+    expect(previews[2]!.attributes('aria-label')).toBe('第 3 张图片上传失败，无法预览');
+    expect(previews[3]!.attributes('disabled')).toBeUndefined();
+    expect(previews[3]!.attributes('aria-label')).toBe('预览第 4 张图片');
   });
 
   it('opens the lightbox only for uploaded originals and emits preview with the retained index', async () => {

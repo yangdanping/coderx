@@ -24,6 +24,7 @@ const previewUrls = computed(() => uploadedAttachments.value.map((attachment) =>
 const uploadingCount = computed(() => props.attachments.filter((attachment) => attachment.status === 'queued' || attachment.status === 'uploading').length);
 const failedCount = computed(() => props.attachments.filter((attachment) => attachment.status === 'failed').length);
 const liveStatus = computed(() => {
+  if (props.attachments.length === 0) return '';
   const parts: string[] = [];
   if (uploadingCount.value > 0) parts.push(`${uploadingCount.value} 张图片上传中`);
   if (failedCount.value > 0) parts.push(`${failedCount.value} 张图片上传失败`);
@@ -36,6 +37,12 @@ function previousLabel(index: number): string {
 
 function nextLabel(index: number): string {
   return `将第 ${index + 1} 张图片后移`;
+}
+
+function previewLabel(attachment: FlowImageAttachment, index: number): string {
+  if (attachment.status === 'uploaded') return `预览第 ${index + 1} 张图片`;
+  if (attachment.status === 'failed') return `第 ${index + 1} 张图片上传失败，无法预览`;
+  return `第 ${index + 1} 张图片尚未上传，无法预览`;
 }
 
 function openPreview(index: number): void {
@@ -52,12 +59,18 @@ function openPreview(index: number): void {
 </script>
 
 <template>
-  <section v-if="attachments.length > 0" class="flow-attachment-grid" aria-label="已添加图片">
-    <p class="flow-attachment-grid__status" aria-live="polite">{{ liveStatus }}</p>
+  <p class="flow-attachment-grid__status" aria-live="polite">{{ liveStatus }}</p>
 
+  <section v-if="attachments.length > 0" class="flow-attachment-grid" aria-label="已添加图片">
     <div class="flow-attachment-grid__tiles">
       <div v-for="(attachment, index) in attachments" :key="attachment.clientId" class="flow-attachment-tile" :class="`is-${attachment.status}`">
-        <button class="flow-attachment-tile__preview" type="button" :aria-label="`预览第 ${index + 1} 张图片`" @click="openPreview(index)">
+        <button
+          class="flow-attachment-tile__preview"
+          type="button"
+          :aria-label="previewLabel(attachment, index)"
+          :disabled="attachment.status !== 'uploaded'"
+          @click="openPreview(index)"
+        >
           <img class="flow-attachment-tile__image" :src="attachment.previewUrl" :alt="attachment.file.name" />
 
           <div v-if="attachment.status === 'queued' || attachment.status === 'uploading'" class="flow-attachment-tile__overlay" aria-hidden="true">
