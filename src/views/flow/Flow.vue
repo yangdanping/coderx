@@ -1,7 +1,9 @@
 <template>
   <div class="flow-page" ref="containerRef">
-    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" />
+    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || publicationResetting" />
     <FlowEditorModal
+      :key="composerGeneration"
+      ref="flowEditorModalRef"
       :open="editorOpen"
       :content="flowDraft"
       :document="flowDraftDocument"
@@ -9,14 +11,16 @@
       :draft-status-text="flowDraftAutosave.statusText.value"
       :draft-error="flowDraftAutosave.errorMessage.value"
       :has-draft="flowDraftAutosave.hasDraft.value"
-      :clear-disabled="flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
-      :editor-disabled="flowDraftAutosave.isClearing.value"
+      :clear-disabled="composerClearing || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
+      :editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"
       controls-id="flow-editor-panel"
       @close="editorOpen = false"
       @update:content="flowDraft = $event"
-      @update:document="handleFlowDocumentUpdate"
+      @update:json="handleFlowDocumentUpdate"
+      @update:media-ids="handleFlowMediaIdsUpdate"
       @clear-draft="handleClearFlowDraft"
-      @after-close="restoreCordFocus"
+      @published="handlePublished"
+      @after-close="handleAfterClose"
     />
 
     <div class="flow-column" :inert="editorOpen" :aria-hidden="editorOpen ? 'true' : undefined">
@@ -38,7 +42,9 @@ import FlowFeed from './cpns/FlowFeed.vue';
 import FlowCordWidget from './cpns/FlowCordWidget.vue';
 import FlowEditorModal from './cpns/FlowEditorModal.vue';
 import { normalizeFlowDraftDocument, useFlowDraftAutosave } from '@/composables/useFlowDraftAutosave';
+import { flowKeys } from '@/composables/useFlowFeed';
 import { usePullToRefresh } from '@/composables/usePullToRefresh';
+import { useQueryClient } from '@tanstack/vue-query';
 import useUserStore from '@/stores/user.store';
 import { LocalCache, Msg } from '@/utils';
 import { ElMessageBox } from 'element-plus';
@@ -49,10 +55,17 @@ import type { TiptapDocContent } from '@/service/draft/draft.types';
 const containerRef = ref<HTMLElement | null>(null);
 const feedRef = ref<InstanceType<typeof FlowFeed> | null>(null);
 const cordRef = ref<InstanceType<typeof FlowCordWidget> | null>(null);
+const flowEditorModalRef = ref<InstanceType<typeof FlowEditorModal> | null>(null);
 
 const editorOpen = shallowRef(false);
 const flowDraft = shallowRef('');
 const flowDraftDocument = shallowRef<TiptapDocContent>();
+const flowDraftMediaIds = shallowRef<number[]>([]);
+const composerGeneration = shallowRef(0);
+const composerClearing = shallowRef(false);
+const publicationResetting = shallowRef(false);
+const queryClient = useQueryClient();
+let publicationResetPending = false;
 
 const userStore = useUserStore();
 const normalizedUserId = Number(userStore.userInfo.id);
@@ -76,16 +89,57 @@ function restoreCordFocus() {
   cordRef.value?.focusHandle();
 }
 
-function handleFlowDocumentUpdate(document: TiptapDocContent) {
-  const normalizedDocument = normalizeFlowDraftDocument(document);
-  flowDraftDocument.value = normalizedDocument;
+function recordCurrentFlowSnapshot() {
   flowDraftAutosave.recordSnapshot({
-    content: normalizedDocument,
+    content: normalizeFlowDraftDocument(flowDraftDocument.value),
     meta: {
-      imageIds: [],
+      imageIds: [...flowDraftMediaIds.value],
       videoIds: [],
     },
   });
+}
+
+function handleFlowDocumentUpdate(document: TiptapDocContent) {
+  if (composerClearing.value || publicationResetting.value || publicationResetPending) return;
+  const normalizedDocument = normalizeFlowDraftDocument(document);
+  flowDraftDocument.value = normalizedDocument;
+  recordCurrentFlowSnapshot();
+}
+
+function handleFlowMediaIdsUpdate(mediaIds: number[]) {
+  if (composerClearing.value || publicationResetting.value || publicationResetPending) return;
+  flowDraftMediaIds.value = [...mediaIds];
+  recordCurrentFlowSnapshot();
+}
+
+function resetComposerState() {
+  flowDraft.value = '';
+  flowDraftDocument.value = normalizeFlowDraftDocument(null);
+  flowDraftMediaIds.value = [];
+  composerGeneration.value += 1;
+}
+
+function handlePublished() {
+  publicationResetPending = true;
+  publicationResetting.value = true;
+  void queryClient.invalidateQueries({ queryKey: flowKeys.feed() });
+}
+
+async function handleAfterClose() {
+  if (!publicationResetPending) {
+    restoreCordFocus();
+    return;
+  }
+
+  publicationResetPending = false;
+  const result = await flowDraftAutosave.resetAfterPublication();
+  resetComposerState();
+  publicationResetting.value = false;
+  await nextTick();
+  restoreCordFocus();
+  if (!result.remoteCleared) {
+    Msg.showWarn('Flow 已发布，本地草稿已清空；远端旧草稿稍后会自动清理');
+  }
 }
 
 async function handleClearFlowDraft() {
@@ -100,13 +154,20 @@ async function handleClearFlowDraft() {
     return;
   }
 
+  composerClearing.value = true;
   try {
     await flowDraftAutosave.clearDraft();
-    flowDraft.value = '';
-    flowDraftDocument.value = normalizeFlowDraftDocument(null);
-    Msg.showSuccess('Flow 草稿已清空');
+    const { failedDeletes } = (await flowEditorModalRef.value?.clearAttachments()) ?? { failedDeletes: 0 };
+    resetComposerState();
+    if (failedDeletes > 0) {
+      Msg.showWarn('Flow 草稿已清空，部分图片未能立即删除，将由服务端自动回收');
+    } else {
+      Msg.showSuccess('Flow 草稿已清空');
+    }
   } catch {
     Msg.showFail(flowDraftAutosave.errorMessage.value || 'Flow 草稿清空失败');
+  } finally {
+    composerClearing.value = false;
   }
 }
 

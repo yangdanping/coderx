@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
+import VueDOMPurifyHTML from 'vue-dompurify-html';
 import { describe, expect, it } from 'vitest';
 
 import FlowFeedItem from '../FlowFeedItem.vue';
@@ -14,6 +15,7 @@ const item: FlowItem = {
     avatarUrl: '/avatar.svg',
   },
   body: '今天换了豆子，手冲里第一次喝到很清楚的柑橘香。',
+  bodyHtml: '<p>今天换了豆子，手冲里第一次喝到很清楚的柑橘香。</p>',
   media: [
     {
       id: 1,
@@ -39,6 +41,37 @@ function createTestRouter() {
 }
 
 describe('FlowFeedItem', () => {
+  it('renders rich content through the real DOMPurify directive and removes event handlers', () => {
+    const router = createTestRouter();
+    const wrapper = mount(FlowFeedItem, {
+      props: {
+        item: {
+          ...item,
+          bodyHtml: '<p>安全正文<img src="x" onerror="window.__flowXss = true"></p>',
+        },
+      },
+      global: {
+        plugins: [router, VueDOMPurifyHTML],
+        stubs: { ElAvatar: true, FlowMediaGallery: true },
+      },
+    });
+
+    const body = wrapper.get('.item-body');
+    expect(body.text()).toContain('安全正文');
+    expect(body.element.querySelector('img')?.hasAttribute('onerror')).toBe(false);
+  });
+
+  it('falls back to escaped plain text when rich HTML is empty', () => {
+    const router = createTestRouter();
+    const wrapper = mount(FlowFeedItem, {
+      props: { item: { ...item, body: '<b>纯文本</b>', bodyHtml: '' } },
+      global: { plugins: [router], stubs: { ElAvatar: true, FlowMediaGallery: true } },
+    });
+
+    expect(wrapper.get('.item-body').text()).toBe('<b>纯文本</b>');
+    expect(wrapper.get('.item-body').find('b').exists()).toBe(false);
+  });
+
   it('opens the flow detail when the non-interactive card area is clicked', async () => {
     const router = createTestRouter();
     await router.push('/');

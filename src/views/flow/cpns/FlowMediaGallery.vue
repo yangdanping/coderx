@@ -2,9 +2,17 @@
   <div class="flow-media-gallery" :class="{ 'single-media': media.length === 1 }" @click.stop>
     <div class="media-viewport">
       <div class="media-track" :style="media.length > 2 ? { transform: translateX } : undefined">
-        <div v-for="(item, idx) in media" :key="item.id" class="media-slot" :class="{ 'full-width': media.length === 1 }" role="button" @click="openPreview(idx)">
-          <img :src="item.url" :alt="item.title" loading="lazy" decoding="async" />
-        </div>
+        <button
+          v-for="(item, idx) in media"
+          :key="item.id"
+          type="button"
+          class="media-slot"
+          :class="{ 'full-width': media.length === 1 }"
+          :aria-label="`预览${item.title || `第 ${idx + 1} 张图片`}`"
+          @click="openPreview(idx)"
+        >
+          <img :src="item.thumbnailUrl || item.url" :alt="item.title" loading="lazy" decoding="async" />
+        </button>
       </div>
     </div>
 
@@ -82,9 +90,18 @@ function openPreview(index: number) {
 
     .media-slot {
       flex: 0 0 calc(50% - 1.5px);
+      display: block;
+      padding: 0;
+      border: 0;
       aspect-ratio: 4 / 3;
       overflow: hidden;
       background: var(--bg-color-secondary);
+      cursor: var(--cursorPointer, pointer);
+
+      &:focus-visible {
+        outline: 2px solid var(--el-color-primary);
+        outline-offset: -2px;
+      }
 
       &.full-width {
         flex: 0 0 100%;

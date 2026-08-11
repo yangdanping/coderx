@@ -2,6 +2,7 @@
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import { BubbleMenu } from '@tiptap/vue-3/menus';
 import CommentToolbar from '@/components/tiptap-editor-comment/CommentToolbar.vue';
+import FlowAttachmentPicker from './FlowAttachmentPicker.vue';
 import { getCommentEditorExtensions, defaultCommentEditorConfig } from './config';
 import './styles/flow-editor.scss';
 
@@ -14,30 +15,51 @@ const props = withDefaults(
     editDocument?: TiptapDocContent;
     placeholder?: string;
     disabled?: boolean;
+    retainedCount?: number;
   }>(),
   {
     editContent: '',
     placeholder: '分享一点文字、链接或排版…',
     disabled: false,
+    retainedCount: 0,
   },
 );
 
 const emit = defineEmits<{
   (e: 'update:content', content: string): void;
   (e: 'update:document', content: TiptapDocContent): void;
+  (e: 'update:json', content: TiptapDocContent): void;
+  (e: 'files', files: File[]): void;
 }>();
 
 const editorContainerRef = ref<HTMLElement | null>(null);
 const isFocused = shallowRef(false);
+
+const imageCandidates = (files: FileList | readonly File[] | null | undefined): File[] => Array.from(files ?? []).filter((file) => file.type.startsWith('image/'));
+
+const delegateImageFiles = (event: ClipboardEvent | DragEvent, files: FileList | null | undefined): boolean => {
+  const candidates = imageCandidates(files);
+  if (candidates.length === 0) return false;
+
+  event.preventDefault();
+  emit('files', candidates);
+  return true;
+};
 
 const editor: any = useEditor({
   extensions: getCommentEditorExtensions(props.placeholder) as Extensions,
   content: '',
   editable: !props.disabled,
   ...defaultCommentEditorConfig,
+  editorProps: {
+    handlePaste: (_view, event) => delegateImageFiles(event, event.clipboardData?.files),
+    handleDrop: (_view, event) => delegateImageFiles(event, event.dataTransfer?.files),
+  },
   onUpdate: ({ editor: editorInstance }) => {
+    const document = normalizeFlowDocument(editorInstance.getJSON());
     emit('update:content', editorInstance.getHTML() || '');
-    emit('update:document', editorInstance.getJSON());
+    emit('update:document', document);
+    emit('update:json', document);
   },
   onFocus: () => {
     isFocused.value = true;
@@ -56,6 +78,7 @@ const setEditorContent = (content: string | TiptapDocContent) => {
   if (typeof content === 'string' && editor.value.getHTML() === content) return;
 
   editor.value.commands.setContent(content, { emitUpdate: false });
+  emit('update:json', normalizeFlowDocument(editor.value.getJSON()));
 };
 
 watch(
@@ -125,7 +148,11 @@ function normalizeFlowDocument(content: unknown): TiptapDocContent {
 
 <template>
   <div ref="editorContainerRef" class="flow-editor-container" :inert="disabled ? '' : undefined" :aria-disabled="disabled ? 'true' : undefined">
-    <CommentToolbar :editor="editor" />
+    <CommentToolbar :editor="editor">
+      <template #afterLink>
+        <FlowAttachmentPicker :retained-count="retainedCount" @files="emit('files', $event)" />
+      </template>
+    </CommentToolbar>
 
     <EditorContent :editor="editor" class="flow-editor-content" :class="{ 'is-focused': isFocused }" />
 

@@ -25,4 +25,16 @@ describe('FlowCordWidget', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[true]]);
     expect(scrollTo).not.toHaveBeenCalled();
   });
+
+  it('cannot reopen the editor while a composer reset transaction is active', async () => {
+    const wrapper = mount(FlowCordWidget, {
+      props: { modelValue: false, disabled: true },
+    });
+
+    const handle = wrapper.get('.flow-cord-handle');
+    expect(handle.attributes('disabled')).toBeDefined();
+    await handle.trigger('click');
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  });
 });

@@ -474,6 +474,31 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     }
   };
 
+  const resetAfterPublication = async (): Promise<{ remoteCleared: boolean }> => {
+    isClearing.value = true;
+    status.value = 'clearing';
+    errorMessage.value = '';
+    scheduler.cancel();
+
+    try {
+      await scheduler.waitForIdle();
+      removeLocalFallback();
+      resetState();
+      scheduler.resume();
+
+      if (!canSync) return { remoteCleared: true };
+
+      try {
+        await clearRemoteDraft();
+        return { remoteCleared: true };
+      } catch {
+        return { remoteCleared: false };
+      }
+    } finally {
+      isClearing.value = false;
+    }
+  };
+
   const statusText = computed(() => {
     const labels: Record<FlowDraftAutosaveStatus, string> = {
       idle: '',
@@ -511,5 +536,6 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     recordSnapshot,
     flushPendingSave,
     clearDraft,
+    resetAfterPublication,
   };
 }

@@ -2,7 +2,7 @@
   <div class="flow-cord-widget" :class="{ 'is-editor-open': panelOpen }" :style="cordStyle">
     <div class="flow-cord-outside">
       <div class="flow-cord-wrap" :class="{ 'is-visible': cordRevealed, 'is-editor-open': panelOpen }">
-        <button ref="handleRef" type="button" class="flow-cord-handle" :aria-expanded="panelOpen" :aria-controls="controlsId" @click="onCordClick">
+        <button ref="handleRef" type="button" class="flow-cord-handle" :aria-expanded="panelOpen" :aria-controls="controlsId" :disabled="disabled" @click="onCordClick">
           <img src="@/assets/img/pull.png" alt="" class="flow-rope-img" draggable="false" />
         </button>
       </div>
@@ -29,10 +29,12 @@ const props = withDefaults(
      * 与 Edit 页 `.rope-icon-wrapper { right: 40px }` 同一语义。
      */
     cordAnchorInsetPx?: number;
+    disabled?: boolean;
   }>(),
   {
     controlsId: 'flow-cord-panel',
     cordAnchorInsetPx: -470,
+    disabled: false,
   },
 );
 
@@ -53,6 +55,7 @@ const cordStyle = computed(() => {
 });
 
 function onCordClick() {
+  if (props.disabled) return;
   panelOpen.value = !panelOpen.value;
 }
 
@@ -120,6 +123,11 @@ defineExpose({ focusHandle });
     justify-content: center;
     cursor: var(--cursorPointer, pointer);
     user-select: none;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
 
     @media (hover: hover) and (pointer: fine) {
       &:hover .flow-rope-img {

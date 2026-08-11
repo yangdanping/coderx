@@ -103,6 +103,8 @@
       </el-tooltip>
     </div>
 
+    <slot name="afterLink" />
+
     <el-divider direction="vertical" />
 
     <!-- 撤销/重做 -->
@@ -140,6 +142,10 @@ import { ArrowDown, List, Memo, ChatLineSquare, Coin, Link, RefreshLeft, Refresh
 import { formatShortcut, commonShortcuts } from '@/utils/keyboard';
 
 import type { Editor } from '@tiptap/vue-3';
+
+defineSlots<{
+  afterLink?(): unknown;
+}>();
 
 const props = defineProps<{
   editor: Editor | undefined;

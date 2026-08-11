@@ -30,11 +30,12 @@ describe('Flow visual contract', () => {
     expect(flowSource).toMatch(/<FlowEditorModal[\s\S]*:open="editorOpen"[\s\S]*:content="flowDraft"/);
     expect(flowSource).toContain(':document="flowDraftDocument"');
     expect(flowSource).toContain(':draft-status="flowDraftAutosave.status.value"');
-    expect(flowSource).toContain(':editor-disabled="flowDraftAutosave.isClearing.value"');
-    expect(flowSource).toContain('@update:document="handleFlowDocumentUpdate"');
+    expect(flowSource).toContain(':editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"');
+    expect(flowSource).toContain('@update:json="handleFlowDocumentUpdate"');
     expect(flowSource).toContain('@clear-draft="handleClearFlowDraft"');
     expect(flowSource).toContain('@close="editorOpen = false"');
-    expect(flowSource).toContain('@after-close="restoreCordFocus"');
+    expect(flowSource).toContain('@after-close="handleAfterClose"');
+    expect(flowSource).toMatch(/function handleAfterClose\(\)[\s\S]*restoreCordFocus\(\)/);
     expect(flowSource).toContain(':inert="editorOpen"');
     expect(flowSource).not.toContain('flow-editor-reveal');
     expect(flowSource).not.toContain('@/components/tiptap-editor-flow/TiptapEditorFlow.vue');
@@ -42,7 +43,9 @@ describe('Flow visual contract', () => {
 
   it('keeps Flow text structured for server drafts while retaining HTML output', () => {
     expect(editorSource).toContain('editDocument?: TiptapDocContent');
-    expect(editorSource).toMatch(/emit\('update:document',\s*editorInstance\.getJSON\(\)\)/);
+    expect(editorSource).toMatch(/const document = normalizeFlowDocument\(editorInstance\.getJSON\(\)\)/);
+    expect(editorSource).toMatch(/emit\('update:document',\s*document\)/);
+    expect(editorSource).toMatch(/emit\('update:json',\s*document\)/);
     expect(editorSource).toMatch(/emit\('update:content',\s*editorInstance\.getHTML\(\)/);
   });
 

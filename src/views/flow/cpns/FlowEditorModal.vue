@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { Trash2, X } from '@lucide/vue';
+import FlowAttachmentGrid from '@/components/tiptap-editor-flow/FlowAttachmentGrid.vue';
+import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
+import { useFlowImageUploads } from '@/composables/useFlowImageUploads';
+import { createFlow } from '@/service/flow/flow.request';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
@@ -33,9 +37,93 @@ const emit = defineEmits<{
   close: [];
   'update:content': [html: string];
   'update:document': [document: TiptapDocContent];
+  'update:json': [document: TiptapDocContent];
+  'update:media-ids': [mediaIds: number[]];
   'clear-draft': [];
+  published: [];
   'after-close': [];
 }>();
+
+const uploads = useFlowImageUploads();
+const publishing = shallowRef(false);
+const queueError = shallowRef('');
+const clientRequestId = shallowRef(crypto.randomUUID());
+
+const normalizedDocument = computed<TiptapDocContent>(() => props.document ?? { type: 'doc', content: [{ type: 'paragraph' }] });
+
+function collectPlainText(node: TiptapDocContent | undefined): string {
+  if (!node) return '';
+  const ownText = typeof node.text === 'string' ? node.text : '';
+  return ownText + (node.content?.map((child) => collectPlainText(child)).join('') ?? '');
+}
+
+const canPublish = computed(
+  () =>
+    !publishing.value &&
+    !props.editorDisabled &&
+    !uploads.isUploading.value &&
+    !uploads.hasFailed.value &&
+    (collectPlainText(normalizedDocument.value).trim().length > 0 || uploads.uploadedMediaIds.value.length > 0),
+);
+
+watch(uploads.uploadedMediaIds, (mediaIds) => {
+  emit('update:media-ids', [...mediaIds]);
+});
+
+function addCandidateFiles(files: File[]): void {
+  queueError.value = '';
+  const result = uploads.addFiles(files);
+  if (result.rejected.length > 0) {
+    queueError.value = result.rejected[0]?.message ?? '部分图片未能添加';
+  }
+}
+
+function retryAttachment(clientId: string): void {
+  queueError.value = '';
+  uploads.retry(clientId);
+}
+
+async function removeAttachment(clientId: string): Promise<void> {
+  queueError.value = '';
+  if (!(await uploads.remove(clientId))) {
+    queueError.value = '图片删除失败，请重试';
+  }
+}
+
+function moveAttachment(from: number, to: number): void {
+  uploads.move(from, to);
+}
+
+async function publish(): Promise<void> {
+  if (!canPublish.value) return;
+
+  publishing.value = true;
+  queueError.value = '';
+  try {
+    await createFlow({
+      clientRequestId: clientRequestId.value,
+      content: normalizedDocument.value,
+      mediaIds: [...uploads.uploadedMediaIds.value],
+    });
+    uploads.dispose();
+    emit('published');
+    emit('close');
+  } catch {
+    queueError.value = '发布失败，请重试';
+  } finally {
+    publishing.value = false;
+  }
+}
+
+async function clearAttachments(): Promise<{ failedDeletes: number }> {
+  const retainedClientIds = uploads.attachments.value.map((attachment) => attachment.clientId);
+  const results = await Promise.all(retainedClientIds.map((clientId) => uploads.remove(clientId)));
+  const failedDeletes = results.filter((removed) => !removed).length;
+  uploads.dispose();
+  return { failedDeletes };
+}
+
+defineExpose({ clearAttachments });
 
 const dialogRef = useTemplateRef<HTMLElement>('dialogRef');
 const closeButtonRef = useTemplateRef<HTMLButtonElement>('closeButtonRef');
@@ -127,6 +215,7 @@ onMounted(() => window.addEventListener('keydown', handleWindowKeydown));
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleWindowKeydown);
   restoreBodyScroll();
+  uploads.dispose();
 });
 </script>
 
@@ -152,9 +241,16 @@ onBeforeUnmount(() => {
             :edit-content="content"
             :edit-document="document"
             :disabled="editorDisabled"
+            :retained-count="uploads.attachments.value.length"
             @update:content="emit('update:content', $event)"
             @update:document="emit('update:document', $event)"
+            @update:json="emit('update:json', $event)"
+            @files="addCandidateFiles"
           />
+          <div class="flow-editor-modal__attachments" :inert="editorDisabled ? '' : undefined" :aria-disabled="editorDisabled ? 'true' : undefined">
+            <FlowAttachmentGrid :attachments="uploads.attachments.value" @retry="retryAttachment" @remove="removeAttachment" @move="moveAttachment" />
+            <p v-if="queueError" class="flow-editor-modal__queue-error" role="alert">{{ queueError }}</p>
+          </div>
           <div class="flow-editor-modal__footer">
             <div class="flow-editor-modal__draft-meta">
               <button
@@ -174,7 +270,7 @@ onBeforeUnmount(() => {
               </span>
             </div>
             <div class="flow-editor-modal__publish">
-              <el-button type="primary" plain disabled>发布</el-button>
+              <el-button type="primary" plain :disabled="!canPublish" :loading="publishing" @click="publish">{{ publishing ? '发布中…' : '发布' }}</el-button>
             </div>
           </div>
         </div>
@@ -261,16 +357,11 @@ onBeforeUnmount(() => {
 }
 
 .flow-editor-modal__footer {
-  position: absolute;
-  left: 12px;
-  right: 10px;
-  bottom: 10px;
-  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  pointer-events: none;
+  padding: 10px 12px;
 }
 
 .flow-editor-modal__draft-meta,
@@ -279,7 +370,17 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  pointer-events: auto;
+}
+
+.flow-editor-modal__attachments {
+  padding: 0 12px;
+}
+
+.flow-editor-modal__queue-error {
+  margin: 8px 0 0;
+  color: var(--el-color-danger);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .flow-editor-modal__clear {
@@ -335,7 +436,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.flow-editor-content) {
-  padding-bottom: 50px;
+  padding-bottom: 18px;
 }
 
 .flow-editor-modal-enter-from,

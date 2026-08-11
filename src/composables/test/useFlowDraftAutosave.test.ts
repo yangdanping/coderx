@@ -437,4 +437,47 @@ describe('useFlowDraftAutosave', () => {
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).toBeNull();
     expect(autosave.hasDraft.value).toBe(false);
   });
+
+  it('persists the current ordered uploaded image ids in draft metadata', async () => {
+    const autosave = mountAutosave({ userId: null, canSync: false });
+    await autosave.initialize();
+
+    autosave.recordSnapshot({
+      ...textSnapshot('带图草稿'),
+      meta: { imageIds: [42, 41], videoIds: [] },
+    });
+
+    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(null)) ?? 'null') as FlowDraftLocalFallback;
+    expect(cached.meta.imageIds).toEqual([42, 41]);
+  });
+
+  it('publication reset waits stale saves, clears local state, and treats remote cleanup as best effort', async () => {
+    let resolveSave!: (value: { data: FlowDraftRecord }) => void;
+    saveFlowDraftRequestMock.mockImplementation(
+      () =>
+        new Promise<{ data: FlowDraftRecord }>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 33, version: 1 }) });
+    deleteFlowDraftRequestMock.mockRejectedValue(new Error('remote cleanup unavailable'));
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 60_000 });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('已经发布的内容'));
+
+    const flushPromise = autosave.flushPendingSave();
+    await flushPromises();
+    const resetPromise = autosave.resetAfterPublication();
+    await flushPromises();
+    expect(autosave.recordSnapshot(textSnapshot('重置期间的旧编辑器事件'))).toBe(false);
+
+    resolveSave({ data: remoteDraft({ id: 33, version: 1, content: textSnapshot('已经发布的内容').content }) });
+    await flushPromise;
+    await expect(resetPromise).resolves.toEqual({ remoteCleared: false });
+
+    expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(33);
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+    expect(autosave.hasDraft.value).toBe(false);
+    expect(autosave.status.value).toBe('idle');
+  });
 });

@@ -1,14 +1,6 @@
 <template>
-  <article
-    class="flow-feed-item"
-    :class="{ 'is-navigable': navigable }"
-  >
-    <RouterLink
-      v-if="navigable"
-      class="item-detail-link"
-      :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }"
-      :aria-label="`查看 ${item.author.name} 的动态详情`"
-    />
+  <article class="flow-feed-item" :class="{ 'is-navigable': navigable }">
+    <RouterLink v-if="navigable" class="item-detail-link" :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }" :aria-label="`查看 ${item.author.name} 的动态详情`" />
 
     <header class="item-header">
       <div class="author-interactive excluded-from-detail" @click.stop>
@@ -23,19 +15,15 @@
       </button>
     </header>
 
-    <p class="item-body">{{ item.body }}</p>
+    <div v-if="item.bodyHtml.trim()" class="item-body" v-dompurify-html="item.bodyHtml" />
+    <p v-else class="item-body">{{ item.body }}</p>
 
     <div v-if="item.media.length > 0" class="media-interactive excluded-from-detail">
       <FlowMediaGallery :media="item.media" />
     </div>
 
     <footer class="item-actions">
-      <button
-        class="action-btn like-action excluded-from-detail"
-        :class="{ active: liked, pop: isAnimating }"
-        @click.stop="toggleLike"
-        role="button"
-      >
+      <button class="action-btn like-action excluded-from-detail" :class="{ active: liked, pop: isAnimating }" @click.stop="toggleLike" role="button">
         <Heart :size="18" :fill="liked ? 'currentColor' : 'none'" />
         <AnimatedNumber v-if="likeCount > 0" :value="likeCount" />
       </button>
