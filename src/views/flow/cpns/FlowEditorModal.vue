@@ -90,13 +90,8 @@ function markDocumentMutation(document: TiptapDocContent): void {
   if (retryPayload && JSON.stringify(document) !== JSON.stringify(retryPayload.content)) abandonRetryIdentity();
 }
 
-function markMediaMutation(mediaIds: readonly number[]): void {
-  if (retryPayload && JSON.stringify(mediaIds) !== JSON.stringify(retryPayload.mediaIds)) abandonRetryIdentity();
-}
-
 watch(uploads.uploadedMediaIds, (mediaIds) => {
   if (interactionLocked.value) return;
-  markMediaMutation(mediaIds);
   emit('update:media-ids', [...mediaIds]);
 });
 
