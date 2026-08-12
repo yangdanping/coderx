@@ -7,6 +7,7 @@ import { createFlow } from '@/service/flow/flow.request';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
+import type { CreateFlowPayload } from '@/service/flow/flow.types';
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +22,7 @@ const props = withDefaults(
     clearDisabled?: boolean;
     editorDisabled?: boolean;
     publishDisabled?: boolean;
+    lifecycleLocked?: boolean;
   }>(),
   {
     content: '',
@@ -32,6 +34,7 @@ const props = withDefaults(
     clearDisabled: false,
     editorDisabled: false,
     publishDisabled: false,
+    lifecycleLocked: false,
   },
 );
 
@@ -51,7 +54,9 @@ const uploads = useFlowImageUploads();
 const publishing = shallowRef(false);
 const queueError = shallowRef('');
 const clientRequestId = shallowRef(crypto.randomUUID());
-const interactionLocked = computed(() => props.editorDisabled || publishing.value);
+const interactionLocked = computed(() => props.editorDisabled || publishing.value || props.lifecycleLocked);
+let retryPayload: CreateFlowPayload | null = null;
+let retryContent = '';
 
 const normalizedDocument = computed<TiptapDocContent>(() => props.document ?? { type: 'doc', content: [{ type: 'paragraph' }] });
 
@@ -63,16 +68,35 @@ function collectPlainText(node: TiptapDocContent | undefined): string {
 
 const canPublish = computed(
   () =>
-    !publishing.value &&
-    !props.editorDisabled &&
+    !interactionLocked.value &&
     !props.publishDisabled &&
     !uploads.isUploading.value &&
     !uploads.hasFailed.value &&
     (collectPlainText(normalizedDocument.value).trim().length > 0 || uploads.uploadedMediaIds.value.length > 0),
 );
 
+function abandonRetryIdentity(): void {
+  if (!retryPayload) return;
+  retryPayload = null;
+  retryContent = '';
+  clientRequestId.value = crypto.randomUUID();
+}
+
+function markContentMutation(content: string): void {
+  if (retryPayload && content !== retryContent) abandonRetryIdentity();
+}
+
+function markDocumentMutation(document: TiptapDocContent): void {
+  if (retryPayload && JSON.stringify(document) !== JSON.stringify(retryPayload.content)) abandonRetryIdentity();
+}
+
+function markMediaMutation(mediaIds: readonly number[]): void {
+  if (retryPayload && JSON.stringify(mediaIds) !== JSON.stringify(retryPayload.mediaIds)) abandonRetryIdentity();
+}
+
 watch(uploads.uploadedMediaIds, (mediaIds) => {
   if (interactionLocked.value) return;
+  markMediaMutation(mediaIds);
   emit('update:media-ids', [...mediaIds]);
 });
 
@@ -80,6 +104,7 @@ function addCandidateFiles(files: File[]): void {
   if (interactionLocked.value) return;
   queueError.value = '';
   const result = uploads.addFiles(files);
+  if (result.accepted.length > 0) abandonRetryIdentity();
   if (result.rejected.length > 0) {
     queueError.value = result.rejected[0]?.message ?? '部分图片未能添加';
   }
@@ -88,34 +113,39 @@ function addCandidateFiles(files: File[]): void {
 function retryAttachment(clientId: string): void {
   if (interactionLocked.value) return;
   queueError.value = '';
-  uploads.retry(clientId);
+  if (uploads.retry(clientId)) abandonRetryIdentity();
 }
 
 async function removeAttachment(clientId: string): Promise<void> {
   if (interactionLocked.value) return;
   queueError.value = '';
-  if (!(await uploads.remove(clientId))) {
+  if (await uploads.remove(clientId)) {
+    abandonRetryIdentity();
+  } else {
     queueError.value = '图片删除失败，请重试';
   }
 }
 
 function moveAttachment(from: number, to: number): void {
   if (interactionLocked.value) return;
-  uploads.move(from, to);
+  if (uploads.move(from, to)) abandonRetryIdentity();
 }
 
 function handleContentUpdate(html: string): void {
   if (interactionLocked.value) return;
+  markContentMutation(html);
   emit('update:content', html);
 }
 
 function handleDocumentUpdate(document: TiptapDocContent): void {
   if (interactionLocked.value) return;
+  markDocumentMutation(document);
   emit('update:document', document);
 }
 
 function handleJsonUpdate(document: TiptapDocContent): void {
   if (interactionLocked.value) return;
+  markDocumentMutation(document);
   emit('update:json', document);
 }
 
@@ -127,11 +157,15 @@ function requestClearDraft(): void {
 async function publish(): Promise<void> {
   if (!canPublish.value) return;
 
-  const publicationPayload = {
-    clientRequestId: clientRequestId.value,
-    content: JSON.parse(JSON.stringify(normalizedDocument.value)) as TiptapDocContent,
-    mediaIds: [...uploads.uploadedMediaIds.value],
-  };
+  if (!retryPayload) {
+    retryPayload = {
+      clientRequestId: clientRequestId.value,
+      content: JSON.parse(JSON.stringify(normalizedDocument.value)) as TiptapDocContent,
+      mediaIds: [...uploads.uploadedMediaIds.value],
+    };
+    retryContent = props.content;
+  }
+  const publicationPayload = retryPayload;
   publishing.value = true;
   emit('update:publishing', true);
   queueError.value = '';
@@ -149,6 +183,7 @@ async function publish(): Promise<void> {
 }
 
 async function clearAttachments(): Promise<{ failedDeletes: number }> {
+  if (publishing.value || props.lifecycleLocked) return { failedDeletes: 0 };
   const retainedClientIds = uploads.attachments.value.map((attachment) => attachment.clientId);
   const results = await Promise.all(retainedClientIds.map((clientId) => uploads.remove(clientId)));
   const failedDeletes = results.filter((removed) => !removed).length;

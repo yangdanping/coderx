@@ -28,6 +28,8 @@ const modalSource = readFileSync(join(process.cwd(), 'src/views/flow/cpns/FlowEd
 const editorSource = readFileSync(join(process.cwd(), 'src/components/tiptap-editor-flow/TiptapEditorFlow.vue'), 'utf8');
 
 const mountedWrappers: VueWrapper[] = [];
+const firstRequestId = '11111111-1111-4111-8111-111111111111';
+const secondRequestId = '22222222-2222-4222-8222-222222222222';
 
 const textDocument = (text = '保留的草稿'): TiptapDocContent => ({
   type: 'doc',
@@ -135,13 +137,14 @@ function mountModal(open = true, overrides: Record<string, unknown> = {}) {
 afterEach(() => {
   mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount());
   document.body.style.overflow = '';
+  vi.restoreAllMocks();
 });
 
 beforeEach(() => {
   queueHolder.current = createQueueMock();
   useQueueMock.mockReset().mockImplementation(() => queueHolder.current);
   createFlowMock.mockReset();
-  vi.spyOn(crypto, 'randomUUID').mockReturnValue('11111111-1111-4111-8111-111111111111');
+  vi.spyOn(crypto, 'randomUUID').mockReturnValueOnce(firstRequestId).mockReturnValue(secondRequestId);
 });
 
 describe('FlowEditorModal', () => {
@@ -394,7 +397,7 @@ describe('FlowEditorModal', () => {
     expect(wrapper.emitted('update:media-ids')?.at(-1)?.[0]).toEqual([42, 41]);
   });
 
-  it('keeps one stable request id across failure retry and retains the queue on failure', async () => {
+  it('retries the exact frozen payload and request id after failure when only no-op events and ordinary close occur', async () => {
     const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
     queue.attachments.value = [uploadedAttachment('one', 42), uploadedAttachment('two', 41)];
     queue.uploadedIds.value = [42, 41];
@@ -407,15 +410,26 @@ describe('FlowEditorModal', () => {
     expect(queue.dispose).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain('发布失败，请重试');
 
+    const editor = wrapper.findComponent({ name: 'TiptapEditorFlow' });
+    editor.vm.$emit('update:content', '<p>保留的草稿</p>');
+    editor.vm.$emit('update:json', textDocument());
+    queue.move.mockReturnValueOnce(false);
+    wrapper.findComponent({ name: 'FlowAttachmentGrid' }).vm.$emit('move', 0, 0);
+    queue.uploadedIds.value = [42, 41];
+    await nextTick();
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+
     await wrapper.get('.flow-editor-modal__publish button').trigger('click');
     await flushPromises();
 
-    expect(createFlowMock).toHaveBeenNthCalledWith(1, {
-      clientRequestId: '11111111-1111-4111-8111-111111111111',
+    const originalPayload = {
+      clientRequestId: firstRequestId,
       content: textDocument(),
       mediaIds: [42, 41],
-    });
-    expect(createFlowMock.mock.calls[1]?.[0].clientRequestId).toBe(createFlowMock.mock.calls[0]?.[0].clientRequestId);
+    };
+    expect(createFlowMock).toHaveBeenNthCalledWith(1, originalPayload);
+    expect(createFlowMock).toHaveBeenNthCalledWith(2, originalPayload);
   });
 
   it('allows only one POST during a double click and exposes a real busy state', async () => {
@@ -497,7 +511,7 @@ describe('FlowEditorModal', () => {
     expect(queue.remove).not.toHaveBeenCalled();
     expect(queue.move).not.toHaveBeenCalled();
     expect(createFlowMock).toHaveBeenCalledWith({
-      clientRequestId: '11111111-1111-4111-8111-111111111111',
+      clientRequestId: firstRequestId,
       content: expectedPublishedDocument,
       mediaIds: [42],
     });
@@ -510,7 +524,7 @@ describe('FlowEditorModal', () => {
     expect(wrapper.emitted('update:publishing')).toEqual([[true], [false]]);
   });
 
-  it('unlocks after publication failure and retries the current payload with the same request id', async () => {
+  it('rotates the request id before retrying changed text after a publication failure', async () => {
     let rejectPublish!: (reason?: unknown) => void;
     createFlowMock
       .mockImplementationOnce(
@@ -535,18 +549,104 @@ describe('FlowEditorModal', () => {
     expect(queue.dispose).not.toHaveBeenCalled();
 
     const currentDocument = textDocument('失败后修改');
+    wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('update:json', currentDocument);
     await wrapper.setProps({ document: currentDocument });
-    queue.attachments.value = [uploadedAttachment('two', 41)];
-    queue.uploadedIds.value = [41];
     await nextTick();
     await wrapper.get('.flow-editor-modal__publish button').trigger('click');
     await flushPromises();
 
+    expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
     expect(createFlowMock).toHaveBeenNthCalledWith(2, {
-      clientRequestId: '11111111-1111-4111-8111-111111111111',
+      clientRequestId: secondRequestId,
       content: currentDocument,
-      mediaIds: [41],
+      mediaIds: [42],
     });
+  });
+
+  it('rotates the request id before retrying a real media reorder after failure', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    queue.attachments.value = [uploadedAttachment('one', 42), uploadedAttachment('two', 41)];
+    queue.uploadedIds.value = [42, 41];
+    queue.move.mockReturnValueOnce(true);
+    createFlowMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ id: 9 });
+    const wrapper = mountModal();
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+
+    wrapper.findComponent({ name: 'FlowAttachmentGrid' }).vm.$emit('move', 1, 0);
+    queue.attachments.value = [uploadedAttachment('two', 41), uploadedAttachment('one', 42)];
+    queue.uploadedIds.value = [41, 42];
+    await nextTick();
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+
+    expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
+    expect(createFlowMock).toHaveBeenNthCalledWith(2, {
+      clientRequestId: secondRequestId,
+      content: textDocument(),
+      mediaIds: [41, 42],
+    });
+  });
+
+  it('keeps the disposed queue locked throughout the parent publication leave window', async () => {
+    let resolvePublish!: (value: unknown) => void;
+    createFlowMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePublish = resolve;
+        }),
+    );
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    queue.attachments.value = [uploadedAttachment('one', 42)];
+    queue.uploadedIds.value = [42];
+    const wrapper = mountModal();
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    resolvePublish({ id: 9 });
+    await flushPromises();
+    await wrapper.setProps({ open: false, lifecycleLocked: true });
+
+    expect(queue.dispose).toHaveBeenCalledOnce();
+    expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('disabled')).toBe(true);
+    expect(wrapper.get('.flow-editor-modal__attachments').attributes('inert')).toBeDefined();
+    expect(wrapper.get('.flow-editor-modal__close').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.flow-editor-modal__clear').attributes('disabled')).toBeDefined();
+
+    const businessEmittedBeforeForcedEvents = Object.fromEntries(
+      ['close', 'clear-draft', 'update:content', 'update:document', 'update:json', 'update:media-ids'].map((event) => [event, wrapper.emitted(event)?.length ?? 0]),
+    );
+    wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('update:content', '<p>late</p>');
+    wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('update:document', textDocument('late'));
+    wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('update:json', textDocument('late'));
+    wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('files', [new File(['late'], 'late.webp', { type: 'image/webp' })]);
+    const grid = wrapper.findComponent({ name: 'FlowAttachmentGrid' });
+    grid.vm.$emit('retry', 'one');
+    grid.vm.$emit('remove', 'one');
+    grid.vm.$emit('move', 0, 1);
+    const closeButton = wrapper.get('.flow-editor-modal__close');
+    closeButton.element.removeAttribute('disabled');
+    await closeButton.trigger('click');
+    const clearButton = wrapper.get('.flow-editor-modal__clear');
+    clearButton.element.removeAttribute('disabled');
+    await clearButton.trigger('click');
+    const publishButton = wrapper.get('.flow-editor-modal__publish button');
+    publishButton.element.removeAttribute('disabled');
+    await publishButton.trigger('click');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    const clearResult = await (wrapper.vm as unknown as { clearAttachments: () => Promise<{ failedDeletes: number }> }).clearAttachments();
+    await flushPromises();
+
+    expect(queue.addFiles).not.toHaveBeenCalled();
+    expect(queue.retry).not.toHaveBeenCalled();
+    expect(queue.remove).not.toHaveBeenCalled();
+    expect(queue.move).not.toHaveBeenCalled();
+    expect(queue.dispose).toHaveBeenCalledOnce();
+    expect(createFlowMock).toHaveBeenCalledOnce();
+    expect(clearResult).toEqual({ failedDeletes: 0 });
+    expect(Object.fromEntries(Object.keys(businessEmittedBeforeForcedEvents).map((event) => [event, wrapper.emitted(event)?.length ?? 0]))).toEqual(
+      businessEmittedBeforeForcedEvents,
+    );
   });
 
   it('blocks publishing during hydration preflight without locking normal editing', async () => {

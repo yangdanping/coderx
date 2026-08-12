@@ -66,7 +66,7 @@ function createAutosaveMock() {
 
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
-  props: ['open', 'content', 'document', 'editorDisabled', 'clearDisabled', 'publishDisabled'],
+  props: ['open', 'content', 'document', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked'],
   emits: ['close', 'update:content', 'update:document', 'update:json', 'update:media-ids', 'update:publishing', 'clear-draft', 'published', 'after-close'],
   setup(_, { expose }) {
     onMounted(() => modalMountCount.value++);
@@ -197,6 +197,7 @@ describe('Flow composer page orchestration', () => {
     modal.vm.$emit('update:publishing', false);
     await nextTick();
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
+    expect(wrapper.getComponent(ModalStub).props('lifecycleLocked')).toBe(true);
     expect(autosave.resetAfterPublication).not.toHaveBeenCalled();
     expect(wrapper.getComponent(CordStub).props('disabled')).toBe(true);
 
@@ -204,6 +205,7 @@ describe('Flow composer page orchestration', () => {
     await flushPromises();
     expect(autosave.resetAfterPublication).toHaveBeenCalledOnce();
     expect(modalMountCount.value).toBe(2);
+    expect(wrapper.getComponent(ModalStub).props('lifecycleLocked')).toBe(false);
     expect(wrapper.getComponent(CordStub).props('disabled')).toBe(false);
     expect(focusHandleMock).toHaveBeenCalledOnce();
   });

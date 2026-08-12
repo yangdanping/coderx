@@ -14,6 +14,7 @@
       :clear-disabled="composerClearing || modalPublishing || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
       :editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"
       :publish-disabled="flowDraftAutosave.isHydrating.value"
+      :lifecycle-locked="publicationResetting"
       controls-id="flow-editor-panel"
       @close="handleEditorClose"
       @update:content="handleFlowContentUpdate"
