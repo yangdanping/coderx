@@ -50,6 +50,8 @@ declare module 'vue' {
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
+    FlowAttachmentGrid: typeof import('./components/tiptap-editor-flow/FlowAttachmentGrid.vue')['default']
+    FlowAttachmentPicker: typeof import('./components/tiptap-editor-flow/FlowAttachmentPicker.vue')['default']
     FollowButton: typeof import('./components/FollowButton.vue')['default']
     GlobalBackground3D: typeof import('./components/background/shape-3d/global/GlobalBackground3D.vue')['default']
     Icon: typeof import('./components/icon/Icon.vue')['default']

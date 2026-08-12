@@ -33,7 +33,8 @@ describe('Flow visual contract', () => {
     expect(flowSource).toContain(':editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"');
     expect(flowSource).toContain('@update:json="handleFlowDocumentUpdate"');
     expect(flowSource).toContain('@clear-draft="handleClearFlowDraft"');
-    expect(flowSource).toContain('@close="editorOpen = false"');
+    expect(flowSource).toContain('@close="handleEditorClose"');
+    expect(flowSource).toMatch(/function handleEditorClose\(\)[\s\S]*modalPublishing\.value[\s\S]*publicationResetPending[\s\S]*editorOpen\.value = false/);
     expect(flowSource).toContain('@after-close="handleAfterClose"');
     expect(flowSource).toMatch(/function handleAfterClose\(\)[\s\S]*restoreCordFocus\(\)/);
     expect(flowSource).toContain(':inert="editorOpen"');

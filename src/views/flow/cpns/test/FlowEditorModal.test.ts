@@ -84,6 +84,7 @@ function mountModal(open = true, overrides: Record<string, unknown> = {}) {
       hasDraft: true,
       clearDisabled: false,
       editorDisabled: false,
+      publishDisabled: false,
       ...overrides,
     },
     global: {
@@ -436,6 +437,134 @@ describe('FlowEditorModal', () => {
 
     resolvePublish({ id: 9 });
     await flushPromises();
+  });
+
+  it('locks every composer interaction around one immutable pending publication snapshot', async () => {
+    let resolvePublish!: (value: unknown) => void;
+    createFlowMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePublish = resolve;
+        }),
+    );
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    queue.attachments.value = [uploadedAttachment('one', 42)];
+    queue.uploadedIds.value = [42];
+    const initialDocument = textDocument('发布快照');
+    const expectedPublishedDocument = textDocument('发布快照');
+    const wrapper = mountModal(true, { document: initialDocument });
+    await nextTick();
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+
+    expect(wrapper.emitted('update:publishing')).toEqual([[true]]);
+    expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('disabled')).toBe(true);
+    expect(wrapper.get('.flow-editor-modal__attachments').attributes('inert')).toBeDefined();
+    expect(wrapper.get('.flow-editor-modal__close').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.flow-editor-modal__clear').attributes('disabled')).toBeDefined();
+
+    const closeButton = wrapper.get('.flow-editor-modal__close');
+    closeButton.element.removeAttribute('disabled');
+    await closeButton.trigger('click');
+    const clearButton = wrapper.get('.flow-editor-modal__clear');
+    clearButton.element.removeAttribute('disabled');
+    await clearButton.trigger('click');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+
+    const editor = wrapper.findComponent({ name: 'TiptapEditorFlow' });
+    const changedDocument = textDocument('不应在事务中生效');
+    editor.vm.$emit('update:content', '<p>不应在事务中生效</p>');
+    editor.vm.$emit('update:document', changedDocument);
+    editor.vm.$emit('update:json', changedDocument);
+    editor.vm.$emit('files', [new File(['late'], 'late.webp', { type: 'image/webp' })]);
+
+    const grid = wrapper.findComponent({ name: 'FlowAttachmentGrid' });
+    grid.vm.$emit('retry', 'one');
+    grid.vm.$emit('remove', 'one');
+    grid.vm.$emit('move', 0, 1);
+    initialDocument.content![0]!.content![0]!.text = '外部突变也不能改写已发送快照';
+    queue.uploadedIds.value = [99];
+    await flushPromises();
+
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(wrapper.emitted('clear-draft')).toBeUndefined();
+    expect(wrapper.emitted('update:content')).toBeUndefined();
+    expect(wrapper.emitted('update:document')).toBeUndefined();
+    expect(wrapper.emitted('update:json')).toBeUndefined();
+    expect(wrapper.emitted('update:media-ids')).toBeUndefined();
+    expect(queue.addFiles).not.toHaveBeenCalled();
+    expect(queue.retry).not.toHaveBeenCalled();
+    expect(queue.remove).not.toHaveBeenCalled();
+    expect(queue.move).not.toHaveBeenCalled();
+    expect(createFlowMock).toHaveBeenCalledWith({
+      clientRequestId: '11111111-1111-4111-8111-111111111111',
+      content: expectedPublishedDocument,
+      mediaIds: [42],
+    });
+
+    resolvePublish({ id: 9 });
+    await flushPromises();
+
+    expect(wrapper.emitted('published')).toHaveLength(1);
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    expect(wrapper.emitted('update:publishing')).toEqual([[true], [false]]);
+  });
+
+  it('unlocks after publication failure and retries the current payload with the same request id', async () => {
+    let rejectPublish!: (reason?: unknown) => void;
+    createFlowMock
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectPublish = reject;
+          }),
+      )
+      .mockResolvedValueOnce({ id: 9 });
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    queue.attachments.value = [uploadedAttachment('one', 42)];
+    queue.uploadedIds.value = [42];
+    const wrapper = mountModal(true, { document: textDocument('第一次') });
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    rejectPublish(new Error('offline'));
+    await flushPromises();
+
+    expect(wrapper.emitted('update:publishing')).toEqual([[true], [false]]);
+    expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('disabled')).toBe(false);
+    expect(wrapper.get('.flow-editor-modal__close').attributes('disabled')).toBeUndefined();
+    expect(queue.dispose).not.toHaveBeenCalled();
+
+    const currentDocument = textDocument('失败后修改');
+    await wrapper.setProps({ document: currentDocument });
+    queue.attachments.value = [uploadedAttachment('two', 41)];
+    queue.uploadedIds.value = [41];
+    await nextTick();
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+
+    expect(createFlowMock).toHaveBeenNthCalledWith(2, {
+      clientRequestId: '11111111-1111-4111-8111-111111111111',
+      content: currentDocument,
+      mediaIds: [41],
+    });
+  });
+
+  it('blocks publishing during hydration preflight without locking normal editing', async () => {
+    createFlowMock.mockResolvedValue({ id: 9 });
+    const wrapper = mountModal(true, { publishDisabled: true });
+    const editor = wrapper.findComponent({ name: 'TiptapEditorFlow' });
+    expect(editor.props('disabled')).toBe(false);
+
+    const publishButton = wrapper.get('.flow-editor-modal__publish button');
+    expect(publishButton.attributes('disabled')).toBeDefined();
+    publishButton.element.removeAttribute('disabled');
+    await publishButton.trigger('click');
+    expect(createFlowMock).not.toHaveBeenCalled();
+
+    await wrapper.setProps({ publishDisabled: false });
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+    expect(createFlowMock).toHaveBeenCalledOnce();
   });
 
   it('disposes without deleting published media, emits published and closes only after success', async () => {

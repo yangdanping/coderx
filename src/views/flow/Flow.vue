@@ -1,6 +1,6 @@
 <template>
   <div class="flow-page" ref="containerRef">
-    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || publicationResetting" />
+    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || modalPublishing || publicationResetting" />
     <FlowEditorModal
       :key="composerGeneration"
       ref="flowEditorModalRef"
@@ -11,13 +11,15 @@
       :draft-status-text="flowDraftAutosave.statusText.value"
       :draft-error="flowDraftAutosave.errorMessage.value"
       :has-draft="flowDraftAutosave.hasDraft.value"
-      :clear-disabled="composerClearing || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
+      :clear-disabled="composerClearing || modalPublishing || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
       :editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"
+      :publish-disabled="flowDraftAutosave.isHydrating.value"
       controls-id="flow-editor-panel"
-      @close="editorOpen = false"
-      @update:content="flowDraft = $event"
+      @close="handleEditorClose"
+      @update:content="handleFlowContentUpdate"
       @update:json="handleFlowDocumentUpdate"
       @update:media-ids="handleFlowMediaIdsUpdate"
+      @update:publishing="handleModalPublishing"
       @clear-draft="handleClearFlowDraft"
       @published="handlePublished"
       @after-close="handleAfterClose"
@@ -63,6 +65,7 @@ const flowDraftDocument = shallowRef<TiptapDocContent>();
 const flowDraftMediaIds = shallowRef<number[]>([]);
 const composerGeneration = shallowRef(0);
 const composerClearing = shallowRef(false);
+const modalPublishing = shallowRef(false);
 const publicationResetting = shallowRef(false);
 const queryClient = useQueryClient();
 let publicationResetPending = false;
@@ -99,15 +102,29 @@ function recordCurrentFlowSnapshot() {
   });
 }
 
+function handleModalPublishing(publishing: boolean) {
+  modalPublishing.value = publishing;
+}
+
+function handleEditorClose() {
+  if (composerClearing.value || (modalPublishing.value && !publicationResetPending)) return;
+  editorOpen.value = false;
+}
+
+function handleFlowContentUpdate(content: string) {
+  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  flowDraft.value = content;
+}
+
 function handleFlowDocumentUpdate(document: TiptapDocContent) {
-  if (composerClearing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
   const normalizedDocument = normalizeFlowDraftDocument(document);
   flowDraftDocument.value = normalizedDocument;
   recordCurrentFlowSnapshot();
 }
 
 function handleFlowMediaIdsUpdate(mediaIds: number[]) {
-  if (composerClearing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
   flowDraftMediaIds.value = [...mediaIds];
   recordCurrentFlowSnapshot();
 }
@@ -143,6 +160,7 @@ async function handleAfterClose() {
 }
 
 async function handleClearFlowDraft() {
+  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
   try {
     await ElMessageBox.confirm('清空后无法恢复，确定继续吗？', '清空 Flow 草稿', {
       confirmButtonText: '清空',
@@ -153,6 +171,8 @@ async function handleClearFlowDraft() {
   } catch {
     return;
   }
+
+  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
 
   composerClearing.value = true;
   try {

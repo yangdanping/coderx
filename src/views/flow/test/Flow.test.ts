@@ -66,8 +66,8 @@ function createAutosaveMock() {
 
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
-  props: ['open', 'content', 'document', 'editorDisabled', 'clearDisabled'],
-  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:media-ids', 'clear-draft', 'published', 'after-close'],
+  props: ['open', 'content', 'document', 'editorDisabled', 'clearDisabled', 'publishDisabled'],
+  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:media-ids', 'update:publishing', 'clear-draft', 'published', 'after-close'],
   setup(_, { expose }) {
     onMounted(() => modalMountCount.value++);
     expose({ clearAttachments: modalClearAttachmentsMock });
@@ -136,6 +136,92 @@ describe('Flow composer page orchestration', () => {
 
     resolveInitialize(null);
     await flushPromises();
+  });
+
+  it('allows editing but disables publication until slow draft initialization finishes', async () => {
+    let resolveInitialize!: (value: unknown) => void;
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.isHydrating.value = true;
+    autosave.initialize.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInitialize = resolve;
+        }),
+    );
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('editorDisabled')).toBe(false);
+    modal.vm.$emit('update:json', textDocument);
+    await flushPromises();
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith({
+      content: textDocument,
+      meta: { imageIds: [], videoIds: [] },
+    });
+
+    autosave.isHydrating.value = false;
+    resolveInitialize(null);
+    await flushPromises();
+    expect(wrapper.getComponent(ModalStub).props('publishDisabled')).toBe(false);
+  });
+
+  it('extends the publication lock across page orchestration and still completes success cleanup', async () => {
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    const modal = wrapper.getComponent(ModalStub);
+    const cord = wrapper.getComponent(CordStub);
+
+    cord.vm.$emit('update:modelValue', true);
+    await nextTick();
+    expect(modal.props('open')).toBe(true);
+
+    modal.vm.$emit('update:publishing', true);
+    await nextTick();
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('update:json', textDocument);
+    modal.vm.$emit('update:media-ids', [99]);
+    modal.vm.$emit('clear-draft');
+    modal.vm.$emit('close');
+    await flushPromises();
+    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
+    expect(modal.props('open')).toBe(true);
+
+    modal.vm.$emit('published');
+    modal.vm.$emit('close');
+    modal.vm.$emit('update:publishing', false);
+    await nextTick();
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
+    expect(autosave.resetAfterPublication).not.toHaveBeenCalled();
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(true);
+
+    modal.vm.$emit('after-close');
+    await flushPromises();
+    expect(autosave.resetAfterPublication).toHaveBeenCalledOnce();
+    expect(modalMountCount.value).toBe(2);
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(false);
+    expect(focusHandleMock).toHaveBeenCalledOnce();
+  });
+
+  it('releases the page publication lock after a failed request', async () => {
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('update:publishing', true);
+    await nextTick();
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('update:publishing', false);
+    await nextTick();
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(false);
+    expect(modal.props('clearDisabled')).toBe(false);
   });
 
   it('records the ordered uploaded ids with the current canonical document', async () => {

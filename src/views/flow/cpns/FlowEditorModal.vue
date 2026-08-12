@@ -20,6 +20,7 @@ const props = withDefaults(
     hasDraft?: boolean;
     clearDisabled?: boolean;
     editorDisabled?: boolean;
+    publishDisabled?: boolean;
   }>(),
   {
     content: '',
@@ -30,6 +31,7 @@ const props = withDefaults(
     hasDraft: false,
     clearDisabled: false,
     editorDisabled: false,
+    publishDisabled: false,
   },
 );
 
@@ -39,6 +41,7 @@ const emit = defineEmits<{
   'update:document': [document: TiptapDocContent];
   'update:json': [document: TiptapDocContent];
   'update:media-ids': [mediaIds: number[]];
+  'update:publishing': [publishing: boolean];
   'clear-draft': [];
   published: [];
   'after-close': [];
@@ -48,6 +51,7 @@ const uploads = useFlowImageUploads();
 const publishing = shallowRef(false);
 const queueError = shallowRef('');
 const clientRequestId = shallowRef(crypto.randomUUID());
+const interactionLocked = computed(() => props.editorDisabled || publishing.value);
 
 const normalizedDocument = computed<TiptapDocContent>(() => props.document ?? { type: 'doc', content: [{ type: 'paragraph' }] });
 
@@ -61,16 +65,19 @@ const canPublish = computed(
   () =>
     !publishing.value &&
     !props.editorDisabled &&
+    !props.publishDisabled &&
     !uploads.isUploading.value &&
     !uploads.hasFailed.value &&
     (collectPlainText(normalizedDocument.value).trim().length > 0 || uploads.uploadedMediaIds.value.length > 0),
 );
 
 watch(uploads.uploadedMediaIds, (mediaIds) => {
+  if (interactionLocked.value) return;
   emit('update:media-ids', [...mediaIds]);
 });
 
 function addCandidateFiles(files: File[]): void {
+  if (interactionLocked.value) return;
   queueError.value = '';
   const result = uploads.addFiles(files);
   if (result.rejected.length > 0) {
@@ -79,11 +86,13 @@ function addCandidateFiles(files: File[]): void {
 }
 
 function retryAttachment(clientId: string): void {
+  if (interactionLocked.value) return;
   queueError.value = '';
   uploads.retry(clientId);
 }
 
 async function removeAttachment(clientId: string): Promise<void> {
+  if (interactionLocked.value) return;
   queueError.value = '';
   if (!(await uploads.remove(clientId))) {
     queueError.value = '图片删除失败，请重试';
@@ -91,20 +100,43 @@ async function removeAttachment(clientId: string): Promise<void> {
 }
 
 function moveAttachment(from: number, to: number): void {
+  if (interactionLocked.value) return;
   uploads.move(from, to);
+}
+
+function handleContentUpdate(html: string): void {
+  if (interactionLocked.value) return;
+  emit('update:content', html);
+}
+
+function handleDocumentUpdate(document: TiptapDocContent): void {
+  if (interactionLocked.value) return;
+  emit('update:document', document);
+}
+
+function handleJsonUpdate(document: TiptapDocContent): void {
+  if (interactionLocked.value) return;
+  emit('update:json', document);
+}
+
+function requestClearDraft(): void {
+  if (interactionLocked.value || props.clearDisabled) return;
+  emit('clear-draft');
 }
 
 async function publish(): Promise<void> {
   if (!canPublish.value) return;
 
+  const publicationPayload = {
+    clientRequestId: clientRequestId.value,
+    content: JSON.parse(JSON.stringify(normalizedDocument.value)) as TiptapDocContent,
+    mediaIds: [...uploads.uploadedMediaIds.value],
+  };
   publishing.value = true;
+  emit('update:publishing', true);
   queueError.value = '';
   try {
-    await createFlow({
-      clientRequestId: clientRequestId.value,
-      content: normalizedDocument.value,
-      mediaIds: [...uploads.uploadedMediaIds.value],
-    });
+    await createFlow(publicationPayload);
     uploads.dispose();
     emit('published');
     emit('close');
@@ -112,6 +144,7 @@ async function publish(): Promise<void> {
     queueError.value = '发布失败，请重试';
   } finally {
     publishing.value = false;
+    emit('update:publishing', false);
   }
 }
 
@@ -157,6 +190,7 @@ async function focusEditor() {
 }
 
 function requestClose() {
+  if (interactionLocked.value) return;
   emit('close');
 }
 
@@ -232,7 +266,15 @@ onBeforeUnmount(() => {
         tabindex="-1"
         @keydown="handleDialogKeydown"
       >
-        <button ref="closeButtonRef" type="button" class="flow-editor-modal__close" aria-label="关闭 Flow 编辑器" title="关闭（Esc）" @click="requestClose">
+        <button
+          ref="closeButtonRef"
+          type="button"
+          class="flow-editor-modal__close"
+          aria-label="关闭 Flow 编辑器"
+          title="关闭（Esc）"
+          :disabled="interactionLocked"
+          @click="requestClose"
+        >
           <X :size="17" aria-hidden="true" />
         </button>
 
@@ -240,14 +282,14 @@ onBeforeUnmount(() => {
           <TiptapEditorFlow
             :edit-content="content"
             :edit-document="document"
-            :disabled="editorDisabled"
+            :disabled="interactionLocked"
             :retained-count="uploads.attachments.value.length"
-            @update:content="emit('update:content', $event)"
-            @update:document="emit('update:document', $event)"
-            @update:json="emit('update:json', $event)"
+            @update:content="handleContentUpdate"
+            @update:document="handleDocumentUpdate"
+            @update:json="handleJsonUpdate"
             @files="addCandidateFiles"
           />
-          <div class="flow-editor-modal__attachments" :inert="editorDisabled ? '' : undefined" :aria-disabled="editorDisabled ? 'true' : undefined">
+          <div class="flow-editor-modal__attachments" :inert="interactionLocked ? '' : undefined" :aria-disabled="interactionLocked ? 'true' : undefined">
             <FlowAttachmentGrid :attachments="uploads.attachments.value" @retry="retryAttachment" @remove="removeAttachment" @move="moveAttachment" />
             <p v-if="queueError" class="flow-editor-modal__queue-error" role="alert">{{ queueError }}</p>
           </div>
@@ -257,10 +299,10 @@ onBeforeUnmount(() => {
                 v-if="hasDraft"
                 type="button"
                 class="flow-editor-modal__clear"
-                :disabled="clearDisabled"
+                :disabled="clearDisabled || interactionLocked"
                 aria-label="清空 Flow 草稿"
                 title="清空 Flow 草稿"
-                @click="emit('clear-draft')"
+                @click="requestClearDraft"
               >
                 <Trash2 :size="13" aria-hidden="true" />
                 <span>清空草稿</span>
