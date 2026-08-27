@@ -33,6 +33,7 @@ const displayName = computed(() => item.nickname?.trim() || item.name?.trim() ||
   display: flex;
   flex: 0 0 calc((100% - 32px) / 3);
   flex-direction: column;
+  align-self: stretch;
   min-width: 240px;
   min-height: 230px;
   margin-right: 16px;
