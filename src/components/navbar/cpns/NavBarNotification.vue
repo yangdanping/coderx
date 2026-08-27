@@ -189,20 +189,34 @@ const handleItemClick = (item: INotification, close: () => void) => {
 }
 
 .notification-badge {
+  --notification-badge-surface: #fff4f5;
+  --notification-badge-text: #bd4654;
+  --notification-badge-border: rgba(189, 70, 84, 0.24);
+  --notification-badge-shadow: 0 1px 4px rgba(116, 31, 42, 0.12);
+
   position: absolute;
   top: -3px;
   right: -5px;
+  box-sizing: border-box;
   min-width: 17px;
   height: 17px;
-  padding: 0 5px;
+  padding: 0 4px;
+  border: 1px solid var(--notification-badge-border);
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
   line-height: 17px;
-  color: #fff;
+  color: var(--notification-badge-text);
   text-align: center;
-  background: var(--el-color-danger);
-  box-shadow: 0 0 0 2px var(--glass-bg-popup);
+  background: var(--notification-badge-surface);
+  box-shadow: var(--notification-badge-shadow);
+}
+
+:global(html.dark) .notification-badge {
+  --notification-badge-surface: rgba(145, 40, 51, 0.22);
+  --notification-badge-text: #ff9ca5;
+  --notification-badge-border: rgba(255, 156, 165, 0.28);
+  --notification-badge-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
 }
 
 .notification-title-icon {
