@@ -17,7 +17,7 @@
 
 ### 服务端与数据库
 
-- 服务端是 Koa 3 + CommonJS + PostgreSQL，不是 NestJS，也没有 Flow 路由、服务或表。
+- 服务端当前继续使用 Koa 3 + CommonJS + PostgreSQL，也没有 Flow 路由、服务或表。本任务不包含后端框架迁移。
 - `file` 只通过 `article_id` / `draft_id` 表达业务归属；`media_object` 管理本地/R2 物理副本；未关联文件由每日任务在 7 天后清理。
 - `/img` 只校验客户端 MIME 前缀，允许 SVG 等主动内容；批量上传只有第一张会解码并生成缩略图。
 - 图片绑定与删除没有完整的用户归属校验，不能作为 Flow 新接口的安全基线。
@@ -37,11 +37,25 @@
 
 这是推荐方案：它匹配当前展示模型，边界清晰，也能让 Feed 使用缩略图、灯箱使用原图。
 
-### C. 浏览器直传 R2
+### C. 浏览器直传 R2（本期不采用）
 
 可降低应用服务器带宽，但需要签名上传、回调确认、对象校验和更复杂的未完成 multipart 回收。本项目已经有本地写入和发布时晋升流程，本期引入直传收益不足。
 
-作为后续容量升级方案，不进入本期。
+作为后续容量升级方案，不进入本期。这不代表 Flow 图片不使用 R2；本期沿用已经上线的“未发布文件留本地，发布后晋升 R2”链路。
+
+## 当前上传与 R2 边界
+
+```text
+浏览器选择图片
+  → Koa 鉴权、限流和 Sharp 安全处理
+  → 本地 pending 原图/small + PostgreSQL 所有权
+  → POST /flow 事务绑定有序附件
+  → 事务提交后幂等晋升 R2
+  → media_object ready
+  → media.ydp321.asia CDN URL
+```
+
+因此，R2 是正式 Flow 图片的持久化和读取主链路；本地存储只负责发布前暂存，以及当前观察期内的失败回退。第一版不增加 Bucket、不配置浏览器预签名直传，也不改变生产已有的 `r2_on_publish/r2_preferred/keep-local=true` 边界。
 
 ## 产品约束
 
@@ -119,8 +133,8 @@ interface FlowImageAttachment {
   "code": 0,
   "data": {
     "id": 123,
-    "url": "https://media.example/media/images/123/hash-original.webp",
-    "thumbnailUrl": "https://media.example/media/images/123/hash-small.webp",
+    "url": "https://api.ydp321.asia/article/images/uuid.webp",
+    "thumbnailUrl": "https://api.ydp321.asia/article/images/uuid.webp?type=small",
     "mimeType": "image/webp",
     "sizeBytes": 456789,
     "width": 1920,
@@ -198,6 +212,8 @@ CREATE TABLE flow_post_media (
 - 两篇文章仍引用已不存在的视频 ID；这不阻塞 Flow，但说明媒体一致性巡检需要继续保留。
 
 ## 存储策略
+
+待发布 Flow 图片继续写入现有本地图片目录；只有在 `POST /flow` 成功绑定后，主图和缩略图才通过现有媒体状态机晋升 R2。晋升失败不回滚 Flow，继续返回本地地址并保留失败状态供幂等重试。
 
 新 Flow 图片使用资源中立对象键：
 

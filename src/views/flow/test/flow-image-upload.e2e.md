@@ -1,71 +1,73 @@
-# Flow image upload acceptance checklist
+# Flow 图片上传验收清单
 
-Use this checklist after the server and client automated gates pass. Record the browser, viewport, account, media IDs, Flow ID, and observed request URLs so another operator can repeat the run.
+这不是开发总结，而是一份发布前的逐项操作检查表。请在服务端和客户端的自动化测试全部通过后使用它：每验证一项，就把前面的 `[ ]` 改为 `[x]`，并记录浏览器、窗口尺寸、测试账号、图片编号、Flow 编号以及实际请求地址，方便其他人复现。
 
-## Runtime limits
+文中的“编辑器”是指拉绳打开的 Flow 发布弹窗；“动态列表”是指 Flow 页面中的内容列表；“附件队列”是指等待上传、正在上传或已经上传的图片集合。
 
-- [ ] Maximum 9 files/post.
-- [ ] Maximum 10MB/file.
-- [ ] Maximum 30MB/selection.
-- [ ] Maximum 40MP decoded limit.
-- [ ] Maximum 3 concurrent client uploads.
-- [ ] Pending orphan TTL is 7 days.
+## 必须遵守的运行上限
 
-These limits are code-enforced rollout guardrails, not environment overrides.
+- [ ] 每条 Flow 最多保留 9 张图片。
+- [ ] 每个图片文件最大 10MB。
+- [ ] 一次选择的全部图片合计最大 30MB。
+- [ ] 图片解码后的总像素不得超过 4000 万像素（40MP）。
+- [ ] 客户端最多同时上传 3 张图片，其余图片必须排队等待。
+- [ ] 未关联到文章、草稿或 Flow 的待处理图片，保留 7 天后才允许作为孤立文件清理。
 
-## Setup and evidence
+这些数值是代码中固定的发布保护上限，不能通过环境变量随意覆盖。
 
-- [ ] Start PostgreSQL and the server on `http://127.0.0.1:8000`, then start the client and open `/flow`.
-- [ ] Serve the client from HTTPS or a loopback origin such as `http://127.0.0.1`; stop if `crypto.randomUUID` is unavailable. Plain HTTP on a LAN address is not a secure browser context.
-- [ ] Use an authenticated test account that owns no media needed by another test. Record the user ID: `________`.
-- [ ] Prepare valid JPEG, PNG, and WebP samples; 10MB-boundary, 30MB-selection, and 40MP-boundary samples; one unsupported file; and one image reserved for an induced upload failure.
-- [ ] Open DevTools Network with Preserve log enabled and disable cache. Record desktop browser/version: `________`.
-- [ ] Capture starting `window.scrollY`: `________`. Opening and closing the composer must preserve this value.
+## 验收准备与证据记录
 
-## Desktop acceptance
+- [ ] 启动 PostgreSQL 数据库和服务端，确认服务端地址为 `http://127.0.0.1:8000`；然后启动客户端并打开 `/flow` 页面。
+- [ ] 优先通过 HTTPS 或 `http://127.0.0.1` 这类本机回环地址运行客户端。局域网 IP 上的普通 HTTP 不属于浏览器安全上下文，浏览器可能没有 `crypto.randomUUID`；客户端会用 `crypto.getRandomValues` 生成兼容的 UUID v4，但 Google 登录等依赖安全来源或来源白名单的功能仍可能受限。
+- [ ] 使用专门的已登录测试账号，不要占用其他测试依赖的图片。记录用户编号：`________`。
+- [ ] 准备有效的 JPEG、PNG、WebP 图片；接近 10MB、合计接近 30MB、接近 4000 万像素边界的图片；一个不支持的文件；以及一张用于故意制造上传失败的图片。
+- [ ] 打开浏览器开发者工具的“网络”面板，启用“保留日志”，并关闭浏览器缓存。记录桌面浏览器及版本：`________`。
+- [ ] 记录打开编辑器前的页面纵向滚动位置 `window.scrollY`：`________`。打开或关闭编辑器后，这个数值不应变化。
 
-- [ ] Open the composer with the cord. Select valid images and confirm each retained tile shows upload progress and resolves to an uploaded state.
-- [ ] Paste an image into the editor. Confirm the browser delegates it to the attachment queue without embedding a base64/blob image in the Tiptap document.
-- [ ] Drop an image over the editor. Confirm the same queue behavior and no duplicate browser navigation.
-- [ ] Add up to 9 retained images. Confirm a tenth file is rejected and that removing one restores one slot.
-- [ ] Select an image over 10MB, a selection over 30MB, and an image over the 40MP decoded limit. Confirm each is rejected with the matching limit and no retained uploaded media ID.
-- [ ] Observe Network while adding at least 4 images. Confirm no more than 3 `POST /media/images` requests are active concurrently.
-- [ ] Force one upload to fail, restore connectivity/server behavior, and retry. Confirm the failed tile is retained and becomes uploaded after retry.
-- [ ] Remove an uploaded image. Confirm `DELETE /media/images/:mediaId` succeeds before the tile disappears.
-- [ ] Focus a tile's move controls and reorder with the keyboard. Confirm visual order, `mediaIds`, and the later `flow_post_media.position` order agree.
-- [ ] Enter recognizable text, close with the close button, and reopen with the cord. Confirm text and uploaded attachment order are retained.
-- [ ] Close with `Esc`, reopen, then close with the cord. Confirm each close retains the draft and attachments.
-- [ ] After every open and close path, compare `window.scrollY` with the starting value and confirm it is unchanged.
-- [ ] Publish once. Confirm the composer stays locked during the request, closes after success, and the new item appears after the Feed first-page refresh without a full-page reload.
-- [ ] In Network and the rendered feed, confirm gallery tiles request `thumbnailUrl`/small URLs; open the lightbox and confirm it requests the original `url`.
-- [ ] Confirm feed body HTML is rendered without executable scripts or unsafe attributes.
+## 桌面端验收
 
-## 390px acceptance
+- [ ] 点击拉绳打开编辑器并选择有效图片。确认每个保留下来的图片卡片会显示上传进度，最后进入“上传完成”状态。
+- [ ] 在编辑器中粘贴一张图片。确认图片进入统一的附件队列，不会以 base64 或临时 blob 图片的形式嵌入 Tiptap 正文。
+- [ ] 把图片拖放到编辑器中。确认图片同样进入附件队列，而且浏览器不会重复处理或跳转到图片文件。
+- [ ] 依次添加 9 张图片。确认第 10 张会被拒绝；删除其中一张后，应重新空出一个名额。
+- [ ] 分别选择超过 10MB 的单张图片、合计超过 30MB 的一批图片、超过 4000 万像素的图片。确认系统给出对应的限制提示，并且不会为被拒绝的图片保留服务端媒体编号。
+- [ ] 添加至少 4 张图片，同时观察“网络”面板。确认任意时刻最多只有 3 个 `POST /media/images` 上传请求正在进行。
+- [ ] 故意让一次上传失败，然后恢复网络或服务端并点击重试。确认失败的图片卡片不会消失，重试后能够进入“上传完成”状态。
+- [ ] 删除一张已经上传的图片。确认 `DELETE /media/images/:mediaId` 请求成功后，图片卡片才从界面消失。
+- [ ] 聚焦图片卡片的移动按钮，用键盘改变顺序。确认界面顺序、提交的 `mediaIds` 顺序和数据库中的 `flow_post_media.position` 顺序完全一致。
+- [ ] 输入一段容易辨认的正文，用关闭按钮收起编辑器，再通过拉绳重新打开。确认正文和已上传图片的顺序都还在。
+- [ ] 按 `Esc` 关闭后重新打开，再通过拉绳关闭。确认每种普通关闭方式都会保留草稿和附件。
+- [ ] 每次打开或关闭编辑器后，对比 `window.scrollY` 与初始值，确认页面没有被意外滚动。
+- [ ] 发布一次。确认请求进行期间整个编辑器不可操作；发布成功后弹窗关闭；新动态通过刷新 Flow 列表第一页出现，不需要整页刷新浏览器。
+- [ ] 在“网络”面板和动态列表中确认图片卡片使用 `thumbnailUrl` 或带 `type=small` 的小图地址；打开图片预览后，确认灯箱使用原图 `url`。
+- [ ] 确认动态正文中的 HTML 已被清理，脚本、`onerror` 等危险属性不会被执行或保留。
 
-- [ ] Set the viewport width to 390px and repeat selection, paste, drop, upload progress, failure/retry, removal, keyboard reorder, close/reopen, `Esc`, cord close, and every limit rejection from the desktop run, including the 9 retained images cap.
-- [ ] Publish at 390px. Confirm the new item appears after the Feed first-page refresh, gallery tiles use `thumbnailUrl`/small URLs, and the lightbox uses the original `url`.
-- [ ] Confirm picker, tiles, move/remove/retry controls, publish, close, and the cord remain visible and operable without horizontal page overflow.
-- [ ] Confirm opening and closing the composer does not change `window.scrollY` at 390px.
+## 390 像素宽移动端验收
 
-## Resilience and accessibility
+- [ ] 把浏览器可视区域宽度设置为 390 像素，重复桌面端的选择、粘贴、拖放、上传进度、失败重试、删除、键盘排序、关闭重开、`Esc`、拉绳关闭以及所有容量限制检查，包括最多保留 9 张图片。
+- [ ] 在 390 像素宽度下发布。确认新动态会刷新到 Flow 列表第一页；图片卡片使用小图地址；灯箱使用原图地址。
+- [ ] 确认图片选择按钮、图片卡片、移动/删除/重试按钮、发布按钮、关闭按钮和拉绳都能看到并操作，页面不能出现横向溢出滚动。
+- [ ] 确认在 390 像素宽度下打开或关闭编辑器不会改变 `window.scrollY`。
 
-- [ ] At desktop and 390px, emulate `prefers-reduced-motion: reduce`. Confirm composer/feed transitions and celebration effects do not require motion to understand state or complete an action.
-- [ ] At desktop and 390px, expire or replace the auth token, then attempt upload and publish. Confirm the app surfaces the authentication failure, retains recoverable composer state, and does not show a false success.
-- [ ] At desktop and 390px, go offline during an upload. Confirm the tile remains failed/retryable. Restore connectivity and retry successfully.
-- [ ] At desktop and 390px, go offline during publish. Confirm text, attachments, order, and retry identity are retained. Restore connectivity and publish successfully.
+## 弱网、登录失效与无障碍验收
 
-## Read-only post-acceptance audit
+- [ ] 分别在桌面端和 390 像素宽度下模拟“减少动态效果”设置 `prefers-reduced-motion: reduce`。确认即使没有明显动画，用户仍能理解编辑器和动态列表的状态并完成操作。
+- [ ] 分别在桌面端和 390 像素宽度下让登录令牌过期或失效，然后尝试上传和发布。确认应用会明确提示未登录，保留可恢复的编辑内容，并且不会显示虚假的成功状态。
+- [ ] 分别在桌面端和 390 像素宽度下，在图片上传过程中断网。确认图片保留为失败且可重试状态；恢复网络后可以重试成功。
+- [ ] 分别在桌面端和 390 像素宽度下，在发布过程中断网。确认正文、附件、顺序和本次发布的重试身份都被保留；恢复网络后可以成功重试。
 
-Run these queries against the acceptance database. Every query except the final expected-orphan inventory should return zero rows.
+## 验收后的只读数据库检查
+
+在验收数据库中执行以下查询。除最后一个“旧孤立图片清单”外，其余查询都应返回 0 行；这些查询只读取数据，不会修改数据库。
 
 ```sql
--- A file may belong to at most one Flow.
+-- 同一个图片文件最多只能属于一条 Flow。
 SELECT file_id, COUNT(*) AS uses
 FROM flow_post_media
 GROUP BY file_id
 HAVING COUNT(*) > 1;
 
--- Positions must be unique and contiguous from zero for every Flow.
+-- 每条 Flow 内的图片位置必须唯一，并且从 0 开始连续排列。
 SELECT flow_id,
        COUNT(*) AS media_count,
        COUNT(DISTINCT position) AS distinct_positions,
@@ -77,14 +79,14 @@ HAVING COUNT(*) <> COUNT(DISTINCT position)
     OR MIN(position) <> 0
     OR MAX(position) <> COUNT(*) - 1;
 
--- Associated media must have the same owner as the Flow.
+-- 图片文件的用户必须与 Flow 的用户相同。
 SELECT fm.flow_id, fm.file_id, fp.user_id AS flow_user_id, f.user_id AS file_user_id
 FROM flow_post_media fm
 JOIN flow_post fp ON fp.id = fm.flow_id
 JOIN file f ON f.id = fm.file_id
 WHERE fp.user_id IS DISTINCT FROM f.user_id;
 
--- Inspect old unattached images; explain every returned row before cleanup.
+-- 查看超过 7 天且未关联任何内容的旧图片；真正清理前必须逐条确认来源。
 SELECT f.id, f.user_id, f.filename, f.create_at
 FROM file f
 WHERE f.file_type = 'image'
@@ -95,6 +97,6 @@ WHERE f.file_type = 'image'
 ORDER BY f.create_at, f.id;
 ```
 
-- [ ] Run the existing read-only physical inventory: `npm run media:migrate -- inventory --limit 1000` from `coderx_server`.
-- [ ] Confirm no physical file created during acceptance appears under `filesystemExtras` without a matching `file` row.
-- [ ] Record Flow ID: `________`; ordered media IDs: `________`; inventory result/evidence path: `________`.
+- [ ] 在 `coderx_server` 目录执行现有的只读物理文件盘点命令：`npm run media:migrate -- inventory --limit 1000`。
+- [ ] 检查盘点结果中的 `filesystemExtras`。确认本次验收创建的每个物理图片文件，在数据库 `file` 表中都有对应记录。
+- [ ] 记录 Flow 编号：`________`；按顺序排列的媒体编号：`________`；盘点结果或证据文件路径：`________`。

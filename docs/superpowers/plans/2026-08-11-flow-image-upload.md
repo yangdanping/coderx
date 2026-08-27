@@ -4,9 +4,9 @@
 
 **Goal:** Add secure, ordered image attachments and atomic publishing to the Flow composer while preserving its pulled modal, retained draft, keyboard behavior, and existing Gallery presentation.
 
-**Architecture:** Keep Tiptap responsible for structured text and model images as independent ordered attachments. A new Koa media endpoint creates user-owned pending `file` assets; `POST /flow` locks and validates those assets, inserts `flow_post` plus `flow_post_media` in one PostgreSQL transaction, and uses the existing media runtime for local/R2 URLs and promotion.
+**Architecture:** Keep Tiptap responsible for structured text and model images as independent ordered attachments. The current Koa service creates user-owned local pending `file` assets; `POST /flow` atomically binds them, then promotes original/small variants through the existing R2 state machine. Published media reads from `media.ydp321.asia`, with local fallback retained under the current production switches.
 
-**Tech Stack:** Vue 3.5, TypeScript, Pinia-free instance composables, Tiptap 3, TanStack Vue Query, Axios, Vitest, Vue Test Utils, Koa 3, `@koa/router`, `@koa/multer`, Sharp, PostgreSQL 18, Node test runner
+**Tech Stack:** Vue 3.5, TypeScript, Pinia-free instance composables, Tiptap 3, TanStack Vue Query, Axios, Vitest, Vue Test Utils, Koa 3, `@koa/router`, `@koa/multer`, Sharp, PostgreSQL 18, Cloudflare R2, AWS SDK v3, Node test runner
 
 ## Global Constraints
 
@@ -16,7 +16,11 @@
 - Keep `Esc`, the close icon, and the cord as close paths; closing preserves the current page-lifetime draft and attachment list.
 - Publish only when normalized text or at least one uploaded image exists, every retained image is uploaded, and no submit is running.
 - `POST /flow` accepts media IDs, never client URLs, and atomically validates ownership plus creates all associations.
+- Keep the current Koa runtime for this feature; Hono migration is explicitly outside this plan and remains a separate user decision.
+- Browser uploads terminate at Koa for JWT, byte limits, decode validation and Sharp normalization; do not add browser-direct R2 or presigned URLs in this release.
+- Pending attachments stay local. After the Flow transaction commits, original/small variants must use `r2_on_publish`, `r2_preferred` and the existing local fallback.
 - Keep existing `articles/{articleId}/...` R2 keys readable; new Flow media uses resource-neutral `media/images/{fileId}/...` keys.
+- Do not start R2 phase 8, delete formal local media, or change production media switches as part of this feature.
 - Preserve unrelated working-tree changes in both repositories.
 - Every task follows red-green-refactor and commits only its own files.
 
