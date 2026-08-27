@@ -4,6 +4,7 @@ import FlowAttachmentGrid from '@/components/tiptap-editor-flow/FlowAttachmentGr
 import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
 import { useFlowImageUploads } from '@/composables/useFlowImageUploads';
 import { createFlow } from '@/service/flow/flow.request';
+import { createUuidV4 } from '@/utils/uuid';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
@@ -53,7 +54,7 @@ const emit = defineEmits<{
 const uploads = useFlowImageUploads();
 const publishing = shallowRef(false);
 const queueError = shallowRef('');
-const clientRequestId = shallowRef(crypto.randomUUID());
+const clientRequestId = shallowRef(createUuidV4());
 const interactionLocked = computed(() => props.editorDisabled || publishing.value || props.lifecycleLocked);
 let retryPayload: CreateFlowPayload | null = null;
 let retryContent = '';
@@ -79,7 +80,7 @@ function abandonRetryIdentity(): void {
   if (!retryPayload) return;
   retryPayload = null;
   retryContent = '';
-  clientRequestId.value = crypto.randomUUID();
+  clientRequestId.value = createUuidV4();
 }
 
 function markContentMutation(content: string): void {

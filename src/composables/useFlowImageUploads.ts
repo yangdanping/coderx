@@ -2,6 +2,7 @@ import { computed, shallowRef } from 'vue';
 
 import { validateFlowImageFiles } from '@/components/tiptap-editor-flow/uploadPolicy';
 import { deletePendingFlowImage, uploadFlowImage } from '@/service/flow/flow.request';
+import { createUuidV4 } from '@/utils/uuid';
 
 import type { FlowImageValidationResult } from '@/components/tiptap-editor-flow/uploadPolicy';
 import type { FlowImageAsset, FlowImageAttachment } from '@/service/flow/flow.types';
@@ -39,7 +40,7 @@ function clampProgress(progress: number): number {
 export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   const uploadImage = adapters.uploadImage ?? uploadFlowImage;
   const deleteImage = adapters.deleteImage ?? deletePendingFlowImage;
-  const createClientId = adapters.createClientId ?? (() => crypto.randomUUID());
+  const createClientId = adapters.createClientId ?? createUuidV4;
   const createObjectUrl = adapters.createObjectUrl ?? ((file: File) => URL.createObjectURL(file));
   const revokeObjectUrl = adapters.revokeObjectUrl ?? ((url: string) => URL.revokeObjectURL(url));
 
