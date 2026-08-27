@@ -11,6 +11,11 @@ function file(name: string, size = 1, type = 'image/png'): File {
   return { name, size, type } as File;
 }
 
+function localFileName(attachment: FlowImageAttachment): string {
+  if (attachment.file === null) throw new Error('Expected attachment to retain a local file');
+  return attachment.file.name;
+}
+
 function imageAsset(id: number): FlowImageAsset {
   return {
     id,
@@ -174,7 +179,7 @@ describe('useFlowImageUploads', () => {
     expect(maxObservedConcurrency).toBe(3);
     expect(queue.uploadedMediaIds.value).toEqual([42, 41, 43, 44, 45]);
     expect(queue.uploadedAssets.value).toEqual([42, 41, 43, 44, 45].map(imageAsset));
-    expect(queue.attachments.value.map((item) => item.file.name)).toEqual(files.map((item) => item.name));
+    expect(queue.attachments.value.map(localFileName)).toEqual(files.map((item) => item.name));
   });
 
   it('keeps partial failures as terminal failed items and exposes derived failure state', async () => {
@@ -260,7 +265,7 @@ describe('useFlowImageUploads', () => {
     void queue.remove(queued.clientId);
 
     expect(uploadImage).toHaveBeenCalledTimes(3);
-    expect(queue.attachments.value.map((item) => item.file.name)).not.toContain('queued.png');
+    expect(queue.attachments.value.map(localFileName)).not.toContain('queued.png');
     expect(adapters.revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(adapters.revokeObjectUrl).toHaveBeenCalledWith(queued.previewUrl);
   });
@@ -362,11 +367,11 @@ describe('useFlowImageUploads', () => {
     queue.addFiles([file('a.png'), file('b.png'), file('c.png')]);
 
     expect(queue.move(0, 2)).toBe(true);
-    expect(queue.attachments.value.map((item) => item.file.name)).toEqual(['b.png', 'c.png', 'a.png']);
+    expect(queue.attachments.value.map(localFileName)).toEqual(['b.png', 'c.png', 'a.png']);
     expect(queue.move(-1, 2)).toBe(false);
     expect(queue.move(0, 3)).toBe(false);
     expect(queue.move(1, 1)).toBe(false);
-    expect(queue.attachments.value.map((item) => item.file.name)).toEqual(['b.png', 'c.png', 'a.png']);
+    expect(queue.attachments.value.map(localFileName)).toEqual(['b.png', 'c.png', 'a.png']);
   });
 
   it('exposes runtime-readonly attachment snapshots that cannot bypass queue actions', async () => {
@@ -449,6 +454,6 @@ describe('useFlowImageUploads', () => {
     first.dispose();
     expect(first.attachments.value).toEqual([]);
     expect(second.attachments.value).toHaveLength(1);
-    expect(second.attachments.value[0]?.file.name).toBe('second.png');
+    expect(localFileName(second.attachments.value[0]!)).toBe('second.png');
   });
 });

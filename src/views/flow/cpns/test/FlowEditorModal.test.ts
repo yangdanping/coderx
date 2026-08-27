@@ -46,6 +46,8 @@ function uploadedAttachment(clientId: string, mediaId: number): FlowImageAttachm
     mediaId,
     url: `/${clientId}.webp`,
     thumbnailUrl: `/${clientId}-thumb.webp`,
+    mimeType: 'image/webp',
+    sizeBytes: 100,
     width: 800,
     height: 600,
     error: null,
