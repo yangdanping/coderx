@@ -13,9 +13,9 @@
       :draft-error="flowDraftAutosave.errorMessage.value"
       :has-draft="flowDraftAutosave.hasDraft.value"
       :restored-images="flowDraftImages"
-      :clear-disabled="composerClearing || modalPublishing || composerRestoring || !imagesComplete || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
+      :clear-disabled="composerClearing || modalPublishing || composerRestoring || draftRecoveryBlocked || !imagesComplete || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
       :editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"
-      :publish-disabled="composerRestoring || !imagesComplete || flowDraftAutosave.isHydrating.value"
+      :publish-disabled="composerRestoring || draftRecoveryBlocked || !imagesComplete || flowDraftAutosave.isHydrating.value"
       :lifecycle-locked="publicationResetting || composerRestoring"
       controls-id="flow-editor-panel"
       @close="handleEditorClose"
@@ -77,6 +77,7 @@ const composerClearing = shallowRef(false);
 const modalPublishing = shallowRef(false);
 const publicationResetting = shallowRef(false);
 const composerRestoring = shallowRef(true);
+const draftRecoveryBlocked = shallowRef(false);
 const queryClient = useQueryClient();
 let publicationResetPending = false;
 
@@ -195,6 +196,7 @@ function resetComposerState() {
   restoredImageIds.value = [];
   unresolvedImageIds.value = [];
   imagesComplete.value = true;
+  draftRecoveryBlocked.value = false;
   composerGeneration.value += 1;
 }
 
@@ -222,7 +224,7 @@ async function handleAfterClose() {
 }
 
 async function handleClearFlowDraft() {
-  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || !imagesComplete.value) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
   try {
     await ElMessageBox.confirm('清空后无法恢复，确定继续吗？', '清空 Flow 草稿', {
       confirmButtonText: '清空',
@@ -234,7 +236,7 @@ async function handleClearFlowDraft() {
     return;
   }
 
-  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || !imagesComplete.value) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
 
   composerClearing.value = true;
   try {
@@ -254,6 +256,7 @@ async function handleClearFlowDraft() {
 }
 
 onMounted(async () => {
+  draftRecoveryBlocked.value = false;
   try {
     const restoredDraft = await flowDraftAutosave.initialize();
     if (restoredDraft) {
@@ -264,8 +267,12 @@ onMounted(async () => {
       unresolvedImageIds.value = restoredDraft.meta.imageIds.filter((imageId) => !availableImageIds.has(imageId));
       imagesComplete.value = restoredDraft.imagesComplete;
       flowDraftDocument.value = restoredDraft.content;
+    } else if (flowDraftAutosave.status.value === 'error' || flowDraftAutosave.status.value === 'conflict') {
+      draftRecoveryBlocked.value = true;
     }
     await nextTick();
+  } catch {
+    draftRecoveryBlocked.value = true;
   } finally {
     composerRestoring.value = false;
   }

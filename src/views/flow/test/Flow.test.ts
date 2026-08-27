@@ -391,6 +391,111 @@ describe('Flow composer page orchestration', () => {
     expect(wrapper.getComponent(ModalStub).props('publishDisabled')).toBe(false);
   });
 
+  it.each(['error', 'conflict'])('keeps publish and clear disabled after null recovery with %s status', async (status) => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = status;
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('clear-draft');
+    await flushPromises();
+    expect(confirmMock).not.toHaveBeenCalled();
+  });
+
+  it('locks actions after initialize rejects without blocking editor input or close', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.initialize.mockRejectedValue(new Error('draft recovery failed'));
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+    const cord = wrapper.getComponent(CordStub);
+
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+    expect(modal.props('editorDisabled')).toBe(false);
+
+    modal.vm.$emit('update:json', textDocument);
+    cord.vm.$emit('update:modelValue', true);
+    await nextTick();
+    modal.vm.$emit('close');
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenCalledWith({
+      content: textDocument,
+      meta: { imageIds: [], videoIds: [] },
+    }, []);
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
+  });
+
+  it('unlocks publish and clear for a normal no-draft idle recovery', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'idle';
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(false);
+    expect(modal.props('clearDisabled')).toBe(false);
+  });
+
+  it('does not lock a complete local fallback when remote recovery reports an error', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'error';
+    autosave.initialize.mockResolvedValue({
+      content: textDocument,
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: restoredImages,
+      imagesComplete: true,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(false);
+    expect(modal.props('clearDisabled')).toBe(false);
+  });
+
+  it('retains the recovery failure lock after later content and media edits', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'error';
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('update:content', '恢复失败后继续编辑');
+    modal.vm.$emit('update:json', textDocument);
+    modal.vm.$emit('update:image-assets', [replacementImage]);
+    modal.vm.$emit('update:media-ids', [99]);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith({
+      content: textDocument,
+      meta: { imageIds: [99], videoIds: [] },
+    }, [replacementImage]);
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+  });
+
+  it('clears the recovery failure lock when resetting the composer state', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'error';
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(true);
+    modal.vm.$emit('published');
+    modal.vm.$emit('after-close');
+    await flushPromises();
+
+    expect(wrapper.getComponent(ModalStub).props('publishDisabled')).toBe(false);
+    expect(wrapper.getComponent(ModalStub).props('clearDisabled')).toBe(false);
+  });
+
   it('extends the publication lock across page orchestration and still completes success cleanup', async () => {
     const { wrapper } = mountFlow();
     await flushPromises();
