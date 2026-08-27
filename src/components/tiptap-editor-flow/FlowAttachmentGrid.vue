@@ -71,7 +71,7 @@ function openPreview(index: number): void {
           :disabled="attachment.status !== 'uploaded'"
           @click="openPreview(index)"
         >
-          <img class="flow-attachment-tile__image" :src="attachment.previewUrl" :alt="attachment.file.name" />
+          <img class="flow-attachment-tile__image" :src="attachment.previewUrl" alt="" />
 
           <div v-if="attachment.status === 'queued' || attachment.status === 'uploading'" class="flow-attachment-tile__overlay" aria-hidden="true">
             <span>{{ attachment.status === 'uploading' ? `上传中 ${attachment.progress}%` : '等待上传' }}</span>

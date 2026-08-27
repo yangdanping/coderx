@@ -77,6 +77,23 @@ function mountGrid() {
 }
 
 describe('FlowAttachmentGrid', () => {
+  it('renders restored remote attachments without reading a local file name', () => {
+    const restored: FlowImageAttachment = {
+      ...attachments[3]!,
+      clientId: 'restored:88',
+      file: null,
+      previewUrl: 'https://cdn.example.com/thumb.webp',
+    };
+    const wrapper = mount(FlowAttachmentGrid, {
+      props: { attachments: [restored] },
+      global: {
+        stubs: { VueEasyLightbox: true },
+      },
+    });
+
+    expect(wrapper.get('.flow-attachment-tile__image').attributes('alt')).toBe('');
+  });
+
   it('keeps an empty live region mounted before the first upload status arrives', async () => {
     const wrapper = mount(FlowAttachmentGrid, {
       props: { attachments: [] },

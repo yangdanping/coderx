@@ -98,6 +98,43 @@ describe('Flow image upload policy', () => {
 });
 
 describe('useFlowImageUploads', () => {
+  it('restores uploaded assets in selection order without starting uploads', () => {
+    const uploadImage = vi.fn();
+    const adapters = queueAdapters({ uploadImage });
+    const queue = useFlowImageUploads(adapters);
+    const assets = [imageAsset(42), imageAsset(41)];
+
+    expect(queue.restoreUploadedAssets(assets)).toBe(true);
+    expect(queue.uploadedMediaIds.value).toEqual([42, 41]);
+    expect(queue.uploadedAssets.value).toEqual(assets);
+    expect(queue.attachments.value.map((item) => item.clientId)).toEqual(['restored:42', 'restored:41']);
+    expect(queue.attachments.value.map((item) => item.file)).toEqual([null, null]);
+    expect(queue.attachments.value.map((item) => item.previewUrl)).toEqual(assets.map((asset) => asset.thumbnailUrl));
+    expect(queue.attachments.value.map((item) => item.mimeType)).toEqual(assets.map((asset) => asset.mimeType));
+    expect(queue.attachments.value.map((item) => item.sizeBytes)).toEqual(assets.map((asset) => asset.sizeBytes));
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
+  it('moves, deletes, and disposes restored assets without revoking remote thumbnails', async () => {
+    const adapters = queueAdapters({ uploadImage: vi.fn(), deleteImage: vi.fn().mockResolvedValue(undefined) });
+    const queue = useFlowImageUploads(adapters);
+    const assets = [imageAsset(42), imageAsset(41)];
+
+    queue.restoreUploadedAssets(assets);
+
+    expect(queue.move(1, 0)).toBe(true);
+    expect(queue.uploadedMediaIds.value).toEqual([41, 42]);
+
+    await queue.remove('restored:41');
+    expect(adapters.deleteImage).toHaveBeenCalledWith(41);
+    expect(queue.uploadedMediaIds.value).toEqual([42]);
+    expect(adapters.revokeObjectUrl).not.toHaveBeenCalled();
+
+    queue.dispose();
+    expect(adapters.revokeObjectUrl).not.toHaveBeenCalledWith(assets[0]!.thumbnailUrl);
+    expect(adapters.revokeObjectUrl).not.toHaveBeenCalledWith(assets[1]!.thumbnailUrl);
+  });
+
   it('creates previews immediately, runs FIFO with observed concurrency three, and retains selection order', async () => {
     const pending = new Map<string, ReturnType<typeof deferred<FlowImageAsset>>>();
     const started: string[] = [];
@@ -136,6 +173,7 @@ describe('useFlowImageUploads', () => {
     await vi.waitFor(() => expect(queue.isUploading.value).toBe(false));
     expect(maxObservedConcurrency).toBe(3);
     expect(queue.uploadedMediaIds.value).toEqual([42, 41, 43, 44, 45]);
+    expect(queue.uploadedAssets.value).toEqual([42, 41, 43, 44, 45].map(imageAsset));
     expect(queue.attachments.value.map((item) => item.file.name)).toEqual(files.map((item) => item.name));
   });
 

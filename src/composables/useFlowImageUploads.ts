@@ -64,6 +64,33 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
       attachment.status === 'uploaded' && attachment.mediaId !== null && !deletingClientIds.value.has(attachment.clientId) ? [attachment.mediaId] : [],
     ),
   );
+  const uploadedAssets = computed(() =>
+    attachmentState.value.flatMap((attachment) => {
+      if (attachment.status !== 'uploaded' || deletingClientIds.value.has(attachment.clientId)) return [];
+      if (
+        attachment.mediaId === null ||
+        attachment.url === null ||
+        attachment.thumbnailUrl === null ||
+        attachment.mimeType === null ||
+        attachment.sizeBytes === null ||
+        attachment.width === null ||
+        attachment.height === null
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: attachment.mediaId,
+          url: attachment.url,
+          thumbnailUrl: attachment.thumbnailUrl,
+          mimeType: attachment.mimeType,
+          sizeBytes: attachment.sizeBytes,
+          width: attachment.width,
+          height: attachment.height,
+        } satisfies FlowImageAsset,
+      ];
+    }),
+  );
 
   function setDeleting(clientId: string, deleting: boolean): void {
     const next = new Set(deletingClientIds.value);
@@ -98,6 +125,10 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   function revokePreview(attachment: FlowImageAttachment): void {
     if (revokedClientIds.has(attachment.clientId)) return;
     revokedClientIds.add(attachment.clientId);
+    if (attachment.file === null) {
+      // Server URLs are not object URLs.
+      return;
+    }
     revokeObjectUrl(attachment.previewUrl);
   }
 
@@ -127,6 +158,8 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   }
 
   function startUpload(attachment: FlowImageAttachment, generation: number): void {
+    const file = attachment.file;
+    if (file === null) return;
     const controller = new AbortController();
     const activeUpload: ActiveUpload = { clientId: attachment.clientId, generation, controller };
     active.set(attachment.clientId, activeUpload);
@@ -141,7 +174,7 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
     let request: Promise<FlowImageAsset>;
     try {
       request = uploadImage(
-        attachment.file,
+        file,
         (progress) => {
           if (!isCurrent(attachment.clientId, generation)) return;
           const current = findAttachment(attachment.clientId);
@@ -167,6 +200,8 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
           mediaId: asset.id,
           url: asset.url,
           thumbnailUrl: asset.thumbnailUrl,
+          mimeType: asset.mimeType,
+          sizeBytes: asset.sizeBytes,
           width: asset.width,
           height: asset.height,
           error: null,
@@ -207,6 +242,8 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
         mediaId: null,
         url: null,
         thumbnailUrl: null,
+        mimeType: null,
+        sizeBytes: null,
         width: null,
         height: null,
         error: null,
@@ -217,6 +254,39 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
     attachmentState.value = [...attachmentState.value, ...additions];
     schedule();
     return result;
+  }
+
+  function restoreUploadedAssets(assets: readonly FlowImageAsset[]): boolean {
+    if (disposed) return false;
+
+    const additions: FlowImageAttachment[] = [];
+    const existingMediaIds = new Set(
+      attachmentState.value.flatMap((attachment) => (attachment.mediaId === null ? [] : [attachment.mediaId])),
+    );
+    for (const asset of assets) {
+      if (existingMediaIds.has(asset.id)) continue;
+      existingMediaIds.add(asset.id);
+      const clientId = `restored:${asset.id}`;
+      nextGeneration(clientId);
+      additions.push({
+        clientId,
+        file: null,
+        previewUrl: asset.thumbnailUrl,
+        status: 'uploaded',
+        progress: 100,
+        mediaId: asset.id,
+        url: asset.url,
+        thumbnailUrl: asset.thumbnailUrl,
+        mimeType: asset.mimeType,
+        sizeBytes: asset.sizeBytes,
+        width: asset.width,
+        height: asset.height,
+        error: null,
+      });
+    }
+    if (additions.length === 0) return false;
+    attachmentState.value = [...attachmentState.value, ...additions];
+    return true;
   }
 
   function retry(clientId: string): boolean {
@@ -231,6 +301,8 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
       mediaId: null,
       url: null,
       thumbnailUrl: null,
+      mimeType: null,
+      sizeBytes: null,
       width: null,
       height: null,
       error: null,
@@ -312,7 +384,9 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
     isUploading,
     hasFailed,
     uploadedMediaIds,
+    uploadedAssets,
     addFiles,
+    restoreUploadedAssets,
     retry,
     remove,
     move,

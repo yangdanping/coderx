@@ -47,13 +47,15 @@ export interface FlowImageAsset {
 
 export interface FlowImageAttachment {
   clientId: string;
-  file: File;
+  file: File | null;
   previewUrl: string;
   status: FlowUploadStatus;
   progress: number;
   mediaId: number | null;
   url: string | null;
   thumbnailUrl: string | null;
+  mimeType: 'image/webp' | null;
+  sizeBytes: number | null;
   width: number | null;
   height: number | null;
   error: string | null;
