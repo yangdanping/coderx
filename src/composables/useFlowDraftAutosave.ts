@@ -6,7 +6,14 @@ import { deleteFlowDraftRequest, getFlowDraftRequest, saveFlowDraftRequest } fro
 import { LocalCache } from '@/utils';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { FlowDraftLocalFallback, FlowDraftMeta, FlowDraftRecord, FlowDraftSnapshot } from '@/service/flow/flow-draft.types';
+import type { FlowImageAsset } from '@/service/flow/flow.types';
+import type {
+  FlowDraftLocalFallback,
+  FlowDraftMeta,
+  FlowDraftRecord,
+  FlowDraftRestoreState,
+  FlowDraftSnapshot,
+} from '@/service/flow/flow-draft.types';
 
 export type FlowDraftAutosaveStatus = 'idle' | 'hydrating' | 'local' | 'dirty' | 'saving' | 'saved' | 'error' | 'conflict' | 'clearing';
 
@@ -19,6 +26,7 @@ export interface UseFlowDraftAutosaveOptions {
 export interface FlowDraftRestoreResolution {
   source: 'local' | 'remote' | 'empty';
   snapshot: FlowDraftSnapshot | null;
+  state: FlowDraftRestoreState | null;
 }
 
 interface QueuedFlowDraftSnapshot {
@@ -27,7 +35,7 @@ interface QueuedFlowDraftSnapshot {
 }
 
 const FLOW_DRAFT_CACHE_PREFIX = 'coderx_flow_draft_v1';
-const FLOW_DRAFT_SCHEMA_VERSION = 1;
+const FLOW_DRAFT_SCHEMA_VERSION = 2;
 
 const createEmptyFlowDocument = (): TiptapDocContent => ({
   type: 'doc',
@@ -64,6 +72,55 @@ const normalizeFlowDraftSnapshot = (snapshot: FlowDraftSnapshot): FlowDraftSnaps
   meta: normalizeFlowDraftMeta(snapshot.meta),
 });
 
+const isFlowImageAsset = (value: unknown): value is FlowImageAsset =>
+  isPlainObject(value) &&
+  typeof value['id'] === 'number' &&
+  Number.isSafeInteger(value['id']) &&
+  value['id'] > 0 &&
+  typeof value['url'] === 'string' &&
+  typeof value['thumbnailUrl'] === 'string' &&
+  value['mimeType'] === 'image/webp' &&
+  typeof value['sizeBytes'] === 'number' &&
+  Number.isFinite(value['sizeBytes']) &&
+  typeof value['width'] === 'number' &&
+  Number.isFinite(value['width']) &&
+  typeof value['height'] === 'number' &&
+  Number.isFinite(value['height']);
+
+const normalizeFlowImageAssets = (value: unknown): FlowImageAsset[] => {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<number>();
+  return value.filter((candidate): candidate is FlowImageAsset => {
+    if (!isFlowImageAsset(candidate) || seen.has(candidate.id)) return false;
+    seen.add(candidate.id);
+    return true;
+  });
+};
+
+const selectFlowDraftImages = (imageIds: number[], assets: unknown): { images: FlowImageAsset[]; imagesComplete: boolean } => {
+  const assetsById = new Map(normalizeFlowImageAssets(assets).map((asset) => [asset.id, asset]));
+  const images: FlowImageAsset[] = [];
+  let imagesComplete = true;
+  for (const imageId of imageIds) {
+    const image = assetsById.get(imageId);
+    if (!image) {
+      imagesComplete = false;
+      continue;
+    }
+    images.push(image);
+  }
+  return { images, imagesComplete };
+};
+
+const createRestoreState = (snapshot: FlowDraftSnapshot, assets: unknown): FlowDraftRestoreState => {
+  const normalizedSnapshot = normalizeFlowDraftSnapshot(snapshot);
+  const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, assets);
+  return { ...normalizedSnapshot, ...selectedImages };
+};
+
+const incompleteImagesMessage = '部分图片未能恢复，请重新上传缺失图片后再保存草稿';
+
 const nodeHasMeaningfulText = (node: TiptapDocContent | undefined): boolean => {
   if (!node || typeof node !== 'object') return false;
 
@@ -98,27 +155,35 @@ export const resolveFlowDraftRestore = (local: FlowDraftLocalFallback | null, re
   if (local && remote) {
     const remoteUpdatedAt = remote.updateAt ?? remote.createAt ?? null;
     if (parseTime(local.localUpdatedAt) > parseTime(remoteUpdatedAt)) {
-      return { source: 'local', snapshot: normalizeFlowDraftSnapshot(local) };
+      const snapshot = normalizeFlowDraftSnapshot(local);
+      const state = createRestoreState(snapshot, local.schemaVersion === 2 ? local.images : remote.images);
+      return { source: 'local', snapshot, state };
     }
 
+    const snapshot = normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta });
     return {
       source: 'remote',
-      snapshot: normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta }),
+      snapshot,
+      state: createRestoreState(snapshot, remote.images),
     };
   }
 
   if (local) {
-    return { source: 'local', snapshot: normalizeFlowDraftSnapshot(local) };
+    const snapshot = normalizeFlowDraftSnapshot(local);
+    const state = createRestoreState(snapshot, local.schemaVersion === 2 ? local.images : undefined);
+    return { source: 'local', snapshot, state };
   }
 
   if (remote) {
+    const snapshot = normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta });
     return {
       source: 'remote',
-      snapshot: normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta }),
+      snapshot,
+      state: createRestoreState(snapshot, remote.images),
     };
   }
 
-  return { source: 'empty', snapshot: null };
+  return { source: 'empty', snapshot: null, state: null };
 };
 
 const getErrorStatus = (error: unknown) => {
@@ -149,6 +214,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const version = shallowRef(0);
   const lastSavedAt = shallowRef<string | null>(null);
   const latestSnapshot = shallowRef<FlowDraftSnapshot | null>(null);
+  const latestImages = shallowRef<FlowImageAsset[]>([]);
+  const latestImagesComplete = shallowRef(true);
   const hasLocalFallback = shallowRef(false);
   const isHydrating = shallowRef(false);
   const isClearing = shallowRef(false);
@@ -159,7 +226,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const mutation = useMutation({
     mutationFn: async (payload: QueuedFlowDraftSnapshot) => {
       const response = await saveFlowDraftRequest({
-        ...payload.snapshot,
+        content: payload.snapshot.content,
+        meta: payload.snapshot.meta,
         version: version.value,
       });
       return response.data;
@@ -175,17 +243,24 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     latestLocalUpdatedAt = null;
   };
 
-  const persistLocalSnapshot = (snapshot: FlowDraftSnapshot, timestamps: { localUpdatedAt?: string; serverUpdatedAt?: string | null } = {}) => {
+  const persistLocalSnapshot = (
+    snapshot: FlowDraftSnapshot,
+    timestamps: { localUpdatedAt?: string; serverUpdatedAt?: string | null; images?: readonly FlowImageAsset[] } = {},
+  ) => {
     const normalizedSnapshot = normalizeFlowDraftSnapshot(snapshot);
+    const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, timestamps.images ?? latestImages.value);
     const localUpdatedAt = timestamps.localUpdatedAt ?? new Date().toISOString();
     const serverUpdatedAt = timestamps.serverUpdatedAt === undefined ? lastSavedAt.value : timestamps.serverUpdatedAt;
 
     latestSnapshot.value = normalizedSnapshot;
+    latestImages.value = selectedImages.images;
+    latestImagesComplete.value = selectedImages.imagesComplete;
     latestLocalUpdatedAt = localUpdatedAt;
     LocalCache.setCache(localStorageKey, {
       schemaVersion: FLOW_DRAFT_SCHEMA_VERSION,
       actorKey,
       ...normalizedSnapshot,
+      images: selectedImages.images,
       draftId: draftId.value,
       version: version.value,
       serverUpdatedAt,
@@ -203,7 +278,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       return null;
     }
 
-    if (!isPlainObject(cached) || cached['schemaVersion'] !== FLOW_DRAFT_SCHEMA_VERSION || cached['actorKey'] !== actorKey) {
+    if (!isPlainObject(cached) || (cached['schemaVersion'] !== 1 && cached['schemaVersion'] !== FLOW_DRAFT_SCHEMA_VERSION) || cached['actorKey'] !== actorKey) {
       if (cached !== undefined) removeLocalFallback();
       return null;
     }
@@ -216,11 +291,18 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
 
     const cachedDraftId = cached['draftId'];
     const cachedVersion = cached['version'];
+    const schemaVersion = cached['schemaVersion'];
+    if (schemaVersion !== 1 && schemaVersion !== FLOW_DRAFT_SCHEMA_VERSION) {
+      removeLocalFallback();
+      return null;
+    }
+
     return {
-      schemaVersion: FLOW_DRAFT_SCHEMA_VERSION,
+      schemaVersion,
       actorKey,
       content: normalizeFlowDraftDocument(cached['content']),
       meta: normalizeFlowDraftMeta(cached['meta']),
+      ...(schemaVersion === FLOW_DRAFT_SCHEMA_VERSION ? { images: normalizeFlowImageAssets(cached['images']) } : {}),
       draftId: typeof cachedDraftId === 'number' && Number.isSafeInteger(cachedDraftId) && cachedDraftId > 0 ? cachedDraftId : null,
       version: typeof cachedVersion === 'number' && Number.isSafeInteger(cachedVersion) && cachedVersion >= 0 ? cachedVersion : 0,
       serverUpdatedAt: typeof cached['serverUpdatedAt'] === 'string' ? cached['serverUpdatedAt'] : null,
@@ -246,6 +328,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     version.value = 0;
     lastSavedAt.value = null;
     latestSnapshot.value = null;
+    latestImages.value = [];
+    latestImagesComplete.value = true;
     latestRevision = 0;
     latestLocalUpdatedAt = null;
     hasLocalFallback.value = false;
@@ -305,7 +389,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     });
   };
 
-  const initialize = async (): Promise<FlowDraftSnapshot | null> => {
+  const initialize = async (): Promise<FlowDraftRestoreState | null> => {
     const revisionAtStart = latestRevision;
     isHydrating.value = true;
     status.value = 'hydrating';
@@ -316,7 +400,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       hydrateFromLocal(local);
     }
     let remote: FlowDraftRecord | null = null;
-    let restoredSnapshot: FlowDraftSnapshot | null = null;
+    let restoredState: FlowDraftRestoreState | null = null;
     let snapshotToSync: FlowDraftSnapshot | null = null;
 
     try {
@@ -336,13 +420,14 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
           persistLocalSnapshot(latestSnapshot.value, {
             localUpdatedAt: latestLocalUpdatedAt ?? new Date().toISOString(),
             serverUpdatedAt: lastSavedAt.value,
+            images: latestImages.value,
           });
-          snapshotToSync = canSync ? latestSnapshot.value : null;
+          snapshotToSync = canSync && latestImagesComplete.value ? latestSnapshot.value : null;
         }
-        status.value = canSync ? 'dirty' : 'local';
+        status.value = snapshotToSync ? 'dirty' : 'local';
       } else {
         const resolution = resolveFlowDraftRestore(local, remote);
-        restoredSnapshot = resolution.snapshot;
+        restoredState = resolution.state;
 
         if (remote) {
           hydrateFromRemote(remote);
@@ -350,23 +435,31 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
           hydrateFromLocal(local);
         }
 
-        if (resolution.source === 'remote' && remote && restoredSnapshot) {
-          latestSnapshot.value = restoredSnapshot;
+        if (resolution.source === 'remote' && remote && restoredState) {
+          latestSnapshot.value = restoredState;
           const serverUpdatedAt = remote.updateAt ?? remote.createAt ?? new Date().toISOString();
-          persistLocalSnapshot(restoredSnapshot, {
+          persistLocalSnapshot(restoredState, {
             localUpdatedAt: serverUpdatedAt,
             serverUpdatedAt,
+            images: restoredState.images,
           });
-          status.value = 'saved';
-        } else if (resolution.source === 'local' && local && restoredSnapshot) {
-          latestSnapshot.value = restoredSnapshot;
+          status.value = restoredState.imagesComplete ? 'saved' : 'error';
+          if (!restoredState.imagesComplete) errorMessage.value = incompleteImagesMessage;
+        } else if (resolution.source === 'local' && local && restoredState) {
+          latestSnapshot.value = restoredState;
+          latestImages.value = restoredState.images;
+          latestImagesComplete.value = restoredState.imagesComplete;
           latestLocalUpdatedAt = local.localUpdatedAt;
-          persistLocalSnapshot(restoredSnapshot, {
-            localUpdatedAt: local.localUpdatedAt,
-            serverUpdatedAt: remote?.updateAt ?? remote?.createAt ?? local.serverUpdatedAt,
-          });
-          snapshotToSync = canSync ? restoredSnapshot : null;
-          status.value = canSync ? 'dirty' : 'local';
+          if (restoredState.imagesComplete || local.schemaVersion === 2) {
+            persistLocalSnapshot(restoredState, {
+              localUpdatedAt: local.localUpdatedAt,
+              serverUpdatedAt: remote?.updateAt ?? remote?.createAt ?? local.serverUpdatedAt,
+              images: restoredState.images,
+            });
+          }
+          snapshotToSync = canSync && restoredState.imagesComplete ? restoredState : null;
+          status.value = restoredState.imagesComplete ? (canSync ? 'dirty' : 'local') : 'error';
+          if (!restoredState.imagesComplete) errorMessage.value = incompleteImagesMessage;
         } else {
           status.value = 'idle';
         }
@@ -374,8 +467,10 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     } catch (error) {
       if (latestRevision === revisionAtStart && local) {
         hydrateFromLocal(local);
-        restoredSnapshot = normalizeFlowDraftSnapshot(local);
-        latestSnapshot.value = restoredSnapshot;
+        restoredState = createRestoreState(normalizeFlowDraftSnapshot(local), local.schemaVersion === 2 ? local.images : undefined);
+        latestSnapshot.value = restoredState;
+        latestImages.value = restoredState.images;
+        latestImagesComplete.value = restoredState.imagesComplete;
         hasLocalFallback.value = true;
       }
       status.value = 'error';
@@ -389,10 +484,10 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       queueServerSave(snapshotToSync);
     }
 
-    return restoredSnapshot;
+    return restoredState;
   };
 
-  const recordSnapshot = (snapshot: FlowDraftSnapshot) => {
+  const recordSnapshot = (snapshot: FlowDraftSnapshot, uploadedAssets: readonly FlowImageAsset[] = []) => {
     if (isClearing.value) {
       return false;
     }
@@ -404,12 +499,22 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     if (!hasMeaningfulFlowDraft(normalizedSnapshot) && !draftId.value && !scheduler.isInFlight()) {
       scheduler.cancel();
       removeLocalFallback();
+      latestImages.value = [];
+      latestImagesComplete.value = true;
       status.value = 'idle';
       errorMessage.value = '';
       return true;
     }
 
-    persistLocalSnapshot(normalizedSnapshot);
+    const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, uploadedAssets);
+    persistLocalSnapshot(normalizedSnapshot, { images: selectedImages.images });
+
+    if (!selectedImages.imagesComplete) {
+      scheduler.cancel();
+      errorMessage.value = incompleteImagesMessage;
+      status.value = 'error';
+      return true;
+    }
 
     if (!canSync) {
       status.value = 'local';

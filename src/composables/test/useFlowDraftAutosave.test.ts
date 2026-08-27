@@ -4,6 +4,7 @@ import { defineComponent } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { FlowDraftLocalFallback, FlowDraftRecord, FlowDraftSnapshot } from '@/service/flow/flow-draft.types';
+import type { FlowImageAsset } from '@/service/flow/flow.types';
 
 const { deleteFlowDraftRequestMock, getFlowDraftRequestMock, saveFlowDraftRequestMock } = vi.hoisted(() => ({
   deleteFlowDraftRequestMock: vi.fn(),
@@ -37,6 +38,16 @@ const textSnapshot = (text: string): FlowDraftSnapshot => ({
     ],
   },
   meta: { imageIds: [], videoIds: [] },
+});
+
+const imageAsset = (id: number): FlowImageAsset => ({
+  id,
+  url: `https://cdn.example.test/${id}.webp`,
+  thumbnailUrl: `https://cdn.example.test/${id}-thumb.webp`,
+  mimeType: 'image/webp',
+  sizeBytes: 1024,
+  width: 640,
+  height: 480,
 });
 
 const remoteDraft = (overrides: Partial<FlowDraftRecord> = {}): FlowDraftRecord => ({
@@ -121,6 +132,95 @@ describe('Flow draft restore helpers', () => {
         remote,
       ).source,
     ).toBe('remote');
+  });
+  it('restores remote images in metadata order when the server wins', async () => {
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    getFlowDraftRequestMock.mockResolvedValue({
+      data: remoteDraft({
+        meta: { imageIds: [42, 41], videoIds: [] },
+        images: [imageAsset(41), imageAsset(42)],
+      }),
+    });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.images.map((image) => image.id)).toEqual([42, 41]);
+    expect(restored?.imagesComplete).toBe(true);
+  });
+
+  it('uses complete schema-v2 local assets when local content wins', async () => {
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 2,
+      actorKey: 'user:7',
+      ...textSnapshot('本地图片'),
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: [imageAsset(42), imageAsset(41)],
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:01:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ updateAt: '2026-08-11T01:00:00.000Z' }) });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.images.map((image) => image.id)).toEqual([42, 41]);
+    expect(restored?.imagesComplete).toBe(true);
+  });
+
+  it('uses remote descriptors for a schema-v1 local fallback without erasing missing ids', async () => {
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 1,
+      actorKey: 'user:7',
+      ...textSnapshot('旧版本图片'),
+      meta: { imageIds: [42, 41], videoIds: [] },
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:01:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockResolvedValue({
+      data: remoteDraft({
+        updateAt: '2026-08-11T01:00:00.000Z',
+        images: [imageAsset(41)],
+      }),
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.meta.imageIds).toEqual([42, 41]);
+    expect(restored?.images.map((image) => image.id)).toEqual([41]);
+    expect(restored?.imagesComplete).toBe(false);
+  });
+
+  it('reorders matching remote descriptors to schema-v1 local metadata order', async () => {
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 1,
+      actorKey: 'user:7',
+      ...textSnapshot('旧版本图片顺序'),
+      meta: { imageIds: [42, 41], videoIds: [] },
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:01:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockResolvedValue({
+      data: remoteDraft({
+        updateAt: '2026-08-11T01:00:00.000Z',
+        images: [imageAsset(41), imageAsset(42)],
+      }),
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.images.map((image) => image.id)).toEqual([42, 41]);
+    expect(restored?.imagesComplete).toBe(true);
   });
 });
 
@@ -449,6 +549,96 @@ describe('useFlowDraftAutosave', () => {
 
     const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(null)) ?? 'null') as FlowDraftLocalFallback;
     expect(cached.meta.imageIds).toEqual([42, 41]);
+  });
+
+  it('persists only supplied uploaded image descriptors as schema-v2 assets', async () => {
+    const autosave = mountAutosave({ userId: null, canSync: false });
+    await autosave.initialize();
+
+    autosave.recordSnapshot(
+      {
+        ...textSnapshot('带图描述'),
+        meta: { imageIds: [42, 41], videoIds: [] },
+      },
+      [imageAsset(42), imageAsset(41), imageAsset(999)],
+    );
+
+    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(null)) ?? 'null') as FlowDraftLocalFallback;
+    expect(cached.schemaVersion).toBe(2);
+    expect(cached.images.map((image) => image.id)).toEqual([42, 41]);
+  });
+
+  it('does not send local-only image descriptors in the server mutation payload', async () => {
+    vi.useFakeTimers();
+    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1 }) });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+    await autosave.initialize();
+
+    autosave.recordSnapshot(
+      {
+        ...textSnapshot('只发送草稿字段'),
+        meta: { imageIds: [42], videoIds: [] },
+      },
+      [imageAsset(42)],
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
+      content: textSnapshot('只发送草稿字段').content,
+      meta: { imageIds: [42], videoIds: [] },
+      version: 0,
+    });
+  });
+
+  it('retains image ids and blocks server writes when current assets are incomplete', async () => {
+    vi.useFakeTimers();
+    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1 }) });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+    await autosave.initialize();
+
+    autosave.recordSnapshot(
+      {
+        ...textSnapshot('等待图片恢复'),
+        meta: { imageIds: [42, 41], videoIds: [] },
+      },
+      [imageAsset(41)],
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+
+    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
+    expect(cached.meta.imageIds).toEqual([42, 41]);
+    expect(cached.images.map((image) => image.id)).toEqual([41]);
+    expect(autosave.errorMessage.value).toMatch(/图片/);
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('reports incomplete v1 image recovery and does not resave it automatically', async () => {
+    vi.useFakeTimers();
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 1,
+      actorKey: 'user:7',
+      ...textSnapshot('需要找回图片'),
+      meta: { imageIds: [42], videoIds: [] },
+      draftId: 18,
+      version: 4,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:01:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ updateAt: '2026-08-11T01:00:00.000Z', images: [] }) });
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+
+    const restored = await autosave.initialize();
+    await vi.advanceTimersByTimeAsync(100);
+    await flushPromises();
+
+    expect(restored?.meta.imageIds).toEqual([42]);
+    expect(restored?.imagesComplete).toBe(false);
+    expect(autosave.errorMessage.value).toMatch(/图片/);
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null').schemaVersion).toBe(1);
   });
 
   it('publication reset waits stale saves, clears local state, and treats remote cleanup as best effort', async () => {

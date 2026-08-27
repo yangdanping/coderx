@@ -1,4 +1,5 @@
 import type { TiptapDocContent } from '@/service/draft/draft.types';
+import type { FlowImageAsset } from './flow.types';
 
 export interface FlowDraftMeta {
   imageIds: number[];
@@ -9,6 +10,11 @@ export interface FlowDraftMeta {
 export interface FlowDraftSnapshot {
   content: TiptapDocContent;
   meta: FlowDraftMeta;
+}
+
+export interface FlowDraftRestoreState extends FlowDraftSnapshot {
+  images: FlowImageAsset[];
+  imagesComplete: boolean;
 }
 
 export interface SaveFlowDraftPayload extends FlowDraftSnapshot {
@@ -23,6 +29,7 @@ export interface FlowDraftRecord {
   title: null;
   content: TiptapDocContent;
   meta: FlowDraftMeta;
+  images?: FlowImageAsset[];
   version: number;
   createAt?: string;
   updateAt?: string;
@@ -32,11 +39,21 @@ export interface DeleteFlowDraftResult {
   id: number;
 }
 
-export interface FlowDraftLocalFallback extends FlowDraftSnapshot {
-  schemaVersion: 1;
+interface FlowDraftLocalFallbackBase extends FlowDraftSnapshot {
   actorKey: string;
   draftId: number | null;
   version: number;
   serverUpdatedAt: string | null;
   localUpdatedAt: string;
 }
+
+export interface FlowDraftLocalFallbackV1 extends FlowDraftLocalFallbackBase {
+  schemaVersion: 1;
+}
+
+export interface FlowDraftLocalFallbackV2 extends FlowDraftLocalFallbackBase {
+  schemaVersion: 2;
+  images: FlowImageAsset[];
+}
+
+export type FlowDraftLocalFallback = FlowDraftLocalFallbackV1 | FlowDraftLocalFallbackV2;
