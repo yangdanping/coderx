@@ -222,6 +222,12 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
 
   let latestRevision = 0;
   let latestLocalUpdatedAt: string | null = null;
+  let lifecycleGeneration = 0;
+
+  const invalidateInitialize = () => {
+    lifecycleGeneration += 1;
+    isHydrating.value = false;
+  };
 
   const mutation = useMutation({
     mutationFn: async (payload: QueuedFlowDraftSnapshot) => {
@@ -355,7 +361,10 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
 
       const serverUpdatedAt = draft.updateAt ?? new Date().toISOString();
       const savedLatestRevision = savedPayload.revision === latestRevision;
-      if (savedLatestRevision) {
+      if (!latestImagesComplete.value) {
+        status.value = 'error';
+        errorMessage.value = incompleteImagesMessage;
+      } else if (savedLatestRevision) {
         latestLocalUpdatedAt = serverUpdatedAt;
         status.value = 'saved';
       } else {
@@ -390,6 +399,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   };
 
   const initialize = async (): Promise<FlowDraftRestoreState | null> => {
+    const initializeGeneration = lifecycleGeneration;
     const revisionAtStart = latestRevision;
     isHydrating.value = true;
     status.value = 'hydrating';
@@ -406,6 +416,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     try {
       if (canSync) {
         const response = await getFlowDraftRequest();
+        if (lifecycleGeneration !== initializeGeneration) return null;
         remote = response.data;
       }
 
@@ -424,7 +435,12 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
           });
           snapshotToSync = canSync && latestImagesComplete.value ? latestSnapshot.value : null;
         }
-        status.value = snapshotToSync ? 'dirty' : 'local';
+        if (!latestImagesComplete.value) {
+          status.value = 'error';
+          errorMessage.value = incompleteImagesMessage;
+        } else {
+          status.value = snapshotToSync ? 'dirty' : 'local';
+        }
       } else {
         const resolution = resolveFlowDraftRestore(local, remote);
         restoredState = resolution.state;
@@ -465,6 +481,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
         }
       }
     } catch (error) {
+      if (lifecycleGeneration !== initializeGeneration) return null;
       if (latestRevision === revisionAtStart && local) {
         hydrateFromLocal(local);
         restoredState = createRestoreState(normalizeFlowDraftSnapshot(local), local.schemaVersion === 2 ? local.images : undefined);
@@ -476,10 +493,10 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       status.value = 'error';
       errorMessage.value = getErrorMessage(error) ?? '保存失败，本地草稿仍在';
     } finally {
-      isHydrating.value = false;
+      if (lifecycleGeneration === initializeGeneration) isHydrating.value = false;
     }
 
-    if (snapshotToSync) {
+    if (snapshotToSync && lifecycleGeneration === initializeGeneration) {
       latestRevision += 1;
       queueServerSave(snapshotToSync);
     }
@@ -555,6 +572,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   };
 
   const clearDraft = async () => {
+    invalidateInitialize();
     isClearing.value = true;
     status.value = 'clearing';
     errorMessage.value = '';
@@ -580,6 +598,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   };
 
   const resetAfterPublication = async (): Promise<{ remoteCleared: boolean }> => {
+    invalidateInitialize();
     isClearing.value = true;
     status.value = 'clearing';
     errorMessage.value = '';
@@ -623,6 +642,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const isSaving = computed(() => status.value === 'saving' || mutation.isPending.value);
 
   onBeforeUnmount(() => {
+    invalidateInitialize();
     scheduler.dispose();
   });
 

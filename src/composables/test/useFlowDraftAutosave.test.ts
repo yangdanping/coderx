@@ -246,6 +246,127 @@ describe('useFlowDraftAutosave', () => {
     expect(autosave.status.value).toBe('dirty');
   });
 
+  it('keeps incomplete recovery status when an older in-flight save resolves', async () => {
+    vi.useFakeTimers();
+    let resolveSave!: (value: { data: FlowDraftRecord }) => void;
+    saveFlowDraftRequestMock.mockImplementation(
+      () =>
+        new Promise<{ data: FlowDraftRecord }>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+    await autosave.initialize();
+
+    autosave.recordSnapshot(textSnapshot('首次完整输入'), [imageAsset(42)]);
+    const flushPromise = autosave.flushPendingSave();
+    await flushPromises();
+    autosave.recordSnapshot(
+      { ...textSnapshot('新输入但图片未恢复'), meta: { imageIds: [42, 41], videoIds: [] } },
+      [imageAsset(41)],
+    );
+
+    resolveSave({ data: remoteDraft({ version: 5, content: textSnapshot('首次完整输入').content }) });
+    await flushPromise;
+
+    expect(autosave.version.value).toBe(5);
+    expect(autosave.status.value).toBe('error');
+    expect(autosave.errorMessage.value).toMatch(/图片/);
+    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
+    expect(cached.meta.imageIds).toEqual([42, 41]);
+    expect(cached.images.map((image) => image.id)).toEqual([41]);
+  });
+
+  it('keeps incomplete recovery status when a slow initialize follows a partial edit', async () => {
+    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
+    getFlowDraftRequestMock.mockImplementation(
+      () =>
+        new Promise<{ data: FlowDraftRecord }>((resolve) => {
+          resolveInitialize = resolve;
+        }),
+    );
+    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+
+    const initializePromise = autosave.initialize();
+    await flushPromises();
+    autosave.recordSnapshot(
+      { ...textSnapshot('初始化期间的部分图片'), meta: { imageIds: [42, 41], videoIds: [] } },
+      [imageAsset(41)],
+    );
+    resolveInitialize({ data: remoteDraft({ content: textSnapshot('旧远端').content }) });
+
+    expect(await initializePromise).toBeNull();
+    expect(autosave.status.value).toBe('error');
+    expect(autosave.errorMessage.value).toMatch(/图片/);
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('invalidates a pending initialize when clearing the draft', async () => {
+    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
+    let resolveClearRead!: (value: { data: FlowDraftRecord | null }) => void;
+    getFlowDraftRequestMock
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ data: FlowDraftRecord }>((resolve) => {
+            resolveInitialize = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ data: FlowDraftRecord | null }>((resolve) => {
+            resolveClearRead = resolve;
+          }),
+      );
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const initializePromise = autosave.initialize();
+    await flushPromises();
+    const clearPromise = autosave.clearDraft();
+    await flushPromises();
+    resolveInitialize({ data: remoteDraft({ content: textSnapshot('过期远端').content }) });
+    await flushPromises();
+
+    expect(autosave.status.value).toBe('clearing');
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+    resolveClearRead({ data: null });
+    await clearPromise;
+    expect(await initializePromise).toBeNull();
+    expect(autosave.status.value).toBe('idle');
+  });
+
+  it('invalidates a pending initialize when resetting after publication', async () => {
+    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
+    let resolveResetRead!: (value: { data: FlowDraftRecord | null }) => void;
+    getFlowDraftRequestMock
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ data: FlowDraftRecord }>((resolve) => {
+            resolveInitialize = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ data: FlowDraftRecord | null }>((resolve) => {
+            resolveResetRead = resolve;
+          }),
+      );
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const initializePromise = autosave.initialize();
+    await flushPromises();
+    const resetPromise = autosave.resetAfterPublication();
+    await flushPromises();
+    resolveInitialize({ data: remoteDraft({ content: textSnapshot('过期发布远端').content }) });
+    await flushPromises();
+
+    expect(autosave.status.value).toBe('idle');
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+    resolveResetRead({ data: null });
+    await expect(resetPromise).resolves.toEqual({ remoteCleared: true });
+    expect(await initializePromise).toBeNull();
+    expect(autosave.status.value).toBe('idle');
+  });
+
   it('keeps cached identity when initialize fails after a newer local edit', async () => {
     vi.useFakeTimers();
     let rejectInitialize!: (reason: unknown) => void;
