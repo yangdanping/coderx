@@ -1,6 +1,7 @@
 <template>
   <div class="flow-page" ref="containerRef">
-    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || modalPublishing || publicationResetting" />
+    <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || modalPublishing || publicationResetting || composerRestoring" />
+    <!-- The restore lock extends the existing publication lifecycle lock. :lifecycle-locked="publicationResetting" -->
     <FlowEditorModal
       :key="composerGeneration"
       ref="flowEditorModalRef"
@@ -11,14 +12,16 @@
       :draft-status-text="flowDraftAutosave.statusText.value"
       :draft-error="flowDraftAutosave.errorMessage.value"
       :has-draft="flowDraftAutosave.hasDraft.value"
-      :clear-disabled="composerClearing || modalPublishing || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
+      :restored-images="flowDraftImages"
+      :clear-disabled="composerClearing || modalPublishing || composerRestoring || !imagesComplete || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
       :editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"
-      :publish-disabled="flowDraftAutosave.isHydrating.value"
-      :lifecycle-locked="publicationResetting"
+      :publish-disabled="composerRestoring || !imagesComplete || flowDraftAutosave.isHydrating.value"
+      :lifecycle-locked="publicationResetting || composerRestoring"
       controls-id="flow-editor-panel"
       @close="handleEditorClose"
       @update:content="handleFlowContentUpdate"
       @update:json="handleFlowDocumentUpdate"
+      @update:image-assets="handleFlowImageAssetsUpdate"
       @update:media-ids="handleFlowMediaIdsUpdate"
       @update:publishing="handleModalPublishing"
       @clear-draft="handleClearFlowDraft"
@@ -54,6 +57,7 @@ import { ElMessageBox } from 'element-plus';
 import { Loader2 } from '@lucide/vue';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
+import type { FlowImageAsset } from '@/service/flow/flow.types';
 
 const containerRef = ref<HTMLElement | null>(null);
 const feedRef = ref<InstanceType<typeof FlowFeed> | null>(null);
@@ -64,10 +68,13 @@ const editorOpen = shallowRef(false);
 const flowDraft = shallowRef('');
 const flowDraftDocument = shallowRef<TiptapDocContent>();
 const flowDraftMediaIds = shallowRef<number[]>([]);
+const flowDraftImages = shallowRef<FlowImageAsset[]>([]);
+const imagesComplete = shallowRef(true);
 const composerGeneration = shallowRef(0);
 const composerClearing = shallowRef(false);
 const modalPublishing = shallowRef(false);
 const publicationResetting = shallowRef(false);
+const composerRestoring = shallowRef(true);
 const queryClient = useQueryClient();
 let publicationResetPending = false;
 
@@ -100,7 +107,12 @@ function recordCurrentFlowSnapshot() {
       imageIds: [...flowDraftMediaIds.value],
       videoIds: [],
     },
-  });
+  }, flowDraftImages.value);
+}
+
+function updateImagesCompleteness(mediaIds: readonly number[], images: readonly FlowImageAsset[] = flowDraftImages.value): void {
+  const imageIds = new Set(images.map((image) => image.id));
+  imagesComplete.value = mediaIds.every((mediaId) => imageIds.has(mediaId));
 }
 
 function handleModalPublishing(publishing: boolean) {
@@ -108,25 +120,33 @@ function handleModalPublishing(publishing: boolean) {
 }
 
 function handleEditorClose() {
-  if (composerClearing.value || (modalPublishing.value && !publicationResetPending)) return;
+  if (composerClearing.value || composerRestoring.value || (modalPublishing.value && !publicationResetPending)) return;
   editorOpen.value = false;
 }
 
 function handleFlowContentUpdate(content: string) {
-  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
   flowDraft.value = content;
 }
 
 function handleFlowDocumentUpdate(document: TiptapDocContent) {
-  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  // Tiptap emits JSON while applying restored content.
   const normalizedDocument = normalizeFlowDraftDocument(document);
   flowDraftDocument.value = normalizedDocument;
   recordCurrentFlowSnapshot();
 }
 
+function handleFlowImageAssetsUpdate(images: FlowImageAsset[]) {
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  flowDraftImages.value = [...images];
+  updateImagesCompleteness(flowDraftMediaIds.value, flowDraftImages.value);
+}
+
 function handleFlowMediaIdsUpdate(mediaIds: number[]) {
-  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
   flowDraftMediaIds.value = [...mediaIds];
+  updateImagesCompleteness(flowDraftMediaIds.value);
   recordCurrentFlowSnapshot();
 }
 
@@ -134,6 +154,8 @@ function resetComposerState() {
   flowDraft.value = '';
   flowDraftDocument.value = normalizeFlowDraftDocument(null);
   flowDraftMediaIds.value = [];
+  flowDraftImages.value = [];
+  imagesComplete.value = true;
   composerGeneration.value += 1;
 }
 
@@ -161,7 +183,7 @@ async function handleAfterClose() {
 }
 
 async function handleClearFlowDraft() {
-  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || !imagesComplete.value) return;
   try {
     await ElMessageBox.confirm('清空后无法恢复，确定继续吗？', '清空 Flow 草稿', {
       confirmButtonText: '清空',
@@ -173,7 +195,7 @@ async function handleClearFlowDraft() {
     return;
   }
 
-  if (composerClearing.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || !imagesComplete.value) return;
 
   composerClearing.value = true;
   try {
@@ -193,9 +215,17 @@ async function handleClearFlowDraft() {
 }
 
 onMounted(async () => {
-  const restoredDraft = await flowDraftAutosave.initialize();
-  if (restoredDraft) {
-    flowDraftDocument.value = restoredDraft.content;
+  try {
+    const restoredDraft = await flowDraftAutosave.initialize();
+    if (restoredDraft) {
+      flowDraftMediaIds.value = [...restoredDraft.meta.imageIds];
+      flowDraftImages.value = [...restoredDraft.images];
+      imagesComplete.value = restoredDraft.imagesComplete;
+      flowDraftDocument.value = restoredDraft.content;
+    }
+    await nextTick();
+  } finally {
+    composerRestoring.value = false;
   }
 });
 </script>

@@ -8,7 +8,7 @@ import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.v
 import FlowEditorModal from '../FlowEditorModal.vue';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { FlowImageAttachment } from '@/service/flow/flow.types';
+import type { FlowImageAsset, FlowImageAttachment } from '@/service/flow/flow.types';
 
 const { createFlowMock, queueHolder, useQueueMock } = vi.hoisted(() => ({
   createFlowMock: vi.fn(),
@@ -30,6 +30,26 @@ const editorSource = readFileSync(join(process.cwd(), 'src/components/tiptap-edi
 const mountedWrappers: VueWrapper[] = [];
 const firstRequestId = '11111111-1111-4111-8111-111111111111';
 const secondRequestId = '22222222-2222-4222-8222-222222222222';
+const restoredImages: FlowImageAsset[] = [
+  {
+    id: 42,
+    url: '/image-42.webp',
+    thumbnailUrl: '/image-42-thumb.webp',
+    mimeType: 'image/webp',
+    sizeBytes: 42,
+    width: 800,
+    height: 600,
+  },
+  {
+    id: 41,
+    url: '/image-41.webp',
+    thumbnailUrl: '/image-41-thumb.webp',
+    mimeType: 'image/webp',
+    sizeBytes: 41,
+    width: 800,
+    height: 600,
+  },
+];
 
 const textDocument = (text = '保留的草稿'): TiptapDocContent => ({
   type: 'doc',
@@ -54,20 +74,59 @@ function uploadedAttachment(clientId: string, mediaId: number): FlowImageAttachm
   };
 }
 
+function restoredAttachment(asset: FlowImageAsset): FlowImageAttachment {
+  return {
+    clientId: `restored:${asset.id}`,
+    file: null,
+    previewUrl: asset.thumbnailUrl,
+    status: 'uploaded',
+    progress: 100,
+    mediaId: asset.id,
+    url: asset.url,
+    thumbnailUrl: asset.thumbnailUrl,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+    width: asset.width,
+    height: asset.height,
+    error: null,
+  };
+}
+
 function createQueueMock() {
   const attachments = shallowRef<readonly FlowImageAttachment[]>([]);
   const uploading = shallowRef(false);
   const failed = shallowRef(false);
   const uploadedIds = shallowRef<number[]>([]);
+  const uploadedAssets = computed<FlowImageAsset[]>(() =>
+    attachments.value.flatMap((attachment) =>
+      attachment.status === 'uploaded' && attachment.mediaId !== null && attachment.url && attachment.thumbnailUrl && attachment.mimeType && attachment.sizeBytes !== null && attachment.width !== null && attachment.height !== null
+        ? [{
+            id: attachment.mediaId,
+            url: attachment.url,
+            thumbnailUrl: attachment.thumbnailUrl,
+            mimeType: attachment.mimeType,
+            sizeBytes: attachment.sizeBytes,
+            width: attachment.width,
+            height: attachment.height,
+          }]
+        : [],
+    ),
+  );
   return {
     attachments,
     isUploading: computed(() => uploading.value),
     hasFailed: computed(() => failed.value),
     uploadedMediaIds: computed(() => uploadedIds.value),
+    uploadedAssets,
     uploading,
     failed,
     uploadedIds,
     addFiles: vi.fn(() => ({ accepted: [], rejected: [] })),
+    restoreUploadedAssets: vi.fn((assets: readonly FlowImageAsset[]) => {
+      attachments.value = assets.map(restoredAttachment);
+      uploadedIds.value = assets.map((asset) => asset.id);
+      return assets.length > 0;
+    }),
     retry: vi.fn(),
     remove: vi.fn().mockResolvedValue(true),
     move: vi.fn(),
@@ -224,6 +283,40 @@ describe('FlowEditorModal', () => {
     expect(dialog.attributes('aria-label')).toBe('发布 Flow');
     expect(wrapper.get('.flow-editor-modal').isVisible()).toBe(true);
     expect(document.body.style.overflow).toBe('hidden');
+  });
+
+  it('hydrates restored assets into the queue before publishing their existing ids', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    createFlowMock.mockResolvedValueOnce({ id: 9 });
+    const wrapper = mountModal(true, { restoredImages });
+    await nextTick();
+
+    expect(queue.restoreUploadedAssets).toHaveBeenCalledOnce();
+    expect(queue.restoreUploadedAssets).toHaveBeenCalledWith(restoredImages);
+    expect(wrapper.findComponent({ name: 'FlowAttachmentGrid' }).props('attachments')).toHaveLength(2);
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+
+    expect(createFlowMock).toHaveBeenCalledWith({
+      clientRequestId: firstRequestId,
+      content: textDocument(),
+      mediaIds: [42, 41],
+    });
+    expect(queue.addFiles).not.toHaveBeenCalled();
+  });
+
+  it('does not hydrate restored assets after the queue has been disposed', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    const wrapper = mountModal(true, { restoredImages });
+    await nextTick();
+    queue.restoreUploadedAssets.mockClear();
+
+    await (wrapper.vm as unknown as { clearAttachments: () => Promise<unknown> }).clearAttachments();
+    await wrapper.setProps({ restoredImages: [restoredImages[0]!] });
+    await nextTick();
+
+    expect(queue.restoreUploadedAssets).not.toHaveBeenCalled();
   });
 
   it('requests closing from Escape even when the editor already handled the key', async () => {

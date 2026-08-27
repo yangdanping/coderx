@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flowKeys } from '@/composables/useFlowFeed';
 
+import type { FlowImageAsset } from '@/service/flow/flow.types';
+
 const { autosaveHolder, confirmMock, focusHandleMock, msgWarnMock, modalClearAttachmentsMock, modalMountCount } = vi.hoisted(() => ({
   autosaveHolder: { current: null as Record<string, any> | null },
   confirmMock: vi.fn(),
@@ -48,6 +50,27 @@ const textDocument = {
   content: [{ type: 'paragraph', content: [{ type: 'text', text: '新的 Flow' }] }],
 };
 
+const restoredImages: FlowImageAsset[] = [
+  {
+    id: 42,
+    url: '/image-42.webp',
+    thumbnailUrl: '/image-42-thumb.webp',
+    mimeType: 'image/webp',
+    sizeBytes: 42,
+    width: 800,
+    height: 600,
+  },
+  {
+    id: 41,
+    url: '/image-41.webp',
+    thumbnailUrl: '/image-41-thumb.webp',
+    mimeType: 'image/webp',
+    sizeBytes: 41,
+    width: 800,
+    height: 600,
+  },
+];
+
 function createAutosaveMock() {
   return {
     status: shallowRef('saved'),
@@ -66,8 +89,8 @@ function createAutosaveMock() {
 
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
-  props: ['open', 'content', 'document', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked'],
-  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:media-ids', 'update:publishing', 'clear-draft', 'published', 'after-close'],
+  props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked'],
+  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:image-assets', 'update:media-ids', 'update:publishing', 'clear-draft', 'published', 'after-close'],
   setup(_, { expose }) {
     onMounted(() => modalMountCount.value++);
     expose({ clearAttachments: modalClearAttachmentsMock });
@@ -138,6 +161,76 @@ describe('Flow composer page orchestration', () => {
     await flushPromises();
   });
 
+  it('restores image descriptors before document hydration can record a snapshot', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    const restoredDocument = {
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '恢复的 Flow' }] }],
+    };
+    let resolveInitialize!: (value: unknown) => void;
+    autosave.initialize.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInitialize = resolve;
+        }),
+    );
+
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('update:json', restoredDocument);
+    expect(autosave.recordSnapshot).not.toHaveBeenCalledWith(
+      expect.objectContaining({ meta: { imageIds: [], videoIds: [] } }),
+      expect.anything(),
+    );
+
+    resolveInitialize({
+      content: restoredDocument,
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: restoredImages,
+      imagesComplete: true,
+    });
+    await flushPromises();
+
+    expect(modal.props('restoredImages').map((image: FlowImageAsset) => image.id)).toEqual([42, 41]);
+    modal.vm.$emit('update:json', restoredDocument);
+
+    modal.vm.$emit('update:json', textDocument);
+    await flushPromises();
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: textDocument,
+        meta: { imageIds: [42, 41], videoIds: [] },
+      },
+      restoredImages,
+    );
+  });
+
+  it('keeps the composer lifecycle locked while draft restoration is pending', async () => {
+    let resolveInitialize!: (value: unknown) => void;
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.initialize.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInitialize = resolve;
+        }),
+    );
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const cord = wrapper.getComponent(CordStub);
+    const modal = wrapper.getComponent(ModalStub);
+
+    cord.vm.$emit('update:modelValue', true);
+    await nextTick();
+    modal.vm.$emit('close');
+    await nextTick();
+
+    expect(modal.props('open')).toBe(true);
+    resolveInitialize(null);
+    await flushPromises();
+  });
+
   it('allows editing but disables publication until slow draft initialization finishes', async () => {
     let resolveInitialize!: (value: unknown) => void;
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
@@ -156,10 +249,7 @@ describe('Flow composer page orchestration', () => {
     expect(modal.props('editorDisabled')).toBe(false);
     modal.vm.$emit('update:json', textDocument);
     await flushPromises();
-    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith({
-      content: textDocument,
-      meta: { imageIds: [], videoIds: [] },
-    });
+    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
 
     autosave.isHydrating.value = false;
     resolveInitialize(null);
@@ -238,7 +328,7 @@ describe('Flow composer page orchestration', () => {
     expect((autosaveHolder.current as ReturnType<typeof createAutosaveMock>).recordSnapshot).toHaveBeenLastCalledWith({
       content: textDocument,
       meta: { imageIds: [42, 41], videoIds: [] },
-    });
+    }, []);
   });
 
   it('invalidates the Flow feed immediately but creates the fresh session only after close transition', async () => {

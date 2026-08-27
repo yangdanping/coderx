@@ -8,13 +8,14 @@ import { createUuidV4 } from '@/utils/uuid';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { CreateFlowPayload } from '@/service/flow/flow.types';
+import type { CreateFlowPayload, FlowImageAsset } from '@/service/flow/flow.types';
 
 const props = withDefaults(
   defineProps<{
     open: boolean;
     content?: string;
     document?: TiptapDocContent;
+    restoredImages?: readonly FlowImageAsset[];
     controlsId?: string;
     draftStatus?: FlowDraftAutosaveStatus;
     draftStatusText?: string;
@@ -27,6 +28,7 @@ const props = withDefaults(
   }>(),
   {
     content: '',
+    restoredImages: () => [],
     controlsId: 'flow-editor-panel',
     draftStatus: 'idle',
     draftStatusText: '',
@@ -44,6 +46,7 @@ const emit = defineEmits<{
   'update:content': [html: string];
   'update:document': [document: TiptapDocContent];
   'update:json': [document: TiptapDocContent];
+  'update:image-assets': [images: FlowImageAsset[]];
   'update:media-ids': [mediaIds: number[]];
   'update:publishing': [publishing: boolean];
   'clear-draft': [];
@@ -53,6 +56,7 @@ const emit = defineEmits<{
 
 const uploads = useFlowImageUploads();
 const publishing = shallowRef(false);
+const queueDisposed = shallowRef(false);
 const queueError = shallowRef('');
 const clientRequestId = shallowRef(createUuidV4());
 const interactionLocked = computed(() => props.editorDisabled || publishing.value || props.lifecycleLocked);
@@ -90,6 +94,20 @@ function markContentMutation(content: string): void {
 function markDocumentMutation(document: TiptapDocContent): void {
   if (retryPayload && JSON.stringify(document) !== JSON.stringify(retryPayload.content)) abandonRetryIdentity();
 }
+
+watch(
+  () => props.restoredImages,
+  (images) => {
+    if (queueDisposed.value || !images || images.length === 0) return;
+    uploads.restoreUploadedAssets(images);
+  },
+  { immediate: true },
+);
+
+watch(uploads.uploadedAssets, (images) => {
+  if (interactionLocked.value) return;
+  emit('update:image-assets', [...images]);
+});
 
 watch(uploads.uploadedMediaIds, (mediaIds) => {
   if (interactionLocked.value) return;
@@ -167,6 +185,7 @@ async function publish(): Promise<void> {
   queueError.value = '';
   try {
     await createFlow(publicationPayload);
+    queueDisposed.value = true;
     uploads.dispose();
     emit('published');
     emit('close');
@@ -183,6 +202,7 @@ async function clearAttachments(): Promise<{ failedDeletes: number }> {
   const retainedClientIds = uploads.attachments.value.map((attachment) => attachment.clientId);
   const results = await Promise.all(retainedClientIds.map((clientId) => uploads.remove(clientId)));
   const failedDeletes = results.filter((removed) => !removed).length;
+  queueDisposed.value = true;
   uploads.dispose();
   return { failedDeletes };
 }

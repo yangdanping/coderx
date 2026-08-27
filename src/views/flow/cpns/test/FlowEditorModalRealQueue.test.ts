@@ -35,6 +35,15 @@ const uploadedAsset: FlowImageAsset = {
   width: 800,
   height: 600,
 };
+const secondUploadedAsset: FlowImageAsset = {
+  id: 41,
+  url: '/second.webp',
+  thumbnailUrl: '/second-thumbnail.webp',
+  mimeType: 'image/webp',
+  sizeBytes: 7,
+  width: 640,
+  height: 480,
+};
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -46,13 +55,14 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
-function mountModal() {
+function mountModal(overrides: Record<string, unknown> = {}) {
   return mount(FlowEditorModal, {
     props: {
       open: true,
       content: '<p>保留的草稿</p>',
       document,
       hasDraft: true,
+      ...overrides,
     },
     global: {
       stubs: {
@@ -109,6 +119,27 @@ afterEach(() => {
 });
 
 describe('FlowEditorModal real upload queue retry identity', () => {
+  it('restores server assets as uploaded attachments without starting uploads', async () => {
+    createFlowMock.mockReset().mockResolvedValue({ id: 9 });
+    const wrapper = mountModal({ restoredImages: [uploadedAsset, secondUploadedAsset] });
+    await nextTick();
+
+    const attachments = wrapper.findComponent({ name: 'FlowAttachmentGrid' }).props('attachments');
+    expect(attachments).toHaveLength(2);
+    expect(attachments.map((attachment: { mediaId: number }) => attachment.mediaId)).toEqual([42, 41]);
+    expect(uploadFlowImageMock).not.toHaveBeenCalled();
+
+    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await flushPromises();
+
+    expect(createFlowMock).toHaveBeenCalledWith({
+      clientRequestId: firstRequestId,
+      content: document,
+      mediaIds: [42, 41],
+    });
+    wrapper.unmount();
+  });
+
   it('preserves the exact frozen retry while an uploaded-image delete is pending and after it fails', async () => {
     const deletion = deferred<void>();
     deletePendingFlowImageMock.mockReturnValue(deletion.promise);
