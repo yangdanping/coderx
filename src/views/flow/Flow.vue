@@ -69,6 +69,8 @@ const flowDraft = shallowRef('');
 const flowDraftDocument = shallowRef<TiptapDocContent>();
 const flowDraftMediaIds = shallowRef<number[]>([]);
 const flowDraftImages = shallowRef<FlowImageAsset[]>([]);
+const restoredImageIds = shallowRef<number[]>([]);
+const unresolvedImageIds = shallowRef<number[]>([]);
 const imagesComplete = shallowRef(true);
 const composerGeneration = shallowRef(0);
 const composerClearing = shallowRef(false);
@@ -112,7 +114,29 @@ function recordCurrentFlowSnapshot() {
 
 function updateImagesCompleteness(mediaIds: readonly number[], images: readonly FlowImageAsset[] = flowDraftImages.value): void {
   const imageIds = new Set(images.map((image) => image.id));
-  imagesComplete.value = mediaIds.every((mediaId) => imageIds.has(mediaId));
+  imagesComplete.value = unresolvedImageIds.value.length === 0 && mediaIds.every((mediaId) => imageIds.has(mediaId));
+}
+
+function mergeMediaIdsPreservingUnresolved(mediaIds: readonly number[]): number[] {
+  if (unresolvedImageIds.value.length === 0) return [...mediaIds];
+
+  const unresolved = new Set(unresolvedImageIds.value);
+  const nextIds: number[] = [];
+  const queueIds = mediaIds.filter((mediaId) => !unresolved.has(mediaId));
+  const previousIds = flowDraftMediaIds.value;
+  let queueIndex = 0;
+
+  for (const previousId of previousIds) {
+    if (unresolved.has(previousId)) {
+      nextIds.push(previousId);
+      continue;
+    }
+    const nextId = queueIds[queueIndex++];
+    if (nextId !== undefined) nextIds.push(nextId);
+  }
+
+  nextIds.push(...queueIds.slice(queueIndex));
+  return nextIds;
 }
 
 function handleModalPublishing(publishing: boolean) {
@@ -139,13 +163,26 @@ function handleFlowDocumentUpdate(document: TiptapDocContent) {
 
 function handleFlowImageAssetsUpdate(images: FlowImageAsset[]) {
   if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  const previousImageIds = new Set(flowDraftImages.value.map((image) => image.id));
+  const nextImageIds = new Set(images.map((image) => image.id));
+  const remainingUnresolved = new Set(unresolvedImageIds.value);
+  for (const imageId of nextImageIds) {
+    if (remainingUnresolved.has(imageId)) {
+      remainingUnresolved.delete(imageId);
+      continue;
+    }
+    if (!previousImageIds.has(imageId) && !restoredImageIds.value.includes(imageId) && remainingUnresolved.size > 0) {
+      remainingUnresolved.delete(remainingUnresolved.values().next().value!);
+    }
+  }
   flowDraftImages.value = [...images];
+  unresolvedImageIds.value = [...remainingUnresolved];
   updateImagesCompleteness(flowDraftMediaIds.value, flowDraftImages.value);
 }
 
 function handleFlowMediaIdsUpdate(mediaIds: number[]) {
   if (composerClearing.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
-  flowDraftMediaIds.value = [...mediaIds];
+  flowDraftMediaIds.value = mergeMediaIdsPreservingUnresolved(mediaIds);
   updateImagesCompleteness(flowDraftMediaIds.value);
   recordCurrentFlowSnapshot();
 }
@@ -155,6 +192,8 @@ function resetComposerState() {
   flowDraftDocument.value = normalizeFlowDraftDocument(null);
   flowDraftMediaIds.value = [];
   flowDraftImages.value = [];
+  restoredImageIds.value = [];
+  unresolvedImageIds.value = [];
   imagesComplete.value = true;
   composerGeneration.value += 1;
 }
@@ -220,6 +259,9 @@ onMounted(async () => {
     if (restoredDraft) {
       flowDraftMediaIds.value = [...restoredDraft.meta.imageIds];
       flowDraftImages.value = [...restoredDraft.images];
+      restoredImageIds.value = [...restoredDraft.meta.imageIds];
+      const availableImageIds = new Set(restoredDraft.images.map((image) => image.id));
+      unresolvedImageIds.value = restoredDraft.meta.imageIds.filter((imageId) => !availableImageIds.has(imageId));
       imagesComplete.value = restoredDraft.imagesComplete;
       flowDraftDocument.value = restoredDraft.content;
     }

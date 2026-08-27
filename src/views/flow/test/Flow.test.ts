@@ -70,6 +70,25 @@ const restoredImages: FlowImageAsset[] = [
     height: 600,
   },
 ];
+const incompleteRestoredImages = [restoredImages[1]!];
+const replacementImage: FlowImageAsset = {
+  id: 99,
+  url: '/image-99.webp',
+  thumbnailUrl: '/image-99-thumb.webp',
+  mimeType: 'image/webp',
+  sizeBytes: 99,
+  width: 800,
+  height: 600,
+};
+const anotherRestoredImage: FlowImageAsset = {
+  id: 40,
+  url: '/image-40.webp',
+  thumbnailUrl: '/image-40-thumb.webp',
+  mimeType: 'image/webp',
+  sizeBytes: 40,
+  width: 800,
+  height: 600,
+};
 
 function createAutosaveMock() {
   return {
@@ -229,6 +248,121 @@ describe('Flow composer page orchestration', () => {
     expect(modal.props('open')).toBe(true);
     resolveInitialize(null);
     await flushPromises();
+  });
+
+  it('retains unresolved restored image ids when available attachments are deleted or reordered', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    const restoredDocument = textDocument;
+    autosave.initialize.mockResolvedValue({
+      content: restoredDocument,
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: incompleteRestoredImages,
+      imagesComplete: false,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('update:image-assets', incompleteRestoredImages);
+    modal.vm.$emit('update:media-ids', [41]);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: restoredDocument,
+        meta: { imageIds: [42, 41], videoIds: [] },
+      },
+      incompleteRestoredImages,
+    );
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('update:image-assets', []);
+    modal.vm.$emit('update:media-ids', []);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: restoredDocument,
+        meta: { imageIds: [42], videoIds: [] },
+      },
+      [],
+    );
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+
+    modal.vm.$emit('update:image-assets', incompleteRestoredImages);
+    modal.vm.$emit('update:media-ids', [41]);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: restoredDocument,
+        meta: { imageIds: [42, 41], videoIds: [] },
+      },
+      incompleteRestoredImages,
+    );
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+  });
+
+  it('consumes unresolved ids deterministically when a newly uploaded asset replaces one', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.initialize.mockResolvedValue({
+      content: textDocument,
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: incompleteRestoredImages,
+      imagesComplete: false,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+    const availableImages = [...incompleteRestoredImages, replacementImage];
+
+    modal.vm.$emit('update:image-assets', availableImages);
+    modal.vm.$emit('update:media-ids', [41, 99]);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: textDocument,
+        meta: { imageIds: [41, 99], videoIds: [] },
+      },
+      availableImages,
+    );
+    expect(modal.props('publishDisabled')).toBe(false);
+    expect(modal.props('clearDisabled')).toBe(false);
+  });
+
+  it('keeps unresolved placeholders stable while reordering available attachments', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    const availableImages = [anotherRestoredImage, incompleteRestoredImages[0]!];
+    autosave.initialize.mockResolvedValue({
+      content: textDocument,
+      meta: { imageIds: [42, 41, 40], videoIds: [] },
+      images: [incompleteRestoredImages[0]!, anotherRestoredImage],
+      imagesComplete: false,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('update:image-assets', availableImages);
+    modal.vm.$emit('update:media-ids', [40, 41]);
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      {
+        content: textDocument,
+        meta: { imageIds: [42, 40, 41], videoIds: [] },
+      },
+      availableImages,
+    );
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
   });
 
   it('allows editing but disables publication until slow draft initialization finishes', async () => {
