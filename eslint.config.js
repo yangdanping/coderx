@@ -17,6 +17,7 @@ export default defineConfig([
     'stats.html',
     'auto-imports.d.ts',
     'components.d.ts',
+    'src/components/tiptap-editor/demo/sparkmd5.js',
     '.DS_Store',
     '.env.*',
   ]),
