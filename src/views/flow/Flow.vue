@@ -1,7 +1,6 @@
 <template>
   <div class="flow-page" ref="containerRef">
     <FlowCordWidget ref="cordRef" v-model="editorOpen" controls-id="flow-editor-panel" :disabled="composerClearing || modalPublishing || publicationResetting || composerRestoring" />
-    <!-- The restore lock extends the existing publication lifecycle lock. :lifecycle-locked="publicationResetting" -->
     <FlowEditorModal
       :key="composerGeneration"
       ref="flowEditorModalRef"
@@ -104,6 +103,8 @@ function restoreCordFocus() {
 }
 
 function recordCurrentFlowSnapshot() {
+  if (draftRecoveryBlocked.value) return;
+
   flowDraftAutosave.recordSnapshot({
     content: normalizeFlowDraftDocument(flowDraftDocument.value),
     meta: {

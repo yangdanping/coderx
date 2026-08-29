@@ -424,10 +424,7 @@ describe('Flow composer page orchestration', () => {
     modal.vm.$emit('close');
     await flushPromises();
 
-    expect(autosave.recordSnapshot).toHaveBeenCalledWith({
-      content: textDocument,
-      meta: { imageIds: [], videoIds: [] },
-    }, []);
+    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
   });
 
@@ -472,10 +469,7 @@ describe('Flow composer page orchestration', () => {
     modal.vm.$emit('update:media-ids', [99]);
     await flushPromises();
 
-    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith({
-      content: textDocument,
-      meta: { imageIds: [99], videoIds: [] },
-    }, [replacementImage]);
+    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
     expect(modal.props('publishDisabled')).toBe(true);
     expect(modal.props('clearDisabled')).toBe(true);
   });
