@@ -30,12 +30,7 @@ const emptySnapshot = (): FlowDraftSnapshot => ({
 const textSnapshot = (text: string): FlowDraftSnapshot => ({
   content: {
     type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text }],
-      },
-    ],
+    content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
   },
   meta: { imageIds: [], videoIds: [] },
 });
@@ -81,27 +76,21 @@ function mountAutosave(options: UseFlowDraftAutosaveOptions) {
   });
 
   const wrapper = mount(Harness, {
-    global: {
-      plugins: [[VueQueryPlugin, { queryClient }]],
-    },
+    global: { plugins: [[VueQueryPlugin, { queryClient }]] },
   });
   wrappers.push(wrapper);
-
   return autosave;
 }
 
 beforeEach(() => {
   window.localStorage.clear();
-  deleteFlowDraftRequestMock.mockReset();
-  getFlowDraftRequestMock.mockReset();
+  deleteFlowDraftRequestMock.mockReset().mockResolvedValue({ data: { id: 18 } });
+  getFlowDraftRequestMock.mockReset().mockResolvedValue({ data: null });
   saveFlowDraftRequestMock.mockReset();
-  getFlowDraftRequestMock.mockResolvedValue({ data: null });
-  deleteFlowDraftRequestMock.mockResolvedValue({ data: { id: 18 } });
 });
 
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
-  vi.useRealTimers();
 });
 
 describe('Flow draft restore helpers', () => {
@@ -110,7 +99,7 @@ describe('Flow draft restore helpers', () => {
     expect(getFlowDraftLocalStorageKey(null)).toBe('coderx_flow_draft_v1:guest');
   });
 
-  it('prefers a newer unsent local snapshot and otherwise uses the server snapshot', () => {
+  it('prefers a newer local snapshot and otherwise uses the server snapshot', () => {
     const local: FlowDraftLocalFallback = {
       schemaVersion: 1,
       actorKey: 'user:7',
@@ -120,27 +109,19 @@ describe('Flow draft restore helpers', () => {
       serverUpdatedAt: '2026-08-11T02:00:00.000Z',
       localUpdatedAt: '2026-08-11T02:01:00.000Z',
     };
-    const remote = remoteDraft();
 
-    expect(resolveFlowDraftRestore(local, remote).source).toBe('local');
-    expect(
-      resolveFlowDraftRestore(
-        {
-          ...local,
-          localUpdatedAt: '2026-08-11T01:59:00.000Z',
-        },
-        remote,
-      ).source,
-    ).toBe('remote');
+    expect(resolveFlowDraftRestore(local, remoteDraft()).source).toBe('local');
+    expect(resolveFlowDraftRestore({ ...local, localUpdatedAt: '2026-08-11T01:59:00.000Z' }, remoteDraft()).source).toBe('remote');
   });
-  it('restores remote images in metadata order when the server wins', async () => {
-    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+  it('restores remote images in metadata order', async () => {
     getFlowDraftRequestMock.mockResolvedValue({
       data: remoteDraft({
         meta: { imageIds: [42, 41], videoIds: [] },
         images: [imageAsset(41), imageAsset(42)],
       }),
     });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
 
     const restored = await autosave.initialize();
 
@@ -148,7 +129,7 @@ describe('Flow draft restore helpers', () => {
     expect(restored?.imagesComplete).toBe(true);
   });
 
-  it('uses complete schema-v2 local assets when local content wins', async () => {
+  it('uses schema-v2 local image descriptors when local content wins', async () => {
     const local: FlowDraftLocalFallback = {
       schemaVersion: 2,
       actorKey: 'user:7',
@@ -170,7 +151,7 @@ describe('Flow draft restore helpers', () => {
     expect(restored?.imagesComplete).toBe(true);
   });
 
-  it('uses remote descriptors for a schema-v1 local fallback without erasing missing ids', async () => {
+  it('reports incomplete schema-v1 recovery without dropping ids', async () => {
     const local: FlowDraftLocalFallback = {
       schemaVersion: 1,
       actorKey: 'user:7',
@@ -183,10 +164,7 @@ describe('Flow draft restore helpers', () => {
     };
     window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
     getFlowDraftRequestMock.mockResolvedValue({
-      data: remoteDraft({
-        updateAt: '2026-08-11T01:00:00.000Z',
-        images: [imageAsset(41)],
-      }),
+      data: remoteDraft({ updateAt: '2026-08-11T01:00:00.000Z', images: [imageAsset(41)] }),
     });
     const autosave = mountAutosave({ userId: 7, canSync: true });
 
@@ -195,258 +173,101 @@ describe('Flow draft restore helpers', () => {
     expect(restored?.meta.imageIds).toEqual([42, 41]);
     expect(restored?.images.map((image) => image.id)).toEqual([41]);
     expect(restored?.imagesComplete).toBe(false);
-  });
-
-  it('reorders matching remote descriptors to schema-v1 local metadata order', async () => {
-    const local: FlowDraftLocalFallback = {
-      schemaVersion: 1,
-      actorKey: 'user:7',
-      ...textSnapshot('旧版本图片顺序'),
-      meta: { imageIds: [42, 41], videoIds: [] },
-      draftId: 18,
-      version: 4,
-      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
-      localUpdatedAt: '2026-08-11T02:01:00.000Z',
-    };
-    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
-    getFlowDraftRequestMock.mockResolvedValue({
-      data: remoteDraft({
-        updateAt: '2026-08-11T01:00:00.000Z',
-        images: [imageAsset(41), imageAsset(42)],
-      }),
-    });
-    const autosave = mountAutosave({ userId: 7, canSync: true });
-
-    const restored = await autosave.initialize();
-
-    expect(restored?.images.map((image) => image.id)).toEqual([42, 41]);
-    expect(restored?.imagesComplete).toBe(true);
+    expect(autosave.errorMessage.value).toMatch(/图片/);
   });
 });
 
-describe('useFlowDraftAutosave', () => {
-  it('does not let a slow initialize overwrite an edit recorded after restore started', async () => {
-    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
-    getFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<{ data: FlowDraftRecord }>((resolve) => {
-          resolveInitialize = resolve;
-        }),
-    );
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 60_000 });
-
-    const initializePromise = autosave.initialize();
-    await flushPromises();
-    autosave.recordSnapshot(textSnapshot('请求期间的新输入'));
-    resolveInitialize({ data: remoteDraft({ content: textSnapshot('较旧的服务端草稿').content }) });
-
-    expect(await initializePromise).toBeNull();
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.content).toEqual(textSnapshot('请求期间的新输入').content);
-    expect(autosave.status.value).toBe('dirty');
-  });
-
-  it('keeps incomplete recovery status when an older in-flight save resolves', async () => {
-    vi.useFakeTimers();
-    let resolveSave!: (value: { data: FlowDraftRecord }) => void;
-    saveFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<{ data: FlowDraftRecord }>((resolve) => {
-          resolveSave = resolve;
-        }),
-    );
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+describe('useFlowDraftAutosave explicit persistence', () => {
+  it('keeps edits in memory until saveDraft is called', async () => {
+    const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
 
-    autosave.recordSnapshot(textSnapshot('首次完整输入'), [imageAsset(42)]);
-    const flushPromise = autosave.flushPendingSave();
+    autosave.recordSnapshot(textSnapshot('只在内存'));
     await flushPromises();
-    autosave.recordSnapshot(
-      { ...textSnapshot('新输入但图片未恢复'), meta: { imageIds: [42, 41], videoIds: [] } },
-      [imageAsset(41)],
-    );
 
-    resolveSave({ data: remoteDraft({ version: 5, content: textSnapshot('首次完整输入').content }) });
-    await flushPromise;
-
-    expect(autosave.version.value).toBe(5);
-    expect(autosave.status.value).toBe('error');
-    expect(autosave.errorMessage.value).toMatch(/图片/);
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.meta.imageIds).toEqual([42, 41]);
-    expect(cached.images.map((image) => image.id)).toEqual([41]);
-  });
-
-  it('keeps incomplete recovery status when a slow initialize follows a partial edit', async () => {
-    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
-    getFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<{ data: FlowDraftRecord }>((resolve) => {
-          resolveInitialize = resolve;
-        }),
-    );
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-
-    const initializePromise = autosave.initialize();
-    await flushPromises();
-    autosave.recordSnapshot(
-      { ...textSnapshot('初始化期间的部分图片'), meta: { imageIds: [42, 41], videoIds: [] } },
-      [imageAsset(41)],
-    );
-    resolveInitialize({ data: remoteDraft({ content: textSnapshot('旧远端').content }) });
-
-    expect(await initializePromise).toBeNull();
-    expect(autosave.status.value).toBe('error');
-    expect(autosave.errorMessage.value).toMatch(/图片/);
+    expect(autosave.hasContent.value).toBe(true);
+    expect(autosave.isDirty.value).toBe(true);
+    expect(autosave.canSave.value).toBe(true);
     expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-  });
-
-  it('invalidates a pending initialize when clearing the draft', async () => {
-    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
-    let resolveClearRead!: (value: { data: FlowDraftRecord | null }) => void;
-    getFlowDraftRequestMock
-      .mockImplementationOnce(
-        () =>
-          new Promise<{ data: FlowDraftRecord }>((resolve) => {
-            resolveInitialize = resolve;
-          }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<{ data: FlowDraftRecord | null }>((resolve) => {
-            resolveClearRead = resolve;
-          }),
-      );
-    const autosave = mountAutosave({ userId: 7, canSync: true });
-
-    const initializePromise = autosave.initialize();
-    await flushPromises();
-    const clearPromise = autosave.clearDraft();
-    await flushPromises();
-    resolveInitialize({ data: remoteDraft({ content: textSnapshot('过期远端').content }) });
-    await flushPromises();
-
-    expect(autosave.status.value).toBe('clearing');
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
-    resolveClearRead({ data: null });
-    await clearPromise;
-    expect(await initializePromise).toBeNull();
-    expect(autosave.status.value).toBe('idle');
   });
 
-  it('invalidates a pending initialize when resetting after publication', async () => {
-    let resolveInitialize!: (value: { data: FlowDraftRecord }) => void;
-    let resolveResetRead!: (value: { data: FlowDraftRecord | null }) => void;
-    getFlowDraftRequestMock
-      .mockImplementationOnce(
-        () =>
-          new Promise<{ data: FlowDraftRecord }>((resolve) => {
-            resolveInitialize = resolve;
-          }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<{ data: FlowDraftRecord | null }>((resolve) => {
-            resolveResetRead = resolve;
-          }),
-      );
+  it('persists only on explicit save and then advances the baseline', async () => {
+    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ content: textSnapshot('显式保存').content, version: 5 }) });
     const autosave = mountAutosave({ userId: 7, canSync: true });
-
-    const initializePromise = autosave.initialize();
-    await flushPromises();
-    const resetPromise = autosave.resetAfterPublication();
-    await flushPromises();
-    resolveInitialize({ data: remoteDraft({ content: textSnapshot('过期发布远端').content }) });
-    await flushPromises();
-
-    expect(autosave.status.value).toBe('idle');
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
-    resolveResetRead({ data: null });
-    await expect(resetPromise).resolves.toEqual({ remoteCleared: true });
-    expect(await initializePromise).toBeNull();
-    expect(autosave.status.value).toBe('idle');
-  });
-
-  it('keeps cached identity when initialize fails after a newer local edit', async () => {
-    vi.useFakeTimers();
-    let rejectInitialize!: (reason: unknown) => void;
-    const local: FlowDraftLocalFallback = {
-      schemaVersion: 1,
-      actorKey: 'user:7',
-      ...textSnapshot('初始化前的本地内容'),
-      draftId: 18,
-      version: 4,
-      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
-      localUpdatedAt: '2026-08-11T02:05:00.000Z',
-    };
-    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
-    getFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<never>((_resolve, reject) => {
-          rejectInitialize = reject;
-        }),
-    );
-    saveFlowDraftRequestMock.mockResolvedValue({
-      data: remoteDraft({ version: 5, content: textSnapshot('网络恢复后的输入').content }),
-    });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-
-    const initializePromise = autosave.initialize();
-    await flushPromises();
-    autosave.recordSnapshot(textSnapshot('请求期间的新输入'));
-
-    const cachedDuringInitialize = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cachedDuringInitialize).toMatchObject({
-      draftId: 18,
-      version: 4,
-      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
-      content: textSnapshot('请求期间的新输入').content,
-    });
-
-    rejectInitialize(new Error('network unavailable'));
-    expect(await initializePromise).toBeNull();
-    autosave.recordSnapshot(textSnapshot('网络恢复后的输入'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
-      ...textSnapshot('网络恢复后的输入'),
-      version: 4,
-    });
-  });
-
-  it('writes locally immediately and sends only the latest rapid edit after the debounce', async () => {
-    vi.useFakeTimers();
-    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1, content: textSnapshot('最终').content }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 1200 });
     await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('显式保存'));
 
-    autosave.recordSnapshot(textSnapshot('第一次'));
-    autosave.recordSnapshot(textSnapshot('最终'));
+    await autosave.saveDraft();
 
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.content).toEqual(textSnapshot('最终').content);
-    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(1199);
-    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(1);
-    await flushPromises();
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledTimes(1);
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
-      ...textSnapshot('最终'),
-      version: 0,
-    });
-    expect(autosave.status.value).toBe('saved');
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({ ...textSnapshot('显式保存'), version: 0 });
+    expect(autosave.isDirty.value).toBe(false);
+    expect(autosave.canSave.value).toBe(false);
+    expect(autosave.restoreSavedBaseline()?.content).toEqual(textSnapshot('显式保存').content);
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
   });
 
-  it('restores a newer local edit and resaves it with the current server version', async () => {
-    vi.useFakeTimers();
+  it('treats image-only snapshots as saveable and whitespace-only snapshots as empty', async () => {
+    const autosave = mountAutosave({ userId: null, canSync: false });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('   '));
+    expect(autosave.hasContent.value).toBe(false);
+    expect(autosave.canSave.value).toBe(false);
+
+    autosave.recordSnapshot({ ...emptySnapshot(), meta: { imageIds: [42], videoIds: [] } }, [imageAsset(42)]);
+
+    expect(autosave.hasContent.value).toBe(true);
+    expect(autosave.canSave.value).toBe(true);
+  });
+
+  it('saves guest drafts locally only after the explicit action', async () => {
+    const autosave = mountAutosave({ userId: null, canSync: false });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('游客草稿'));
+
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).toBeNull();
+    await autosave.saveDraft();
+
+    expect(getFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(autosave.status.value).toBe('local');
+    expect(autosave.isDirty.value).toBe(false);
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).not.toBeNull();
+  });
+
+  it('does not advance the baseline when an authenticated save fails', async () => {
+    saveFlowDraftRequestMock.mockRejectedValue(new Error('offline'));
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('失败内容'));
+
+    await expect(autosave.saveDraft()).rejects.toThrow('offline');
+
+    expect(autosave.isDirty.value).toBe(true);
+    expect(autosave.status.value).toBe('error');
+    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+  });
+
+  it('keeps a conflict dirty and blocks repeated saves', async () => {
+    saveFlowDraftRequestMock.mockRejectedValue({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('冲突内容'));
+
+    await expect(autosave.saveDraft()).rejects.toBeDefined();
+
+    expect(autosave.status.value).toBe('conflict');
+    expect(autosave.errorMessage.value).toBe('草稿版本冲突');
+    expect(autosave.isDirty.value).toBe(true);
+    expect(autosave.canSave.value).toBe(false);
+  });
+
+  it('restores a newer authenticated local fallback as an unsaved change over the remote baseline', async () => {
     const local: FlowDraftLocalFallback = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       actorKey: 'user:7',
-      ...textSnapshot('断网时继续写'),
+      ...textSnapshot('较新的本地内容'),
+      images: [],
       draftId: 18,
       version: 3,
       serverUpdatedAt: '2026-08-11T02:00:00.000Z',
@@ -454,81 +275,76 @@ describe('useFlowDraftAutosave', () => {
     };
     window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 4 }) });
-    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 5, content: local.content }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 1200 });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
 
     const restored = await autosave.initialize();
+
     expect(restored?.content).toEqual(local.content);
-
-    await vi.advanceTimersByTimeAsync(1200);
-    await flushPromises();
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
-      content: local.content,
-      meta: local.meta,
-      version: 4,
-    });
-  });
-
-  it('keeps a guest draft local without calling protected endpoints', async () => {
-    const autosave = mountAutosave({ userId: null, canSync: false });
-
-    expect(await autosave.initialize()).toBeNull();
-    autosave.recordSnapshot(textSnapshot('游客本地草稿'));
-
-    expect(getFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(autosave.savedSnapshot.value?.content).toEqual(textSnapshot('服务端').content);
+    expect(autosave.version.value).toBe(4);
+    expect(autosave.isDirty.value).toBe(true);
+    expect(autosave.canSave.value).toBe(true);
     expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-    expect(autosave.status.value).toBe('local');
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).not.toBeNull();
   });
 
-  it('halts server writes on a version conflict while preserving the local fallback', async () => {
-    vi.useFakeTimers();
-    saveFlowDraftRequestMock.mockRejectedValue({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
+  it('restores a remote draft as an unchanged saved baseline', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.content).toEqual(textSnapshot('服务端').content);
+    expect(autosave.savedMediaIds.value).toEqual([]);
+    expect(autosave.hasContent.value).toBe(true);
+    expect(autosave.isDirty.value).toBe(false);
+    expect(autosave.canSave.value).toBe(false);
+    expect(autosave.status.value).toBe('saved');
+  });
+
+  it('restores the last saved baseline without persistence side effects', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
+    saveFlowDraftRequestMock.mockClear();
+    autosave.recordSnapshot(textSnapshot('临时修改'));
 
-    autosave.recordSnapshot(textSnapshot('冲突内容'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-    expect(autosave.status.value).toBe('conflict');
+    const baseline = autosave.restoreSavedBaseline();
 
-    autosave.recordSnapshot(textSnapshot('冲突后继续输入'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledTimes(1);
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
+    expect(baseline?.content).toEqual(textSnapshot('服务端').content);
+    expect(autosave.isDirty.value).toBe(false);
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
   });
 
-  it('waits for the first in-flight creation before deleting the returned draft id', async () => {
-    let resolveSave!: (value: { data: FlowDraftRecord }) => void;
-    saveFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<{ data: FlowDraftRecord }>((resolve) => {
-          resolveSave = resolve;
-        }),
-    );
-    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 18, version: 1 }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 1200 });
+  it('rejects explicit saves when referenced image descriptors are incomplete', async () => {
+    const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
-    autosave.recordSnapshot(textSnapshot('正在首次保存'));
+    autosave.recordSnapshot({ ...textSnapshot('缺图'), meta: { imageIds: [42, 41], videoIds: [] } }, [imageAsset(41)]);
 
-    const flushPromise = autosave.flushPendingSave();
-    await flushPromises();
-    const clearPromise = autosave.clearDraft();
-    await flushPromises();
-    expect(deleteFlowDraftRequestMock).not.toHaveBeenCalled();
+    await expect(autosave.saveDraft()).rejects.toThrow(/图片/);
 
-    resolveSave({ data: remoteDraft({ version: 1, content: textSnapshot('正在首次保存').content }) });
-    await flushPromise;
-    await clearPromise;
-
-    expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(18);
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
-    expect(autosave.hasDraft.value).toBe(false);
-    expect(autosave.status.value).toBe('idle');
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(autosave.status.value).toBe('error');
   });
 
-  it('rejects editor snapshots while an explicit clear is in progress', async () => {
+  it('sends image ids but not local descriptors in the explicit server payload', async () => {
+    saveFlowDraftRequestMock.mockResolvedValue({
+      data: remoteDraft({ meta: { imageIds: [42], videoIds: [] }, images: [imageAsset(42)], version: 1 }),
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    autosave.recordSnapshot({ ...textSnapshot('带图'), meta: { imageIds: [42], videoIds: [] } }, [imageAsset(42)]);
+
+    await autosave.saveDraft();
+
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
+      content: textSnapshot('带图').content,
+      meta: { imageIds: [42], videoIds: [] },
+      version: 0,
+    });
+    expect(autosave.savedMediaIds.value).toEqual([42]);
+  });
+
+  it('rejects snapshots while clear is in progress', async () => {
     let resolveDelete!: (value: { data: { id: number } }) => void;
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
     deleteFlowDraftRequestMock.mockImplementation(
@@ -537,107 +353,19 @@ describe('useFlowDraftAutosave', () => {
           resolveDelete = resolve;
         }),
     );
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 60_000 });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
 
     const clearPromise = autosave.clearDraft();
     await flushPromises();
-    const accepted = autosave.recordSnapshot(textSnapshot('清空期间不应被接受'));
 
-    expect(accepted).toBe(false);
-    const cachedDuringClear = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cachedDuringClear.content).toEqual(textSnapshot('服务端').content);
-    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-
+    expect(autosave.recordSnapshot(textSnapshot('清空期间输入'))).toBe(false);
     resolveDelete({ data: { id: 18 } });
     await clearPromise;
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
+    expect(autosave.status.value).toBe('idle');
   });
 
-  it('resumes remote synchronization after a conflict is explicitly cleared', async () => {
-    vi.useFakeTimers();
-    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
-    saveFlowDraftRequestMock
-      .mockRejectedValueOnce({ response: { status: 409, data: { msg: '草稿版本冲突' } } })
-      .mockResolvedValueOnce({ data: remoteDraft({ version: 1, content: textSnapshot('重新开始').content }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(textSnapshot('产生冲突'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-    expect(autosave.status.value).toBe('conflict');
-
-    await autosave.clearDraft();
-    autosave.recordSnapshot(textSnapshot('重新开始'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledTimes(2);
-    expect(saveFlowDraftRequestMock).toHaveBeenLastCalledWith({
-      ...textSnapshot('重新开始'),
-      version: 0,
-    });
-    expect(autosave.status.value).toBe('saved');
-  });
-
-  it('resolves an unknown conflicted draft id before clearing remotely', async () => {
-    vi.useFakeTimers();
-    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 31, version: 6 }) });
-    saveFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(textSnapshot('未知身份冲突'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-    expect(autosave.status.value).toBe('conflict');
-    expect(autosave.draftId.value).toBeNull();
-
-    await autosave.clearDraft();
-
-    expect(getFlowDraftRequestMock).toHaveBeenCalledTimes(2);
-    expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(31);
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
-  });
-
-  it('reconciles a stale cached id after delete returns 404', async () => {
-    getFlowDraftRequestMock
-      .mockResolvedValueOnce({ data: remoteDraft({ id: 18 }) })
-      .mockResolvedValueOnce({ data: remoteDraft({ id: 18 }) })
-      .mockResolvedValueOnce({ data: remoteDraft({ id: 27, version: 7 }) });
-    deleteFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 404 } }).mockResolvedValueOnce({ data: { id: 27 } });
-    const autosave = mountAutosave({ userId: 7, canSync: true });
-    await autosave.initialize();
-
-    await autosave.clearDraft();
-
-    expect(deleteFlowDraftRequestMock.mock.calls).toEqual([[18], [27]]);
-    expect(getFlowDraftRequestMock).toHaveBeenCalledTimes(3);
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
-  });
-
-  it('preserves the local fallback and halted scheduler when remote reconciliation fails', async () => {
-    vi.useFakeTimers();
-    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockRejectedValueOnce(new Error('network unavailable'));
-    saveFlowDraftRequestMock.mockRejectedValueOnce({ response: { status: 409, data: { msg: '草稿版本冲突' } } });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-    await autosave.initialize();
-    autosave.recordSnapshot(textSnapshot('必须保留的冲突内容'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    await expect(autosave.clearDraft()).rejects.toThrow('network unavailable');
-    expect(autosave.status.value).toBe('error');
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
-
-    autosave.recordSnapshot(textSnapshot('失败后继续本地输入'));
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('preserves the local fallback when the remote delete fails', async () => {
+  it('preserves the saved local fallback when remote clear fails', async () => {
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
     deleteFlowDraftRequestMock.mockRejectedValue(new Error('delete unavailable'));
     const autosave = mountAutosave({ userId: 7, canSync: true });
@@ -649,142 +377,13 @@ describe('useFlowDraftAutosave', () => {
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
   });
 
-  it('drops an untouched empty local-only snapshot instead of creating a draft', async () => {
-    const autosave = mountAutosave({ userId: null, canSync: false });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(emptySnapshot());
-
-    expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).toBeNull();
-    expect(autosave.hasDraft.value).toBe(false);
-  });
-
-  it('persists the current ordered uploaded image ids in draft metadata', async () => {
-    const autosave = mountAutosave({ userId: null, canSync: false });
-    await autosave.initialize();
-
-    autosave.recordSnapshot({
-      ...textSnapshot('带图草稿'),
-      meta: { imageIds: [42, 41], videoIds: [] },
-    });
-
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(null)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.meta.imageIds).toEqual([42, 41]);
-  });
-
-  it('persists only supplied uploaded image descriptors as schema-v2 assets', async () => {
-    const autosave = mountAutosave({ userId: null, canSync: false });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(
-      {
-        ...textSnapshot('带图描述'),
-        meta: { imageIds: [42, 41], videoIds: [] },
-      },
-      [imageAsset(42), imageAsset(41), imageAsset(999)],
-    );
-
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(null)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.schemaVersion).toBe(2);
-    expect(cached.images.map((image) => image.id)).toEqual([42, 41]);
-  });
-
-  it('does not send local-only image descriptors in the server mutation payload', async () => {
-    vi.useFakeTimers();
-    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1 }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(
-      {
-        ...textSnapshot('只发送草稿字段'),
-        meta: { imageIds: [42], videoIds: [] },
-      },
-      [imageAsset(42)],
-    );
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    expect(saveFlowDraftRequestMock).toHaveBeenCalledWith({
-      content: textSnapshot('只发送草稿字段').content,
-      meta: { imageIds: [42], videoIds: [] },
-      version: 0,
-    });
-  });
-
-  it('retains image ids and blocks server writes when current assets are incomplete', async () => {
-    vi.useFakeTimers();
-    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 1 }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-    await autosave.initialize();
-
-    autosave.recordSnapshot(
-      {
-        ...textSnapshot('等待图片恢复'),
-        meta: { imageIds: [42, 41], videoIds: [] },
-      },
-      [imageAsset(41)],
-    );
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    const cached = JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null') as FlowDraftLocalFallback;
-    expect(cached.meta.imageIds).toEqual([42, 41]);
-    expect(cached.images.map((image) => image.id)).toEqual([41]);
-    expect(autosave.errorMessage.value).toMatch(/图片/);
-    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-  });
-
-  it('reports incomplete v1 image recovery and does not resave it automatically', async () => {
-    vi.useFakeTimers();
-    const local: FlowDraftLocalFallback = {
-      schemaVersion: 1,
-      actorKey: 'user:7',
-      ...textSnapshot('需要找回图片'),
-      meta: { imageIds: [42], videoIds: [] },
-      draftId: 18,
-      version: 4,
-      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
-      localUpdatedAt: '2026-08-11T02:01:00.000Z',
-    };
-    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
-    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ updateAt: '2026-08-11T01:00:00.000Z', images: [] }) });
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 100 });
-
-    const restored = await autosave.initialize();
-    await vi.advanceTimersByTimeAsync(100);
-    await flushPromises();
-
-    expect(restored?.meta.imageIds).toEqual([42]);
-    expect(restored?.imagesComplete).toBe(false);
-    expect(autosave.errorMessage.value).toMatch(/图片/);
-    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
-    expect(JSON.parse(window.localStorage.getItem(getFlowDraftLocalStorageKey(7)) ?? 'null').schemaVersion).toBe(1);
-  });
-
-  it('publication reset waits stale saves, clears local state, and treats remote cleanup as best effort', async () => {
-    let resolveSave!: (value: { data: FlowDraftRecord }) => void;
-    saveFlowDraftRequestMock.mockImplementation(
-      () =>
-        new Promise<{ data: FlowDraftRecord }>((resolve) => {
-          resolveSave = resolve;
-        }),
-    );
-    getFlowDraftRequestMock.mockResolvedValueOnce({ data: null }).mockResolvedValueOnce({ data: remoteDraft({ id: 33, version: 1 }) });
+  it('resets local state after publication and treats remote cleanup as best effort', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ id: 33 }) });
     deleteFlowDraftRequestMock.mockRejectedValue(new Error('remote cleanup unavailable'));
-    const autosave = mountAutosave({ userId: 7, canSync: true, debounceMs: 60_000 });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
-    autosave.recordSnapshot(textSnapshot('已经发布的内容'));
 
-    const flushPromise = autosave.flushPendingSave();
-    await flushPromises();
-    const resetPromise = autosave.resetAfterPublication();
-    await flushPromises();
-    expect(autosave.recordSnapshot(textSnapshot('重置期间的旧编辑器事件'))).toBe(false);
-
-    resolveSave({ data: remoteDraft({ id: 33, version: 1, content: textSnapshot('已经发布的内容').content }) });
-    await flushPromise;
-    await expect(resetPromise).resolves.toEqual({ remoteCleared: false });
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ remoteCleared: false });
 
     expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(33);
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();

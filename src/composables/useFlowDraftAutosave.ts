@@ -1,7 +1,6 @@
 import { computed, onBeforeUnmount, readonly, shallowRef } from 'vue';
 import { useMutation } from '@tanstack/vue-query';
 
-import { createDraftSaveScheduler } from '@/composables/useDraftAutosave';
 import { deleteFlowDraftRequest, getFlowDraftRequest, saveFlowDraftRequest } from '@/service/flow/flow-draft.request';
 import { LocalCache } from '@/utils';
 
@@ -20,6 +19,7 @@ export type FlowDraftAutosaveStatus = 'idle' | 'hydrating' | 'local' | 'dirty' |
 export interface UseFlowDraftAutosaveOptions {
   userId: number | null;
   canSync: boolean;
+  /** Kept for call-site compatibility; Flow persistence is now explicit. */
   debounceMs?: number;
 }
 
@@ -29,10 +29,7 @@ export interface FlowDraftRestoreResolution {
   state: FlowDraftRestoreState | null;
 }
 
-interface QueuedFlowDraftSnapshot {
-  revision: number;
-  snapshot: FlowDraftSnapshot;
-}
+type SavedBaselineStatus = 'idle' | 'local' | 'saved';
 
 const FLOW_DRAFT_CACHE_PREFIX = 'coderx_flow_draft_v1';
 const FLOW_DRAFT_SCHEMA_VERSION = 2;
@@ -42,11 +39,15 @@ const createEmptyFlowDocument = (): TiptapDocContent => ({
   content: [{ type: 'paragraph' }],
 });
 
+const createEmptyFlowSnapshot = (): FlowDraftSnapshot => ({
+  content: createEmptyFlowDocument(),
+  meta: { imageIds: [], videoIds: [] },
+});
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
 const normalizePositiveIds = (value: unknown): number[] => {
   if (!Array.isArray(value)) return [];
-
   return Array.from(new Set(value.filter((id): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0)));
 };
 
@@ -54,7 +55,6 @@ export const normalizeFlowDraftDocument = (content: unknown): TiptapDocContent =
   if (isPlainObject(content) && typeof content['type'] === 'string') {
     return content as TiptapDocContent;
   }
-
   return createEmptyFlowDocument();
 };
 
@@ -71,6 +71,9 @@ const normalizeFlowDraftSnapshot = (snapshot: FlowDraftSnapshot): FlowDraftSnaps
   content: normalizeFlowDraftDocument(snapshot.content),
   meta: normalizeFlowDraftMeta(snapshot.meta),
 });
+
+const cloneFlowDraftSnapshot = (snapshot: FlowDraftSnapshot): FlowDraftSnapshot =>
+  JSON.parse(JSON.stringify(normalizeFlowDraftSnapshot(snapshot))) as FlowDraftSnapshot;
 
 const isFlowImageAsset = (value: unknown): value is FlowImageAsset =>
   isPlainObject(value) &&
@@ -89,7 +92,6 @@ const isFlowImageAsset = (value: unknown): value is FlowImageAsset =>
 
 const normalizeFlowImageAssets = (value: unknown): FlowImageAsset[] => {
   if (!Array.isArray(value)) return [];
-
   const seen = new Set<number>();
   return value.filter((candidate): candidate is FlowImageAsset => {
     if (!isFlowImageAsset(candidate) || seen.has(candidate.id)) return false;
@@ -116,18 +118,14 @@ const selectFlowDraftImages = (imageIds: number[], assets: unknown): { images: F
 const createRestoreState = (snapshot: FlowDraftSnapshot, assets: unknown): FlowDraftRestoreState => {
   const normalizedSnapshot = normalizeFlowDraftSnapshot(snapshot);
   const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, assets);
-  return { ...normalizedSnapshot, ...selectedImages };
+  return { ...cloneFlowDraftSnapshot(normalizedSnapshot), ...selectedImages, images: selectedImages.images.map((image) => ({ ...image })) };
 };
 
 const incompleteImagesMessage = '部分图片未能恢复，请重新上传缺失图片后再保存草稿';
 
 const nodeHasMeaningfulText = (node: TiptapDocContent | undefined): boolean => {
   if (!node || typeof node !== 'object') return false;
-
-  if (node.type === 'text') {
-    return typeof node.text === 'string' && node.text.trim().length > 0;
-  }
-
+  if (node.type === 'text') return typeof node.text === 'string' && node.text.trim().length > 0;
   return node.content?.some((child) => nodeHasMeaningfulText(child)) ?? false;
 };
 
@@ -135,6 +133,8 @@ export const hasMeaningfulFlowDraft = (snapshot: FlowDraftSnapshot | null): bool
   if (!snapshot) return false;
   return nodeHasMeaningfulText(snapshot.content) || snapshot.meta.imageIds.length > 0 || snapshot.meta.videoIds.length > 0;
 };
+
+const snapshotKey = (snapshot: FlowDraftSnapshot | null): string => JSON.stringify(normalizeFlowDraftSnapshot(snapshot ?? createEmptyFlowSnapshot()));
 
 const normalizeUserId = (userId: number | null) => (typeof userId === 'number' && Number.isSafeInteger(userId) && userId > 0 ? userId : null);
 
@@ -159,28 +159,18 @@ export const resolveFlowDraftRestore = (local: FlowDraftLocalFallback | null, re
       const state = createRestoreState(snapshot, local.schemaVersion === 2 ? local.images : remote.images);
       return { source: 'local', snapshot, state };
     }
-
     const snapshot = normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta });
-    return {
-      source: 'remote',
-      snapshot,
-      state: createRestoreState(snapshot, remote.images),
-    };
+    return { source: 'remote', snapshot, state: createRestoreState(snapshot, remote.images) };
   }
 
   if (local) {
     const snapshot = normalizeFlowDraftSnapshot(local);
-    const state = createRestoreState(snapshot, local.schemaVersion === 2 ? local.images : undefined);
-    return { source: 'local', snapshot, state };
+    return { source: 'local', snapshot, state: createRestoreState(snapshot, local.schemaVersion === 2 ? local.images : undefined) };
   }
 
   if (remote) {
     const snapshot = normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta });
-    return {
-      source: 'remote',
-      snapshot,
-      state: createRestoreState(snapshot, remote.images),
-    };
+    return { source: 'remote', snapshot, state: createRestoreState(snapshot, remote.images) };
   }
 
   return { source: 'empty', snapshot: null, state: null };
@@ -198,7 +188,6 @@ const getErrorMessage = (error: unknown) => {
     const message = responseData['msg'] ?? responseData['message'];
     if (typeof message === 'string' && message.trim()) return message;
   }
-
   return error instanceof Error && error.message ? error.message : undefined;
 };
 
@@ -216,52 +205,63 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const latestSnapshot = shallowRef<FlowDraftSnapshot | null>(null);
   const latestImages = shallowRef<FlowImageAsset[]>([]);
   const latestImagesComplete = shallowRef(true);
+  const savedSnapshot = shallowRef<FlowDraftSnapshot | null>(null);
+  const savedImages = shallowRef<FlowImageAsset[]>([]);
+  const savedBaselineStatus = shallowRef<SavedBaselineStatus>('idle');
   const hasLocalFallback = shallowRef(false);
   const isHydrating = shallowRef(false);
   const isClearing = shallowRef(false);
 
-  let latestRevision = 0;
-  let latestLocalUpdatedAt: string | null = null;
   let lifecycleGeneration = 0;
+  let editRevision = 0;
+
+  const mutation = useMutation({
+    mutationFn: async (snapshot: FlowDraftSnapshot) => {
+      const response = await saveFlowDraftRequest({
+        content: snapshot.content,
+        meta: snapshot.meta,
+        version: version.value,
+      });
+      return response.data;
+    },
+    scope: { id: `flow-draft:${actorKey}` },
+  });
+
+  const isSaving = computed(() => status.value === 'saving' || mutation.isPending.value);
+  const hasContent = computed(() => hasMeaningfulFlowDraft(latestSnapshot.value));
+  const isDirty = computed(() => snapshotKey(latestSnapshot.value) !== snapshotKey(savedSnapshot.value));
+  const canSave = computed(
+    () =>
+      hasContent.value &&
+      isDirty.value &&
+      latestImagesComplete.value &&
+      !isHydrating.value &&
+      !isClearing.value &&
+      !isSaving.value &&
+      status.value !== 'conflict',
+  );
+  const savedMediaIds = computed<readonly number[]>(() => Object.freeze([...(savedSnapshot.value?.meta.imageIds ?? [])]));
+  const hasDraft = computed(() => hasLocalFallback.value || draftId.value !== null || hasMeaningfulFlowDraft(savedSnapshot.value));
 
   const invalidateInitialize = () => {
     lifecycleGeneration += 1;
     isHydrating.value = false;
   };
 
-  const mutation = useMutation({
-    mutationFn: async (payload: QueuedFlowDraftSnapshot) => {
-      const response = await saveFlowDraftRequest({
-        content: payload.snapshot.content,
-        meta: payload.snapshot.meta,
-        version: version.value,
-      });
-      return response.data;
-    },
-    scope: {
-      id: `flow-draft:${actorKey}`,
-    },
-  });
-
   const removeLocalFallback = () => {
     LocalCache.removeCache(localStorageKey);
     hasLocalFallback.value = false;
-    latestLocalUpdatedAt = null;
   };
 
-  const persistLocalSnapshot = (
+  const writeLocalFallback = (
     snapshot: FlowDraftSnapshot,
-    timestamps: { localUpdatedAt?: string; serverUpdatedAt?: string | null; images?: readonly FlowImageAsset[] } = {},
+    images: readonly FlowImageAsset[],
+    timestamps: { localUpdatedAt?: string; serverUpdatedAt?: string | null } = {},
   ) => {
     const normalizedSnapshot = normalizeFlowDraftSnapshot(snapshot);
-    const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, timestamps.images ?? latestImages.value);
+    const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, images);
     const localUpdatedAt = timestamps.localUpdatedAt ?? new Date().toISOString();
     const serverUpdatedAt = timestamps.serverUpdatedAt === undefined ? lastSavedAt.value : timestamps.serverUpdatedAt;
-
-    latestSnapshot.value = normalizedSnapshot;
-    latestImages.value = selectedImages.images;
-    latestImagesComplete.value = selectedImages.imagesComplete;
-    latestLocalUpdatedAt = localUpdatedAt;
     LocalCache.setCache(localStorageKey, {
       schemaVersion: FLOW_DRAFT_SCHEMA_VERSION,
       actorKey,
@@ -295,14 +295,9 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       return null;
     }
 
+    const schemaVersion = cached['schemaVersion'];
     const cachedDraftId = cached['draftId'];
     const cachedVersion = cached['version'];
-    const schemaVersion = cached['schemaVersion'];
-    if (schemaVersion !== 1 && schemaVersion !== FLOW_DRAFT_SCHEMA_VERSION) {
-      removeLocalFallback();
-      return null;
-    }
-
     return {
       schemaVersion,
       actorKey,
@@ -326,7 +321,31 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     draftId.value = local.draftId;
     version.value = local.version;
     lastSavedAt.value = local.serverUpdatedAt;
-    latestLocalUpdatedAt = local.localUpdatedAt;
+  };
+
+  const setSavedBaseline = (state: FlowDraftRestoreState | null, baselineStatus: SavedBaselineStatus) => {
+    savedSnapshot.value = state ? cloneFlowDraftSnapshot(state) : null;
+    savedImages.value = state ? state.images.map((image) => ({ ...image })) : [];
+    savedBaselineStatus.value = state ? baselineStatus : 'idle';
+  };
+
+  const applyCurrentState = (state: FlowDraftRestoreState | null) => {
+    latestSnapshot.value = state ? cloneFlowDraftSnapshot(state) : null;
+    latestImages.value = state ? state.images.map((image) => ({ ...image })) : [];
+    latestImagesComplete.value = state?.imagesComplete ?? true;
+  };
+
+  const restoreStableStatus = () => {
+    if (!latestImagesComplete.value) {
+      status.value = 'error';
+      errorMessage.value = incompleteImagesMessage;
+    } else if (isDirty.value) {
+      status.value = 'dirty';
+      errorMessage.value = '';
+    } else {
+      status.value = savedBaselineStatus.value;
+      errorMessage.value = '';
+    }
   };
 
   const resetState = () => {
@@ -336,229 +355,176 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     latestSnapshot.value = null;
     latestImages.value = [];
     latestImagesComplete.value = true;
-    latestRevision = 0;
-    latestLocalUpdatedAt = null;
+    savedSnapshot.value = null;
+    savedImages.value = [];
+    savedBaselineStatus.value = 'idle';
     hasLocalFallback.value = false;
     errorMessage.value = '';
     status.value = 'idle';
-  };
-
-  const scheduler = createDraftSaveScheduler<QueuedFlowDraftSnapshot, FlowDraftRecord>({
-    debounceMs: options.debounceMs ?? 1200,
-    save: (payload) => mutation.mutateAsync(payload),
-    onDirty: () => {
-      if (!isHydrating.value && status.value !== 'conflict') {
-        status.value = 'dirty';
-        errorMessage.value = '';
-      }
-    },
-    onSaving: () => {
-      status.value = 'saving';
-    },
-    onSaved: (draft, savedPayload) => {
-      hydrateFromRemote(draft);
-      errorMessage.value = '';
-
-      const serverUpdatedAt = draft.updateAt ?? new Date().toISOString();
-      const savedLatestRevision = savedPayload.revision === latestRevision;
-      if (!latestImagesComplete.value) {
-        status.value = 'error';
-        errorMessage.value = incompleteImagesMessage;
-      } else if (savedLatestRevision) {
-        latestLocalUpdatedAt = serverUpdatedAt;
-        status.value = 'saved';
-      } else {
-        status.value = 'dirty';
-      }
-
-      if (latestSnapshot.value) {
-        persistLocalSnapshot(latestSnapshot.value, {
-          localUpdatedAt: latestLocalUpdatedAt ?? serverUpdatedAt,
-          serverUpdatedAt,
-        });
-      }
-    },
-    onError: (error) => {
-      if (getErrorStatus(error) === 409) {
-        status.value = 'conflict';
-        errorMessage.value = getErrorMessage(error) ?? '草稿版本冲突，请刷新页面后重试';
-        return 'halt';
-      }
-
-      status.value = 'error';
-      errorMessage.value = getErrorMessage(error) ?? '保存失败，本地草稿仍在';
-      return 'continue';
-    },
-  });
-
-  const queueServerSave = (snapshot: FlowDraftSnapshot) => {
-    scheduler.schedule({
-      revision: latestRevision,
-      snapshot,
-    });
+    editRevision += 1;
   };
 
   const initialize = async (): Promise<FlowDraftRestoreState | null> => {
     const initializeGeneration = lifecycleGeneration;
-    const revisionAtStart = latestRevision;
+    const revisionAtStart = editRevision;
     isHydrating.value = true;
     status.value = 'hydrating';
     errorMessage.value = '';
 
     const local = readLocalFallback();
-    if (local) {
-      hydrateFromLocal(local);
-    }
     let remote: FlowDraftRecord | null = null;
     let restoredState: FlowDraftRestoreState | null = null;
-    let snapshotToSync: FlowDraftSnapshot | null = null;
 
     try {
       if (canSync) {
-        const response = await getFlowDraftRequest();
+        remote = (await getFlowDraftRequest()).data;
         if (lifecycleGeneration !== initializeGeneration) return null;
-        remote = response.data;
       }
 
-      if (latestRevision !== revisionAtStart) {
-        if (remote) {
-          hydrateFromRemote(remote);
-        } else if (local) {
-          hydrateFromLocal(local);
-        }
+      if (remote) {
+        hydrateFromRemote(remote);
+      } else if (!canSync && local) {
+        hydrateFromLocal(local);
+      } else if (canSync) {
+        draftId.value = null;
+        version.value = 0;
+        lastSavedAt.value = null;
+      }
 
-        if (latestSnapshot.value) {
-          persistLocalSnapshot(latestSnapshot.value, {
-            localUpdatedAt: latestLocalUpdatedAt ?? new Date().toISOString(),
-            serverUpdatedAt: lastSavedAt.value,
-            images: latestImages.value,
-          });
-          snapshotToSync = canSync && latestImagesComplete.value ? latestSnapshot.value : null;
-        }
-        if (!latestImagesComplete.value) {
-          status.value = 'error';
-          errorMessage.value = incompleteImagesMessage;
-        } else {
-          status.value = snapshotToSync ? 'dirty' : 'local';
-        }
+      const resolution = resolveFlowDraftRestore(local, remote);
+      restoredState = resolution.state;
+
+      if (canSync && remote) {
+        const remoteSnapshot = normalizeFlowDraftSnapshot({ content: remote.content, meta: remote.meta });
+        setSavedBaseline(createRestoreState(remoteSnapshot, remote.images), 'saved');
+      } else if (!canSync && local && restoredState) {
+        setSavedBaseline(restoredState, 'local');
       } else {
-        const resolution = resolveFlowDraftRestore(local, remote);
-        restoredState = resolution.state;
-
-        if (remote) {
-          hydrateFromRemote(remote);
-        } else if (local) {
-          hydrateFromLocal(local);
-        }
-
-        if (resolution.source === 'remote' && remote && restoredState) {
-          latestSnapshot.value = restoredState;
-          const serverUpdatedAt = remote.updateAt ?? remote.createAt ?? new Date().toISOString();
-          persistLocalSnapshot(restoredState, {
-            localUpdatedAt: serverUpdatedAt,
-            serverUpdatedAt,
-            images: restoredState.images,
-          });
-          status.value = restoredState.imagesComplete ? 'saved' : 'error';
-          if (!restoredState.imagesComplete) errorMessage.value = incompleteImagesMessage;
-        } else if (resolution.source === 'local' && local && restoredState) {
-          latestSnapshot.value = restoredState;
-          latestImages.value = restoredState.images;
-          latestImagesComplete.value = restoredState.imagesComplete;
-          latestLocalUpdatedAt = local.localUpdatedAt;
-          if (restoredState.imagesComplete || local.schemaVersion === 2) {
-            persistLocalSnapshot(restoredState, {
-              localUpdatedAt: local.localUpdatedAt,
-              serverUpdatedAt: remote?.updateAt ?? remote?.createAt ?? local.serverUpdatedAt,
-              images: restoredState.images,
-            });
-          }
-          snapshotToSync = canSync && restoredState.imagesComplete ? restoredState : null;
-          status.value = restoredState.imagesComplete ? (canSync ? 'dirty' : 'local') : 'error';
-          if (!restoredState.imagesComplete) errorMessage.value = incompleteImagesMessage;
-        } else {
-          status.value = 'idle';
-        }
+        setSavedBaseline(null, 'idle');
       }
+
+      if (editRevision === revisionAtStart) {
+        applyCurrentState(restoredState);
+      } else {
+        restoredState = null;
+      }
+
+      if (resolution.source === 'remote' && remote && resolution.state) {
+        const serverUpdatedAt = remote.updateAt ?? remote.createAt ?? new Date().toISOString();
+        writeLocalFallback(resolution.state, resolution.state.images, {
+          localUpdatedAt: serverUpdatedAt,
+          serverUpdatedAt,
+        });
+      }
+
+      restoreStableStatus();
+      return restoredState;
     } catch (error) {
       if (lifecycleGeneration !== initializeGeneration) return null;
-      if (latestRevision === revisionAtStart && local) {
+      if (local) {
         hydrateFromLocal(local);
-        restoredState = createRestoreState(normalizeFlowDraftSnapshot(local), local.schemaVersion === 2 ? local.images : undefined);
-        latestSnapshot.value = restoredState;
-        latestImages.value = restoredState.images;
-        latestImagesComplete.value = restoredState.imagesComplete;
-        hasLocalFallback.value = true;
+        const localState = createRestoreState(normalizeFlowDraftSnapshot(local), local.schemaVersion === 2 ? local.images : undefined);
+        setSavedBaseline(localState, canSync ? 'saved' : 'local');
+        if (editRevision === revisionAtStart) applyCurrentState(localState);
+        restoredState = editRevision === revisionAtStart ? localState : null;
       }
       status.value = 'error';
-      errorMessage.value = getErrorMessage(error) ?? '保存失败，本地草稿仍在';
+      errorMessage.value = getErrorMessage(error) ?? '草稿恢复失败';
+      return restoredState;
     } finally {
       if (lifecycleGeneration === initializeGeneration) isHydrating.value = false;
     }
-
-    if (snapshotToSync && lifecycleGeneration === initializeGeneration) {
-      latestRevision += 1;
-      queueServerSave(snapshotToSync);
-    }
-
-    return restoredState;
   };
 
   const recordSnapshot = (snapshot: FlowDraftSnapshot, uploadedAssets: readonly FlowImageAsset[] = []) => {
-    if (isClearing.value) {
-      return false;
-    }
-
-    const normalizedSnapshot = normalizeFlowDraftSnapshot(snapshot);
-    latestSnapshot.value = normalizedSnapshot;
-    latestRevision += 1;
-
-    if (!hasMeaningfulFlowDraft(normalizedSnapshot) && !draftId.value && !scheduler.isInFlight()) {
-      scheduler.cancel();
-      removeLocalFallback();
-      latestImages.value = [];
-      latestImagesComplete.value = true;
-      status.value = 'idle';
-      errorMessage.value = '';
-      return true;
-    }
-
-    const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, uploadedAssets);
-    persistLocalSnapshot(normalizedSnapshot, { images: selectedImages.images });
+    if (isClearing.value) return false;
+    latestSnapshot.value = normalizeFlowDraftSnapshot(snapshot);
+    const selectedImages = selectFlowDraftImages(latestSnapshot.value.meta.imageIds, uploadedAssets);
+    latestImages.value = selectedImages.images;
+    latestImagesComplete.value = selectedImages.imagesComplete;
+    editRevision += 1;
 
     if (!selectedImages.imagesComplete) {
-      scheduler.cancel();
-      errorMessage.value = incompleteImagesMessage;
       status.value = 'error';
-      return true;
+      errorMessage.value = incompleteImagesMessage;
+    } else if (status.value !== 'conflict') {
+      restoreStableStatus();
     }
-
-    if (!canSync) {
-      status.value = 'local';
-      errorMessage.value = '';
-      return true;
-    }
-
-    if (!isHydrating.value && status.value !== 'conflict') {
-      queueServerSave(normalizedSnapshot);
-    }
-
     return true;
   };
 
-  const flushPendingSave = async () => {
-    await scheduler.flush();
-    await scheduler.waitForIdle();
+  const saveDraft = async (): Promise<FlowDraftRestoreState> => {
+    if (isHydrating.value || isClearing.value || isSaving.value || status.value === 'conflict') {
+      throw new Error(errorMessage.value || 'Flow 草稿当前不可保存');
+    }
+    if (!latestSnapshot.value || !hasMeaningfulFlowDraft(latestSnapshot.value)) {
+      throw new Error('Flow 草稿没有可保存的内容');
+    }
+
+    const snapshotToSave = cloneFlowDraftSnapshot(latestSnapshot.value);
+    const selectedImages = selectFlowDraftImages(snapshotToSave.meta.imageIds, latestImages.value);
+    if (!selectedImages.imagesComplete) {
+      latestImagesComplete.value = false;
+      status.value = 'error';
+      errorMessage.value = incompleteImagesMessage;
+      throw new Error(incompleteImagesMessage);
+    }
+
+    const revisionToSave = editRevision;
+    status.value = 'saving';
+    errorMessage.value = '';
+
+    try {
+      let serverUpdatedAt: string | null = null;
+      if (canSync) {
+        const draft = await mutation.mutateAsync(snapshotToSave);
+        hydrateFromRemote(draft);
+        serverUpdatedAt = draft.updateAt ?? draft.createAt ?? new Date().toISOString();
+      } else {
+        lastSavedAt.value = new Date().toISOString();
+      }
+
+      const savedState = createRestoreState(snapshotToSave, selectedImages.images);
+      setSavedBaseline(savedState, canSync ? 'saved' : 'local');
+      writeLocalFallback(snapshotToSave, selectedImages.images, {
+        localUpdatedAt: serverUpdatedAt ?? lastSavedAt.value ?? new Date().toISOString(),
+        serverUpdatedAt: serverUpdatedAt ?? lastSavedAt.value,
+      });
+
+      if (editRevision === revisionToSave) {
+        applyCurrentState(savedState);
+      }
+      restoreStableStatus();
+      return createRestoreState(snapshotToSave, selectedImages.images);
+    } catch (error) {
+      status.value = getErrorStatus(error) === 409 ? 'conflict' : 'error';
+      errorMessage.value = getErrorMessage(error) ?? 'Flow 草稿保存失败';
+      throw error;
+    }
+  };
+
+  const restoreSavedBaseline = (): FlowDraftRestoreState | null => {
+    if (!savedSnapshot.value) {
+      applyCurrentState(null);
+      status.value = 'idle';
+      errorMessage.value = '';
+      editRevision += 1;
+      return null;
+    }
+
+    const state = createRestoreState(savedSnapshot.value, savedImages.value);
+    applyCurrentState(state);
+    status.value = savedBaselineStatus.value;
+    errorMessage.value = '';
+    editRevision += 1;
+    return createRestoreState(savedSnapshot.value, savedImages.value);
   };
 
   const clearRemoteDraft = async () => {
     let lastNotFoundError: unknown;
-
     for (let reconciliationAttempt = 0; reconciliationAttempt < 2; reconciliationAttempt += 1) {
-      const response = await getFlowDraftRequest();
-      const currentDraft = response.data;
+      const currentDraft = (await getFlowDraftRequest()).data;
       if (!currentDraft) return;
-
       try {
         await deleteFlowDraftRequest(currentDraft.id);
         return;
@@ -567,7 +533,6 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
         lastNotFoundError = error;
       }
     }
-
     throw lastNotFoundError;
   };
 
@@ -576,18 +541,10 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     isClearing.value = true;
     status.value = 'clearing';
     errorMessage.value = '';
-    scheduler.cancel();
-
     try {
-      await scheduler.waitForIdle();
-
-      if (canSync) {
-        await clearRemoteDraft();
-      }
-
+      if (canSync) await clearRemoteDraft();
       removeLocalFallback();
       resetState();
-      scheduler.resume();
     } catch (error) {
       status.value = 'error';
       errorMessage.value = getErrorMessage(error) ?? '草稿清空失败，本地内容仍在';
@@ -602,18 +559,18 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     isClearing.value = true;
     status.value = 'clearing';
     errorMessage.value = '';
-    scheduler.cancel();
+    const currentDraftId = draftId.value;
+    removeLocalFallback();
+    resetState();
 
     try {
-      await scheduler.waitForIdle();
-      removeLocalFallback();
-      resetState();
-      scheduler.resume();
-
       if (!canSync) return { remoteCleared: true };
-
       try {
-        await clearRemoteDraft();
+        if (currentDraftId !== null) {
+          await deleteFlowDraftRequest(currentDraftId);
+        } else {
+          await clearRemoteDraft();
+        }
         return { remoteCleared: true };
       } catch {
         return { remoteCleared: false };
@@ -628,23 +585,17 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       idle: '',
       hydrating: '正在恢复草稿…',
       local: '已保存在本机',
-      dirty: '等待保存',
+      dirty: '未保存',
       saving: '保存中…',
       saved: '已保存',
-      error: '保存失败，本地草稿仍在',
-      conflict: '草稿有冲突，本地内容仍在',
+      error: '保存失败',
+      conflict: '草稿有冲突',
       clearing: '正在清空…',
     };
     return labels[status.value];
   });
 
-  const hasDraft = computed(() => hasLocalFallback.value || draftId.value !== null || hasMeaningfulFlowDraft(latestSnapshot.value));
-  const isSaving = computed(() => status.value === 'saving' || mutation.isPending.value);
-
-  onBeforeUnmount(() => {
-    invalidateInitialize();
-    scheduler.dispose();
-  });
+  onBeforeUnmount(invalidateInitialize);
 
   return {
     status: readonly(status),
@@ -653,13 +604,20 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     draftId: readonly(draftId),
     version: readonly(version),
     lastSavedAt: readonly(lastSavedAt),
+    savedSnapshot: readonly(savedSnapshot),
+    savedImages: readonly(savedImages),
+    savedMediaIds,
     isHydrating: readonly(isHydrating),
     isClearing: readonly(isClearing),
     hasDraft,
+    hasContent,
+    isDirty,
+    canSave,
     isSaving,
     initialize,
     recordSnapshot,
-    flushPendingSave,
+    saveDraft,
+    restoreSavedBaseline,
     clearDraft,
     resetAfterPublication,
   };
