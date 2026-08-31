@@ -353,6 +353,20 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
     return true;
   }
 
+  function detach(clientId: string): boolean {
+    if (disposed) return false;
+    const attachment = findAttachment(clientId);
+    if (!attachment || attachment.status !== 'uploaded' || attachment.mediaId === null) return false;
+    removeLocal(attachment);
+    return true;
+  }
+
+  async function deleteMediaIds(mediaIds: readonly number[]): Promise<{ failedDeletes: number }> {
+    const uniqueIds = Array.from(new Set(mediaIds.filter((id) => Number.isSafeInteger(id) && id > 0)));
+    const results = await Promise.allSettled(uniqueIds.map((id) => Promise.resolve().then(() => deleteImage(id))));
+    return { failedDeletes: results.filter((result) => result.status === 'rejected').length };
+  }
+
   function move(from: number, to: number): boolean {
     if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= attachmentState.value.length || to >= attachmentState.value.length || from === to) {
       return false;
@@ -389,6 +403,8 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
     restoreUploadedAssets,
     retry,
     remove,
+    detach,
+    deleteMediaIds,
     move,
     dispose,
   };

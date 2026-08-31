@@ -140,6 +140,24 @@ describe('useFlowImageUploads', () => {
     expect(adapters.revokeObjectUrl).not.toHaveBeenCalledWith(assets[1]!.thumbnailUrl);
   });
 
+  it('detaches a restored saved image locally without deleting it', () => {
+    const adapters = queueAdapters({ deleteImage: vi.fn() });
+    const queue = useFlowImageUploads(adapters);
+    queue.restoreUploadedAssets([imageAsset(42)]);
+
+    expect(queue.detach('restored:42')).toBe(true);
+    expect(queue.uploadedMediaIds.value).toEqual([]);
+    expect(adapters.deleteImage).not.toHaveBeenCalled();
+  });
+
+  it('cleans explicit media ids once and reports partial failures', async () => {
+    const deleteImage = vi.fn((id: number) => (id === 41 ? Promise.reject(new Error('failed')) : Promise.resolve()));
+    const queue = useFlowImageUploads(queueAdapters({ deleteImage }));
+
+    await expect(queue.deleteMediaIds([42, 41, 42, Number.NaN])).resolves.toEqual({ failedDeletes: 1 });
+    expect(deleteImage.mock.calls).toEqual([[42], [41]]);
+  });
+
   it('creates previews immediately, runs FIFO with observed concurrency three, and retains selection order', async () => {
     const pending = new Map<string, ReturnType<typeof deferred<FlowImageAsset>>>();
     const started: string[] = [];
