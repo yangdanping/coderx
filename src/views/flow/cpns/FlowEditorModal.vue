@@ -25,6 +25,9 @@ const props = withDefaults(
     editorDisabled?: boolean;
     publishDisabled?: boolean;
     lifecycleLocked?: boolean;
+    canSaveDraft?: boolean;
+    savingDraft?: boolean;
+    savedMediaIds?: readonly number[];
   }>(),
   {
     content: '',
@@ -38,6 +41,9 @@ const props = withDefaults(
     editorDisabled: false,
     publishDisabled: false,
     lifecycleLocked: false,
+    canSaveDraft: false,
+    savingDraft: false,
+    savedMediaIds: () => [],
   },
 );
 
@@ -50,6 +56,7 @@ const emit = defineEmits<{
   'update:media-ids': [mediaIds: number[]];
   'update:publishing': [publishing: boolean];
   'clear-draft': [];
+  'save-draft': [];
   published: [];
   'after-close': [];
 }>();
@@ -59,7 +66,7 @@ const publishing = shallowRef(false);
 const queueDisposed = shallowRef(false);
 const queueError = shallowRef('');
 const clientRequestId = shallowRef(createUuidV4());
-const interactionLocked = computed(() => props.editorDisabled || publishing.value || props.lifecycleLocked);
+const interactionLocked = computed(() => props.editorDisabled || props.savingDraft || publishing.value || props.lifecycleLocked);
 let retryPayload: CreateFlowPayload | null = null;
 let retryContent = '';
 
@@ -78,6 +85,9 @@ const canPublish = computed(
     !uploads.isUploading.value &&
     !uploads.hasFailed.value &&
     (collectPlainText(normalizedDocument.value).trim().length > 0 || uploads.uploadedMediaIds.value.length > 0),
+);
+const canSave = computed(
+  () => props.canSaveDraft && !interactionLocked.value && !uploads.isUploading.value && !uploads.hasFailed.value,
 );
 
 function abandonRetryIdentity(): void {
@@ -133,6 +143,11 @@ function retryAttachment(clientId: string): void {
 async function removeAttachment(clientId: string): Promise<void> {
   if (interactionLocked.value) return;
   queueError.value = '';
+  const attachment = uploads.attachments.value.find((item) => item.clientId === clientId);
+  if (attachment?.mediaId !== null && attachment?.mediaId !== undefined && props.savedMediaIds.includes(attachment.mediaId)) {
+    if (uploads.detach(clientId)) abandonRetryIdentity();
+    return;
+  }
   if (await uploads.remove(clientId)) {
     abandonRetryIdentity();
   } else {
@@ -166,6 +181,11 @@ function handleJsonUpdate(document: TiptapDocContent): void {
 function requestClearDraft(): void {
   if (interactionLocked.value || props.clearDisabled) return;
   emit('clear-draft');
+}
+
+function requestSaveDraft(): void {
+  if (!canSave.value) return;
+  emit('save-draft');
 }
 
 async function publish(): Promise<void> {
@@ -207,7 +227,21 @@ async function clearAttachments(): Promise<{ failedDeletes: number }> {
   return { failedDeletes };
 }
 
-defineExpose({ clearAttachments });
+async function discardAttachments(retainedMediaIds: readonly number[]): Promise<{ failedDeletes: number }> {
+  if (publishing.value || queueDisposed.value) return { failedDeletes: 0 };
+  const retained = new Set(retainedMediaIds);
+  const disposable = uploads.attachments.value.filter((attachment) => attachment.mediaId === null || !retained.has(attachment.mediaId));
+  const results = await Promise.all(disposable.map((attachment) => uploads.remove(attachment.clientId)));
+  queueDisposed.value = true;
+  uploads.dispose();
+  return { failedDeletes: results.filter((removed) => !removed).length };
+}
+
+function cleanupMediaIds(mediaIds: readonly number[]): Promise<{ failedDeletes: number }> {
+  return uploads.deleteMediaIds(mediaIds);
+}
+
+defineExpose({ clearAttachments, discardAttachments, cleanupMediaIds });
 
 const dialogRef = useTemplateRef<HTMLElement>('dialogRef');
 const closeButtonRef = useTemplateRef<HTMLButtonElement>('closeButtonRef');
@@ -363,7 +397,12 @@ onBeforeUnmount(() => {
               </span>
             </div>
             <div class="flow-editor-modal__publish">
-              <el-button type="primary" plain :disabled="!canPublish" :loading="publishing" @click="publish">{{ publishing ? '发布中…' : '发布' }}</el-button>
+              <el-button data-testid="flow-save-draft" plain :disabled="!canSave" :loading="savingDraft" @click="requestSaveDraft">
+                {{ savingDraft ? '保存中…' : '保存草稿' }}
+              </el-button>
+              <el-button data-testid="flow-publish" type="primary" plain :disabled="!canPublish" :loading="publishing" @click="publish">
+                {{ publishing ? '发布中…' : '发布' }}
+              </el-button>
             </div>
           </div>
         </div>

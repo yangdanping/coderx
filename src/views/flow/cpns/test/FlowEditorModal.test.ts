@@ -129,6 +129,8 @@ function createQueueMock() {
     }),
     retry: vi.fn(),
     remove: vi.fn().mockResolvedValue(true),
+    detach: vi.fn().mockReturnValue(true),
+    deleteMediaIds: vi.fn().mockResolvedValue({ failedDeletes: 0 }),
     move: vi.fn(),
     dispose: vi.fn(),
   };
@@ -148,6 +150,9 @@ function mountModal(open = true, overrides: Record<string, unknown> = {}) {
       clearDisabled: false,
       editorDisabled: false,
       publishDisabled: false,
+      canSaveDraft: false,
+      savingDraft: false,
+      savedMediaIds: [],
       ...overrides,
     },
     global: {
@@ -295,7 +300,7 @@ describe('FlowEditorModal', () => {
     expect(queue.restoreUploadedAssets).toHaveBeenCalledWith(restoredImages);
     expect(wrapper.findComponent({ name: 'FlowAttachmentGrid' }).props('attachments')).toHaveLength(2);
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     expect(createFlowMock).toHaveBeenCalledWith({
@@ -373,6 +378,51 @@ describe('FlowEditorModal', () => {
     expect(wrapper.get('.flow-editor-modal__clear').attributes('disabled')).toBeDefined();
   });
 
+  it('renders save beside publish and emits the explicit save action only when allowed', async () => {
+    const wrapper = mountModal(true, { canSaveDraft: true });
+    const buttons = wrapper.get('.flow-editor-modal__publish').findAll('button');
+
+    expect(buttons.map((button) => button.text())).toEqual(['保存草稿', '发布']);
+    await wrapper.get('[data-testid="flow-save-draft"]').trigger('click');
+
+    expect(wrapper.emitted('save-draft')).toHaveLength(1);
+  });
+
+  it('disables save without unsaved content and shows explicit saving progress', async () => {
+    const wrapper = mountModal(true, { canSaveDraft: false });
+    expect(wrapper.get('[data-testid="flow-save-draft"]').attributes('disabled')).toBeDefined();
+
+    await wrapper.setProps({ canSaveDraft: true, savingDraft: true });
+
+    const saveButton = wrapper.get('[data-testid="flow-save-draft"]');
+    expect(saveButton.attributes('disabled')).toBeDefined();
+    expect(saveButton.attributes('data-loading')).toBe('true');
+    expect(saveButton.text()).toContain('保存中');
+  });
+
+  it('detaches saved baseline images without deleting them immediately', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    const wrapper = mountModal(true, { restoredImages, savedMediaIds: [42, 41] });
+    await nextTick();
+
+    wrapper.findComponent({ name: 'FlowAttachmentGrid' }).vm.$emit('remove', 'restored:42');
+    await nextTick();
+
+    expect(queue.detach).toHaveBeenCalledWith('restored:42');
+    expect(queue.remove).not.toHaveBeenCalledWith('restored:42');
+  });
+
+  it('forwards explicit media cleanup through its narrow exposed API', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    queue.deleteMediaIds.mockResolvedValue({ failedDeletes: 1 });
+    const wrapper = mountModal();
+
+    const result = await (wrapper.vm as unknown as { cleanupMediaIds: (ids: readonly number[]) => Promise<{ failedDeletes: number }> }).cleanupMediaIds([42, 41]);
+
+    expect(queue.deleteMediaIds).toHaveBeenCalledWith([42, 41]);
+    expect(result).toEqual({ failedDeletes: 1 });
+  });
+
   it('makes the editor read-only while clearing is in progress', async () => {
     const wrapper = mountModal();
 
@@ -431,7 +481,7 @@ describe('FlowEditorModal', () => {
     const wrapper = mountModal(true, props);
     await nextTick();
 
-    expect(wrapper.get('.flow-editor-modal__publish button').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeDefined();
   });
 
   it('disables whitespace-only rich text but allows an uploaded-image-only Flow', async () => {
@@ -442,12 +492,12 @@ describe('FlowEditorModal', () => {
     const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
     const wrapper = mountModal(true, { document: whitespaceDocument });
     await nextTick();
-    expect(wrapper.get('.flow-editor-modal__publish button').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeDefined();
 
     queue.attachments.value = [uploadedAttachment('only', 42)];
     queue.uploadedIds.value = [42];
     await nextTick();
-    expect(wrapper.get('.flow-editor-modal__publish button').attributes('disabled')).toBeUndefined();
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeUndefined();
   });
 
   it('keeps the same queue and does not dispose it across an ordinary close and reopen', async () => {
@@ -500,7 +550,7 @@ describe('FlowEditorModal', () => {
     const wrapper = mountModal();
     await nextTick();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
     expect(queue.dispose).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain('发布失败，请重试');
@@ -515,7 +565,7 @@ describe('FlowEditorModal', () => {
     await wrapper.setProps({ open: false });
     await wrapper.setProps({ open: true });
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     const originalPayload = {
@@ -536,7 +586,7 @@ describe('FlowEditorModal', () => {
         }),
     );
     const wrapper = mountModal();
-    const button = wrapper.get('.flow-editor-modal__publish button');
+    const button = wrapper.get('[data-testid="flow-publish"]');
 
     await button.trigger('click');
     await button.trigger('click');
@@ -564,7 +614,7 @@ describe('FlowEditorModal', () => {
     const wrapper = mountModal(true, { document: initialDocument });
     await nextTick();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
 
     expect(wrapper.emitted('update:publishing')).toEqual([[true]]);
     expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('disabled')).toBe(true);
@@ -634,7 +684,7 @@ describe('FlowEditorModal', () => {
     queue.uploadedIds.value = [42];
     const wrapper = mountModal(true, { document: textDocument('第一次') });
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     rejectPublish(new Error('offline'));
     await flushPromises();
 
@@ -647,7 +697,7 @@ describe('FlowEditorModal', () => {
     wrapper.findComponent({ name: 'TiptapEditorFlow' }).vm.$emit('update:json', currentDocument);
     await wrapper.setProps({ document: currentDocument });
     await nextTick();
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
@@ -666,14 +716,14 @@ describe('FlowEditorModal', () => {
     createFlowMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ id: 9 });
     const wrapper = mountModal();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     wrapper.findComponent({ name: 'FlowAttachmentGrid' }).vm.$emit('move', 1, 0);
     queue.attachments.value = [uploadedAttachment('two', 41), uploadedAttachment('one', 42)];
     queue.uploadedIds.value = [41, 42];
     await nextTick();
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
@@ -697,7 +747,7 @@ describe('FlowEditorModal', () => {
     queue.uploadedIds.value = [42];
     const wrapper = mountModal();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     resolvePublish({ id: 9 });
     await flushPromises();
     await wrapper.setProps({ open: false, lifecycleLocked: true });
@@ -725,7 +775,7 @@ describe('FlowEditorModal', () => {
     const clearButton = wrapper.get('.flow-editor-modal__clear');
     clearButton.element.removeAttribute('disabled');
     await clearButton.trigger('click');
-    const publishButton = wrapper.get('.flow-editor-modal__publish button');
+    const publishButton = wrapper.get('[data-testid="flow-publish"]');
     publishButton.element.removeAttribute('disabled');
     await publishButton.trigger('click');
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
@@ -750,14 +800,14 @@ describe('FlowEditorModal', () => {
     const editor = wrapper.findComponent({ name: 'TiptapEditorFlow' });
     expect(editor.props('disabled')).toBe(false);
 
-    const publishButton = wrapper.get('.flow-editor-modal__publish button');
+    const publishButton = wrapper.get('[data-testid="flow-publish"]');
     expect(publishButton.attributes('disabled')).toBeDefined();
     publishButton.element.removeAttribute('disabled');
     await publishButton.trigger('click');
     expect(createFlowMock).not.toHaveBeenCalled();
 
     await wrapper.setProps({ publishDisabled: false });
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
     expect(createFlowMock).toHaveBeenCalledOnce();
   });
@@ -769,7 +819,7 @@ describe('FlowEditorModal', () => {
     createFlowMock.mockResolvedValue({ id: 9 });
     const wrapper = mountModal();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     expect(queue.remove).not.toHaveBeenCalled();
