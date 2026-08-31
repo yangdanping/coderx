@@ -270,6 +270,26 @@ describe('Flow composer page orchestration', () => {
     expect(msgFailMock).toHaveBeenCalledWith('网络不可用');
   });
 
+  it('keeps recovery-blocked edits open and explains why exit saving is unavailable', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'error';
+    autosave.hasContent.value = true;
+    autosave.isDirty.value = true;
+    autosave.canSave.value = false;
+    confirmMock.mockResolvedValue('confirm');
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+
+    wrapper.getComponent(ModalStub).vm.$emit('close');
+    await flushPromises();
+
+    expect(autosave.saveDraft).not.toHaveBeenCalled();
+    expect(msgFailMock).toHaveBeenCalledWith(expect.stringContaining('恢复失败'));
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
+  });
+
   it('treats closing the exit prompt as cancel and keeps editing', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.hasContent.value = true;
@@ -632,7 +652,10 @@ describe('Flow composer page orchestration', () => {
     modal.vm.$emit('close');
     await flushPromises();
 
-    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
+    expect(autosave.recordSnapshot).toHaveBeenCalledWith(
+      { content: textDocument, meta: { imageIds: [], videoIds: [] } },
+      [],
+    );
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
   });
 
@@ -664,7 +687,7 @@ describe('Flow composer page orchestration', () => {
     expect(modal.props('clearDisabled')).toBe(false);
   });
 
-  it('retains the recovery failure lock after later content and media edits', async () => {
+  it('retains the recovery failure lock while tracking later edits in memory', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = 'error';
     const { wrapper } = mountFlow();
@@ -677,7 +700,10 @@ describe('Flow composer page orchestration', () => {
     modal.vm.$emit('update:media-ids', [99]);
     await flushPromises();
 
-    expect(autosave.recordSnapshot).not.toHaveBeenCalled();
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      { content: textDocument, meta: { imageIds: [99], videoIds: [] } },
+      [replacementImage],
+    );
     expect(modal.props('publishDisabled')).toBe(true);
     expect(modal.props('clearDisabled')).toBe(true);
   });

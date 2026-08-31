@@ -118,8 +118,6 @@ function restoreCordFocus() {
 }
 
 function recordCurrentFlowSnapshot() {
-  if (draftRecoveryBlocked.value) return;
-
   flowDraftAutosave.recordSnapshot({
     content: normalizeFlowDraftDocument(flowDraftDocument.value),
     meta: {
@@ -177,10 +175,17 @@ async function handleSaveFlowDraft(options: { closeAfterSave?: boolean } = {}): 
     composerRestoring.value ||
     modalPublishing.value ||
     publicationResetting.value ||
-    publicationResetPending ||
-    draftRecoveryBlocked.value ||
-    !imagesComplete.value
+    publicationResetPending
   ) {
+    return false;
+  }
+
+  if (draftRecoveryBlocked.value) {
+    Msg.showFail('Flow 草稿恢复失败，暂时无法保存');
+    return false;
+  }
+  if (!imagesComplete.value) {
+    Msg.showFail('部分图片尚未恢复，暂时无法保存 Flow 草稿');
     return false;
   }
 

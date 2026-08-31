@@ -5,7 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { FlowImageAsset } from '@/service/flow/flow.types';
 
-const { deleteFlowDraftRequestMock, getFlowDraftRequestMock, saveFlowDraftRequestMock } = vi.hoisted(() => ({
+const { confirmMock, deleteFlowDraftRequestMock, getFlowDraftRequestMock, saveFlowDraftRequestMock } = vi.hoisted(() => ({
+  confirmMock: vi.fn(),
   deleteFlowDraftRequestMock: vi.fn(),
   getFlowDraftRequestMock: vi.fn(),
   saveFlowDraftRequestMock: vi.fn(),
@@ -26,7 +27,7 @@ vi.mock('@/stores/user.store', () => ({
 }));
 
 vi.mock('element-plus', () => ({
-  ElMessageBox: { confirm: vi.fn() },
+  ElMessageBox: { confirm: confirmMock },
 }));
 
 import Flow from '../Flow.vue';
@@ -50,7 +51,7 @@ const replacementImage: FlowImageAsset = {
 
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
-  props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled'],
+  props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'canSaveDraft'],
   emits: ['close', 'update:content', 'update:json', 'update:image-assets', 'update:media-ids'],
   setup() {
     return () => h('div');
@@ -95,6 +96,7 @@ function mountFlow() {
 beforeEach(() => {
   vi.useFakeTimers();
   window.localStorage.clear();
+  confirmMock.mockReset().mockRejectedValue('close');
   deleteFlowDraftRequestMock.mockReset();
   getFlowDraftRequestMock.mockReset().mockRejectedValue(new Error('draft recovery failed'));
   saveFlowDraftRequestMock.mockReset();
@@ -128,6 +130,32 @@ describe('Flow draft recovery failure', () => {
     await vi.advanceTimersByTimeAsync(1200);
     await flushPromises();
 
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('coderx_flow_draft_v1:user:7')).toBeNull();
+  });
+
+  it('still protects recovery-failure edits with the unsaved exit confirmation', async () => {
+    const wrapper = mountFlow();
+    await flushPromises();
+    const cord = wrapper.getComponent(CordStub);
+    cord.vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('update:content', '恢复失败后继续编辑');
+    modal.vm.$emit('update:json', textDocument);
+    await nextTick();
+    expect(modal.props('canSaveDraft')).toBe(false);
+
+    modal.vm.$emit('close');
+    await flushPromises();
+
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.stringContaining('尚未保存'),
+      '退出 Flow 编辑？',
+      expect.objectContaining({ confirmButtonText: '保存草稿', cancelButtonText: '放弃' }),
+    );
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
     expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
     expect(window.localStorage.getItem('coderx_flow_draft_v1:user:7')).toBeNull();
   });
