@@ -96,7 +96,7 @@ async function uploadOneImage(wrapper: VueWrapper) {
 }
 
 async function failFirstPublication(wrapper: VueWrapper) {
-  await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+  await wrapper.get('[data-testid="flow-publish"]').trigger('click');
   await flushPromises();
   expect(createFlowMock).toHaveBeenNthCalledWith(1, {
     clientRequestId: firstRequestId,
@@ -129,7 +129,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
     expect(attachments.map((attachment: { mediaId: number }) => attachment.mediaId)).toEqual([42, 41]);
     expect(uploadFlowImageMock).not.toHaveBeenCalled();
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
 
     expect(createFlowMock).toHaveBeenCalledWith({
@@ -156,7 +156,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
     await flushPromises();
     expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
     expect(createFlowMock).toHaveBeenNthCalledWith(2, {
       clientRequestId: firstRequestId,
@@ -176,7 +176,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
     await vi.waitFor(() => expect(wrapper.findComponent({ name: 'FlowAttachmentGrid' }).props('attachments')).toHaveLength(0));
     expect(crypto.randomUUID).toHaveBeenCalledTimes(3);
 
-    await wrapper.get('.flow-editor-modal__publish button').trigger('click');
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
     await flushPromises();
     expect(createFlowMock).toHaveBeenNthCalledWith(2, {
       clientRequestId: secondRequestId,

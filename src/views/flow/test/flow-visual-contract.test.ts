@@ -30,12 +30,14 @@ describe('Flow visual contract', () => {
     expect(flowSource).toMatch(/<FlowEditorModal[\s\S]*:open="editorOpen"[\s\S]*:content="flowDraft"/);
     expect(flowSource).toContain(':document="flowDraftDocument"');
     expect(flowSource).toContain(':draft-status="flowDraftAutosave.status.value"');
-    expect(flowSource).toContain(':editor-disabled="composerClearing || flowDraftAutosave.isClearing.value"');
-    expect(flowSource).toContain(':lifecycle-locked="publicationResetting || composerRestoring"');
+    expect(flowSource).toContain(':editor-disabled="composerClearing || composerSaving || composerDiscarding || flowDraftAutosave.isClearing.value"');
+    expect(flowSource).toContain(':lifecycle-locked="publicationResetting || composerRestoring || composerDiscarding"');
+    expect(flowSource).toContain(':can-save-draft="flowDraftAutosave.canSave.value');
     expect(flowSource).toContain('@update:json="handleFlowDocumentUpdate"');
     expect(flowSource).toContain('@clear-draft="handleClearFlowDraft"');
+    expect(flowSource).toContain('@save-draft="handleSaveFlowDraft"');
     expect(flowSource).toContain('@close="handleEditorClose"');
-    expect(flowSource).toMatch(/function handleEditorClose\(\)[\s\S]*modalPublishing\.value[\s\S]*publicationResetPending[\s\S]*editorOpen\.value = false/);
+    expect(flowSource).toMatch(/async function handleEditorClose\(\)[\s\S]*hasContent\.value[\s\S]*isDirty\.value[\s\S]*保存草稿[\s\S]*放弃/);
     expect(flowSource).toContain('@after-close="handleAfterClose"');
     expect(flowSource).toMatch(/function handleAfterClose\(\)[\s\S]*restoreCordFocus\(\)/);
     expect(flowSource).toContain(':inert="editorOpen"');
