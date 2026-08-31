@@ -239,8 +239,12 @@ async function handleEditorClose() {
     return;
   }
   if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || closeConfirming.value) return;
-  if (!flowDraftAutosave.hasContent.value || !flowDraftAutosave.isDirty.value) {
+  if (!flowDraftAutosave.isDirty.value) {
     editorOpen.value = false;
+    return;
+  }
+  if (!flowDraftAutosave.hasContent.value) {
+    await discardFlowChanges();
     return;
   }
 

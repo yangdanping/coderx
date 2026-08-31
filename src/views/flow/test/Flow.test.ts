@@ -227,6 +227,37 @@ describe('Flow composer page orchestration', () => {
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
   });
 
+  it('silently restores the saved baseline when all current content was removed', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.hasContent.value = false;
+    autosave.isDirty.value = true;
+    autosave.savedMediaIds.value = [42, 41];
+    autosave.restoreSavedBaseline.mockReturnValue({
+      content: textDocument,
+      meta: { imageIds: [42, 41], videoIds: [] },
+      images: restoredImages,
+      imagesComplete: true,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('close');
+    await flushPromises();
+
+    expect(confirmMock).not.toHaveBeenCalled();
+    expect(modalDiscardAttachmentsMock).toHaveBeenCalledWith([42, 41]);
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(false);
+
+    modal.vm.$emit('after-close');
+    await flushPromises();
+    expect(wrapper.getComponent(ModalStub).props('document')).toEqual(textDocument);
+    expect(wrapper.getComponent(ModalStub).props('restoredImages')).toEqual(restoredImages);
+    expect(autosave.clearDraft).not.toHaveBeenCalled();
+  });
+
   it('saves unsaved content from the exit prompt and closes only after success', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.hasContent.value = true;
