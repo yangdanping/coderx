@@ -348,6 +348,26 @@ describe('useFlowDraftAutosave explicit persistence', () => {
     expect(autosave.status.value).toBe('error');
   });
 
+  it('finishes safely when local fallback read and cleanup both throw', async () => {
+    getFlowDraftRequestMock.mockRejectedValue(new Error('remote unavailable'));
+    const getCacheSpy = vi.spyOn(LocalCache, 'getCache').mockImplementation(() => {
+      throw new Error('storage read failed');
+    });
+    const removeCacheSpy = vi.spyOn(LocalCache, 'removeCache').mockImplementation(() => {
+      throw new Error('storage cleanup failed');
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    await expect(autosave.initialize()).resolves.toBeNull();
+
+    expect(getFlowDraftRequestMock).toHaveBeenCalledOnce();
+    expect(autosave.isHydrating.value).toBe(false);
+    expect(autosave.isRecoveryBlocked.value).toBe(true);
+    expect(autosave.status.value).toBe('error');
+    getCacheSpy.mockRestore();
+    removeCacheSpy.mockRestore();
+  });
+
   it('restores a remote draft as an unchanged saved baseline', async () => {
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
     const autosave = mountAutosave({ userId: 7, canSync: true });

@@ -252,7 +252,16 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const removeLocalFallback = () => {
     LocalCache.removeCache(localStorageKey);
     hasLocalFallback.value = false;
-    isRecoveryBlocked.value = false;
+  };
+
+  const discardInvalidLocalFallback = () => {
+    try {
+      LocalCache.removeCache(localStorageKey);
+    } catch {
+      // Invalid cache must never prevent remote reconciliation. A failed
+      // cleanup can be retried on the next initialization.
+    }
+    hasLocalFallback.value = false;
   };
 
   const writeLocalFallback = (
@@ -282,18 +291,18 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     try {
       cached = LocalCache.getCache(localStorageKey);
     } catch {
-      removeLocalFallback();
+      discardInvalidLocalFallback();
       return null;
     }
 
     if (!isPlainObject(cached) || (cached['schemaVersion'] !== 1 && cached['schemaVersion'] !== FLOW_DRAFT_SCHEMA_VERSION) || cached['actorKey'] !== actorKey) {
-      if (cached !== undefined) removeLocalFallback();
+      if (cached !== undefined) discardInvalidLocalFallback();
       return null;
     }
 
     const localUpdatedAt = cached['localUpdatedAt'];
     if (typeof localUpdatedAt !== 'string' || !isPlainObject(cached['content'])) {
-      removeLocalFallback();
+      discardInvalidLocalFallback();
       return null;
     }
 
@@ -361,6 +370,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     savedImages.value = [];
     savedBaselineStatus.value = 'idle';
     hasLocalFallback.value = false;
+    isRecoveryBlocked.value = false;
     errorMessage.value = '';
     status.value = 'idle';
     editRevision += 1;
@@ -370,14 +380,16 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     const initializeGeneration = lifecycleGeneration;
     const revisionAtStart = editRevision;
     isHydrating.value = true;
+    isRecoveryBlocked.value = canSync;
     status.value = 'hydrating';
     errorMessage.value = '';
 
-    const local = readLocalFallback();
+    let local: FlowDraftLocalFallback | null = null;
     let remote: FlowDraftRecord | null = null;
     let restoredState: FlowDraftRestoreState | null = null;
 
     try {
+      local = readLocalFallback();
       if (canSync) {
         remote = (await getFlowDraftRequest()).data;
         if (lifecycleGeneration !== initializeGeneration) return null;
