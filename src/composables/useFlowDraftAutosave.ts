@@ -485,16 +485,32 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       }
 
       const savedState = createRestoreState(snapshotToSave, selectedImages.images);
-      setSavedBaseline(savedState, canSync ? 'saved' : 'local');
-      writeLocalFallback(snapshotToSave, selectedImages.images, {
+      const fallbackTimestamps = {
         localUpdatedAt: serverUpdatedAt ?? lastSavedAt.value ?? new Date().toISOString(),
         serverUpdatedAt: serverUpdatedAt ?? lastSavedAt.value,
-      });
+      };
+      let cacheWriteFailed = false;
+      if (canSync) {
+        try {
+          writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps);
+        } catch {
+          cacheWriteFailed = true;
+        }
+      } else {
+        // Local persistence is the durable save for guests, so it must succeed
+        // before the in-memory saved baseline advances.
+        writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps);
+      }
+
+      setSavedBaseline(savedState, canSync ? 'saved' : 'local');
 
       if (editRevision === revisionToSave) {
         applyCurrentState(savedState);
       }
       restoreStableStatus();
+      if (cacheWriteFailed) {
+        errorMessage.value = '草稿已保存到服务器，但本地缓存写入失败';
+      }
       return createRestoreState(snapshotToSave, selectedImages.images);
     } catch (error) {
       status.value = getErrorStatus(error) === 409 ? 'conflict' : 'error';

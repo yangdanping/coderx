@@ -3,6 +3,8 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { defineComponent } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { LocalCache } from '@/utils';
+
 import type { FlowDraftLocalFallback, FlowDraftRecord, FlowDraftSnapshot } from '@/service/flow/flow-draft.types';
 import type { FlowImageAsset } from '@/service/flow/flow.types';
 
@@ -91,6 +93,7 @@ beforeEach(() => {
 
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+  vi.restoreAllMocks();
 });
 
 describe('Flow draft restore helpers', () => {
@@ -233,6 +236,42 @@ describe('useFlowDraftAutosave explicit persistence', () => {
     expect(autosave.status.value).toBe('local');
     expect(autosave.isDirty.value).toBe(false);
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(null))).not.toBeNull();
+  });
+
+  it('keeps a guest draft dirty when local persistence fails', async () => {
+    const autosave = mountAutosave({ userId: null, canSync: false });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('本地写入失败'));
+    const storageSpy = vi.spyOn(LocalCache, 'setCache').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    await expect(autosave.saveDraft()).rejects.toThrow('quota exceeded');
+
+    expect(autosave.savedSnapshot.value).toBeNull();
+    expect(autosave.isDirty.value).toBe(true);
+    expect(autosave.canSave.value).toBe(true);
+    expect(autosave.status.value).toBe('error');
+    storageSpy.mockRestore();
+  });
+
+  it('treats local cache failure as non-fatal after the server save succeeds', async () => {
+    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ content: textSnapshot('服务端已保存').content, version: 5 }) });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('服务端已保存'));
+    const storageSpy = vi.spyOn(LocalCache, 'setCache').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    await expect(autosave.saveDraft()).resolves.toMatchObject({ content: textSnapshot('服务端已保存').content });
+
+    expect(saveFlowDraftRequestMock).toHaveBeenCalledOnce();
+    expect(autosave.savedSnapshot.value?.content).toEqual(textSnapshot('服务端已保存').content);
+    expect(autosave.isDirty.value).toBe(false);
+    expect(autosave.status.value).toBe('saved');
+    expect(autosave.errorMessage.value).toMatch(/本地缓存/);
+    storageSpy.mockRestore();
   });
 
   it('does not advance the baseline when an authenticated save fails', async () => {
