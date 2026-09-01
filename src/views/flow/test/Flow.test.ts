@@ -108,6 +108,7 @@ const anotherRestoredImage: FlowImageAsset = {
 };
 
 function createAutosaveMock() {
+  const isRecoveryBlocked = shallowRef(false);
   return {
     status: shallowRef('saved'),
     statusText: shallowRef('已保存'),
@@ -122,12 +123,16 @@ function createAutosaveMock() {
     isSaving: shallowRef(false),
     isClearing: shallowRef(false),
     isHydrating: shallowRef(false),
+    isRecoveryBlocked,
     initialize: vi.fn().mockResolvedValue(null),
     recordSnapshot: vi.fn(),
     saveDraft: vi.fn().mockResolvedValue({ content: textDocument, meta: { imageIds: [], videoIds: [] }, images: [], imagesComplete: true }),
     restoreSavedBaseline: vi.fn().mockReturnValue(null),
     clearDraft: vi.fn().mockResolvedValue(undefined),
-    resetAfterPublication: vi.fn().mockResolvedValue({ remoteCleared: true }),
+    resetAfterPublication: vi.fn().mockImplementation(async () => {
+      isRecoveryBlocked.value = false;
+      return { remoteCleared: true };
+    }),
   };
 }
 
@@ -315,6 +320,7 @@ describe('Flow composer page orchestration', () => {
   it('keeps recovery-blocked edits open and explains why exit saving is unavailable', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = 'error';
+    autosave.isRecoveryBlocked.value = true;
     autosave.hasContent.value = true;
     autosave.isDirty.value = true;
     autosave.canSave.value = false;
@@ -757,6 +763,7 @@ describe('Flow composer page orchestration', () => {
   it.each(['error', 'conflict'])('keeps publish and clear disabled after null recovery with %s status', async (status) => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = status;
+    autosave.isRecoveryBlocked.value = true;
     const { wrapper } = mountFlow();
     await flushPromises();
     const modal = wrapper.getComponent(ModalStub);
@@ -771,6 +778,7 @@ describe('Flow composer page orchestration', () => {
 
   it('locks actions after initialize rejects without blocking editor input or close', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.isRecoveryBlocked.value = true;
     autosave.initialize.mockRejectedValue(new Error('draft recovery failed'));
     const { wrapper } = mountFlow();
     await flushPromises();
@@ -805,9 +813,10 @@ describe('Flow composer page orchestration', () => {
     expect(modal.props('clearDisabled')).toBe(false);
   });
 
-  it('does not lock a complete local fallback when remote recovery reports an error', async () => {
+  it('keeps a complete local fallback locked when remote recovery remains unknown', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = 'error';
+    autosave.isRecoveryBlocked.value = true;
     autosave.initialize.mockResolvedValue({
       content: textDocument,
       meta: { imageIds: [42, 41], videoIds: [] },
@@ -818,13 +827,14 @@ describe('Flow composer page orchestration', () => {
     await flushPromises();
     const modal = wrapper.getComponent(ModalStub);
 
-    expect(modal.props('publishDisabled')).toBe(false);
-    expect(modal.props('clearDisabled')).toBe(false);
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
   });
 
   it('retains the recovery failure lock while tracking later edits in memory', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = 'error';
+    autosave.isRecoveryBlocked.value = true;
     const { wrapper } = mountFlow();
     await flushPromises();
     const modal = wrapper.getComponent(ModalStub);
@@ -843,9 +853,33 @@ describe('Flow composer page orchestration', () => {
     expect(modal.props('clearDisabled')).toBe(true);
   });
 
+  it('preserves the recovery failure lock after discarding in-memory edits', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.status.value = 'error';
+    autosave.isRecoveryBlocked.value = true;
+    autosave.hasContent.value = true;
+    autosave.isDirty.value = true;
+    confirmMock.mockRejectedValue('cancel');
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+
+    modal.vm.$emit('close');
+    await flushPromises();
+    modal.vm.$emit('after-close');
+    await flushPromises();
+
+    expect(autosave.isRecoveryBlocked.value).toBe(true);
+    expect(wrapper.getComponent(ModalStub).props('publishDisabled')).toBe(true);
+    expect(wrapper.getComponent(ModalStub).props('clearDisabled')).toBe(true);
+  });
+
   it('clears the recovery failure lock when resetting the composer state', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.status.value = 'error';
+    autosave.isRecoveryBlocked.value = true;
     const { wrapper } = mountFlow();
     await flushPromises();
     const modal = wrapper.getComponent(ModalStub);

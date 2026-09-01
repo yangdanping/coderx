@@ -108,6 +108,33 @@ afterEach(() => {
 });
 
 describe('Flow draft recovery failure', () => {
+  it('keeps a complete local fallback locked while the remote draft is unknown', async () => {
+    window.localStorage.setItem(
+      'coderx_flow_draft_v1:user:7',
+      JSON.stringify({
+        schemaVersion: 2,
+        actorKey: 'user:7',
+        content: textDocument,
+        meta: { imageIds: [], videoIds: [] },
+        images: [],
+        draftId: 18,
+        version: 3,
+        serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+        localUpdatedAt: '2026-08-11T02:05:00.000Z',
+      }),
+    );
+
+    const wrapper = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+
+    expect(modal.props('document')).toEqual(textDocument);
+    expect(modal.props('publishDisabled')).toBe(true);
+    expect(modal.props('clearDisabled')).toBe(true);
+    expect(modal.props('canSaveDraft')).toBe(false);
+    expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
+  });
+
   it('keeps later edits in page memory without scheduling a remote save', async () => {
     const wrapper = mountFlow();
     await flushPromises();

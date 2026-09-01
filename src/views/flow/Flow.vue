@@ -99,7 +99,6 @@ const closeConfirming = shallowRef(false);
 const modalPublishing = shallowRef(false);
 const publicationResetting = shallowRef(false);
 const composerRestoring = shallowRef(true);
-const draftRecoveryBlocked = shallowRef(false);
 const queryClient = useQueryClient();
 let publicationResetPending = false;
 let discardResetPending = false;
@@ -112,6 +111,7 @@ const flowDraftAutosave = useFlowDraftAutosave({
   canSync: Boolean(flowDraftUserId && (userStore.token || LocalCache.getCache('token'))),
   debounceMs: 1200,
 });
+const draftRecoveryBlocked = flowDraftAutosave.isRecoveryBlocked;
 
 const { pullDistance, isRefreshing } = usePullToRefresh({
   containerRef,
@@ -383,7 +383,6 @@ function resetComposerState() {
     isDeleting: false,
     hasFailed: false,
   };
-  draftRecoveryBlocked.value = false;
   composerGeneration.value += 1;
 }
 
@@ -401,7 +400,6 @@ function applyRestoredComposerState(restoredState: FlowDraftRestoreState | null)
   const availableImageIds = new Set(restoredState.images.map((image) => image.id));
   unresolvedImageIds.value = restoredState.meta.imageIds.filter((imageId) => !availableImageIds.has(imageId));
   imagesComplete.value = restoredState.imagesComplete;
-  draftRecoveryBlocked.value = false;
   composerGeneration.value += 1;
 }
 
@@ -471,7 +469,6 @@ async function handleClearFlowDraft() {
 }
 
 onMounted(async () => {
-  draftRecoveryBlocked.value = false;
   try {
     const restoredDraft = await flowDraftAutosave.initialize();
     if (restoredDraft) {
@@ -482,12 +479,12 @@ onMounted(async () => {
       unresolvedImageIds.value = restoredDraft.meta.imageIds.filter((imageId) => !availableImageIds.has(imageId));
       imagesComplete.value = restoredDraft.imagesComplete;
       flowDraftDocument.value = restoredDraft.content;
-    } else if (flowDraftAutosave.status.value === 'error' || flowDraftAutosave.status.value === 'conflict') {
-      draftRecoveryBlocked.value = true;
     }
     await nextTick();
   } catch {
-    draftRecoveryBlocked.value = true;
+    // The controller owns recovery safety and normally resolves failures into
+    // an explicit blocked state. Keep the page mounted if an adapter violates
+    // that contract.
   } finally {
     composerRestoring.value = false;
   }

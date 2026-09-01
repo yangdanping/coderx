@@ -326,6 +326,28 @@ describe('useFlowDraftAutosave explicit persistence', () => {
     expect(saveFlowDraftRequestMock).not.toHaveBeenCalled();
   });
 
+  it('marks remote recovery as unsafe even when a complete local fallback is available', async () => {
+    const local: FlowDraftLocalFallback = {
+      schemaVersion: 2,
+      actorKey: 'user:7',
+      ...textSnapshot('仅本地可恢复'),
+      images: [],
+      draftId: 18,
+      version: 3,
+      serverUpdatedAt: '2026-08-11T02:00:00.000Z',
+      localUpdatedAt: '2026-08-11T02:05:00.000Z',
+    };
+    window.localStorage.setItem(getFlowDraftLocalStorageKey(7), JSON.stringify(local));
+    getFlowDraftRequestMock.mockRejectedValue(new Error('remote unavailable'));
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+
+    const restored = await autosave.initialize();
+
+    expect(restored?.content).toEqual(local.content);
+    expect(autosave.isRecoveryBlocked.value).toBe(true);
+    expect(autosave.status.value).toBe('error');
+  });
+
   it('restores a remote draft as an unchanged saved baseline', async () => {
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
     const autosave = mountAutosave({ userId: 7, canSync: true });

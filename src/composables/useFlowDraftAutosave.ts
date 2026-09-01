@@ -211,6 +211,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const hasLocalFallback = shallowRef(false);
   const isHydrating = shallowRef(false);
   const isClearing = shallowRef(false);
+  const isRecoveryBlocked = shallowRef(false);
 
   let lifecycleGeneration = 0;
   let editRevision = 0;
@@ -251,6 +252,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const removeLocalFallback = () => {
     LocalCache.removeCache(localStorageKey);
     hasLocalFallback.value = false;
+    isRecoveryBlocked.value = false;
   };
 
   const writeLocalFallback = (
@@ -379,6 +381,9 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       if (canSync) {
         remote = (await getFlowDraftRequest()).data;
         if (lifecycleGeneration !== initializeGeneration) return null;
+        isRecoveryBlocked.value = false;
+      } else {
+        isRecoveryBlocked.value = false;
       }
 
       if (remote) {
@@ -411,16 +416,22 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
 
       if (resolution.source === 'remote' && remote && resolution.state) {
         const serverUpdatedAt = remote.updateAt ?? remote.createAt ?? new Date().toISOString();
-        writeLocalFallback(resolution.state, resolution.state.images, {
-          localUpdatedAt: serverUpdatedAt,
-          serverUpdatedAt,
-        });
+        try {
+          writeLocalFallback(resolution.state, resolution.state.images, {
+            localUpdatedAt: serverUpdatedAt,
+            serverUpdatedAt,
+          });
+        } catch {
+          // The remote draft is authoritative; cache failure must not make
+          // successfully reconciled remote state unsafe.
+        }
       }
 
       restoreStableStatus();
       return restoredState;
     } catch (error) {
       if (lifecycleGeneration !== initializeGeneration) return null;
+      isRecoveryBlocked.value = canSync;
       if (local) {
         hydrateFromLocal(local);
         const localState = createRestoreState(normalizeFlowDraftSnapshot(local), local.schemaVersion === 2 ? local.images : undefined);
@@ -480,6 +491,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
         const draft = await mutation.mutateAsync(snapshotToSave);
         hydrateFromRemote(draft);
         serverUpdatedAt = draft.updateAt ?? draft.createAt ?? new Date().toISOString();
+        isRecoveryBlocked.value = false;
       } else {
         lastSavedAt.value = new Date().toISOString();
       }
@@ -514,6 +526,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       return createRestoreState(snapshotToSave, selectedImages.images);
     } catch (error) {
       status.value = getErrorStatus(error) === 409 ? 'conflict' : 'error';
+      if (getErrorStatus(error) === 409) isRecoveryBlocked.value = true;
       errorMessage.value = getErrorMessage(error) ?? 'Flow 草稿保存失败';
       throw error;
     }
@@ -625,6 +638,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     savedMediaIds,
     isHydrating: readonly(isHydrating),
     isClearing: readonly(isClearing),
+    isRecoveryBlocked: readonly(isRecoveryBlocked),
     hasDraft,
     hasContent,
     isDirty,
