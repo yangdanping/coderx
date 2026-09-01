@@ -55,8 +55,9 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   let disposed = false;
 
   const attachments = computed<readonly Readonly<FlowImageAttachment>[]>(() => Object.freeze(attachmentState.value.map((attachment) => Object.freeze({ ...attachment }))));
+  const isDeleting = computed(() => deletingClientIds.value.size > 0);
   const isUploading = computed(
-    () => deletingClientIds.value.size > 0 || attachmentState.value.some((attachment) => attachment.status === 'queued' || attachment.status === 'uploading'),
+    () => isDeleting.value || attachmentState.value.some((attachment) => attachment.status === 'queued' || attachment.status === 'uploading'),
   );
   const hasFailed = computed(() => attachmentState.value.some((attachment) => attachment.status === 'failed'));
   const uploadedMediaIds = computed(() =>
@@ -396,6 +397,7 @@ export function useFlowImageUploads(adapters: FlowImageUploadAdapters = {}) {
   return {
     attachments,
     isUploading,
+    isDeleting,
     hasFailed,
     uploadedMediaIds,
     uploadedAssets,

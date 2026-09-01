@@ -95,6 +95,7 @@ function restoredAttachment(asset: FlowImageAsset): FlowImageAttachment {
 function createQueueMock() {
   const attachments = shallowRef<readonly FlowImageAttachment[]>([]);
   const uploading = shallowRef(false);
+  const deleting = shallowRef(false);
   const failed = shallowRef(false);
   const uploadedIds = shallowRef<number[]>([]);
   const uploadedAssets = computed<FlowImageAsset[]>(() =>
@@ -115,10 +116,12 @@ function createQueueMock() {
   return {
     attachments,
     isUploading: computed(() => uploading.value),
+    isDeleting: computed(() => deleting.value),
     hasFailed: computed(() => failed.value),
     uploadedMediaIds: computed(() => uploadedIds.value),
     uploadedAssets,
     uploading,
+    deleting,
     failed,
     uploadedIds,
     addFiles: vi.fn(() => ({ accepted: [], rejected: [] })),
@@ -386,6 +389,26 @@ describe('FlowEditorModal', () => {
     await wrapper.get('[data-testid="flow-save-draft"]').trigger('click');
 
     expect(wrapper.emitted('save-draft')).toHaveLength(1);
+  });
+
+  it('reports typed attachment queue state and exposes a synchronous snapshot', async () => {
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    const wrapper = mountModal();
+    queue.attachments.value = [restoredAttachment(restoredImages[0]!)];
+    queue.uploadedIds.value = [42];
+    queue.deleting.value = true;
+    await nextTick();
+
+    const expected = {
+      attachmentCount: 1,
+      uploadedAssets: [restoredImages[0]],
+      uploadedMediaIds: [42],
+      isUploading: false,
+      isDeleting: true,
+      hasFailed: false,
+    };
+    expect(wrapper.emitted('update:attachment-state')?.at(-1)).toEqual([expected]);
+    expect((wrapper.vm as unknown as { getAttachmentSnapshot: () => unknown }).getAttachmentSnapshot()).toEqual(expected);
   });
 
   it('disables save without unsaved content and shows explicit saving progress', async () => {

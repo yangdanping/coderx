@@ -61,6 +61,15 @@ export interface FlowImageAttachment {
   error: string | null;
 }
 
+export interface FlowImageAttachmentState {
+  attachmentCount: number;
+  uploadedAssets: FlowImageAsset[];
+  uploadedMediaIds: number[];
+  isUploading: boolean;
+  isDeleting: boolean;
+  hasFailed: boolean;
+}
+
 export interface CreateFlowPayload {
   clientRequestId: string;
   content: TiptapDocContent;

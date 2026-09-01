@@ -8,7 +8,7 @@ import { createUuidV4 } from '@/utils/uuid';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { CreateFlowPayload, FlowImageAsset } from '@/service/flow/flow.types';
+import type { CreateFlowPayload, FlowImageAsset, FlowImageAttachmentState } from '@/service/flow/flow.types';
 
 const props = withDefaults(
   defineProps<{
@@ -54,6 +54,7 @@ const emit = defineEmits<{
   'update:json': [document: TiptapDocContent];
   'update:image-assets': [images: FlowImageAsset[]];
   'update:media-ids': [mediaIds: number[]];
+  'update:attachment-state': [state: FlowImageAttachmentState];
   'update:publishing': [publishing: boolean];
   'clear-draft': [];
   'save-draft': [];
@@ -90,6 +91,19 @@ const canSave = computed(
   () => props.canSaveDraft && !interactionLocked.value && !uploads.isUploading.value && !uploads.hasFailed.value,
 );
 
+function getAttachmentSnapshot(): FlowImageAttachmentState {
+  return {
+    attachmentCount: uploads.attachments.value.length,
+    uploadedAssets: uploads.uploadedAssets.value.map((image) => ({ ...image })),
+    uploadedMediaIds: [...uploads.uploadedMediaIds.value],
+    isUploading: uploads.attachments.value.some((attachment) => attachment.status === 'queued' || attachment.status === 'uploading'),
+    isDeleting: uploads.isDeleting.value,
+    hasFailed: uploads.hasFailed.value,
+  };
+}
+
+const attachmentSnapshot = computed(getAttachmentSnapshot);
+
 function abandonRetryIdentity(): void {
   if (!retryPayload) return;
   retryPayload = null;
@@ -123,6 +137,8 @@ watch(uploads.uploadedMediaIds, (mediaIds) => {
   if (interactionLocked.value) return;
   emit('update:media-ids', [...mediaIds]);
 });
+
+watch(attachmentSnapshot, (state) => emit('update:attachment-state', state), { immediate: true });
 
 function addCandidateFiles(files: File[]): void {
   if (interactionLocked.value) return;
@@ -241,7 +257,7 @@ function cleanupMediaIds(mediaIds: readonly number[]): Promise<{ failedDeletes: 
   return uploads.deleteMediaIds(mediaIds);
 }
 
-defineExpose({ clearAttachments, discardAttachments, cleanupMediaIds });
+defineExpose({ clearAttachments, discardAttachments, cleanupMediaIds, getAttachmentSnapshot });
 
 const dialogRef = useTemplateRef<HTMLElement>('dialogRef');
 const closeButtonRef = useTemplateRef<HTMLButtonElement>('closeButtonRef');

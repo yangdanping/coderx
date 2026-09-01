@@ -17,6 +17,7 @@ const {
   modalCleanupMediaIdsMock,
   modalClearAttachmentsMock,
   modalDiscardAttachmentsMock,
+  modalGetAttachmentSnapshotMock,
   modalMountCount,
 } = vi.hoisted(() => ({
   autosaveHolder: { current: null as Record<string, any> | null },
@@ -28,6 +29,7 @@ const {
   modalCleanupMediaIdsMock: vi.fn(),
   modalClearAttachmentsMock: vi.fn(),
   modalDiscardAttachmentsMock: vi.fn(),
+  modalGetAttachmentSnapshotMock: vi.fn(),
   modalMountCount: { value: 0 },
 }));
 
@@ -132,13 +134,14 @@ function createAutosaveMock() {
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
   props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked', 'canSaveDraft', 'savingDraft', 'savedMediaIds'],
-  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:image-assets', 'update:media-ids', 'update:publishing', 'clear-draft', 'save-draft', 'published', 'after-close'],
+  emits: ['close', 'update:content', 'update:document', 'update:json', 'update:image-assets', 'update:media-ids', 'update:attachment-state', 'update:publishing', 'clear-draft', 'save-draft', 'published', 'after-close'],
   setup(_, { expose }) {
     onMounted(() => modalMountCount.value++);
     expose({
       clearAttachments: modalClearAttachmentsMock,
       discardAttachments: modalDiscardAttachmentsMock,
       cleanupMediaIds: modalCleanupMediaIdsMock,
+      getAttachmentSnapshot: modalGetAttachmentSnapshotMock,
     });
     return () => h('div', { 'data-testid': 'modal' });
   },
@@ -189,6 +192,14 @@ beforeEach(() => {
   modalCleanupMediaIdsMock.mockReset().mockResolvedValue({ failedDeletes: 0 });
   modalClearAttachmentsMock.mockReset().mockResolvedValue({ failedDeletes: 0 });
   modalDiscardAttachmentsMock.mockReset().mockResolvedValue({ failedDeletes: 0 });
+  modalGetAttachmentSnapshotMock.mockReset().mockReturnValue({
+    attachmentCount: 0,
+    uploadedAssets: [],
+    uploadedMediaIds: [],
+    isUploading: false,
+    isDeleting: false,
+    hasFailed: false,
+  });
   modalMountCount.value = 0;
 });
 
@@ -357,6 +368,61 @@ describe('Flow composer page orchestration', () => {
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
   });
 
+  it('protects an image-only upload in progress when exiting', async () => {
+    const pendingState = {
+      attachmentCount: 1,
+      uploadedAssets: [],
+      uploadedMediaIds: [],
+      isUploading: true,
+      isDeleting: false,
+      hasFailed: false,
+    };
+    modalGetAttachmentSnapshotMock.mockReturnValue(pendingState);
+    confirmMock.mockRejectedValue('close');
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+    modal.vm.$emit('update:attachment-state', pendingState);
+
+    modal.vm.$emit('close');
+    await flushPromises();
+
+    expect(confirmMock).toHaveBeenCalledOnce();
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
+  });
+
+  it('refuses exit-triggered saving until the image queue settles', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.hasContent.value = true;
+    autosave.isDirty.value = true;
+    autosave.canSave.value = true;
+    const uploadingState = {
+      attachmentCount: 1,
+      uploadedAssets: [],
+      uploadedMediaIds: [],
+      isUploading: true,
+      isDeleting: false,
+      hasFailed: false,
+    };
+    modalGetAttachmentSnapshotMock.mockReturnValue(uploadingState);
+    confirmMock.mockResolvedValue('confirm');
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+    modal.vm.$emit('update:attachment-state', uploadingState);
+
+    modal.vm.$emit('close');
+    await flushPromises();
+
+    expect(autosave.saveDraft).not.toHaveBeenCalled();
+    expect(msgFailMock).toHaveBeenCalledWith(expect.stringContaining('上传'));
+    expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
+  });
+
   it('discards current changes and restores the saved baseline after closing', async () => {
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.hasContent.value = true;
@@ -420,6 +486,14 @@ describe('Flow composer page orchestration', () => {
     autosave.canSave.value = true;
     autosave.savedMediaIds.value = [42, 41];
     modalCleanupMediaIdsMock.mockResolvedValue({ failedDeletes: 1 });
+    modalGetAttachmentSnapshotMock.mockReturnValue({
+      attachmentCount: 1,
+      uploadedAssets: [restoredImages[1]],
+      uploadedMediaIds: [41],
+      isUploading: false,
+      isDeleting: false,
+      hasFailed: false,
+    });
     const { wrapper } = mountFlow();
     await flushPromises();
     wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
@@ -437,6 +511,36 @@ describe('Flow composer page orchestration', () => {
     expect(modalCleanupMediaIdsMock).toHaveBeenCalledWith([42]);
     expect(msgWarnMock).toHaveBeenCalledWith(expect.stringContaining('图片'));
     expect(wrapper.getComponent(ModalStub).props('open')).toBe(true);
+  });
+
+  it('synchronizes the settled attachment snapshot before explicit saving', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.hasContent.value = true;
+    autosave.isDirty.value = true;
+    autosave.canSave.value = true;
+    modalGetAttachmentSnapshotMock.mockReturnValue({
+      attachmentCount: 1,
+      uploadedAssets: [replacementImage],
+      uploadedMediaIds: [99],
+      isUploading: false,
+      isDeleting: false,
+      hasFailed: false,
+    });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    wrapper.getComponent(CordStub).vm.$emit('update:modelValue', true);
+    await nextTick();
+    const modal = wrapper.getComponent(ModalStub);
+    modal.vm.$emit('update:json', textDocument);
+
+    modal.vm.$emit('save-draft');
+    await flushPromises();
+
+    expect(autosave.recordSnapshot).toHaveBeenLastCalledWith(
+      { content: textDocument, meta: { imageIds: [99], videoIds: [] } },
+      [replacementImage],
+    );
+    expect(autosave.saveDraft).toHaveBeenCalledOnce();
   });
 
   it('restores image descriptors before document hydration can record a snapshot', async () => {

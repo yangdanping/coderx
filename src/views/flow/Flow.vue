@@ -31,6 +31,7 @@
       @update:json="handleFlowDocumentUpdate"
       @update:image-assets="handleFlowImageAssetsUpdate"
       @update:media-ids="handleFlowMediaIdsUpdate"
+      @update:attachment-state="handleFlowAttachmentStateUpdate"
       @update:publishing="handleModalPublishing"
       @clear-draft="handleClearFlowDraft"
       @save-draft="handleSaveFlowDraft"
@@ -67,7 +68,7 @@ import { Loader2 } from '@lucide/vue';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
 import type { FlowDraftRestoreState } from '@/service/flow/flow-draft.types';
-import type { FlowImageAsset } from '@/service/flow/flow.types';
+import type { FlowImageAsset, FlowImageAttachmentState } from '@/service/flow/flow.types';
 
 const containerRef = ref<HTMLElement | null>(null);
 const feedRef = ref<InstanceType<typeof FlowFeed> | null>(null);
@@ -82,6 +83,14 @@ const flowDraftImages = shallowRef<FlowImageAsset[]>([]);
 const restoredImageIds = shallowRef<number[]>([]);
 const unresolvedImageIds = shallowRef<number[]>([]);
 const imagesComplete = shallowRef(true);
+const flowAttachmentState = shallowRef<FlowImageAttachmentState>({
+  attachmentCount: 0,
+  uploadedAssets: [],
+  uploadedMediaIds: [],
+  isUploading: false,
+  isDeleting: false,
+  hasFailed: false,
+});
 const composerGeneration = shallowRef(0);
 const composerClearing = shallowRef(false);
 const composerSaving = shallowRef(false);
@@ -158,6 +167,29 @@ function handleModalPublishing(publishing: boolean) {
   modalPublishing.value = publishing;
 }
 
+function handleFlowAttachmentStateUpdate(state: FlowImageAttachmentState) {
+  flowAttachmentState.value = {
+    ...state,
+    uploadedAssets: state.uploadedAssets.map((image) => ({ ...image })),
+    uploadedMediaIds: [...state.uploadedMediaIds],
+  };
+}
+
+function mediaIdsMatchQueue(mediaIds: readonly number[]): boolean {
+  const unresolved = new Set(unresolvedImageIds.value);
+  const availableMediaIds = flowDraftMediaIds.value.filter((mediaId) => !unresolved.has(mediaId));
+  return availableMediaIds.length === mediaIds.length && availableMediaIds.every((mediaId, index) => mediaId === mediaIds[index]);
+}
+
+function syncCurrentAttachmentSnapshot(): FlowImageAttachmentState {
+  const getSnapshot = flowEditorModalRef.value?.getAttachmentSnapshot;
+  const snapshot = typeof getSnapshot === 'function' ? getSnapshot() : flowAttachmentState.value;
+  handleFlowAttachmentStateUpdate(snapshot);
+  handleFlowImageAssetsUpdate(snapshot.uploadedAssets);
+  handleFlowMediaIdsUpdate(snapshot.uploadedMediaIds);
+  return snapshot;
+}
+
 function handleCordToggle(open: boolean) {
   if (open) {
     if (composerClearing.value || composerSaving.value || composerDiscarding.value || publicationResetting.value) return;
@@ -177,6 +209,24 @@ async function handleSaveFlowDraft(options: { closeAfterSave?: boolean } = {}): 
     publicationResetting.value ||
     publicationResetPending
   ) {
+    return false;
+  }
+
+  const attachmentState = syncCurrentAttachmentSnapshot();
+  if (attachmentState.isUploading) {
+    Msg.showFail('图片仍在上传，请等待完成后再保存草稿');
+    return false;
+  }
+  if (attachmentState.isDeleting) {
+    Msg.showFail('图片仍在删除，请等待完成后再保存草稿');
+    return false;
+  }
+  if (attachmentState.hasFailed || attachmentState.attachmentCount > attachmentState.uploadedMediaIds.length) {
+    Msg.showFail('存在上传失败的图片，请重试或移除后再保存草稿');
+    return false;
+  }
+  if (!mediaIdsMatchQueue(attachmentState.uploadedMediaIds)) {
+    Msg.showFail('图片状态尚未同步，请稍后重试');
     return false;
   }
 
@@ -239,11 +289,16 @@ async function handleEditorClose() {
     return;
   }
   if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || closeConfirming.value) return;
-  if (!flowDraftAutosave.isDirty.value) {
+  const attachmentState = syncCurrentAttachmentSnapshot();
+  const hasTransientAttachments = attachmentState.attachmentCount > attachmentState.uploadedMediaIds.length;
+  const queueDiffersFromSnapshot = !mediaIdsMatchQueue(attachmentState.uploadedMediaIds);
+  const hasUnsavedChanges = flowDraftAutosave.isDirty.value || hasTransientAttachments || queueDiffersFromSnapshot;
+  const hasContent = flowDraftAutosave.hasContent.value || attachmentState.attachmentCount > 0;
+  if (!hasUnsavedChanges) {
     editorOpen.value = false;
     return;
   }
-  if (!flowDraftAutosave.hasContent.value) {
+  if (!hasContent) {
     await discardFlowChanges();
     return;
   }
@@ -320,6 +375,14 @@ function resetComposerState() {
   restoredImageIds.value = [];
   unresolvedImageIds.value = [];
   imagesComplete.value = true;
+  flowAttachmentState.value = {
+    attachmentCount: 0,
+    uploadedAssets: [],
+    uploadedMediaIds: [],
+    isUploading: false,
+    isDeleting: false,
+    hasFailed: false,
+  };
   draftRecoveryBlocked.value = false;
   composerGeneration.value += 1;
 }
