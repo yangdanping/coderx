@@ -113,6 +113,33 @@ describe('FeatureSection scroll story', () => {
     expect(source).not.toContain("import FeatureCard from './FeatureCard.vue'");
   });
 
+  it('scopes the light-mode ambient dimming and eye-white palette to the feature story', () => {
+    const readSource = (filePath: string) => fs.readFileSync(path.join(process.cwd(), filePath), 'utf8');
+    const homeSource = readSource('src/views/home/Home.vue');
+    const commonSource = readSource('src/assets/css/common.scss');
+    const stageSource = readSource('src/views/home/cpns/features/FeatureDemoStage.vue');
+    const featurePaintSources = [
+      readSource('src/views/home/cpns/features/FeatureSectionAnchor.vue'),
+      readSource('src/views/home/cpns/features/demos/AiChatDemo.vue'),
+      readSource('src/views/home/cpns/features/demos/AiCompletionDemo.vue'),
+    ].join('\n');
+
+    expect(homeSource).toContain('useFeatureAmbientDimming');
+    expect(homeSource).toContain('ref="featureZone"');
+    expect(homeSource).toContain('--feature-ambient-progress');
+    expect(homeSource).toContain('html:not(.dark)');
+    expect(homeSource).toContain('color-mix');
+    expect(homeSource).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(commonSource).toContain('--eye-white: #ededed');
+    expect(commonSource).toContain('--text-primary: var(--eye-white)');
+    expect(commonSource).not.toMatch(/color:\s*#fff(?:fff)?\b/i);
+    expect(featurePaintSources).toContain('var(--eye-white)');
+    expect(featurePaintSources).toContain('var(--feature-demo-blue-surface');
+    expect(stageSource).toContain('var(--feature-stage-shadow-color');
+    expect(featurePaintSources).not.toMatch(/(?:color|shimmer-color|stop-color)\s*(?::|=)\s*["']?(?:#fff(?:fff)?|white)\b/i);
+    expect(featurePaintSources).not.toContain('rgb(255 255 255');
+  });
+
   it('uses independent time-based keyframes for demo exit and entrance', () => {
     const filePath = path.join(process.cwd(), 'src/views/home/cpns/features/FeatureDemoStage.vue');
     const source = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';

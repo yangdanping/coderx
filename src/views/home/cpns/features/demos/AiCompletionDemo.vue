@@ -12,7 +12,7 @@
 
     <div v-if="popupState !== 'hidden'" class="completion-demo__popover">
       <div v-if="popupState === 'loading'" class="completion-demo__loading">
-        <ThinkingShimmer text="Thinking..." color="#8f959e" shimmer-color="#ffffff" />
+        <ThinkingShimmer text="Thinking..." color="#8f959e" shimmer-color="var(--eye-white)" />
       </div>
 
       <template v-else>
@@ -130,7 +130,7 @@ watch(
     height: 100%;
     padding: 14px 16px 18px;
     @include glass-effect;
-    border: 1px solid #94b8ee;
+    border: 1px solid var(--feature-demo-blue-border, #94b8ee);
     border-bottom: none;
     overflow: hidden;
 
@@ -188,7 +188,7 @@ watch(
     bottom: 24px;
     width: min(360px, calc(100% - 56px));
     @include glass-effect-popup;
-    border: 1px solid #94b8ee;
+    border: 1px solid var(--feature-demo-blue-border, #94b8ee);
     box-shadow: 4px 4px 0 rgba(148, 184, 238, 0.2);
     overflow: hidden;
     z-index: 2;
@@ -217,7 +217,7 @@ watch(
 
     &.active {
       background: #94b8ee;
-      color: #ffffff;
+      color: var(--eye-white);
     }
   }
 
@@ -238,7 +238,7 @@ watch(
     padding: 10px 14px;
     font-size: 12px;
     color: var(--text-secondary);
-    border-top: 1px solid #94b8ee;
+    border-top: 1px solid var(--feature-demo-blue-border, #94b8ee);
 
     :where(html.dark) & {
       border-top-color: rgba(148, 184, 238, 0.4);
@@ -248,8 +248,8 @@ watch(
   kbd {
     padding: 2px 5px;
     font-size: 11px;
-    background: #f0f5ff;
-    border: 1px solid #94b8ee;
+    background: var(--feature-demo-blue-surface, #f0f5ff);
+    border: 1px solid var(--feature-demo-blue-border, #94b8ee);
 
     :where(html.dark) & {
       background: #1e293b;

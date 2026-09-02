@@ -3,9 +3,9 @@
     <svg class="feature-section-anchor__arrow" viewBox="0 0 140 116" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="feature-section-arrow-light" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="white" stop-opacity="0" />
-          <stop offset="0.5" stop-color="white" stop-opacity="1" />
-          <stop offset="1" stop-color="white" stop-opacity="0" />
+          <stop offset="0" stop-color="var(--eye-white)" stop-opacity="0" />
+          <stop offset="0.5" stop-color="var(--eye-white)" stop-opacity="1" />
+          <stop offset="1" stop-color="var(--eye-white)" stop-opacity="0" />
         </linearGradient>
         <mask id="feature-section-arrow-sweep-mask" x="0" y="0" width="140" height="116" maskUnits="userSpaceOnUse" mask-type="alpha">
           <rect class="feature-section-anchor__sweep-band" x="0" y="-56" width="140" height="56" fill="url(#feature-section-arrow-light)" />
@@ -24,7 +24,7 @@
 
 <style scoped lang="scss">
 .feature-section-anchor {
-  --arrow-edge: rgb(94 145 222 / 0.62);
+  --arrow-edge: var(--feature-arrow-edge, rgb(94 145 222 / 0.62));
 
   display: grid;
   width: clamp(58px, 5vw, 88px);
@@ -88,7 +88,7 @@
   }
 
   &__sweep-stroke {
-    stroke: rgb(255 255 255 / 0.98);
+    stroke: var(--eye-white);
     stroke-width: 6;
   }
 

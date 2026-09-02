@@ -9,7 +9,7 @@
 
       <div v-if="isThinking" class="chat-demo__message is-assistant">
         <div class="chat-demo__bubble chat-demo__bubble--thinking">
-          <ThinkingShimmer text="AI 正在整理要点..." color="#8f959e" shimmer-color="#ffffff" />
+          <ThinkingShimmer text="AI 正在整理要点..." color="#8f959e" shimmer-color="var(--eye-white)" />
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@ watch(
   /* 设置固定高度，保留底部留白 */
   height: 380px;
   @include glass-effect;
-  border: 1px solid #94b8ee;
+  border: 1px solid var(--feature-demo-blue-border, #94b8ee);
   overflow: hidden;
 
   :where(html.dark) & {
@@ -175,14 +175,14 @@ watch(
     font-size: 14px;
     white-space: pre-wrap;
     color: var(--text-primary);
-    background: #f0f5ff;
+    background: var(--feature-demo-blue-surface, #f0f5ff);
 
     :where(html.dark) & {
       background: #1e293b;
     }
 
     .is-user & {
-      color: white;
+      color: var(--eye-white);
       background: #94b8ee;
     }
   }
@@ -197,7 +197,7 @@ watch(
     gap: 10px;
     padding: 14px;
     @include glass-effect-popup;
-    border-top: 1px solid #94b8ee;
+    border-top: 1px solid var(--feature-demo-blue-border, #94b8ee);
 
     :where(html.dark) & {
       border-color: rgba(148, 184, 238, 0.4);
@@ -212,7 +212,7 @@ watch(
     font-size: 14px;
     color: var(--text-secondary);
     background: transparent;
-    border: 1px solid #94b8ee;
+    border: 1px solid var(--feature-demo-blue-border, #94b8ee);
 
     :where(html.dark) & {
       border-color: rgba(148, 184, 238, 0.4);
@@ -222,7 +222,7 @@ watch(
   &__send {
     border: 0;
     padding: 12px 16px;
-    color: white;
+    color: var(--eye-white);
     cursor: default;
     background: #94b8ee;
   }

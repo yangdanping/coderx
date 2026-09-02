@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class="home" :style="homeStyle">
     <div class="content">
       <div class="title-section">
         <div class="title">
@@ -36,7 +36,9 @@
         <!-- <CodeSpotlight class="shader" /> -->
       </div>
       <hr />
-      <FeatureSection />
+      <div ref="featureZone" class="feature-ambient-zone">
+        <FeatureSection />
+      </div>
       <hr />
       <SectionTitle id="hot-authors">热门作者</SectionTitle>
       <HomeHotUser :hotUsers="hotUsers.slice(0, 3)" />
@@ -59,11 +61,17 @@ import { CODERX_ROLE_TITLES, ScrambleFrameText } from '@/components/scramble';
 import RetroComputerShader from '@/components/canvas/retro-computer-shader/RetroComputerShader.vue';
 // import CodeSpotlight from '@/components/canvas/code-spot-light/CodeSpotlight.vue';
 import useHomeStore from '@/stores/home.store';
+import { useFeatureAmbientDimming } from './composables/useFeatureAmbientDimming';
 import { useWallHitScramble } from './composables/useWallHitScramble';
 
 const homeStore = useHomeStore();
 const { hotUsers } = storeToRefs(homeStore);
 const { frame, screenFrame, target, advanceOnWallHit } = useWallHitScramble();
+const featureZone = useTemplateRef<HTMLElement>('featureZone');
+const { progress: featureAmbientProgress } = useFeatureAmbientDimming({ rootRef: featureZone });
+const homeStyle = computed(() => ({
+  '--feature-ambient-progress': featureAmbientProgress.value.toFixed(4),
+}));
 
 /** 桌面 Hero 标题槽宽：按角色词里字符数最多的一项预留（当前为 CreatorX / BuilderX） */
 const titleWidthReserve = CODERX_ROLE_TITLES.reduce((longest, title) => (Array.from(title).length > Array.from(longest).length ? title : longest));
@@ -81,6 +89,45 @@ onMounted(() => {
 $TitleSize: 2em;
 
 .home {
+  --feature-ambient-progress: 0;
+
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    background: #101216;
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  :where(html:not(.dark)) & {
+    &::before {
+      opacity: calc(var(--feature-ambient-progress) * 0.94);
+    }
+
+    .feature-ambient-zone {
+      --feature-ambient-color-weight: calc(var(--feature-ambient-progress) * 100%);
+      --text-primary: color-mix(in srgb, #303133, var(--eye-white) var(--feature-ambient-color-weight));
+      --text-secondary: color-mix(in srgb, #5f5f5f, #b9c0c8 var(--feature-ambient-color-weight));
+      --text-regular: var(--text-secondary);
+      --text-shadow: color-mix(in srgb, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.12) var(--feature-ambient-color-weight));
+      --bg-color-primary: color-mix(in srgb, #f7f7f4, #0f0f0f var(--feature-ambient-color-weight));
+      --bg-color-secondary: color-mix(in srgb, #f5f5f5, #1a1a1a var(--feature-ambient-color-weight));
+      --glass-bg: color-mix(in srgb, rgba(255, 255, 255, 0.6), rgba(15, 15, 15, 0.72) var(--feature-ambient-color-weight));
+      --glass-bg-popup: color-mix(in srgb, rgba(255, 255, 255, 0.92), rgba(30, 30, 30, 0.95) var(--feature-ambient-color-weight));
+      --border-color-default: color-mix(in srgb, #ebeef5, rgba(147, 161, 178, 0.2) var(--feature-ambient-color-weight));
+      --feature-demo-blue-surface: color-mix(in srgb, #f0f5ff, #1e293b var(--feature-ambient-color-weight));
+      --feature-demo-blue-border: color-mix(in srgb, #94b8ee, rgba(148, 184, 238, 0.4) var(--feature-ambient-color-weight));
+      --feature-stage-shadow-color: color-mix(in srgb, rgba(30, 45, 40, 0.12), rgba(0, 0, 0, 0.32) var(--feature-ambient-color-weight));
+      --feature-arrow-edge: color-mix(in srgb, rgb(94 145 222 / 0.62), rgb(171 202 248 / 0.78) var(--feature-ambient-color-weight));
+    }
+  }
+
   > .content {
     max-width: 80%;
     margin: 0 auto;

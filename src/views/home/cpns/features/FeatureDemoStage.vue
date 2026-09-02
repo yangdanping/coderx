@@ -37,7 +37,7 @@ defineProps<{
   background: color-mix(in srgb, var(--glass-bg) 88%, transparent);
   border-radius: var(--card-border-radius);
   box-shadow:
-    0 2px 8px rgba(30, 45, 40, 0.12),
+    0 2px 8px var(--feature-stage-shadow-color, rgba(30, 45, 40, 0.12)),
     inset 0 0 0 1px color-mix(in srgb, var(--border-color-default) 82%, transparent);
 
   &__bar {
