@@ -20,7 +20,7 @@ function mockElement(top: number, bottom: number): HTMLElement {
   } as HTMLElement;
 }
 
-function mountAmbient(rootRef = shallowRef<HTMLElement | null>(mockElement(820, 5000))) {
+function mountAmbient(rootRef = shallowRef<HTMLElement | null>(mockElement(1020, 5000))) {
   let ambient!: ReturnType<typeof useFeatureAmbientDimming>;
   const wrapper = mount(
     defineComponent({
@@ -36,8 +36,8 @@ function mountAmbient(rootRef = shallowRef<HTMLElement | null>(mockElement(820, 
 
 describe('calculateFeatureAmbientProgress', () => {
   it('moves from light to dark across the feature entry range', () => {
-    expect(calculateFeatureAmbientProgress({ top: 820, bottom: 5000 }, 1000)).toBe(0);
-    expect(calculateFeatureAmbientProgress({ top: 500, bottom: 5000 }, 1000)).toBeCloseTo(0.5, 4);
+    expect(calculateFeatureAmbientProgress({ top: 1020, bottom: 5000 }, 1000)).toBe(0);
+    expect(calculateFeatureAmbientProgress({ top: 600, bottom: 5000 }, 1000)).toBeCloseTo(0.5, 4);
     expect(calculateFeatureAmbientProgress({ top: 180, bottom: 5000 }, 1000)).toBe(1);
   });
 

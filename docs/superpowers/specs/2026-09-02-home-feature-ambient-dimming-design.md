@@ -14,7 +14,7 @@ The home page owns a clamped ambient progress value from `0` to `1`:
 - dark mode does not consume this progress because it already has a dark atmosphere;
 - reduced-motion users keep the scroll-linked color response, but receive no additional time-based easing.
 
-The progress drives a fixed, pointer-transparent dark surface behind the home content. It also drives Feature-local theme tokens so text and preview surfaces crossfade with the background instead of becoming low contrast. The navbar remains under the user's explicit theme and is not temporarily switched.
+The progress drives a fixed, pointer-transparent dark surface behind the home content. It also drives Feature-local surface tokens. Feature text uses the dark palette as soon as the zone approaches, while preview surfaces settle faster than the viewport background; this prevents text and surfaces from crossing through the same low-contrast mid-gray. The navbar remains under the user's explicit theme and is not temporarily switched.
 
 ## Color Contract
 

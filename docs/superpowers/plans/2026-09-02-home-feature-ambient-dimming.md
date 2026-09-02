@@ -39,15 +39,15 @@
 **Interfaces:**
 - Produces: `calculateFeatureAmbientProgress(rect, viewportHeight, thresholds?) => number`.
 - Produces: `useFeatureAmbientDimming({ rootRef, thresholds? })` returning readonly `progress` and `syncFromScroll()`.
-- Uses default viewport ratios: entry starts at `0.82`, entry completes at `0.18`, exit starts at `0.92`, exit completes at `0.28`.
+- Uses default viewport ratios: entry starts just below the viewport at `1.02`, entry completes at `0.18`, exit starts at `0.92`, exit completes at `0.28`.
 
 - [ ] **Step 1: Write failing progress tests**
 
 Create tests using synthetic `{ top, bottom }` rectangles. Assert progress is `0` before entry, `0.5` midway through entry, `1` on the plateau, `0.5` midway through exit, and `0` after exit. Repeat an earlier rectangle after an exit rectangle to prove reverse scrolling is stateless.
 
 ```ts
-expect(calculateFeatureAmbientProgress({ top: 820, bottom: 5000 }, 1000)).toBe(0);
-expect(calculateFeatureAmbientProgress({ top: 500, bottom: 5000 }, 1000)).toBeCloseTo(0.5);
+expect(calculateFeatureAmbientProgress({ top: 1020, bottom: 5000 }, 1000)).toBe(0);
+expect(calculateFeatureAmbientProgress({ top: 600, bottom: 5000 }, 1000)).toBeCloseTo(0.5);
 expect(calculateFeatureAmbientProgress({ top: 180, bottom: 5000 }, 1000)).toBe(1);
 expect(calculateFeatureAmbientProgress({ top: -3000, bottom: 600 }, 1000)).toBeCloseTo(0.5);
 expect(calculateFeatureAmbientProgress({ top: -4000, bottom: 280 }, 1000)).toBe(0);
@@ -146,7 +146,7 @@ Keep the layer fixed, pointer-transparent, behind home content, and disabled und
 
 - [ ] **Step 4: Interpolate Feature-local theme variables**
 
-Under `html:not(.dark)`, interpolate primary/secondary text, glass surfaces, borders, and preview-specific pale-blue surfaces with `color-mix()` and `calc(var(--feature-ambient-progress) * 100%)`. Do not change the surrounding Hero or Hot Authors variables.
+Under `html:not(.dark)`, keep Feature primary text on `--eye-white`, keep secondary text on a readable cool neutral, and interpolate glass surfaces, borders, and preview-specific pale-blue surfaces with `color-mix()`. Let surface colors settle at `240%` of the raw ambient progress so text and surfaces never cross through the same low-contrast mid-gray. Do not change the surrounding Hero or Hot Authors variables.
 
 Add `--eye-white: #ededed` to `:root`, set dark `--text-primary: var(--eye-white)`, replace Feature demo `white`/`#ffffff` paint with `var(--eye-white)`, and route pale-blue demo surfaces through `--feature-demo-blue-surface`.
 

@@ -127,6 +127,8 @@ describe('FeatureSection scroll story', () => {
     expect(homeSource).toContain('useFeatureAmbientDimming');
     expect(homeSource).toContain('ref="featureZone"');
     expect(homeSource).toContain('--feature-ambient-progress');
+    expect(homeSource).toContain('--feature-ambient-surface-weight: clamp(0%, calc(var(--feature-ambient-progress) * 240%), 100%)');
+    expect(homeSource).toContain('--text-primary: var(--eye-white)');
     expect(homeSource).toContain('html:not(.dark)');
     expect(homeSource).toContain('color-mix');
     expect(homeSource).toContain('@media (prefers-reduced-motion: reduce)');

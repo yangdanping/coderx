@@ -111,20 +111,22 @@ $TitleSize: 2em;
     }
 
     .feature-ambient-zone {
-      --feature-ambient-color-weight: calc(var(--feature-ambient-progress) * 100%);
-      --text-primary: color-mix(in srgb, #303133, var(--eye-white) var(--feature-ambient-color-weight));
-      --text-secondary: color-mix(in srgb, #5f5f5f, #b9c0c8 var(--feature-ambient-color-weight));
+      // Surface colors settle before readable Feature content reaches the viewport,
+      // avoiding the low-contrast midpoint produced by text and surface colors crossing together.
+      --feature-ambient-surface-weight: clamp(0%, calc(var(--feature-ambient-progress) * 240%), 100%);
+      --text-primary: var(--eye-white);
+      --text-secondary: #c2c7ce;
       --text-regular: var(--text-secondary);
-      --text-shadow: color-mix(in srgb, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.12) var(--feature-ambient-color-weight));
-      --bg-color-primary: color-mix(in srgb, #f7f7f4, #0f0f0f var(--feature-ambient-color-weight));
-      --bg-color-secondary: color-mix(in srgb, #f5f5f5, #1a1a1a var(--feature-ambient-color-weight));
-      --glass-bg: color-mix(in srgb, rgba(255, 255, 255, 0.6), rgba(15, 15, 15, 0.72) var(--feature-ambient-color-weight));
-      --glass-bg-popup: color-mix(in srgb, rgba(255, 255, 255, 0.92), rgba(30, 30, 30, 0.95) var(--feature-ambient-color-weight));
-      --border-color-default: color-mix(in srgb, #ebeef5, rgba(147, 161, 178, 0.2) var(--feature-ambient-color-weight));
-      --feature-demo-blue-surface: color-mix(in srgb, #f0f5ff, #1e293b var(--feature-ambient-color-weight));
-      --feature-demo-blue-border: color-mix(in srgb, #94b8ee, rgba(148, 184, 238, 0.4) var(--feature-ambient-color-weight));
-      --feature-stage-shadow-color: color-mix(in srgb, rgba(30, 45, 40, 0.12), rgba(0, 0, 0, 0.32) var(--feature-ambient-color-weight));
-      --feature-arrow-edge: color-mix(in srgb, rgb(94 145 222 / 0.62), rgb(171 202 248 / 0.78) var(--feature-ambient-color-weight));
+      --text-shadow: rgba(255, 255, 255, 0.12);
+      --bg-color-primary: color-mix(in srgb, #f7f7f4, #0f0f0f var(--feature-ambient-surface-weight));
+      --bg-color-secondary: color-mix(in srgb, #f5f5f5, #1a1a1a var(--feature-ambient-surface-weight));
+      --glass-bg: color-mix(in srgb, rgba(255, 255, 255, 0.6), rgba(15, 15, 15, 0.72) var(--feature-ambient-surface-weight));
+      --glass-bg-popup: color-mix(in srgb, rgba(255, 255, 255, 0.92), rgba(30, 30, 30, 0.95) var(--feature-ambient-surface-weight));
+      --border-color-default: color-mix(in srgb, #ebeef5, rgba(147, 161, 178, 0.2) var(--feature-ambient-surface-weight));
+      --feature-demo-blue-surface: color-mix(in srgb, #f0f5ff, #1e293b var(--feature-ambient-surface-weight));
+      --feature-demo-blue-border: color-mix(in srgb, #94b8ee, rgba(148, 184, 238, 0.4) var(--feature-ambient-surface-weight));
+      --feature-stage-shadow-color: color-mix(in srgb, rgba(30, 45, 40, 0.12), rgba(0, 0, 0, 0.32) var(--feature-ambient-surface-weight));
+      --feature-arrow-edge: color-mix(in srgb, rgb(94 145 222 / 0.62), rgb(171 202 248 / 0.78) var(--feature-ambient-surface-weight));
     }
   }
 

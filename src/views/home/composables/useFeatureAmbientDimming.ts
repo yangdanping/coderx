@@ -17,7 +17,7 @@ export interface UseFeatureAmbientDimmingOptions {
 type FeatureAmbientRect = Pick<DOMRectReadOnly, 'top' | 'bottom'>;
 
 export const DEFAULT_FEATURE_AMBIENT_THRESHOLDS: FeatureAmbientThresholds = {
-  entryStart: 0.82,
+  entryStart: 1.02,
   entryEnd: 0.18,
   exitStart: 0.92,
   exitEnd: 0.28,
