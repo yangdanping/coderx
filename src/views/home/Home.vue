@@ -1,5 +1,5 @@
 <template>
-  <div class="home" :style="homeStyle">
+  <div class="home">
     <div class="content">
       <div class="title-section">
         <div class="title">
@@ -68,10 +68,7 @@ const homeStore = useHomeStore();
 const { hotUsers } = storeToRefs(homeStore);
 const { frame, screenFrame, target, advanceOnWallHit } = useWallHitScramble();
 const featureZone = useTemplateRef<HTMLElement>('featureZone');
-const { progress: featureAmbientProgress } = useFeatureAmbientDimming({ rootRef: featureZone });
-const homeStyle = computed(() => ({
-  '--feature-ambient-progress': featureAmbientProgress.value.toFixed(4),
-}));
+useFeatureAmbientDimming({ rootRef: featureZone });
 
 /** 桌面 Hero 标题槽宽：按角色词里字符数最多的一项预留（当前为 CreatorX / BuilderX） */
 const titleWidthReserve = CODERX_ROLE_TITLES.reduce((longest, title) => (Array.from(title).length > Array.from(longest).length ? title : longest));
@@ -89,7 +86,7 @@ onMounted(() => {
 $TitleSize: 2em;
 
 .home {
-  --feature-ambient-progress: 0;
+  --feature-ambient-progress: var(--home-feature-ambient-progress, 0);
 
   position: relative;
   isolation: isolate;
@@ -99,15 +96,14 @@ $TitleSize: 2em;
     position: fixed;
     z-index: -1;
     inset: 0;
-    background: #101216;
-    opacity: 0;
+    background: transparent;
     pointer-events: none;
-    will-change: opacity;
+    will-change: background-color;
   }
 
   :where(html:not(.dark)) & {
     &::before {
-      opacity: calc(var(--feature-ambient-progress) * 0.94);
+      background: rgb(0 0 0 / calc(var(--feature-ambient-progress) * 0.76));
     }
 
     .feature-ambient-zone {

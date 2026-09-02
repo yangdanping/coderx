@@ -31,7 +31,8 @@ describe('NavBar layout contract', () => {
     expect(source).toContain('end: () => props.glassRevealEnd');
     expect(source).toContain("'--navbar-glass-progress': glassProgress");
     expect(navStyle).toContain('&::before');
-    expect(navStyle).toContain('background-color: var(--glass-bg);');
+    expect(navStyle).toContain('--navbar-ambient-surface: var(--glass-bg);');
+    expect(navStyle).toContain('background-color: var(--navbar-ambient-surface);');
     expect(navStyle).toContain('backdrop-filter: var(--glass-blur);');
     expect(navStyle).toContain('opacity: var(--navbar-glass-progress);');
     expect(navStyle).toContain('box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);');

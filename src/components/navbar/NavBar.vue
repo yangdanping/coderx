@@ -79,6 +79,11 @@ const goBack = () => {
 
 <style lang="scss" scoped>
 .nav-bar {
+  --navbar-ambient-progress: var(--home-feature-ambient-progress, 0);
+  // Header 先完成明暗换挡，避免表面与文字同时穿过低对比度的中灰区。
+  --navbar-ambient-weight: clamp(0%, calc(var(--navbar-ambient-progress) * 250%), 100%);
+  --navbar-ambient-surface: var(--glass-bg);
+
   /* position: sticky; */
   position: fixed;
   right: 0;
@@ -90,13 +95,20 @@ const goBack = () => {
   isolation: isolate;
   background-color: transparent;
 
+  :where(html:not(.dark)) & {
+    --navbar-ambient-surface: color-mix(in srgb, rgba(255, 255, 255, 0.6), rgb(0 0 0 / 0.76) var(--navbar-ambient-weight));
+    --text-primary: color-mix(in srgb, #303133, var(--eye-white) var(--navbar-ambient-weight));
+    --text-secondary: color-mix(in srgb, #5f5f5f, #c2c7ce var(--navbar-ambient-weight));
+    --glass-bg: color-mix(in srgb, rgba(255, 255, 255, 0.6), rgb(15 15 15 / 0.56) var(--navbar-ambient-weight));
+  }
+
   &::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-color: var(--glass-bg);
+    background-color: var(--navbar-ambient-surface);
     backdrop-filter: var(--glass-blur);
     opacity: var(--navbar-glass-progress);
     box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);

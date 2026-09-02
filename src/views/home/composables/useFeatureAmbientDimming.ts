@@ -16,6 +16,8 @@ export interface UseFeatureAmbientDimmingOptions {
 
 type FeatureAmbientRect = Pick<DOMRectReadOnly, 'top' | 'bottom'>;
 
+export const FEATURE_AMBIENT_PROGRESS_PROPERTY = '--home-feature-ambient-progress';
+
 export const DEFAULT_FEATURE_AMBIENT_THRESHOLDS: FeatureAmbientThresholds = {
   entryStart: 1.02,
   entryEnd: 0.18,
@@ -42,11 +44,17 @@ export function useFeatureAmbientDimming({ rootRef, thresholds = DEFAULT_FEATURE
   const progress = shallowRef(0);
   let animationFrameId: number | null = null;
 
+  const publishProgress = () => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.setProperty(FEATURE_AMBIENT_PROGRESS_PROPERTY, progress.value.toFixed(4));
+  };
+
   const syncFromScroll = () => {
     const rootElement = rootRef.value;
     if (!rootElement || typeof window === 'undefined') return;
 
     progress.value = calculateFeatureAmbientProgress(rootElement.getBoundingClientRect(), window.innerHeight, thresholds);
+    publishProgress();
   };
 
   const scheduleSync = () => {
@@ -68,6 +76,7 @@ export function useFeatureAmbientDimming({ rootRef, thresholds = DEFAULT_FEATURE
     window.removeEventListener('resize', scheduleSync);
     if (animationFrameId !== null) window.cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
+    if (typeof document !== 'undefined') document.documentElement.style.removeProperty(FEATURE_AMBIENT_PROGRESS_PROPERTY);
   });
 
   return {

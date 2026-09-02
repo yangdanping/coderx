@@ -116,6 +116,7 @@ describe('FeatureSection scroll story', () => {
   it('scopes the light-mode ambient dimming and eye-white palette to the feature story', () => {
     const readSource = (filePath: string) => fs.readFileSync(path.join(process.cwd(), filePath), 'utf8');
     const homeSource = readSource('src/views/home/Home.vue');
+    const navbarSource = readSource('src/components/navbar/NavBar.vue');
     const commonSource = readSource('src/assets/css/common.scss');
     const stageSource = readSource('src/views/home/cpns/features/FeatureDemoStage.vue');
     const featurePaintSources = [
@@ -127,11 +128,21 @@ describe('FeatureSection scroll story', () => {
     expect(homeSource).toContain('useFeatureAmbientDimming');
     expect(homeSource).toContain('ref="featureZone"');
     expect(homeSource).toContain('--feature-ambient-progress');
+    expect(homeSource).toContain('--home-feature-ambient-progress');
+    expect(homeSource).toContain('rgb(0 0 0 / calc(var(--feature-ambient-progress) * 0.76))');
+    expect(homeSource).not.toContain('background: #101216');
+    expect(homeSource).not.toContain('opacity: calc(var(--feature-ambient-progress) * 0.94)');
     expect(homeSource).toContain('--feature-ambient-surface-weight: clamp(0%, calc(var(--feature-ambient-progress) * 240%), 100%)');
     expect(homeSource).toContain('--text-primary: var(--eye-white)');
     expect(homeSource).toContain('html:not(.dark)');
     expect(homeSource).toContain('color-mix');
     expect(homeSource).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(navbarSource).toContain('--home-feature-ambient-progress');
+    expect(navbarSource).toContain('--navbar-ambient-weight: clamp(0%, calc(var(--navbar-ambient-progress) * 250%), 100%)');
+    expect(navbarSource).toContain('--navbar-ambient-surface');
+    expect(navbarSource).toContain('rgb(0 0 0 / 0.76)');
+    expect(navbarSource).toContain('var(--eye-white)');
+    expect(navbarSource).toContain('html:not(.dark)');
     expect(commonSource).toContain('--eye-white: #ededed');
     expect(commonSource).toContain('--text-primary: var(--eye-white)');
     expect(commonSource).not.toMatch(/color:\s*#fff(?:fff)?\b/i);

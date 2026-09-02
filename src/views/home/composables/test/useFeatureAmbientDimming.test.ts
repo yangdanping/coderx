@@ -66,6 +66,7 @@ describe('useFeatureAmbientDimming', () => {
   beforeEach(() => {
     queuedFrames.clear();
     nextFrameId = 1;
+    document.documentElement.style.removeProperty('--home-feature-ambient-progress');
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1000 });
     vi.stubGlobal(
       'requestAnimationFrame',
@@ -110,6 +111,16 @@ describe('useFeatureAmbientDimming', () => {
     expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
 
     wrapper.unmount();
+  });
+
+  it('publishes the ambient progress for app-level consumers and cleans it up on unmount', () => {
+    const { wrapper } = mountAmbient(shallowRef<HTMLElement | null>(mockElement(180, 5000)));
+
+    runFrame(1);
+    expect(document.documentElement.style.getPropertyValue('--home-feature-ambient-progress')).toBe('1.0000');
+
+    wrapper.unmount();
+    expect(document.documentElement.style.getPropertyValue('--home-feature-ambient-progress')).toBe('');
   });
 
   it('removes global listeners and cancels pending work on unmount', () => {
