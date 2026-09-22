@@ -111,6 +111,7 @@ export function articleListInfiniteOptions(params: INormalizedArticleListParams)
         undefined,
         signal,
       );
+      if (res.code !== 0) throw new Error(res.msg || '获取文章列表失败');
       return res.data as IArticles;
     },
     initialPageParam: 1,

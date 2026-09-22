@@ -4,8 +4,7 @@ import { userLogin, userRegister, getUserInfoById, follow, getFollow, updateProf
 import { getCollect, addCollect, addToCollect, removeCollectArticle, updateCollect, removeCollect } from '@/service/collect/collect.request';
 import { uploadAvatar, deleteOldAvatar } from '@/service/file/file.request';
 import { migrateGuestTagOrderToAccount } from '@/service/article/tagOrderPreference';
-import { LocalCache, Msg, emitter } from '@/utils';
-import useArticleStore from './article.store';
+import { LocalCache, Msg } from '@/utils';
 import useRootStore from './index.store';
 import useOnlineStore from './online.store';
 
@@ -413,17 +412,17 @@ const useUserStore = defineStore('user', {
         Msg.showFail('举报用户失败');
       }
     },
-    async removeCollectArticle(collectId, idList) {
+    async removeCollectArticle(collectId: number, idList: number[]): Promise<number[] | null> {
       const res = await removeCollectArticle(collectId, idList);
       if (res.code === 0) {
-        if (res.data.collectedArticle) {
-          useArticleStore().getArticleListAction({ idList: res.data.collectedArticle });
-        } else {
-          emitter.emit('clearResultAndBack');
-        }
+        const remainingIds: number[] = res.data.collectedArticle ?? [];
+        const collect = this.collects.find((item) => item.id === collectId);
+        if (collect) collect.count = remainingIds;
         Msg.showSuccess('移除文章成功!');
+        return remainingIds;
       } else {
         Msg.showFail('移除文章失败!');
+        return null;
       }
     },
     // 修改收藏夹名称
