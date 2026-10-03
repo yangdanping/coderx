@@ -5,7 +5,7 @@ import { deleteFlowDraftRequest, getFlowDraftRequest, saveFlowDraftRequest } fro
 import { LocalCache } from '@/utils';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { FlowImageAsset } from '@/service/flow/flow.types';
+import type { FlowImageAsset, FlowPublicationDraft } from '@/service/flow/flow.types';
 import type {
   FlowDraftLocalFallback,
   FlowDraftMeta,
@@ -196,6 +196,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const actorKey = getFlowDraftActorKey(userId);
   const localStorageKey = getFlowDraftLocalStorageKey(userId);
   const canSync = options.canSync && userId !== null;
+  const withLocalFallbackLock = <T>(operation: () => T): Promise<T> =>
+    navigator.locks ? navigator.locks.request(localStorageKey, operation) : Promise.resolve().then(operation);
 
   const status = shallowRef<FlowDraftAutosaveStatus>('idle');
   const errorMessage = shallowRef('');
@@ -215,6 +217,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
 
   let lifecycleGeneration = 0;
   let editRevision = 0;
+  let localFallbackFingerprint: string | undefined;
 
   const mutation = useMutation({
     mutationFn: async (snapshot: FlowDraftSnapshot) => {
@@ -243,6 +246,9 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   );
   const savedMediaIds = computed<readonly number[]>(() => Object.freeze([...(savedSnapshot.value?.meta.imageIds ?? [])]));
   const hasDraft = computed(() => hasLocalFallback.value || draftId.value !== null || hasMeaningfulFlowDraft(savedSnapshot.value));
+  const publicationDraft = computed<FlowPublicationDraft | null>(() =>
+    canSync && draftId.value !== null ? { id: draftId.value, version: version.value } : null,
+  );
 
   const invalidateInitialize = () => {
     lifecycleGeneration += 1;
@@ -252,6 +258,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
   const removeLocalFallback = () => {
     LocalCache.removeCache(localStorageKey);
     hasLocalFallback.value = false;
+    localFallbackFingerprint = undefined;
   };
 
   const discardInvalidLocalFallback = () => {
@@ -262,6 +269,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       // cleanup can be retried on the next initialization.
     }
     hasLocalFallback.value = false;
+    localFallbackFingerprint = undefined;
   };
 
   const writeLocalFallback = (
@@ -273,7 +281,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     const selectedImages = selectFlowDraftImages(normalizedSnapshot.meta.imageIds, images);
     const localUpdatedAt = timestamps.localUpdatedAt ?? new Date().toISOString();
     const serverUpdatedAt = timestamps.serverUpdatedAt === undefined ? lastSavedAt.value : timestamps.serverUpdatedAt;
-    LocalCache.setCache(localStorageKey, {
+    const fallback = {
       schemaVersion: FLOW_DRAFT_SCHEMA_VERSION,
       actorKey,
       ...normalizedSnapshot,
@@ -282,7 +290,9 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       version: version.value,
       serverUpdatedAt,
       localUpdatedAt,
-    } satisfies FlowDraftLocalFallback);
+    } satisfies FlowDraftLocalFallback;
+    LocalCache.setCache(localStorageKey, fallback);
+    localFallbackFingerprint = JSON.stringify(fallback);
     hasLocalFallback.value = true;
   };
 
@@ -309,6 +319,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     const schemaVersion = cached['schemaVersion'];
     const cachedDraftId = cached['draftId'];
     const cachedVersion = cached['version'];
+    localFallbackFingerprint = JSON.stringify(cached);
     return {
       schemaVersion,
       actorKey,
@@ -374,6 +385,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     errorMessage.value = '';
     status.value = 'idle';
     editRevision += 1;
+    localFallbackFingerprint = undefined;
   };
 
   const initialize = async (): Promise<FlowDraftRestoreState | null> => {
@@ -389,7 +401,8 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     let restoredState: FlowDraftRestoreState | null = null;
 
     try {
-      local = readLocalFallback();
+      local = await withLocalFallbackLock(() => lifecycleGeneration === initializeGeneration ? readLocalFallback() : null);
+      if (lifecycleGeneration !== initializeGeneration) return null;
       if (canSync) {
         remote = (await getFlowDraftRequest()).data;
         if (lifecycleGeneration !== initializeGeneration) return null;
@@ -427,11 +440,15 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       }
 
       if (resolution.source === 'remote' && remote && resolution.state) {
+        const remoteState = resolution.state;
         const serverUpdatedAt = remote.updateAt ?? remote.createAt ?? new Date().toISOString();
         try {
-          writeLocalFallback(resolution.state, resolution.state.images, {
-            localUpdatedAt: serverUpdatedAt,
-            serverUpdatedAt,
+          await withLocalFallbackLock(() => {
+            if (lifecycleGeneration !== initializeGeneration) return;
+            writeLocalFallback(remoteState, remoteState.images, {
+              localUpdatedAt: serverUpdatedAt,
+              serverUpdatedAt,
+            });
           });
         } catch {
           // The remote draft is authoritative; cache failure must not make
@@ -439,6 +456,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
         }
       }
 
+      if (lifecycleGeneration !== initializeGeneration) return null;
       restoreStableStatus();
       return restoredState;
     } catch (error) {
@@ -516,14 +534,14 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
       let cacheWriteFailed = false;
       if (canSync) {
         try {
-          writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps);
+          await withLocalFallbackLock(() => writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps));
         } catch {
           cacheWriteFailed = true;
         }
       } else {
         // Local persistence is the durable save for guests, so it must succeed
         // before the in-memory saved baseline advances.
-        writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps);
+        await withLocalFallbackLock(() => writeLocalFallback(snapshotToSave, selectedImages.images, fallbackTimestamps));
       }
 
       setSavedBaseline(savedState, canSync ? 'saved' : 'local');
@@ -584,7 +602,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     errorMessage.value = '';
     try {
       if (canSync) await clearRemoteDraft();
-      removeLocalFallback();
+      await withLocalFallbackLock(removeLocalFallback);
       resetState();
     } catch (error) {
       status.value = 'error';
@@ -595,30 +613,33 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     }
   };
 
-  const resetAfterPublication = async (): Promise<{ remoteCleared: boolean }> => {
+  const resetAfterPublication = async (): Promise<{ localCleared: boolean }> => {
     invalidateInitialize();
     isClearing.value = true;
     status.value = 'clearing';
     errorMessage.value = '';
-    const currentDraftId = draftId.value;
-    removeLocalFallback();
-    resetState();
-
+    let localCleared = true;
     try {
-      if (!canSync) return { remoteCleared: true };
-      try {
-        if (currentDraftId !== null) {
-          await deleteFlowDraftRequest(currentDraftId);
+      // The server consumes the referenced draft in its publication transaction.
+      // A shared fallback may already belong to another tab's subsequent save.
+      if (localFallbackFingerprint !== undefined) {
+        if (!navigator.locks) {
+          // Without cross-tab exclusion, preserve the shared cache and warn.
+          localCleared = false;
         } else {
-          await clearRemoteDraft();
+          await withLocalFallbackLock(() => {
+            const cached: unknown = LocalCache.getCache(localStorageKey);
+            if (JSON.stringify(cached) === localFallbackFingerprint) removeLocalFallback();
+          });
         }
-        return { remoteCleared: true };
-      } catch {
-        return { remoteCleared: false };
       }
+    } catch {
+      localCleared = false;
     } finally {
+      resetState();
       isClearing.value = false;
     }
+    return { localCleared };
   };
 
   const statusText = computed(() => {
@@ -648,6 +669,7 @@ export function useFlowDraftAutosave(options: UseFlowDraftAutosaveOptions) {
     savedSnapshot: readonly(savedSnapshot),
     savedImages: readonly(savedImages),
     savedMediaIds,
+    publicationDraft,
     isHydrating: readonly(isHydrating),
     isClearing: readonly(isClearing),
     isRecoveryBlocked: readonly(isRecoveryBlocked),

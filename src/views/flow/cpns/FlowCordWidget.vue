@@ -11,8 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeRouteLeave } from 'vue-router';
-
 const LEAVE_MS = 420;
 
 /** 与 Flow 主列一致；父未设 `--flow-column-width` 时用此回退 */
@@ -69,13 +67,16 @@ onMounted(() => {
   });
 });
 
-onBeforeRouteLeave((_to, _from, next) => {
-  panelOpen.value = false;
+async function prepareLeave(): Promise<void> {
   cordRevealed.value = false;
-  window.setTimeout(() => next(), LEAVE_MS);
-});
+  await new Promise<void>((resolve) => window.setTimeout(resolve, LEAVE_MS));
+}
 
-defineExpose({ focusHandle });
+function cancelLeave(): void {
+  cordRevealed.value = true;
+}
+
+defineExpose({ focusHandle, prepareLeave, cancelLeave });
 </script>
 
 <style lang="scss" scoped>

@@ -102,6 +102,7 @@ describe('flow requests', () => {
       clientRequestId: '4f95672f-4f8e-4cc1-9953-7ba4c2d5f4cf',
       content: { type: 'doc', content: [{ type: 'paragraph' }] },
       mediaIds: [42, 41],
+      draft: { id: 18, version: 4 },
     };
 
     await expect(createFlow(payload)).resolves.toEqual(flowItem);
@@ -111,6 +112,14 @@ describe('flow requests', () => {
       showLoading: false,
       showError: false,
     });
+  });
+
+  it('preserves the business rejection message returned by the publication status middleware', async () => {
+    postMock.mockResolvedValueOnce({ code: -1, msg: '您已被封禁' });
+    await expect(createFlow({
+      clientRequestId: '4f95672f-4f8e-4cc1-9953-7ba4c2d5f4cf',
+      content: { type: 'doc' }, mediaIds: [], draft: null,
+    })).rejects.toMatchObject({ name: 'FlowPublicationError', message: '您已被封禁' });
   });
 
   it('loads API-backed pages without a global loading overlay', async () => {
@@ -161,6 +170,7 @@ describe('flow requests', () => {
         clientRequestId: '4f95672f-4f8e-4cc1-9953-7ba4c2d5f4cf',
         content: { type: 'doc' },
         mediaIds: [],
+        draft: null,
       }),
     ).rejects.toThrow(/malformed/i);
 

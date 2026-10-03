@@ -102,6 +102,7 @@ async function failFirstPublication(wrapper: VueWrapper) {
     clientRequestId: firstRequestId,
     content: document,
     mediaIds: [42],
+    draft: null,
   });
 }
 
@@ -121,7 +122,7 @@ afterEach(() => {
 describe('FlowEditorModal real upload queue retry identity', () => {
   it('restores server assets as uploaded attachments without starting uploads', async () => {
     createFlowMock.mockReset().mockResolvedValue({ id: 9 });
-    const wrapper = mountModal({ restoredImages: [uploadedAsset, secondUploadedAsset] });
+    const wrapper = mountModal({ restoredImages: [uploadedAsset, secondUploadedAsset], draftRef: { id: 18, version: 4 } });
     await nextTick();
 
     const attachments = wrapper.findComponent({ name: 'FlowAttachmentGrid' }).props('attachments');
@@ -136,6 +137,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
       clientRequestId: firstRequestId,
       content: document,
       mediaIds: [42, 41],
+      draft: { id: 18, version: 4 },
     });
     wrapper.unmount();
   });
@@ -162,6 +164,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
       clientRequestId: firstRequestId,
       content: document,
       mediaIds: [42],
+      draft: null,
     });
     wrapper.unmount();
   });
@@ -182,6 +185,7 @@ describe('FlowEditorModal real upload queue retry identity', () => {
       clientRequestId: secondRequestId,
       content: document,
       mediaIds: [],
+      draft: null,
     });
     wrapper.unmount();
   });

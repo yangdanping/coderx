@@ -5,6 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { FlowImageAsset } from '@/service/flow/flow.types';
 
+vi.mock('vue-router', () => ({
+  onBeforeRouteLeave: vi.fn(),
+  useRouter: () => ({ afterEach: () => () => {}, onError: () => () => {} }),
+}));
+
 const { confirmMock, deleteFlowDraftRequestMock, getFlowDraftRequestMock, saveFlowDraftRequestMock } = vi.hoisted(() => ({
   confirmMock: vi.fn(),
   deleteFlowDraftRequestMock: vi.fn(),

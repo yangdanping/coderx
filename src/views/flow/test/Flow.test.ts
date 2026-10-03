@@ -5,7 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flowKeys } from '@/composables/useFlowFeed';
 
-import type { FlowImageAsset } from '@/service/flow/flow.types';
+import type { FlowImageAsset, FlowPublicationDraft } from '@/service/flow/flow.types';
+
+vi.mock('vue-router', () => ({
+  onBeforeRouteLeave: vi.fn(),
+  useRouter: () => ({ afterEach: () => () => {}, onError: () => () => {} }),
+}));
 
 const {
   autosaveHolder,
@@ -114,6 +119,7 @@ function createAutosaveMock() {
     statusText: shallowRef('已保存'),
     errorMessage: shallowRef(''),
     hasDraft: shallowRef(true),
+    publicationDraft: shallowRef<FlowPublicationDraft | null>(null),
     hasContent: shallowRef(false),
     isDirty: shallowRef(false),
     canSave: shallowRef(false),
@@ -131,14 +137,14 @@ function createAutosaveMock() {
     clearDraft: vi.fn().mockResolvedValue(undefined),
     resetAfterPublication: vi.fn().mockImplementation(async () => {
       isRecoveryBlocked.value = false;
-      return { remoteCleared: true };
+      return { localCleared: true };
     }),
   };
 }
 
 const ModalStub = defineComponent({
   name: 'FlowEditorModal',
-  props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked', 'canSaveDraft', 'savingDraft', 'savedMediaIds'],
+  props: ['open', 'content', 'document', 'restoredImages', 'editorDisabled', 'clearDisabled', 'publishDisabled', 'lifecycleLocked', 'canSaveDraft', 'savingDraft', 'savedMediaIds', 'draftRef'],
   emits: ['close', 'update:content', 'update:document', 'update:json', 'update:image-assets', 'update:media-ids', 'update:attachment-state', 'update:publishing', 'clear-draft', 'save-draft', 'published', 'after-close'],
   setup(_, { expose }) {
     onMounted(() => modalMountCount.value++);
@@ -988,8 +994,37 @@ describe('Flow composer page orchestration', () => {
     expect(focusHandleMock).toHaveBeenCalledOnce();
   });
 
+  it('passes the saved server reference to the publication modal reactively', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    expect(wrapper.getComponent(ModalStub).props('draftRef')).toBeNull();
+
+    autosave.publicationDraft.value = { id: 18, version: 4 };
+    await flushPromises();
+    expect(wrapper.getComponent(ModalStub).props('draftRef')).toEqual({ id: 18, version: 4 });
+    autosave.publicationDraft.value = { id: 18, version: 5 };
+    await flushPromises();
+    expect(wrapper.getComponent(ModalStub).props('draftRef')).toEqual({ id: 18, version: 5 });
+  });
+
+  it('warns about local cache failure after publication and still unlocks the next session', async () => {
+    const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
+    autosave.resetAfterPublication.mockResolvedValue({ localCleared: false });
+    const { wrapper } = mountFlow();
+    await flushPromises();
+    const modal = wrapper.getComponent(ModalStub);
+    modal.vm.$emit('published');
+    modal.vm.$emit('after-close');
+    await flushPromises();
+
+    expect(msgWarnMock).toHaveBeenCalledWith(expect.stringContaining('本地草稿缓存清理失败'));
+    expect(wrapper.getComponent(CordStub).props('disabled')).toBe(false);
+    expect(modalMountCount.value).toBe(2);
+  });
+
   it('keeps the cord disabled and delays focus/new session until publication cleanup finishes', async () => {
-    let resolveReset!: (value: { remoteCleared: boolean }) => void;
+    let resolveReset!: (value: { localCleared: boolean }) => void;
     const autosave = autosaveHolder.current as ReturnType<typeof createAutosaveMock>;
     autosave.resetAfterPublication.mockImplementation(
       () =>
@@ -1012,7 +1047,7 @@ describe('Flow composer page orchestration', () => {
     expect(focusHandleMock).not.toHaveBeenCalled();
     expect(modalMountCount.value).toBe(1);
 
-    resolveReset({ remoteCleared: true });
+    resolveReset({ localCleared: true });
     await flushPromises();
 
     expect(wrapper.getComponent(CordStub).props('disabled')).toBe(false);

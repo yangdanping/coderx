@@ -1,25 +1,3 @@
-<template>
-  <div class="flow-detail-page">
-    <main class="flow-detail-column">
-      <header class="detail-header">
-        <button class="back-button" type="button" aria-label="返回 Flow" @click="goBack">
-          <ArrowLeft :size="21" />
-        </button>
-        <h1>动态</h1>
-      </header>
-
-      <FlowFeedSkeleton v-if="loading" :count="1" />
-
-      <FlowFeedItem v-else-if="item" :item="item" :navigable="false" />
-
-      <div v-else class="detail-empty">
-        <p>这条动态不存在或已被移除。</p>
-        <button type="button" @click="router.push('/flow')">返回 Flow</button>
-      </div>
-    </main>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ArrowLeft } from '@lucide/vue';
 import FlowFeedItem from './cpns/FlowFeedItem.vue';
@@ -34,12 +12,30 @@ const props = defineProps<{
 
 const router = useRouter();
 const item = ref<FlowItem | null>(null);
-const loading = ref(true);
+const loading = shallowRef(true);
+const failed = shallowRef(false);
+let requestSequence = 0;
 
 async function loadItem() {
+  const requestId = ++requestSequence;
+  const flowId = Number(props.flowId);
+  item.value = null;
+  failed.value = false;
+
+  if (!/^\d+$/.test(props.flowId) || !Number.isSafeInteger(flowId) || flowId <= 0) {
+    loading.value = false;
+    return;
+  }
+
   loading.value = true;
-  item.value = await getFlowItemById(Number(props.flowId));
-  loading.value = false;
+  try {
+    const result = await getFlowItemById(flowId);
+    if (requestId === requestSequence) item.value = result;
+  } catch {
+    if (requestId === requestSequence) failed.value = true;
+  } finally {
+    if (requestId === requestSequence) loading.value = false;
+  }
 }
 
 function goBack() {
@@ -51,7 +47,37 @@ function goBack() {
 }
 
 watch(() => props.flowId, loadItem, { immediate: true });
+onBeforeUnmount(() => {
+  requestSequence++;
+});
 </script>
+
+<template>
+  <div class="flow-detail-page">
+    <main class="flow-detail-column">
+      <header class="detail-header">
+        <button class="back-button" type="button" aria-label="返回 Flow" @click="goBack">
+          <ArrowLeft :size="21" />
+        </button>
+        <h1>动态</h1>
+      </header>
+
+      <FlowFeedSkeleton v-if="loading" :count="1" />
+
+      <div v-else-if="failed" class="detail-error" role="alert">
+        <p>动态加载失败，请重试</p>
+        <button type="button" @click="loadItem">重试</button>
+      </div>
+
+      <FlowFeedItem v-else-if="item" :item="item" :navigable="false" />
+
+      <div v-else class="detail-empty">
+        <p>这条动态不存在或已被移除。</p>
+        <button type="button" @click="router.push('/flow')">返回 Flow</button>
+      </div>
+    </main>
+  </div>
+</template>
 
 <style lang="scss" scoped>
 .flow-detail-page {
@@ -97,7 +123,8 @@ watch(() => props.flowId, loadItem, { immediate: true });
 }
 
 .back-button,
-.detail-empty button {
+.detail-empty button,
+.detail-error button {
   border: 0;
   background: transparent;
   color: var(--text-primary);
@@ -115,7 +142,8 @@ watch(() => props.flowId, loadItem, { immediate: true });
   }
 }
 
-.detail-empty {
+.detail-empty,
+.detail-error {
   display: grid;
   place-items: center;
   gap: 12px;
