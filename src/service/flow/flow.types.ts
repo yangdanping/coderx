@@ -70,8 +70,14 @@ export interface FlowImageAttachmentState {
   hasFailed: boolean;
 }
 
+export interface FlowPublicationDraft {
+  id: number;
+  version: number;
+}
+
 export interface CreateFlowPayload {
   clientRequestId: string;
   content: TiptapDocContent;
   mediaIds: number[];
+  draft: FlowPublicationDraft | null;
 }

@@ -1,4 +1,5 @@
 import myRequest from '@/service';
+import { FlowPublicationError } from './flow.errors';
 
 import type { AxiosProgressEvent } from 'axios';
 import type { CreateFlowPayload, FlowAuthor, FlowFeedPage, FlowImageAsset, FlowItem, FlowMedia } from './flow.types';
@@ -130,6 +131,9 @@ export async function createFlow(payload: CreateFlowPayload): Promise<FlowItem> 
     showLoading: false,
     showError: false,
   });
+  if (isRecord(response) && typeof response.code === 'number' && response.code !== 0 && typeof response.msg === 'string' && response.msg.trim()) {
+    throw new FlowPublicationError(response.msg);
+  }
   return unwrapSuccess(response, isFlowItem, 'Flow creation');
 }
 

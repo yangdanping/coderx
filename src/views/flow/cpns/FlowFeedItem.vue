@@ -1,54 +1,4 @@
-<template>
-  <article class="flow-feed-item" :class="{ 'is-navigable': navigable }">
-    <RouterLink v-if="navigable" class="item-detail-link" :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }" :aria-label="`查看 ${item.author.name} 的动态详情`" />
-
-    <header class="item-header">
-      <div class="author-interactive excluded-from-detail" @click.stop>
-        <el-avatar :src="item.author.avatarUrl" :size="40" class="author-avatar" />
-        <div class="author-meta">
-          <span class="author-name">{{ item.author.name }}</span>
-          <time class="post-time" :datetime="item.createdAt">{{ timeAgo }}</time>
-        </div>
-      </div>
-      <button class="more-btn excluded-from-detail" role="button" aria-label="更多操作" @click.stop>
-        <MoreHorizontal :size="18" />
-      </button>
-    </header>
-
-    <div v-if="item.bodyHtml.trim()" class="item-body" v-dompurify-html="item.bodyHtml" />
-    <p v-else class="item-body">{{ item.body }}</p>
-
-    <div v-if="item.media.length > 0" class="media-interactive excluded-from-detail">
-      <FlowMediaGallery :media="item.media" />
-    </div>
-
-    <footer class="item-actions">
-      <button class="action-btn like-action excluded-from-detail" :class="{ active: liked, pop: isAnimating }" @click.stop="toggleLike" role="button">
-        <Heart :size="18" :fill="liked ? 'currentColor' : 'none'" />
-        <AnimatedNumber v-if="likeCount > 0" :value="likeCount" />
-      </button>
-      <RouterLink
-        v-if="navigable"
-        class="action-btn comment-action excluded-from-detail"
-        :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }"
-        aria-label="查看动态详情"
-      >
-        <MessageCircle :size="18" />
-        <AnimatedNumber v-if="item.comments > 0" :value="item.comments" />
-      </RouterLink>
-      <span v-else class="action-btn comment-action">
-        <MessageCircle :size="18" />
-        <AnimatedNumber v-if="item.comments > 0" :value="item.comments" />
-      </span>
-      <button class="action-btn share-action excluded-from-detail" role="button" @click.stop>
-        <Share2 :size="18" />
-      </button>
-    </footer>
-  </article>
-</template>
 <script setup lang="ts">
-import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
-import { Heart, MessageCircle, Share2, MoreHorizontal } from '@lucide/vue';
 import FlowMediaGallery from './FlowMediaGallery.vue';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -70,21 +20,32 @@ const props = withDefaults(
 );
 
 const navigable = computed(() => props.navigable);
-const liked = ref(props.item.liked);
-const likeCount = ref(props.item.likes);
-const isAnimating = ref(false);
-
-function toggleLike() {
-  liked.value = !liked.value;
-  likeCount.value += liked.value ? 1 : -1;
-  if (liked.value) {
-    isAnimating.value = true;
-    setTimeout(() => (isAnimating.value = false), 500);
-  }
-}
-
 const timeAgo = computed(() => dayjs(props.item.createdAt).fromNow());
 </script>
+
+<template>
+  <article class="flow-feed-item" :class="{ 'is-navigable': navigable }">
+    <RouterLink v-if="navigable" class="item-detail-link" :to="{ name: 'flow-detail', params: { flowId: String(item.id) } }" :aria-label="`查看 ${item.author.name} 的动态详情`" />
+
+    <header class="item-header">
+      <div class="author-interactive excluded-from-detail" @click.stop>
+        <el-avatar :src="item.author.avatarUrl" :size="40" class="author-avatar" />
+        <div class="author-meta">
+          <span class="author-name">{{ item.author.name }}</span>
+          <time class="post-time" :datetime="item.createdAt">{{ timeAgo }}</time>
+        </div>
+      </div>
+    </header>
+
+    <div v-if="item.bodyHtml.trim()" class="item-body" v-dompurify-html="item.bodyHtml" />
+    <p v-else class="item-body">{{ item.body }}</p>
+
+    <div v-if="item.media.length > 0" class="media-interactive excluded-from-detail">
+      <FlowMediaGallery :media="item.media" />
+    </div>
+  </article>
+</template>
+
 <style lang="scss" scoped>
 .flow-feed-item {
   position: relative;
@@ -174,24 +135,6 @@ const timeAgo = computed(() => dayjs(props.item.createdAt).fromNow());
         color: color-mix(in oklch, var(--fontColor) 65%, transparent);
       }
     }
-
-    .more-btn {
-      flex-shrink: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: 50%;
-      background: transparent;
-      color: var(--fontColor);
-      transition: background 0.2s ease;
-
-      &:hover {
-        background: color-mix(in oklch, var(--fontColor) 8%, transparent);
-      }
-    }
   }
 
   .item-body {
@@ -201,57 +144,6 @@ const timeAgo = computed(() => dayjs(props.item.createdAt).fromNow());
     color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-word;
-  }
-
-  .item-actions {
-    display: flex;
-    gap: clamp(2px, 1cqi, 6px);
-    margin-top: clamp(10px, 2cqi, 14px);
-
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: clamp(5px, 1cqi, 7px) clamp(8px, 2cqi, 14px);
-      border: none;
-      border-radius: 20px;
-      background: transparent;
-      color: var(--fontColor);
-      font-size: clamp(12px, 2cqi, 14px);
-      transition:
-        background 0.2s ease,
-        color 0.2s ease;
-      user-select: none;
-
-      &:hover {
-        background: color-mix(in oklch, var(--fontColor) 8%, transparent);
-      }
-
-      &.active {
-        color: var(--red, #ea3329);
-      }
-
-      &.pop {
-        animation: like-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      span {
-        min-width: 16px;
-        text-align: left;
-      }
-    }
-  }
-}
-
-@keyframes like-pop {
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.25);
-  }
-  100% {
-    transform: scale(1);
   }
 }
 </style>

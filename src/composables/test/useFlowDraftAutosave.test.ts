@@ -23,6 +23,32 @@ vi.mock('@/service/flow/flow-draft.request', () => ({
 import { getFlowDraftLocalStorageKey, resolveFlowDraftRestore, useFlowDraftAutosave, type UseFlowDraftAutosaveOptions } from '../useFlowDraftAutosave';
 
 const wrappers: VueWrapper[] = [];
+const originalLocksDescriptor = Object.getOwnPropertyDescriptor(navigator, 'locks');
+let activeStorageLock: string | null = null;
+
+function createStorageLocks() {
+  const queues = new Map<string, Array<() => void>>();
+  return {
+    request: vi.fn(<T>(name: string, callback: () => T | Promise<T>): Promise<T> => new Promise((resolve, reject) => {
+      const queue = queues.get(name) ?? [];
+      const run = () => {
+        activeStorageLock = name;
+        let result: T | Promise<T>;
+        try { result = callback(); } catch (error) { result = Promise.reject(error); }
+        const release = () => {
+          activeStorageLock = null;
+          queue.shift();
+          if (queue[0]) queue[0]();
+          else queues.delete(name);
+        };
+        Promise.resolve(result).then((value) => { release(); resolve(value); }, (error) => { release(); reject(error); });
+      };
+      queue.push(run);
+      queues.set(name, queue);
+      if (queue.length === 1) run();
+    })),
+  };
+}
 
 const emptySnapshot = (): FlowDraftSnapshot => ({
   content: { type: 'doc', content: [{ type: 'paragraph' }] },
@@ -85,6 +111,8 @@ function mountAutosave(options: UseFlowDraftAutosaveOptions) {
 }
 
 beforeEach(() => {
+  activeStorageLock = null;
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: createStorageLocks() });
   window.localStorage.clear();
   deleteFlowDraftRequestMock.mockReset().mockResolvedValue({ data: { id: 18 } });
   getFlowDraftRequestMock.mockReset().mockResolvedValue({ data: null });
@@ -94,6 +122,8 @@ beforeEach(() => {
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
   vi.restoreAllMocks();
+  if (originalLocksDescriptor) Object.defineProperty(navigator, 'locks', originalLocksDescriptor);
+  else Reflect.deleteProperty(navigator, 'locks');
 });
 
 describe('Flow draft restore helpers', () => {
@@ -458,17 +488,143 @@ describe('useFlowDraftAutosave explicit persistence', () => {
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).not.toBeNull();
   });
 
-  it('resets local state after publication and treats remote cleanup as best effort', async () => {
+  it('resets publication state without requesting or deleting any remote draft', async () => {
     getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ id: 33 }) });
     deleteFlowDraftRequestMock.mockRejectedValue(new Error('remote cleanup unavailable'));
     const autosave = mountAutosave({ userId: 7, canSync: true });
     await autosave.initialize();
 
-    await expect(autosave.resetAfterPublication()).resolves.toEqual({ remoteCleared: false });
+    getFlowDraftRequestMock.mockClear();
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: true });
 
-    expect(deleteFlowDraftRequestMock).toHaveBeenCalledWith(33);
+    expect(deleteFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(getFlowDraftRequestMock).not.toHaveBeenCalled();
     expect(window.localStorage.getItem(getFlowDraftLocalStorageKey(7))).toBeNull();
     expect(autosave.hasDraft.value).toBe(false);
     expect(autosave.status.value).toBe('idle');
+  });
+
+  it('does not look up a remote draft after a standalone publication', async () => {
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    autosave.recordSnapshot(textSnapshot('独立发布'));
+    getFlowDraftRequestMock.mockClear();
+
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: true });
+
+    expect(getFlowDraftRequestMock).not.toHaveBeenCalled();
+    expect(deleteFlowDraftRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('releases publication cleanup locks when local cache removal fails', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    vi.spyOn(LocalCache, 'removeCache').mockImplementation(() => { throw new Error('storage unavailable'); });
+
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: false });
+
+    expect(autosave.isClearing.value).toBe(false);
+    expect(autosave.hasDraft.value).toBe(false);
+    expect(autosave.status.value).toBe('idle');
+    expect(autosave.recordSnapshot(textSnapshot('下一条 Flow'))).toBe(true);
+    expect(deleteFlowDraftRequestMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { id: 33, version: 1, text: '另一页的新草稿' },
+    { id: 18, version: 5, text: '另一页的新版本' },
+    { id: 18, version: 4, text: '另一页的本地内容' },
+  ])('preserves a fallback replaced by another tab ($id/$version)', async ({ id, version, text }) => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    const storageKey = getFlowDraftLocalStorageKey(7);
+    const otherFallback = {
+      ...LocalCache.getCache(storageKey),
+      ...textSnapshot(text),
+      draftId: id,
+      version,
+      localUpdatedAt: '2026-09-30T00:00:00.000Z',
+    };
+    LocalCache.setCache(storageKey, otherFallback);
+
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: true });
+
+    expect(LocalCache.getCache(storageKey)).toEqual(otherFallback);
+    expect(autosave.hasDraft.value).toBe(false);
+  });
+
+  it('exposes only the known server draft identity and updates it after explicit saves', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    expect(autosave.publicationDraft.value).toBeNull();
+    await autosave.initialize();
+    expect(autosave.publicationDraft.value).toEqual({ id: 18, version: 4 });
+    autosave.recordSnapshot(textSnapshot('修改后保存'));
+    saveFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft({ version: 5 }) });
+
+    await autosave.saveDraft();
+    expect(autosave.publicationDraft.value).toEqual({ id: 18, version: 5 });
+    await autosave.resetAfterPublication();
+    expect(autosave.publicationDraft.value).toBeNull();
+  });
+
+  it('serializes another tab write attempted between publication cache read and removal', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    const storageKey = getFlowDraftLocalStorageKey(7);
+    const otherFallback = { ...LocalCache.getCache(storageKey), ...textSnapshot('另一页保存'), draftId: 33, version: 1 };
+    const readCache = LocalCache.getCache.bind(LocalCache);
+    let otherWrite!: Promise<void>;
+    vi.spyOn(LocalCache, 'getCache').mockImplementationOnce((key) => {
+      const oldValue = readCache(key);
+      otherWrite = navigator.locks.request(storageKey, () => LocalCache.setCache(storageKey, otherFallback));
+      return oldValue;
+    });
+
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: true });
+    await otherWrite;
+    expect(readCache(storageKey)).toEqual(otherFallback);
+  });
+
+  it('uses the same cross-tab lock for remote recovery writes and explicit local saves', async () => {
+    const storageKey = getFlowDraftLocalStorageKey(7);
+    const writeCache = LocalCache.setCache.bind(LocalCache);
+    vi.spyOn(LocalCache, 'setCache').mockImplementation((key, value) => {
+      expect(activeStorageLock).toBe(storageKey);
+      writeCache(key, value);
+    });
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const remote = mountAutosave({ userId: 7, canSync: true });
+    await remote.initialize();
+    const local = mountAutosave({ userId: 7, canSync: false });
+    await local.initialize();
+    local.recordSnapshot(textSnapshot('本机保存'));
+    await local.saveDraft();
+  });
+
+  it('preserves shared cache and releases editor locks when cross-tab locks are unavailable', async () => {
+    getFlowDraftRequestMock.mockResolvedValue({ data: remoteDraft() });
+    const autosave = mountAutosave({ userId: 7, canSync: true });
+    await autosave.initialize();
+    const cached = LocalCache.getCache(getFlowDraftLocalStorageKey(7));
+    Reflect.deleteProperty(navigator, 'locks');
+
+    await expect(autosave.resetAfterPublication()).resolves.toEqual({ localCleared: false });
+    expect(LocalCache.getCache(getFlowDraftLocalStorageKey(7))).toEqual(cached);
+    expect(autosave.isClearing.value).toBe(false);
+    expect(autosave.hasDraft.value).toBe(false);
+  });
+
+  it('does not use a locally restored server identity when server sync is disabled', async () => {
+    LocalCache.setCache(getFlowDraftLocalStorageKey(7), {
+      schemaVersion: 2, actorKey: 'user:7', ...textSnapshot('本地'),
+      draftId: 18, version: 4, localUpdatedAt: '2026-09-30T00:00:00.000Z', serverUpdatedAt: null,
+    });
+    const autosave = mountAutosave({ userId: 7, canSync: false });
+    await autosave.initialize();
+    expect(autosave.publicationDraft.value).toBeNull();
   });
 });

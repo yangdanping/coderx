@@ -4,11 +4,12 @@ import FlowAttachmentGrid from '@/components/tiptap-editor-flow/FlowAttachmentGr
 import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
 import { useFlowImageUploads } from '@/composables/useFlowImageUploads';
 import { createFlow } from '@/service/flow/flow.request';
+import { FlowPublicationError } from '@/service/flow/flow.errors';
 import { createUuidV4 } from '@/utils/uuid';
 
 import type { FlowDraftAutosaveStatus } from '@/composables/useFlowDraftAutosave';
 import type { TiptapDocContent } from '@/service/draft/draft.types';
-import type { CreateFlowPayload, FlowImageAsset, FlowImageAttachmentState } from '@/service/flow/flow.types';
+import type { CreateFlowPayload, FlowImageAsset, FlowImageAttachmentState, FlowPublicationDraft } from '@/service/flow/flow.types';
 
 const props = withDefaults(
   defineProps<{
@@ -28,6 +29,7 @@ const props = withDefaults(
     canSaveDraft?: boolean;
     savingDraft?: boolean;
     savedMediaIds?: readonly number[];
+    draftRef?: FlowPublicationDraft | null;
   }>(),
   {
     content: '',
@@ -44,6 +46,7 @@ const props = withDefaults(
     canSaveDraft: false,
     savingDraft: false,
     savedMediaIds: () => [],
+    draftRef: null,
   },
 );
 
@@ -73,19 +76,35 @@ let retryContent = '';
 
 const normalizedDocument = computed<TiptapDocContent>(() => props.document ?? { type: 'doc', content: [{ type: 'paragraph' }] });
 
-function collectPlainText(node: TiptapDocContent | undefined): string {
-  if (!node) return '';
-  const ownText = typeof node.text === 'string' ? node.text : '';
-  return ownText + (node.content?.map((child) => collectPlainText(child)).join('') ?? '');
+// Match the normalized text used by the server's docToExcerpt length check.
+function collectTextSegments(node: TiptapDocContent, segments: string[]): void {
+  if (node.type === 'text' && typeof node.text === 'string') {
+    segments.push(node.text);
+    return;
+  }
+  if (node.type === 'hardBreak') {
+    segments.push(' ');
+    return;
+  }
+  node.content?.forEach((child) => collectTextSegments(child, segments));
+  if (['paragraph', 'heading', 'blockquote', 'listItem', 'bulletList', 'orderedList', 'codeBlock'].includes(node.type)) segments.push(' ');
 }
+
+const bodyText = computed(() => {
+  const segments: string[] = [];
+  collectTextSegments(normalizedDocument.value, segments);
+  return segments.join(' ').replace(/\s+/g, ' ').trim();
+});
+const bodyTooLong = computed(() => bodyText.value.length > 2000);
 
 const canPublish = computed(
   () =>
     !interactionLocked.value &&
     !props.publishDisabled &&
+    !bodyTooLong.value &&
     !uploads.isUploading.value &&
     !uploads.hasFailed.value &&
-    (collectPlainText(normalizedDocument.value).trim().length > 0 || uploads.uploadedMediaIds.value.length > 0),
+    (bodyText.value.length > 0 || uploads.uploadedMediaIds.value.length > 0),
 );
 const canSave = computed(
   () => props.canSaveDraft && !interactionLocked.value && !uploads.isUploading.value && !uploads.hasFailed.value,
@@ -118,6 +137,11 @@ function markContentMutation(content: string): void {
 function markDocumentMutation(document: TiptapDocContent): void {
   if (retryPayload && JSON.stringify(document) !== JSON.stringify(retryPayload.content)) abandonRetryIdentity();
 }
+
+watch(
+  () => props.draftRef ? `${props.draftRef.id}:${props.draftRef.version}` : null,
+  () => abandonRetryIdentity(),
+);
 
 watch(
   () => props.restoredImages,
@@ -212,6 +236,7 @@ async function publish(): Promise<void> {
       clientRequestId: clientRequestId.value,
       content: JSON.parse(JSON.stringify(normalizedDocument.value)) as TiptapDocContent,
       mediaIds: [...uploads.uploadedMediaIds.value],
+      draft: props.draftRef ? { ...props.draftRef } : null,
     };
     retryContent = props.content;
   }
@@ -225,8 +250,18 @@ async function publish(): Promise<void> {
     uploads.dispose();
     emit('published');
     emit('close');
-  } catch {
-    queueError.value = '发布失败，请重试';
+  } catch (error) {
+    const response = (error as { response?: { status?: number; data?: { msg?: string } } } | null)?.response;
+    const message = response?.data?.msg;
+    if (response?.status === 409 && typeof message === 'string' && message.includes('草稿')) {
+      queueError.value = '草稿已在其他页面更新。当前内容已保留，请复制后刷新页面。';
+    } else if (error instanceof FlowPublicationError) {
+      queueError.value = error.message;
+    } else if (response?.status && [400, 403, 409].includes(response.status) && typeof message === 'string' && message.trim()) {
+      queueError.value = message;
+    } else {
+      queueError.value = '发布失败，请重试';
+    }
   } finally {
     publishing.value = false;
     emit('update:publishing', false);
@@ -394,6 +429,9 @@ onBeforeUnmount(() => {
             <FlowAttachmentGrid :attachments="uploads.attachments.value" @retry="retryAttachment" @remove="removeAttachment" @move="moveAttachment" />
             <p v-if="queueError" class="flow-editor-modal__queue-error" role="alert">{{ queueError }}</p>
           </div>
+          <p v-if="bodyTooLong" class="flow-editor-modal__queue-error" role="alert">
+            Flow 正文不能超过 2000 个字符，当前 {{ bodyText.length }} 个，请缩短后发布。
+          </p>
           <div class="flow-editor-modal__footer">
             <div class="flow-editor-modal__draft-meta">
               <button

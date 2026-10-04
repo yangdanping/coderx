@@ -4,7 +4,7 @@
       ref="cordRef"
       :model-value="editorOpen"
       controls-id="flow-editor-panel"
-      :disabled="composerClearing || composerSaving || composerDiscarding || modalPublishing || publicationResetting || composerRestoring"
+      :disabled="composerClearing || composerSaving || composerDiscarding || modalPublishing || publicationResetting || composerRestoring || closeConfirming || navigationLeaving"
       @update:model-value="handleCordToggle"
     />
     <FlowEditorModal
@@ -19,12 +19,13 @@
       :has-draft="flowDraftAutosave.hasDraft.value"
       :restored-images="flowDraftImages"
       :clear-disabled="composerClearing || composerSaving || composerDiscarding || modalPublishing || composerRestoring || draftRecoveryBlocked || !imagesComplete || flowDraftAutosave.isSaving.value || flowDraftAutosave.isClearing.value || flowDraftAutosave.isHydrating.value"
-      :editor-disabled="composerClearing || composerSaving || composerDiscarding || flowDraftAutosave.isClearing.value"
+      :editor-disabled="composerClearing || composerSaving || composerDiscarding || closeConfirming || navigationLeaving || flowDraftAutosave.isClearing.value"
       :publish-disabled="composerSaving || composerDiscarding || composerRestoring || draftRecoveryBlocked || !imagesComplete || flowDraftAutosave.isHydrating.value"
-      :lifecycle-locked="publicationResetting || composerRestoring || composerDiscarding"
+      :lifecycle-locked="publicationResetting || composerRestoring || composerDiscarding || closeConfirming || navigationLeaving"
       :can-save-draft="flowDraftAutosave.canSave.value && !draftRecoveryBlocked && imagesComplete && !composerSaving && !composerDiscarding"
       :saving-draft="flowDraftAutosave.isSaving.value || composerSaving"
       :saved-media-ids="flowDraftAutosave.savedMediaIds.value"
+      :draft-ref="flowDraftAutosave.publicationDraft.value"
       controls-id="flow-editor-panel"
       @close="handleEditorClose"
       @update:content="handleFlowContentUpdate"
@@ -65,6 +66,7 @@ import useUserStore from '@/stores/user.store';
 import { LocalCache, Msg } from '@/utils';
 import { ElMessageBox } from 'element-plus';
 import { Loader2 } from '@lucide/vue';
+import { onBeforeRouteLeave, useRouter, type RouteLocationNormalized } from 'vue-router';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
 import type { FlowDraftRestoreState } from '@/service/flow/flow-draft.types';
@@ -99,9 +101,14 @@ const closeConfirming = shallowRef(false);
 const modalPublishing = shallowRef(false);
 const publicationResetting = shallowRef(false);
 const composerRestoring = shallowRef(true);
+const navigationLeaving = shallowRef(false);
 const queryClient = useQueryClient();
+const router = useRouter();
 let publicationResetPending = false;
 let discardResetPending = false;
+let closeDecision: Promise<boolean> | null = null;
+let leaveDecision: Promise<boolean> | null = null;
+let pendingLeaveTarget: RouteLocationNormalized | null = null;
 
 const userStore = useUserStore();
 const normalizedUserId = Number(userStore.userInfo.id);
@@ -192,7 +199,7 @@ function syncCurrentAttachmentSnapshot(): FlowImageAttachmentState {
 
 function handleCordToggle(open: boolean) {
   if (open) {
-    if (composerClearing.value || composerSaving.value || composerDiscarding.value || publicationResetting.value) return;
+    if (composerClearing.value || composerSaving.value || composerDiscarding.value || publicationResetting.value || closeConfirming.value || navigationLeaving.value) return;
     editorOpen.value = true;
     return;
   }
@@ -207,7 +214,9 @@ async function handleSaveFlowDraft(options: { closeAfterSave?: boolean } = {}): 
     composerRestoring.value ||
     modalPublishing.value ||
     publicationResetting.value ||
-    publicationResetPending
+    publicationResetPending ||
+    closeConfirming.value ||
+    navigationLeaving.value
   ) {
     return false;
   }
@@ -267,8 +276,8 @@ async function handleSaveFlowDraft(options: { closeAfterSave?: boolean } = {}): 
   }
 }
 
-async function discardFlowChanges(): Promise<void> {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value) return;
+async function discardFlowChanges(): Promise<boolean> {
+  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value) return false;
   composerDiscarding.value = true;
   const retainedMediaIds = [...flowDraftAutosave.savedMediaIds.value];
   try {
@@ -280,15 +289,28 @@ async function discardFlowChanges(): Promise<void> {
     Msg.showWarn('已放弃 Flow 修改，新增图片将由服务端稍后自动回收');
   }
   discardResetPending = true;
+  const wasOpen = editorOpen.value;
   editorOpen.value = false;
+  if (!wasOpen) await handleAfterClose();
+  return true;
 }
 
-async function handleEditorClose() {
+function handleEditorClose(): Promise<boolean> {
+  if (closeDecision) return closeDecision;
+  closeDecision = decideEditorClose().finally(() => { closeDecision = null; });
+  return closeDecision;
+}
+
+function composerBusy(): boolean {
+  return composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value;
+}
+
+async function decideEditorClose(): Promise<boolean> {
   if (publicationResetPending) {
     editorOpen.value = false;
-    return;
+    return false;
   }
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || closeConfirming.value) return;
+  if (composerBusy() || navigationLeaving.value) return false;
   const attachmentState = syncCurrentAttachmentSnapshot();
   const hasTransientAttachments = attachmentState.attachmentCount > attachmentState.uploadedMediaIds.length;
   const queueDiffersFromSnapshot = !mediaIdsMatchQueue(attachmentState.uploadedMediaIds);
@@ -296,11 +318,10 @@ async function handleEditorClose() {
   const hasContent = flowDraftAutosave.hasContent.value || attachmentState.attachmentCount > 0;
   if (!hasUnsavedChanges) {
     editorOpen.value = false;
-    return;
+    return true;
   }
   if (!hasContent) {
-    await discardFlowChanges();
-    return;
+    return discardFlowChanges();
   }
 
   closeConfirming.value = true;
@@ -322,19 +343,72 @@ async function handleEditorClose() {
   }
 
   if (choice === 'save') {
-    await handleSaveFlowDraft({ closeAfterSave: true });
+    return handleSaveFlowDraft({ closeAfterSave: true });
   } else if (choice === 'discard') {
-    await discardFlowChanges();
+    return discardFlowChanges();
   }
+  return false;
 }
 
+onBeforeRouteLeave((to) => {
+  pendingLeaveTarget = to;
+  if (leaveDecision) return leaveDecision;
+  leaveDecision = (async () => {
+    if (!await handleEditorClose()) return false;
+    navigationLeaving.value = true;
+    await cordRef.value?.prepareLeave();
+    return true;
+  })().finally(() => { leaveDecision = null; });
+  return leaveDecision;
+});
+
+function cancelNavigationLeave(): void {
+  navigationLeaving.value = false;
+  cordRef.value?.cancelLeave();
+}
+
+const removeAfterEach = router.afterEach((to, _from, failure) => {
+  // An older cancelled navigation must not unlock a newer pending one.
+  if (to !== pendingLeaveTarget) return;
+  pendingLeaveTarget = null;
+  if (failure) cancelNavigationLeave();
+});
+const removeRouterError = router.onError((_error, to) => {
+  if (to !== pendingLeaveTarget) return;
+  pendingLeaveTarget = null;
+  cancelNavigationLeave();
+});
+const needsUnloadProtection = computed(() => !navigationLeaving.value && (
+  flowDraftAutosave.isDirty.value || composerBusy() || closeConfirming.value ||
+  flowAttachmentState.value.isUploading || flowAttachmentState.value.isDeleting ||
+  flowAttachmentState.value.attachmentCount > flowAttachmentState.value.uploadedMediaIds.length ||
+  !mediaIdsMatchQueue(flowAttachmentState.value.uploadedMediaIds)
+));
+
+function protectBeforeUnload(event: BeforeUnloadEvent): void {
+  if (!needsUnloadProtection.value) return;
+  event.preventDefault();
+  event.returnValue = '';
+}
+
+watch(needsUnloadProtection, (needed) => {
+  if (needed) window.addEventListener('beforeunload', protectBeforeUnload);
+  else window.removeEventListener('beforeunload', protectBeforeUnload);
+}, { immediate: true, flush: 'sync' });
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', protectBeforeUnload);
+  removeAfterEach();
+  removeRouterError();
+});
+
 function handleFlowContentUpdate(content: string) {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerBusy() || publicationResetPending || closeConfirming.value || navigationLeaving.value) return;
   flowDraft.value = content;
 }
 
 function handleFlowDocumentUpdate(document: TiptapDocContent) {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerBusy() || publicationResetPending || closeConfirming.value || navigationLeaving.value) return;
   // Tiptap emits JSON while applying restored content.
   const normalizedDocument = normalizeFlowDraftDocument(document);
   flowDraftDocument.value = normalizedDocument;
@@ -342,7 +416,7 @@ function handleFlowDocumentUpdate(document: TiptapDocContent) {
 }
 
 function handleFlowImageAssetsUpdate(images: FlowImageAsset[]) {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerBusy() || publicationResetPending || closeConfirming.value || navigationLeaving.value) return;
   const previousImageIds = new Set(flowDraftImages.value.map((image) => image.id));
   const nextImageIds = new Set(images.map((image) => image.id));
   const remainingUnresolved = new Set(unresolvedImageIds.value);
@@ -361,7 +435,7 @@ function handleFlowImageAssetsUpdate(images: FlowImageAsset[]) {
 }
 
 function handleFlowMediaIdsUpdate(mediaIds: number[]) {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending) return;
+  if (composerBusy() || publicationResetPending || closeConfirming.value || navigationLeaving.value) return;
   flowDraftMediaIds.value = mergeMediaIdsPreservingUnresolved(mediaIds);
   updateImagesCompleteness(flowDraftMediaIds.value);
   recordCurrentFlowSnapshot();
@@ -431,13 +505,13 @@ async function handleAfterClose() {
   publicationResetting.value = false;
   await nextTick();
   restoreCordFocus();
-  if (!result.remoteCleared) {
-    Msg.showWarn('Flow 已发布，本地草稿已清空；远端旧草稿稍后会自动清理');
+  if (!result.localCleared) {
+    Msg.showWarn('Flow 已发布，但本地草稿缓存清理失败，刷新后可能再次显示旧内容');
   }
 }
 
 async function handleClearFlowDraft() {
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
+  if (composerBusy() || closeConfirming.value || navigationLeaving.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
   try {
     await ElMessageBox.confirm('清空后无法恢复，确定继续吗？', '清空 Flow 草稿', {
       confirmButtonText: '清空',
@@ -449,7 +523,7 @@ async function handleClearFlowDraft() {
     return;
   }
 
-  if (composerClearing.value || composerSaving.value || composerDiscarding.value || composerRestoring.value || modalPublishing.value || publicationResetting.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
+  if (composerBusy() || closeConfirming.value || navigationLeaving.value || publicationResetPending || draftRecoveryBlocked.value || !imagesComplete.value) return;
 
   composerClearing.value = true;
   try {

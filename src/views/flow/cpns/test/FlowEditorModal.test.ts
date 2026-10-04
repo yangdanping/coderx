@@ -6,6 +6,7 @@ import { join } from 'node:path';
 
 import TiptapEditorFlow from '@/components/tiptap-editor-flow/TiptapEditorFlow.vue';
 import FlowEditorModal from '../FlowEditorModal.vue';
+import { FlowPublicationError } from '@/service/flow/flow.errors';
 
 import type { TiptapDocContent } from '@/service/draft/draft.types';
 import type { FlowImageAsset, FlowImageAttachment } from '@/service/flow/flow.types';
@@ -217,6 +218,72 @@ beforeEach(() => {
 });
 
 describe('FlowEditorModal', () => {
+  it('shows an explicit length error and prevents publishing more than 2000 characters', async () => {
+    const wrapper = mountModal(true, { document: textDocument('文'.repeat(2001)), canSaveDraft: true });
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('2000');
+    expect(wrapper.get('[role="alert"]').text()).toContain('2001');
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeDefined();
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    expect(createFlowMock).not.toHaveBeenCalled();
+    await wrapper.get('[data-testid="flow-save-draft"]').trigger('click');
+    expect(wrapper.emitted('save-draft')).toHaveLength(1);
+
+    await wrapper.setProps({ document: textDocument('文'.repeat(2000)) });
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeUndefined();
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+    expect(createFlowMock).toHaveBeenCalledOnce();
+  });
+
+  it('counts paragraph and marked text boundaries using the server text normalization', async () => {
+    const wrapper = mountModal(true, {
+      document: {
+        type: 'doc', content: [
+          { type: 'paragraph', content: [{ type: 'text', text: '文'.repeat(1999) }] },
+          { type: 'paragraph', content: [{ type: 'text', text: '尾' }] },
+        ],
+      },
+    });
+    expect(wrapper.get('[role="alert"]').text()).toContain('2001');
+
+    await wrapper.setProps({ document: {
+      type: 'doc', content: [{ type: 'paragraph', content: [
+        { type: 'text', text: '文'.repeat(1999) },
+        { type: 'text', text: '尾', marks: [{ type: 'bold' }] },
+      ] }],
+    } });
+    expect(wrapper.get('[role="alert"]').text()).toContain('2001');
+
+    await wrapper.setProps({ document: textDocument(`  ${'文'.repeat(1998)}\n   尾  `) });
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="flow-publish"]').attributes('disabled')).toBeUndefined();
+  });
+
+  it('keeps the document and displays a server publication rejection', async () => {
+    createFlowMock.mockRejectedValueOnce({ response: { status: 403, data: { msg: '您已被封禁' } } });
+    const wrapper = mountModal();
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('您已被封禁');
+    expect(wrapper.emitted('published')).toBeUndefined();
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('editDocument')).toEqual(textDocument());
+  });
+
+  it('displays a business envelope rejection without closing the editor', async () => {
+    createFlowMock.mockRejectedValueOnce(new FlowPublicationError('您已被封禁'));
+    const wrapper = mountModal();
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toBe('您已被封禁');
+    expect(wrapper.emitted('published')).toBeUndefined();
+    expect(wrapper.emitted('close')).toBeUndefined();
+  });
+
   it('suppresses the old document update when the real Tiptap editor becomes disabled', async () => {
     const wrapper = mount(TiptapEditorFlow, {
       props: {
@@ -296,7 +363,7 @@ describe('FlowEditorModal', () => {
   it('hydrates restored assets into the queue before publishing their existing ids', async () => {
     const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
     createFlowMock.mockResolvedValueOnce({ id: 9 });
-    const wrapper = mountModal(true, { restoredImages });
+    const wrapper = mountModal(true, { restoredImages, draftRef: { id: 18, version: 4 } });
     await nextTick();
 
     expect(queue.restoreUploadedAssets).toHaveBeenCalledOnce();
@@ -310,6 +377,7 @@ describe('FlowEditorModal', () => {
       clientRequestId: firstRequestId,
       content: textDocument(),
       mediaIds: [42, 41],
+      draft: { id: 18, version: 4 },
     });
     expect(queue.addFiles).not.toHaveBeenCalled();
   });
@@ -595,9 +663,56 @@ describe('FlowEditorModal', () => {
       clientRequestId: firstRequestId,
       content: textDocument(),
       mediaIds: [42, 41],
+      draft: null,
     };
     expect(createFlowMock).toHaveBeenNthCalledWith(1, originalPayload);
     expect(createFlowMock).toHaveBeenNthCalledWith(2, originalPayload);
+  });
+
+  it('freezes a saved draft reference across a failed request and a no-op reference update', async () => {
+    createFlowMock.mockRejectedValueOnce(new Error('response lost')).mockResolvedValueOnce({ id: 9 });
+    const draftRef = { id: 18, version: 4 };
+    const wrapper = mountModal(true, { draftRef });
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+    await wrapper.setProps({ draftRef: { id: 18, version: 4 } });
+    draftRef.version = 99;
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+
+    const expected = { clientRequestId: firstRequestId, content: textDocument(), mediaIds: [], draft: { id: 18, version: 4 } };
+    expect(createFlowMock).toHaveBeenNthCalledWith(1, expected);
+    expect(createFlowMock).toHaveBeenNthCalledWith(2, expected);
+  });
+
+  it.each([null, { id: 18, version: 5 }, { id: 33, version: 1 }])('rotates the retry identity when the saved draft reference becomes %j', async (nextRef) => {
+    createFlowMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ id: 9 });
+    const wrapper = mountModal(true, { draftRef: { id: 18, version: 4 } });
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+    await wrapper.setProps({ draftRef: nextRef });
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+
+    expect(createFlowMock).toHaveBeenNthCalledWith(1, { clientRequestId: firstRequestId, content: textDocument(), mediaIds: [], draft: { id: 18, version: 4 } });
+    expect(createFlowMock).toHaveBeenNthCalledWith(2, { clientRequestId: secondRequestId, content: textDocument(), mediaIds: [], draft: nextRef });
+  });
+
+  it('preserves text and attachments and explains a draft version conflict', async () => {
+    createFlowMock.mockRejectedValue({ response: { status: 409, data: { msg: 'Flow 草稿已发生变更，请重新打开编辑器后再发布' } } });
+    const wrapper = mountModal(true, { restoredImages, draftRef: { id: 18, version: 4 } });
+    await nextTick();
+    await wrapper.get('[data-testid="flow-publish"]').trigger('click');
+    await flushPromises();
+
+    const queue = queueHolder.current as ReturnType<typeof createQueueMock>;
+    expect(wrapper.text()).toContain('草稿已在其他页面更新');
+    expect(wrapper.text()).toContain('当前内容已保留');
+    expect(wrapper.findComponent({ name: 'TiptapEditorFlow' }).props('editDocument')).toEqual(textDocument());
+    expect(queue.uploadedIds.value).toEqual([42, 41]);
+    expect(queue.dispose).not.toHaveBeenCalled();
+    expect(wrapper.emitted('published')).toBeUndefined();
+    expect(wrapper.emitted('close')).toBeUndefined();
   });
 
   it('allows only one POST during a double click and exposes a real busy state', async () => {
@@ -682,6 +797,7 @@ describe('FlowEditorModal', () => {
       clientRequestId: firstRequestId,
       content: expectedPublishedDocument,
       mediaIds: [42],
+      draft: null,
     });
 
     resolvePublish({ id: 9 });
@@ -728,6 +844,7 @@ describe('FlowEditorModal', () => {
       clientRequestId: secondRequestId,
       content: currentDocument,
       mediaIds: [42],
+      draft: null,
     });
   });
 
@@ -754,6 +871,7 @@ describe('FlowEditorModal', () => {
       clientRequestId: secondRequestId,
       content: textDocument(),
       mediaIds: [41, 42],
+      draft: null,
     });
   });
 
