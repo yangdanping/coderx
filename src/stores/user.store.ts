@@ -32,6 +32,12 @@ function normalizeLogOutOptions(options: LogOutOptions = {}) {
 const CACHE_TTL = 30 * 1000;
 const getFollowInfoCacheEntry = (cache: Record<number, ICacheEntry<IFollowInfo>>, userId: number) => cache[userId];
 
+function normalizeUserId(value: unknown): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !/^[1-9]\d*$/.test(value))) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 // 第一个参数是该store的id
 // 返回的是个函数,规范命名如下
 const useUserStore = defineStore('user', {
@@ -39,13 +45,20 @@ const useUserStore = defineStore('user', {
     token: '',
     userInfo: {} as IUserInfo, //登录用户信息,有读和写权限
     profile: {} as IUserInfo, //其他用户信息,只有读权限
+    profileStatus: 'idle' as 'idle' | 'loading' | 'ready' | 'error',
+    profileError: '',
+    profileRequestVersion: 0,
     // ============ 关注信息缓存 Map ============
     // 使用 Map 按 userId 分别存储每个用户的关注信息，避免 hover 不同用户时状态互相覆盖
     followInfoCache: {} as Record<number, ICacheEntry<IFollowInfo>>,
     // 记录正在请求中的 userId，防止同一用户并发重复请求
     pendingFollowRequests: [] as number[],
+    followRequestVersions: {} as Record<number, number>,
+    pendingFollowMutations: [] as number[],
     myFollowInfo: {} as IFollowInfo, // 登录用户的关注/粉丝列表(用于NavBarUser等组件展示)
     collects: [] as ICollect[],
+    collectsOwnerId: null as number | null,
+    collectsRequestVersion: 0,
   }),
   getters: {
     // ============ 按 userId 获取关注信息（解决状态闪烁问题）============
@@ -81,16 +94,11 @@ const useUserStore = defineStore('user', {
     // ============ 原原有 getters（用于 UserFollow 列表页）============
     // 用于 UserFollowItem 判断列表中每个用户是否被关注
     isUserFollowed(): (userId: number | string | undefined, type: string) => boolean {
-      return (userId: number | string | undefined, type: string) => {
-        if (userId === undefined) return false;
+      return (userId: number | string | undefined, _type: string) => {
+        if (!this.token || !this.userInfo.id || userId === undefined) return false;
         const id = Number(userId);
-        // 获取当前查看的用户详情页的关注信息
-        const profileId = this.profile?.id;
-        if (!profileId) return false;
-        const info = getFollowInfoCacheEntry(this.followInfoCache, profileId)?.data;
-        // 若type是粉丝,则查看用户的关注者(following)中是否有该粉丝id
-        const followType = type === 'follower' ? 'following' : type;
-        return !!info?.[followType]?.some((item) => item.id === id);
+        // Both tabs describe the viewer's relationship to a row, not the profile owner's.
+        return this.myFollowInfo.following?.some((item) => Number(item.id) === id) ?? false;
       };
     },
     // 获取当前查看的用户详情页的关注数/粉丝数
@@ -136,6 +144,10 @@ const useUserStore = defineStore('user', {
       this.userInfo = {} as IUserInfo;
       this.myFollowInfo = {} as IFollowInfo;
       this.collects = [];
+      this.collectsOwnerId = null;
+      this.collectsRequestVersion++;
+      // 关注列表是公开数据，保留缓存及在途读取，登出后仍可浏览当前页面。
+      this.pendingFollowMutations = [];
       LocalCache.removeCache('token'); //退出登录要清除token和用户信息
       LocalCache.removeCache('userInfo');
       LocalCache.removeCache('socketUser'); // 清理遗留缓存（如果存在）
@@ -157,7 +169,13 @@ const useUserStore = defineStore('user', {
       }
     },
     initProfile() {
+      this.profileRequestVersion++;
       this.profile = {};
+      this.profileStatus = 'idle';
+      this.profileError = '';
+      this.collectsRequestVersion++;
+      this.collectsOwnerId = null;
+      this.collects = [];
     },
     // 异步请求action---------------------------------------------------
     async registerAction(account: IAccount) {
@@ -226,41 +244,79 @@ const useUserStore = defineStore('user', {
       Msg.showSuccess('登录成功');
       return true;
     },
-    async followAction(userId, isFollowListItem = false) {
-      console.log('followAction follow', userId);
-      const res = await follow(userId); //注意!这个不是登录用户的信息,而是普通用户信息
-      console.log('followAction res', res);
-      const queryId = !isFollowListItem ? userId : this.userInfo.id;
-      if (res.code === 0) {
-        if (res.data?.action === 'unfollowed') {
-          Msg.showWarn('取关成功');
-        } else {
-          Msg.showSuccess('关注成功');
+    async followAction(userId: number | string, _isFollowListItem = false) {
+      const id = normalizeUserId(userId);
+      const viewerId = this.userInfo.id;
+      const token = this.token;
+      if (!id || !viewerId || id === viewerId || this.pendingFollowMutations.includes(id)) return;
+      this.pendingFollowMutations.push(id);
+      try {
+        const res = await follow(id);
+        if (res.code !== 0) {
+          if (this.token === token && this.userInfo.id === viewerId) Msg.showFail(res.msg ?? '关注操作失败');
+          return;
         }
-      } else {
-        Msg.showFail(res.msg ?? '关注操作失败');
+        if (this.token === token && this.userInfo.id === viewerId) {
+          if (res.data?.action === 'unfollowed') {
+            Msg.showWarn('取关成功');
+          } else {
+            Msg.showSuccess('关注成功');
+          }
+        }
+        // 写入已成功，即使会话已切换，也要刷新两端的公开关系。
+        this.invalidateFollowCache(id);
+        this.invalidateFollowCache(viewerId);
+        await Promise.all([this.getFollowAction(id, true), this.getFollowAction(viewerId, true)]);
+      } catch {
+        if (this.token === token && this.userInfo.id === viewerId) Msg.showFail('关注操作失败，请重试');
+      } finally {
+        if (this.token === token && this.userInfo.id === viewerId) {
+          this.pendingFollowMutations = this.pendingFollowMutations.filter((item) => item !== id);
+        }
       }
-      // 关注/取关后使相关用户的缓存失效，强制下次请求刷新
-      this.invalidateFollowCache(userId);
-      this.invalidateFollowCache(queryId);
-      this.getFollowAction(queryId, true); //更新关注信息，强制刷新
     },
     async getProfileAction(userId: RouteParam) {
-      const res = await getUserInfoById(userId); //注意!这个不是登录用户的信息,而是普通用户信息
-      if (res.code === 0) {
-        console.log(res.data);
+      this.initProfile();
+      const id = normalizeUserId(userId);
+      const version = this.profileRequestVersion;
+      if (!id) {
+        this.profileStatus = 'error';
+        this.profileError = '用户地址无效';
+        return;
+      }
+      this.profileStatus = 'loading';
+      try {
+        const res = await getUserInfoById(id);
+        if (version !== this.profileRequestVersion) return;
+        if (res.code !== 0 || !res.data || Number(res.data.id) !== id) {
+          this.profileStatus = 'error';
+          this.profileError = res.msg || '未找到该用户或资料暂时不可用';
+          return;
+        }
         this.profile = res.data;
-      } else {
-        Msg.showFail('请求用户信息失败');
+        this.profileStatus = 'ready';
+      } catch {
+        if (version !== this.profileRequestVersion) return;
+        this.profileStatus = 'error';
+        this.profileError = '用户资料加载失败，请重试';
       }
     },
     async getCollectAction(userId?: number) {
-      const res = await getCollect(userId);
-      if (res.code === 0) {
+      const id = normalizeUserId(userId ?? this.userInfo.id);
+      const version = ++this.collectsRequestVersion;
+      if (id !== this.collectsOwnerId) this.collects = [];
+      this.collectsOwnerId = id;
+      if (!id) return;
+      try {
+        const res = await getCollect(id);
+        if (version !== this.collectsRequestVersion) return;
+        if (res.code !== 0) {
+          Msg.showFail('获取用户收藏夹失败');
+          return;
+        }
         this.collects = res.data;
-        console.log('该用户的收藏夹', this.collects);
-      } else {
-        Msg.showFail('获取用户收藏夹失败');
+      } catch {
+        if (version === this.collectsRequestVersion) Msg.showFail('获取用户收藏夹失败');
       }
     },
     async addCollectAction(collectName) {
@@ -291,8 +347,8 @@ const useUserStore = defineStore('user', {
      * @param forceRefresh - 是否强制刷新（跳过缓存检查）
      */
     async getFollowAction(userId: number | string, forceRefresh = false) {
-      const id = Number(userId);
-      console.log('getFollowAction', id, { forceRefresh });
+      const id = normalizeUserId(userId);
+      if (!id) return;
 
       // ============ 步骤1：检查缓存是否有效 ============
       if (!forceRefresh) {
@@ -300,24 +356,26 @@ const useUserStore = defineStore('user', {
         const now = Date.now();
         // 如果缓存存在且未过期（在 CACHE_TTL 时间内），直接使用缓存数据
         if (cached && now - cached.timestamp < CACHE_TTL) {
-          console.log('使用缓存的关注信息', id);
+          if (this.token && id === this.userInfo.id) this.myFollowInfo = cached.data;
           return; // 缓存有效，无需请求
         }
       }
 
       // ============ 步骤2：防止并发重复请求 ============
       // 如果同一个用户的请求正在进行中，跳过本次请求
-      if (this.pendingFollowRequests.includes(id)) {
-        console.log('请求进行中，跳过重复请求', id);
+      if (!forceRefresh && this.pendingFollowRequests.includes(id)) {
         return;
       }
 
       // ============ 步骤3：发起网络请求 ============
       // 标记该用户正在请求中
-      this.pendingFollowRequests.push(id);
+      if (!this.pendingFollowRequests.includes(id)) this.pendingFollowRequests.push(id);
+      const version = (this.followRequestVersions[id] ?? 0) + 1;
+      this.followRequestVersions[id] = version;
 
       try {
         const res = await getFollow(id);
+        if (version !== this.followRequestVersions[id]) return;
         if (res.code === 0) {
           const followInfo = res.data;
           // 将数据存入缓存 Map，同时记录时间戳
@@ -325,13 +383,18 @@ const useUserStore = defineStore('user', {
             data: followInfo,
             timestamp: Date.now(),
           };
-          console.log('关注信息已缓存', id);
+          // 公开响应可以跨会话复用，但只同步给当前登录用户。
+          if (this.token && id === this.userInfo.id) this.myFollowInfo = followInfo;
         } else {
           Msg.showFail('请求用户关注信息失败');
         }
+      } catch {
+        if (version === this.followRequestVersions[id]) Msg.showFail('请求用户关注信息失败');
       } finally {
         // 无论成功失败，都移除"请求中"标记
-        this.pendingFollowRequests = this.pendingFollowRequests.filter((item) => item !== id);
+        if (version === this.followRequestVersions[id]) {
+          this.pendingFollowRequests = this.pendingFollowRequests.filter((item) => item !== id);
+        }
       }
     },
     /**
@@ -341,18 +404,13 @@ const useUserStore = defineStore('user', {
     invalidateFollowCache(userId: number | string) {
       const id = Number(userId);
       delete this.followInfoCache[id];
-      console.log('缓存已失效', id);
+      this.followRequestVersions[id] = (this.followRequestVersions[id] ?? 0) + 1;
+      this.pendingFollowRequests = this.pendingFollowRequests.filter((item) => item !== id);
     },
     async getMyFollowAction(userId: number | string) {
-      const id = Number(userId);
-      // 专门获取登录用户的关注信息，不影响 viewing profile 的数据
-      const res = await getFollow(id);
-      if (res.code === 0) {
-        this.myFollowInfo = res.data;
-      } else {
-        // 静默失败或轻提示，避免hover时频繁报错干扰
-        console.warn('请求登录用户关注信息失败');
-      }
+      const id = normalizeUserId(userId);
+      if (!this.token || !id || id !== this.userInfo.id) return;
+      await this.getFollowAction(id);
     },
     async uploadAvatarAction(payload) {
       console.log('[Store] uploadAvatarAction 开始上传', payload);

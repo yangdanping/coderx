@@ -2,6 +2,7 @@
   <el-button
     v-if="!isMe"
     :style="{ width }"
+    :loading="userStore.pendingFollowMutations.includes(Number(profile.id))"
     @click.stop="follow"
     @mouseenter="ToggleUnFollow(true)"
     @mouseleave="ToggleUnFollow(false)"
@@ -31,7 +32,7 @@ const {
 } = defineProps<{
   profile: IUserInfo;
   isFollowed?: boolean;
-  // false:传入用户id,true:传入登录用户id
+  // 保留列表调用方的兼容标记；关系刷新统一由 store 管理。
   isFollowListItem?: boolean;
   width?: string;
 }>();
@@ -53,6 +54,7 @@ const ToggleUnFollow = (toggle: boolean) => {
 };
 
 const follow = debounce(() => {
+  if (!profile.id) return;
   if (token.value) {
     userStore.followAction(profile.id, isFollowListItem);
   } else {

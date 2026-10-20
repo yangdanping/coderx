@@ -25,7 +25,16 @@ import useUserStore from '@/stores/user.store';
 
 import type { FollowSubTabName } from './types/user-profile.type';
 
-const { profile, followInfo } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { profile, followInfo, token, userInfo } = storeToRefs(userStore);
+
+watch(
+  [token, () => userInfo.value.id],
+  ([currentToken, viewerId]) => {
+    if (currentToken && viewerId) void userStore.getMyFollowAction(viewerId);
+  },
+  { immediate: true },
+);
 
 const router = useRouter();
 const route = useRoute();
