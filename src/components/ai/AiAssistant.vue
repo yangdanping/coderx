@@ -82,10 +82,23 @@
         <el-icon><ArrowDown /></el-icon>
       </div>
 
+      <div v-if="aiServiceStatus !== 'online'" class="recovery-notice" role="status">
+        <span>{{ aiServiceStatus === 'checking' ? '正在检查 AI 服务…' : 'AI 服务暂时不可用，可以稍后重新检查。' }}</span>
+        <button type="button" :disabled="aiServiceStatus === 'checking'" @click="checkAIServiceStatus">重新检查</button>
+      </div>
+      <div v-if="sendError" class="recovery-notice" role="alert">{{ sendError }}。问题已保留，可编辑后重新发送。</div>
+
       <form @submit.prevent="handleSubmit" class="input-area">
         <div class="input-wrapper">
           <div v-if="pendingSelectionContexts.length > 0" class="selection-context-bar" aria-label="已加入上下文">
-            <button v-for="context in pendingSelectionContexts" :key="context.id" class="context-chip" type="button" :title="context.text" @click="removeSelectionContext(context.id)">
+            <button
+              v-for="context in pendingSelectionContexts"
+              :key="context.id"
+              class="context-chip"
+              type="button"
+              :title="context.text"
+              @click="removeSelectionContext(context.id)"
+            >
               <span>{{ getSelectionContextPreview(context.text) }}</span>
               <el-icon><X /></el-icon>
             </button>
@@ -95,7 +108,7 @@
             type="textarea"
             :autosize="{ minRows: 1, maxRows: 6 }"
             placeholder="输入问题..."
-            :disabled="isLoading || aiServiceStatus !== 'online'"
+            :disabled="isLoading"
             @keydown.enter="onEnter"
             class="input-textarea"
           />
@@ -114,14 +127,15 @@
 <script setup lang="ts">
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue';
 import { Chat } from '@ai-sdk/vue'; // 使用新的 Chat 类
-import { DefaultChatTransport } from 'ai'; // 引入 DefaultChatTransport
+import { DefaultChatTransport, generateId } from 'ai';
 import { MessageCircle, X, User, Bot, ArrowDown } from '@lucide/vue';
 import useUserStore from '@/stores/user.store';
 import { storeToRefs } from 'pinia';
 import MarkdownIt from 'markdown-it';
 import { BASE_URL } from '@/global/request/config';
-import { LocalCache, Msg, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
+import { LocalCache, throttleByRaf, emitter, getAiShortcutText, isAiToggleShortcut, codeHeightlight, renderCopyButtons } from '@/utils';
 import { useResizable } from '@/composables/useResizable';
+import { useAiServiceHealth } from './useAiServiceHealth';
 import ThinkingWave from '@/components/icon/cpns/ThinkingWave.vue';
 import ThinkingShimmer from '@/components/icon/cpns/ThinkingShimmer.vue';
 import {
@@ -149,9 +163,21 @@ const isOpen = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 const { userInfo, token } = storeToRefs(useUserStore());
 const input = ref('');
-const aiServiceStatus = ref<'online' | 'offline' | 'checking'>('checking');
 const showScrollToBottom = ref(false);
-const aiCapability = ref<{ type: string; supportsTools: boolean } | null>(null);
+const {
+  status: aiServiceStatus,
+  models,
+  activeModel,
+  capability: aiCapability,
+  check: checkAIServiceStatus,
+} = useAiServiceHealth({
+  token: () => token.value,
+  savedModel: () => (token.value ? (userInfo.value as any).selectModel : undefined),
+});
+const sendError = ref('');
+const failedMessageId = ref<string>();
+const submitting = ref(false);
+let activeSubmission: { stopped: boolean; completed: boolean } | null = null;
 // 切换 Loading 动画风格: 'wave' | 'shimmer'
 const loadingStyle = ref<'wave' | 'shimmer'>('shimmer');
 
@@ -205,9 +231,7 @@ const conversationStorageKey = computed(() =>
 const normalizeCachedMessages = (messages: unknown) => {
   if (!Array.isArray(messages)) return [];
 
-  return messages
-    .filter((message) => message && typeof message === 'object' && 'role' in message && 'parts' in message && Array.isArray((message as any).parts))
-    .slice(-40);
+  return messages.filter((message) => message && typeof message === 'object' && 'role' in message && 'parts' in message && Array.isArray((message as any).parts)).slice(-40);
 };
 
 const loadCachedMessages = (key = conversationStorageKey.value) => {
@@ -296,10 +320,6 @@ const assistantModeHint = computed(() => {
   return '你可以问我关于这篇文章的问题，或者让我解释代码；当前模式下我不会自动调用站内工具或执行操作。';
 });
 
-const models: any = ref([]);
-
-const activeModel = ref<any>(null);
-
 watch(activeModel, (newVal) => {
   if (newVal && token.value && userInfo.value) {
     (userInfo.value as any).selectModel = newVal.value;
@@ -307,34 +327,41 @@ watch(activeModel, (newVal) => {
   }
 });
 
-// 使用 Vercel AI SDK v2 Chat 类
-// 必须使用 DefaultChatTransport 来配置 api 和 headers
+const chatTransport = new DefaultChatTransport({
+  api: `${BASE_URL}/ai/chat`,
+  headers: () => (token.value ? { Authorization: token.value } : {}),
+  body: () => ({
+    context: props.context || null,
+    selectionContexts: requestSelectionContexts.value.length > 0 ? requestSelectionContexts.value : pendingSelectionContexts.value,
+    model: activeModel.value?.value,
+  }),
+});
+
 const chat = new Chat({
   messages: loadCachedMessages() as any,
-  transport: new DefaultChatTransport({
-    api: `${BASE_URL}/ai/chat`, // 走代理
-    headers: () => {
-      // 如果有 token 就传递，没有也可以正常使用（游客模式）
-      const headers: Record<string, string> = {};
-      if (token.value) {
-        headers.Authorization = token.value;
-      }
-      return headers;
+  transport: {
+    async sendMessages(options) {
+      const submission = activeSubmission;
+      const stream = await chatTransport.sendMessages(options);
+      return stream.pipeThrough(
+        new TransformStream({
+          transform(chunk, controller) {
+            // HTTP 正常结束也可能是截断；只有 finish 事件证明回答完成。
+            if (chunk.type === 'finish' && submission) submission.completed = true;
+            controller.enqueue(chunk);
+          },
+        }),
+      );
     },
-    // 在每次请求时传递文章上下文
-    body: () => ({
-      context: props.context || null,
-      selectionContexts: requestSelectionContexts.value.length > 0 ? requestSelectionContexts.value : pendingSelectionContexts.value,
-      model: activeModel.value?.value,
-    }),
-  }),
+    reconnectToStream: (options) => chatTransport.reconnectToStream(options),
+  },
 });
 
 // 将 chat.messages 转换为响应式数据
 // 注意：Chat 类的 messages getter 访问了内部的 ref，所以 computed 可以追踪
 // 复习:computed回调什么时候执行? --> 仅会在其响应式依赖更新时才重新计算 或 读取到了该计算属性 且 当前计算属性是脏数据(缓存过时的数据,源码默认第一次就是脏数据) 时,其回调参会执行
 const messages: any = computed(() => chat.messages);
-const isLoading = computed(() => chat.status === 'streaming' || chat.status === 'submitted');
+const isLoading = computed(() => submitting.value || chat.status === 'streaming' || chat.status === 'submitted');
 // "Thinking..." 显示逻辑优化：
 // 1. 提交后但在连接前 (submitted)
 // 2. 连接后但在收到第一个字符前 (streaming 且最后一条消息为空)
@@ -361,10 +388,22 @@ const displayMessages = computed(() => {
   });
 });
 
-watch(conversationStorageKey, (newKey) => {
-  chat.messages = loadCachedMessages(newKey) as any;
-  scrollToBottom();
-});
+watch(
+  conversationStorageKey,
+  (newKey) => {
+    activeSubmission = null;
+    submitting.value = false;
+    chat.stop();
+    chat.clearError();
+    input.value = '';
+    sendError.value = '';
+    failedMessageId.value = undefined;
+    requestSelectionContexts.value = [];
+    chat.messages = loadCachedMessages(newKey) as any;
+    scrollToBottom();
+  },
+  { flush: 'sync' },
+);
 
 watch(
   messages,
@@ -387,58 +426,62 @@ watch(
 );
 
 const handleSubmit = async () => {
-  if (!input.value.trim() || isLoading.value) return;
-
-  // 检查 AI 服务状态
-  if (aiServiceStatus.value === 'offline') {
-    Msg.showFail('AI 服务暂时不可用，请检查 Ollama 是否运行', { duration: 3000 });
-    return;
-  }
+  if (!input.value.trim() || isLoading.value || aiServiceStatus.value !== 'online') return;
 
   const userMessage = input.value;
+  const messageId = failedMessageId.value ?? generateId();
   const selectionSnapshot = pendingSelectionContexts.value;
+  const submission = { stopped: false, completed: false };
+  activeSubmission = submission;
+  submitting.value = true;
+  sendError.value = '';
   input.value = ''; // 立即清空输入框
   requestSelectionContexts.value = selectionSnapshot;
 
-  // 发送消息
-  // 使用 Vercel AI SDK v2 的 sendMessage 方法
   try {
     await chat.sendMessage({
-      text: userMessage,
+      id: messageId,
+      messageId: failedMessageId.value,
+      role: 'user',
+      parts: [{ type: 'text', text: userMessage }],
       metadata: selectionSnapshot.length > 0 ? { selectionContexts: selectionSnapshot } : undefined,
-    } as any);
-    // 发送成功，更新状态为在线
-    aiServiceStatus.value = 'online';
+    });
+    if (activeSubmission !== submission) return;
+    // The SDK resolves transport/stream failures and exposes them as chat.error.
+    if (chat.error) throw chat.error;
+    if (submission.stopped) {
+      input.value = userMessage;
+      failedMessageId.value = messageId;
+      return;
+    }
+    if (!submission.completed) throw new Error('AI 回答意外中断');
+    failedMessageId.value = undefined;
     if (selectionSnapshot.length > 0) {
-      emit('clear:selection-contexts');
-    }
-  } catch (error: any) {
-    console.error('Error sending message:', error);
-
-    // 更新服务状态
-    aiServiceStatus.value = 'offline';
-
-    // 显示友好的错误提示
-    let errorMsg = 'AI 服务暂时不可用';
-
-    // 尝试解析错误响应
-    if (error.response) {
-      try {
-        const errorData = await error.response.json();
-        errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-        // 解析失败，使用默认消息
+      const sentIds = new Set(selectionSnapshot.map((context) => context.id));
+      if (pendingSelectionContexts.value.every((context) => sentIds.has(context.id))) {
+        emit('clear:selection-contexts');
+      } else {
+        selectionSnapshot.forEach((context) => emit('remove:selection-context', context.id));
       }
-    } else if (error.message) {
-      errorMsg = error.message;
     }
-
-    Msg.showFail(errorMsg, { duration: 5000, closeButton: true });
-
-    // 恢复用户输入
+  } catch (error: unknown) {
+    if (activeSubmission !== submission) return;
+    let message = error instanceof Error ? error.message : 'AI 请求失败，请稍后重试';
+    try {
+      const data = JSON.parse(message);
+      message = typeof data.message === 'string' ? data.message : message;
+    } catch {
+      // Stream and network errors already carry plain text.
+    }
+    sendError.value = message;
+    failedMessageId.value = messageId;
     input.value = userMessage;
   } finally {
-    requestSelectionContexts.value = [];
+    if (activeSubmission === submission) {
+      requestSelectionContexts.value = [];
+      activeSubmission = null;
+      submitting.value = false;
+    }
   }
 
   scrollToBottom();
@@ -481,6 +524,7 @@ const onEnter = (e: Event | KeyboardEvent) => {
 };
 
 const handleStop = () => {
+  if (activeSubmission) activeSubmission.stopped = true;
   chat.stop();
 };
 
@@ -533,61 +577,10 @@ watch(
 
 watch(isOpen, (open) => {
   if (open) {
+    if (aiServiceStatus.value === 'offline') checkAIServiceStatus();
     nextTick(() => enhanceChatMarkdownCodeBlocks());
   }
 });
-
-// 检查 AI 服务状态
-const checkAIServiceStatus = async () => {
-  // 由于原生 fetch 不支持 timeout配置,所以使用 AbortController 配合 setTimeout 实现 5 秒超时控制
-  // 1. 创建控制器
-  const controller = new AbortController();
-  // 2. 创建定时器,5秒后自动取消请求
-  const timer = setTimeout(() => controller.abort(), 5000); // 5秒超时自动取消
-
-  try {
-    aiServiceStatus.value = 'checking';
-    const headers: Record<string, string> = {};
-    // 如果有 token 就传递（登录用户），没有也可以检查（游客）
-    if (token.value) {
-      headers.Authorization = token.value;
-    }
-
-    const res = await fetch(`${BASE_URL}/ai/health`, {
-      method: 'GET',
-      headers,
-      signal: controller.signal,
-    });
-
-    if (res.ok) {
-      // 解析响应体，检查实际的服务状态
-      const data = await res.json();
-      aiServiceStatus.value = data.status === 'online' ? 'online' : 'offline';
-      models.value = data.models;
-      // 这里直接复用服务端返回的能力边界，避免前端自己再猜当前是 assistant 还是 tool 模式。
-      aiCapability.value = data.capability || null;
-
-      if (models.value.length > 0) {
-        let selected = models.value[0];
-        if (token.value && userInfo.value) {
-          const savedModelValue = (userInfo.value as any).selectModel;
-          if (savedModelValue) {
-            const saved = models.value.find((m: any) => m.value === savedModelValue);
-            if (saved) selected = saved;
-          }
-        }
-        activeModel.value = selected;
-      }
-    } else {
-      aiServiceStatus.value = 'offline';
-    }
-  } catch (error) {
-    aiServiceStatus.value = 'offline';
-    console.warn('AI service health check failed:', error);
-  } finally {
-    clearTimeout(timer); // 放到这里，无论成功失败都会清除定时器
-  }
-};
 
 const handleKeyDown = (e: KeyboardEvent) => {
   // Mac/Windows: Alt+A（Mac 上 Alt 即 Option 键）
@@ -599,13 +592,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 // 组件挂载时检查服务状态
 onMounted(() => {
-  checkAIServiceStatus();
   emitter.on('toggleAiAssistant', toggleOpen);
   window.addEventListener('keydown', handleKeyDown);
   nextTick(() => enhanceChatMarkdownCodeBlocks());
 });
 
 onUnmounted(() => {
+  activeSubmission = null;
+  chat.stop();
   emitter.off('toggleAiAssistant', toggleOpen);
   window.removeEventListener('keydown', handleKeyDown);
 });
@@ -617,6 +611,31 @@ onUnmounted(() => {
 $shadowColor: #a3dfd0;
 $shadowColor2: #f3b2ac;
 .ai-assistant {
+  .recovery-notice {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+
+    button {
+      flex-shrink: 0;
+      cursor: pointer;
+      color: inherit;
+      background: transparent;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      padding: 4px 6px;
+
+      &:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+    }
+  }
   position: fixed;
   bottom: 20px;
   right: 20px;
