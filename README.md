@@ -2,6 +2,13 @@
 
 coderx 技术相关图文分享类论坛
 
+## 环境要求
+
+- Node.js 22.22.2+（22.x）、24.15.0+（24.x）或 26+
+- pnpm 12.11.2（版本已在 `package.json` 固定）
+
+使用 nvm 时运行 `nvm use`，按 `.nvmrc` 切换到 Node.js 22.22.2。
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## 在线访问
