@@ -4,6 +4,7 @@ CoderX 是一个面向开发者的图文内容社区前端，支持文章阅读�
 
 - 在线体验：[CoderX](https://coderx.my)
 - 后端仓库：[yangdanping/coderx_server](https://github.com/yangdanping/coderx_server)
+- 文档入口：[当前指南与历史资料](./docs/README.md)
 - Flow 完成情况、限制与验收安排：[Flow 阶段说明](./FLOW_RELEASE.md)
 
 ## 主要功能

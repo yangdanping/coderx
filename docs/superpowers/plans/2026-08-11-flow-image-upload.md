@@ -1,5 +1,7 @@
 # Flow Image Upload Implementation Plan
 
+> 历史设计/实施快照：保留当时的步骤、版本和勾选状态，不代表当前待办；不要直接重放其中的安装、迁移或发布命令。当前入口见[文档导航](../../README.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add secure, ordered image attachments and atomic publishing to the Flow composer while preserving its pulled modal, retained draft, keyboard behavior, and existing Gallery presentation.

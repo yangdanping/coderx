@@ -1,11 +1,11 @@
 # 首页 Features 示例数据说明
 
-这些 JSON 文件用于首页 `Features` 展示区的自动演示内容，全部都是前端本地模拟数据，不依赖后端接口。
+核对日期：2026-10-25。这些 JSON 文件用于首页 Features 展示区的本地演示，演示对话不调用真实 AI；点击“Go check / Go chat”会通过后端选择真实文章，“Go edit”跳转编辑页。
 
 ## 文件说明
 
 - `features.json`
-  - 控制 4 张 feature 卡片的标题和描述文案。
+  - 控制 4 个展示步骤的标题、描述和 action 按钮；ID 必须匹配 `FeatureSection.vue` 的组件映射。
 - `article-toc-demo.json`
   - 控制“浏览文章自动目录划分”示例。
   - `sections` 里的每一项都会渲染成一个章节，并自动生成右侧目录。
@@ -75,116 +75,15 @@
 - 如果你把段落写得更长，文章目录示例的滚动空间会更明显。
 - Markdown 示例支持标题、列表、引用、代码块等常见语法，建议保留至少一种代码块，这样右侧预览更有辨识度。
 
-## 视口触发动画怎么实现
+## 当前展示与动画入口
 
-首页 Features 的进入动画分两步：
+旧的 `FeatureCard.vue` 和 `emit('activate')` 链路已移除。当前由以下文件组织：
 
-1. 用 `IntersectionObserver` 监听卡片是否进入视口。
-2. 当元素进入视口后，给卡片加上 `.visible`，触发 `opacity + transform` 的过渡动画。
+| 文件                                                                              | 职责                                                                                                   |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [FeatureSection.vue](../cpns/features/FeatureSection.vue)                         | 将 JSON ID 映射到演示组件，处理真实文章/编辑页跳转                                                     |
+| [useFeatureStoryMotion.ts](../cpns/features/composables/useFeatureStoryMotion.ts) | 通过滚动位置和 requestAnimationFrame 计算目标步骤与展示步骤，管理离场/入场阶段；减少动态效果时直接切换 |
+| [FeatureDemoStage.vue](../cpns/features/FeatureDemoStage.vue)                     | 桌面固定展示区，按当前 feature ID 切换 demo，并传递 active 状态                                        |
+| [FeatureNarrativeStep.vue](../cpns/features/FeatureNarrativeStep.vue)             | 展示文字与按钮，移动布局中直接嵌入对应 demo                                                            |
 
-如果你还想像本项目一样，在 fade-in 结束后再启动内部 demo，可以在监听到可见后再触发一个 `emit('activate')`。
-
-### Mermaid 逻辑链路图
-
-```mermaid
-flowchart TD
-    A[用户向下滚动页面] --> B[FeatureCard 进入视口]
-    B --> C[IntersectionObserver 回调触发]
-    C --> D{isIntersecting?}
-    D -- 否 --> E[保持初始状态]
-    D -- 是 --> F[isVisible = true]
-    F --> G[卡片添加 .visible class]
-    G --> H[触发 opacity + translateY fade-in]
-    H --> I[FeatureCard emit activate]
-    I --> J[对应 Demo 组件开始自动播放]
-```
-
-```mermaid
-flowchart LR
-    A[useFadeIn.ts] --> B[返回 targetRef + isVisible]
-    B --> C[FeatureCard.vue]
-    C --> D[绑定 ref 到卡片根节点]
-    C --> E[根据 isVisible 切换 .visible]
-    C --> F[在合适时机 emit activate]
-    F --> G[ArticleTocDemo]
-    F --> H[AiChatDemo]
-    F --> I[AiCompletionDemo]
-    F --> J[MarkdownRenderDemo]
-```
-
-### 可复用示例
-
-```ts
-import { onBeforeUnmount, ref, watch } from 'vue';
-
-export function useFadeIn(options: IntersectionObserverInit = {}) {
-  const { root = null, rootMargin = '0px', threshold = 0.2 } = options;
-  const targetRef = ref<HTMLElement | null>(null);
-  const isVisible = ref(false);
-  let observer: IntersectionObserver | null = null;
-
-  watch(
-    targetRef,
-    (element) => {
-      observer?.disconnect();
-      if (!element) return;
-
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry) return;
-
-          if (entry.isIntersecting) {
-            isVisible.value = true;
-            observer?.disconnect(); // 只触发一次
-          }
-        },
-        { root, rootMargin, threshold },
-      );
-
-      observer.observe(element);
-    },
-    { flush: 'post' },
-  );
-
-  onBeforeUnmount(() => observer?.disconnect());
-
-  return { targetRef, isVisible };
-}
-```
-
-```vue
-<template>
-  <article ref="targetRef" class="feature-card" :class="{ visible: isVisible }">
-    <slot />
-  </article>
-</template>
-
-<script setup lang="ts">
-import { useFadeIn } from '@/composables/useFadeIn';
-
-const { targetRef, isVisible } = useFadeIn({
-  threshold: 0.18,
-});
-</script>
-
-<style scoped>
-.feature-card {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.feature-card.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-</style>
-```
-
-### 可调参数
-
-- `threshold`：元素进入视口多少比例后触发，常用 `0.1 ~ 0.3`。
-- `rootMargin`：提前或延后触发，例如 `0px 0px -10% 0px`。
-- `once`：如果你想允许离开视口后再次播放，可以不要在触发后 `disconnect()`。
+修改演示数据通常只需调整本目录 JSON。修改滚动切换逻辑时查看 `useFeatureStoryMotion`；通用 [useFadeIn](../../../composables/useFadeIn.ts) 仍供其他调用者使用，不是当前 Features 的切换入口。

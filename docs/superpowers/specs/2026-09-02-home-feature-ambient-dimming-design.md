@@ -1,5 +1,7 @@
 # Home Feature Ambient Dimming Design
 
+> 历史设计/实施快照：保留当时的步骤、版本和勾选状态，不代表当前待办；不要直接重放其中的安装、迁移或发布命令。当前入口见[文档导航](../../README.md)。
+
 ## Goal
 
 In light mode, scrolling into the home page Feature story should gradually move the visible page atmosphere from light to dark. Feature copy must remain readable using the same eye-friendly primary white as dark mode. Scrolling out of the story toward Hot Authors should reverse the effect and restore the normal light page.
